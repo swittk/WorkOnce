@@ -1,0 +1,15 @@
+language: en-US
+reviews:
+  profile: assertive
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: 'src/**'
+      instructions: |
+        Focus on real ownership/fencing, clock, crash recovery, durable continuation, API correctness and performance defects.
+        The root API is a strongly typed developer API. Do not add redundant string/type revalidation without a real untrusted boundary.
+        Storage serialization and numeric overflow/deadline checks are real runtime boundaries.
+        Do not suggest arbitrary settle(async domainCallback) APIs: an earlier lease check cannot fence later unrelated writes.
+        Do not demand external exactly-once execution; require accurate at-least-once/idempotency documentation.
+        Distinguish single-process embedded adapters from genuinely cross-process storage. Do not weaken conformance to make adapters pass.

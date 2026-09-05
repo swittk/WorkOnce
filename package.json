@@ -1,0 +1,132 @@
+{
+  "name": "@workonce/core",
+  "version": "0.1.0",
+  "description": "Typed durable work, fenced attempts, dynamic retries and adapter conformance",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist-cjs/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist-cjs/index.d.ts",
+        "default": "./dist-cjs/index.js"
+      }
+    },
+    "./storage": {
+      "import": {
+        "types": "./dist/storage.d.ts",
+        "default": "./dist/storage.js"
+      },
+      "require": {
+        "types": "./dist-cjs/storage.d.ts",
+        "default": "./dist-cjs/storage.js"
+      }
+    },
+    "./memory": {
+      "import": {
+        "types": "./dist/memory.d.ts",
+        "default": "./dist/memory.js"
+      },
+      "require": {
+        "types": "./dist-cjs/memory.d.ts",
+        "default": "./dist-cjs/memory.js"
+      }
+    },
+    "./sqlite": {
+      "import": {
+        "types": "./dist/sqlite.d.ts",
+        "default": "./dist/sqlite.js"
+      },
+      "require": {
+        "types": "./dist-cjs/sqlite.d.ts",
+        "default": "./dist-cjs/sqlite.js"
+      }
+    },
+    "./kernel": {
+      "import": {
+        "types": "./dist/kernel.d.ts",
+        "default": "./dist/kernel.js"
+      },
+      "require": {
+        "types": "./dist-cjs/kernel.d.ts",
+        "default": "./dist-cjs/kernel.js"
+      }
+    },
+    "./conformance": {
+      "import": {
+        "types": "./dist/conformance.d.ts",
+        "default": "./dist/conformance.js"
+      },
+      "require": {
+        "types": "./dist-cjs/conformance.d.ts",
+        "default": "./dist-cjs/conformance.js"
+      }
+    },
+    "./embedded": {
+      "import": {
+        "types": "./dist/embedded.d.ts",
+        "default": "./dist/embedded.js"
+      },
+      "require": {
+        "types": "./dist-cjs/embedded.d.ts",
+        "default": "./dist-cjs/embedded.js"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "storage": [
+        "dist/storage.d.ts"
+      ],
+      "memory": [
+        "dist/memory.d.ts"
+      ],
+      "sqlite": [
+        "dist/sqlite.d.ts"
+      ],
+      "kernel": [
+        "dist/kernel.d.ts"
+      ],
+      "conformance": [
+        "dist/conformance.d.ts"
+      ],
+      "embedded": [
+        "dist/embedded.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "dist-cjs",
+    "README.md",
+    "LICENSE",
+    "docs",
+    "formal"
+  ],
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
+    "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:process": "node --test test/process/*.test.mjs",
+    "formal": "node scripts/formal.mjs",
+    "prepack": "npm run build",
+    "prepare": "npm run build",
+    "format:check": "prettier --check src test README.md docs",
+    "test:consumer": "npm run build && node scripts/consumer-smoke.mjs",
+    "bench": "npm run build && node scripts/benchmark.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "22.20.0",
+    "prettier": "3.6.2"
+  }
+}

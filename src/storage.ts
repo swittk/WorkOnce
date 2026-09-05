@@ -1,0 +1,44 @@
+import type { WorkRecord } from './model.js';
+export type {
+  WorkRecord,
+  WorkRequest,
+  WorkLimits,
+  WorkAttempt,
+  AttemptRef,
+  WorkPhase,
+} from './model.js';
+/** One side-effect-free decision made inside the store's atomic boundary. */
+export interface StoreChange<T> {
+  /** Omit when nothing should be persisted. Deletion is deliberately not supported. */
+  next?: WorkRecord;
+  /** Value returned after the write is durably committed. */
+  value: T;
+}
+/** Query capabilities required by the small queue. Implement with bounded indexed queries. */
+export interface WorkQuery {
+  /** Exact tenant/installation boundary. */
+  scope: string;
+  /** Omit only for a scope-wide outbox dispatcher. */
+  kind?: string;
+  /** Due work includes expired running attempts; outbox selects undelivered follow-ups. */
+  select: 'due' | 'outbox' | 'all';
+  /** Bounded result count. */
+  limit: number;
+  /** Exclusive stable identity cursor, used only for all-item inspection. */
+  afterId?: string;
+}
+/**
+ * BYO storage contract, not a CRUD interface. atomic must serialize each id across EVERY
+ * process using the store and commit next durably before resolving. It supplies storage
+ * time inside that boundary. The synchronous decision must not await or perform effects;
+ * adapters may retry it. A read/check/unconditional-save implementation is NOT conformant.
+ * getMany/query return detached rows. Never delete/reuse an id while stale workers may exist.
+ */
+export interface WorkStore {
+  atomic<T>(
+    id: string,
+    decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,
+  ): Promise<T>;
+  getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
+  query(query: WorkQuery): Promise<{ rows: WorkRecord[]; now: number }>;
+}
