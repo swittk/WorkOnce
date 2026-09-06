@@ -57,6 +57,8 @@ export type WorkPhase<O = unknown, R extends string = string> =
       reason: R | 'attempts_exhausted' | 'deadline_exceeded' | 'deferrals_exhausted';
       manualRetry: boolean;
       failedAt: number;
+      /** Typed terminal diagnostic/result, when the handler supplied one. */
+      result?: O;
       stoppedBy:
         | 'reported_failure'
         | 'retry_not_allowed'
@@ -87,10 +89,10 @@ export interface WorkEvent {
 export interface SettlementReceipt {
   /** Attempt that produced this acknowledgement. */
   attempt: AttemptRef;
-  /** Canonical encoding of the submitted outcome, before dynamic policy resolution. */
-  submission: string;
-  /** Actual phase chosen by the budget/policy checks. */
-  phase: WorkPhase;
+  /** SHA-256 of the canonical submitted outcome, before dynamic policy resolution. */
+  submissionHash: string;
+  /** Non-terminal acknowledgement phase; terminal results already live in row.phase. */
+  phase?: WorkPhase;
 }
 /** The adapter persists the complete row in one atomic operation. */
 export interface WorkRecord extends WorkRequest {
@@ -126,7 +128,7 @@ export type WorkOutcome<O = unknown, R extends string = string> =
   | { type: 'succeed'; result: O; next: WorkRequest[] }
   | { type: 'retry'; reason: R; afterMs?: number; at?: number }
   | { type: 'defer'; reason: R; afterMs?: number; at?: number }
-  | { type: 'fail'; reason: R; manualRetry: boolean };
+  | { type: 'fail'; reason: R; manualRetry: boolean; result?: O; next: WorkRequest[] };
 /** Resolved automatic retry policy for one actual failure, not a serialized callback. */
 export type RetryDecision =
   | { retry: false; manualRetry: boolean }
@@ -141,6 +143,8 @@ export interface RetryContext<I, R extends string> {
   attempt: WorkAttempt;
   /** Automatic retry decisions already accepted. */
   retries: number;
+  /** Accepted prerequisite waits in the generation. */
+  deferrals: number;
   /** Elapsed storage time since the first claim. */
   elapsedMs: number;
 }

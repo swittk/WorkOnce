@@ -1,4 +1,5 @@
 # WorkOnce
+
 Keep the root API small and documented. No domain, framework, credentials, private fixtures, or provider internals here.
 Durations and timestamps are milliseconds. No arbitrary lifecycle update API.
 Use strong TypeScript types; validate numeric invariants and external wire data, not redundant developer-only string types.

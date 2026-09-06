@@ -14,7 +14,7 @@ export interface WorkerOptions {
   /** Graceful stop signal. It is not a durable cancel command. */
   signal?: AbortSignal;
   /** Explicit error observer for the long-running poller. Without it the poller rejects. */
-  onError?: (error: unknown) => void;
+  onError?: (error: unknown) => void | Promise<void>;
 }
 /** A handler returns data describing an outcome. The runner does the fenced commit. */
 export type WorkHandler<I, O, R extends string> = (
@@ -139,15 +139,15 @@ export async function runWorker<I, O, R extends string>(
         fatal = error;
         break;
       }
-      options.onError(error);
+      await options.onError(error);
       await waitForPoll(idleMs, options.signal);
       continue;
     }
     for (const claim of claims) {
       const pending = processClaim(claim, options, handler, started)
-        .then((result) => {
+        .then(async (result) => {
           if (result.status === 'interrupted' && !options.signal.aborted) {
-            if (options.onError) options.onError(result.error);
+            if (options.onError) await options.onError(result.error);
             else fatal = result.error;
           }
         })

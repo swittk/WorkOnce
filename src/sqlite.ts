@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { WorkQuery, WorkStore, StoreChange } from './storage.js';
 import type { WorkRecord } from './model.js';
-import { canonical, copy, dueAt, integer } from './kernel.js';
+import { canonical, copy, dueAt, integer, WorkConflict } from './kernel.js';
 /** A real durable store. SQLite serializes short writes; unrelated database files do not share a lock. */
 export function createSqliteStore(
   path: string,
@@ -18,8 +18,9 @@ export function createSqliteStore(
     CREATE INDEX IF NOT EXISTS workonce_list ON workonce(scope,kind,id);`);
   const read = db.prepare('SELECT body FROM workonce WHERE id=?');
   const write =
-    db.prepare(`INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) VALUES(?,?,?,?,?,?)
+    db.prepare(`INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) SELECT ?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
     ON CONFLICT(id) DO UPDATE SET scope=excluded.scope,kind=excluded.kind,due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`);
+  const queries = new Map<string, ReturnType<typeof db.prepare>>();
   const clock = db.prepare("SELECT CAST(unixepoch('subsec')*1000 AS INTEGER) AS now");
   const now = () => integer(options.now ? options.now() : Number(clock.get()!['now']), 'clock');
   function parseRow(value: ReturnType<typeof read.get>): WorkRecord | undefined {
@@ -38,19 +39,27 @@ export function createSqliteStore(
         if (change.next) {
           const row = change.next;
           if (row.id !== id) throw new Error('Store decision changed work identity');
-          write.run(
+          const stored = write.run(
             row.id,
             row.scope,
             row.kind,
             dueAt(row) ?? null,
             row.outbox.length,
             canonical(row),
+            change.validUntil ?? null,
+            options.now ? now() : null,
+            change.validUntil ?? null,
           );
+          if (!stored.changes) throw new WorkConflict('lease_expired');
         }
         db.exec('COMMIT');
         return value;
       } catch (error) {
-        db.exec('ROLLBACK');
+        try {
+          db.exec('ROLLBACK');
+        } catch {
+          /* Preserve the original IO/commit failure. */
+        }
         throw error;
       }
     },
@@ -63,7 +72,11 @@ export function createSqliteStore(
         db.exec('COMMIT');
         return { rows, now: time };
       } catch (error) {
-        db.exec('ROLLBACK');
+        try {
+          db.exec('ROLLBACK');
+        } catch {
+          /* Preserve the original IO/commit failure. */
+        }
         throw error;
       }
     },
@@ -76,6 +89,10 @@ export function createSqliteStore(
         clauses.push('kind=?');
         params.push(query.kind);
       }
+      if (query.definition !== undefined) {
+        clauses.push("json_extract(body, '$.definition')=?");
+        params.push(query.definition);
+      }
       if (query.select === 'due') {
         clauses.push('due_at IS NOT NULL AND due_at<=?');
         params.push(time);
@@ -87,11 +104,13 @@ export function createSqliteStore(
       }
       params.push(query.limit);
       const order = query.select === 'due' ? 'due_at,id' : 'id';
-      const found = db
-        .prepare(
-          `SELECT body FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`,
-        )
-        .all(...params);
+      const sql = `SELECT body FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`;
+      let statement = queries.get(sql);
+      if (!statement) {
+        statement = db.prepare(sql);
+        queries.set(sql, statement);
+      }
+      const found = statement.all(...params);
       return {
         rows: found.map((value) => JSON.parse(String(value['body'])) as WorkRecord),
         now: time,

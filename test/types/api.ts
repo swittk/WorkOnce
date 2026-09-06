@@ -44,3 +44,9 @@ function show(snapshot: WorkSnapshot<Input, Output, Reason>) {
   return snapshot.phase.attempt.fence;
 }
 void show;
+
+const dynamic = work.define<Input, Output, Reason>('dynamic', {
+  limits: (input) => ({ maxAttempts: input.urgent ? 10 : 3 }),
+  defer: async (context) => ({ afterMs: context.deferrals ? 30_000 : 1000 }),
+});
+void dynamic.process({ workerId: 'typed' }, (run) => run.defer('busy'));

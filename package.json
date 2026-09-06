@@ -1,6 +1,6 @@
 {
   "name": "@workonce/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Typed durable work, fenced attempts, dynamic retries and adapter conformance",
   "license": "MIT",
   "type": "module",
@@ -68,14 +68,14 @@
         "default": "./dist-cjs/conformance.js"
       }
     },
-    "./embedded": {
+    "./cas": {
       "import": {
-        "types": "./dist/embedded.d.ts",
-        "default": "./dist/embedded.js"
+        "types": "./dist/cas.d.ts",
+        "default": "./dist/cas.js"
       },
       "require": {
-        "types": "./dist-cjs/embedded.d.ts",
-        "default": "./dist-cjs/embedded.js"
+        "types": "./dist-cjs/cas.d.ts",
+        "default": "./dist-cjs/cas.js"
       }
     }
   },
@@ -96,8 +96,8 @@
       "conformance": [
         "dist/conformance.d.ts"
       ],
-      "embedded": [
-        "dist/embedded.d.ts"
+      "cas": [
+        "dist/cas.d.ts"
       ]
     }
   },
@@ -113,7 +113,7 @@
     "node": ">=22.16.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
     "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
     "test": "npm run build && node --test test/*.test.mjs",
     "test:process": "node --test test/process/*.test.mjs",

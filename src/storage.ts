@@ -11,6 +11,8 @@ export type {
 export interface StoreChange<T> {
   /** Omit when nothing should be persisted. Deletion is deliberately not supported. */
   next?: WorkRecord;
+  /** A storage-side exclusive deadline for this write; never accept an expired owner's commit. */
+  validUntil?: number;
   /** Value returned after the write is durably committed. */
   value: T;
 }
@@ -20,17 +22,20 @@ export interface WorkQuery {
   scope: string;
   /** Omit only for a scope-wide outbox dispatcher. */
   kind?: string;
+  /** Match the registered definition before applying LIMIT; older deployments cannot starve it. */
+  definition?: string;
   /** Due work includes expired running attempts; outbox selects undelivered follow-ups. */
   select: 'due' | 'outbox' | 'all';
   /** Bounded result count. */
   limit: number;
-  /** Exclusive stable identity cursor, used only for all-item inspection. */
+  /** Exclusive stable identity cursor, used for inspection and fair outbox scans. */
   afterId?: string;
 }
 /**
  * BYO storage contract, not a CRUD interface. atomic must serialize each id across EVERY
  * process using the store and commit next durably before resolving. It supplies storage
- * time inside that boundary. The synchronous decision must not await or perform effects;
+ * time inside that boundary. Decisions must be deterministic for (row, now), without clocks,
+ * randomness, IO or mutation of captured state. The synchronous decision must not await or perform effects;
  * adapters may retry it. A read/check/unconditional-save implementation is NOT conformant.
  * getMany/query return detached rows. Never delete/reuse an id while stale workers may exist.
  */

@@ -23,12 +23,12 @@ type Output = { derivativeId: string };
 type Reason = 'provider_busy' | 'provider_pending' | 'invalid_source';
 
 const convert = work.define<Input, Output, Reason>('asset.convert', {
-  limits: {
-    leaseMs: 60_000,
+  limits: (input) => ({
+    leaseMs: input.urgent ? 30_000 : 60_000,
     maxAttempts: 100,
     maxElapsedMs: 3_600_000,
     maxDeferrals: 80,
-  },
+  }),
   retry: ({ input, reason, retries }) => {
     if (reason === 'invalid_source') {
       return { retry: false, manualRetry: false };
@@ -48,6 +48,29 @@ await convert.enqueue(
     key: 'asset-123:source-revision-2',
   },
 );
+```
+
+`limits` accepts a static object or a synchronous per-input callback. It is resolved when
+creating the request and its chosen values are persisted. `retry` and `defer` accept static
+policies or async callbacks evaluated on the actual failure/wait. A result-level timing override
+changes scheduling, not permission or the retry budget.
+
+```ts
+const checks = work.define<{ urgent: boolean }>('provider.check', {
+  defer: async ({ input, deferrals }) => ({
+    afterMs: input.urgent && deferrals < 3 ? 1000 : 30_000,
+  }),
+  retry: async ({ input, reason, retries }) =>
+    reason === 'invalid'
+      ? { retry: false, manualRetry: false }
+      : {
+          retry: true,
+          afterMs: input.urgent ? 1000 : Math.min(5000 * 2 ** retries, 60_000),
+          maxRetries: 10,
+          manualRetry: true,
+        },
+});
+// An actual handler may simply return run.defer('still_processing').
 ```
 
 Callbacks stay in application code. Only their accepted decisions and resolved per-item limits
@@ -145,10 +168,29 @@ Success and the outbox intent commit together. The dispatcher inserts the child 
 key and then acknowledges the intent. A crash after child insertion does not create a second
 logical child. A conflicting key is an error, not silent payload replacement.
 
+Follow-up planning can also be declared once as an async callback on the work definition:
+
+```ts
+const convert = work.define<Input, Output>('asset.convert', {
+  next: async ({ result, attempt }) => [
+    notify.request(
+      { derivativeId: result.derivativeId },
+      {
+        key: JSON.stringify([attempt.workId, attempt.generation]),
+      },
+    ),
+  ],
+});
+```
+
+`next` returns durable request data; it is **not** an effectful `onSuccess` callback. Identical
+accepted outcome redelivery returns the saved receipt without re-running the planner. Losing
+ownership while a planner awaits prevents the success/continuation commit.
+
 Supervise `work.runDispatcher({ signal })` alongside your workers, or call
 `work.dispatch({ limit: 100 })` from an existing periodic runner. Register a worker for the
 child kind too. Delivery requires a running dispatcher and eventually available storage;
-WorkOnce does not claim the child is emitted merely because the parent succeeded.
+WorkOnce does not claim the child is emitted merely because the parent succeeded. Failed children remain pending; healthy siblings are still attempted, and bounded dispatch scans rotate past failed entries rather than permanently starving other work.
 
 ## Remote/Python workers
 
@@ -189,19 +231,40 @@ No DAG engine, cron interpreter, workflow replay, global rate limiter or built-i
 “exactly once” external effects. No row deletion/ID reuse API: that would need a deliberate
 fence/tombstone retention contract.
 
-## Adapters and development
+## One adapter per backing store, not per job
 
-- `/memory`: reference implementation, not durable and not cross-process.
-- `/sqlite`: real local-file SQLite, WAL and FULL synchronous commits; tested with independent
-  OS processes and process death. It serializes SQLite writes; it is not a distributed database.
-- `/embedded`: helper for storing work in an existing application row. The caller must supply
-  and prove the serialization boundary. A process mutex supports **one backend process**, even
-  when many remote workers call that backend. It is not multi-replica certification.
-- `/storage`: the BYO storage contract; `/conformance`: reusable adversarial scenarios.
-- `/kernel`: pure transition functions for specialized adapters and refinement tests.
+The application supplies its store **once**, and every work kind shares it. Job definitions do
+not explain how to load their domain rows or persist queue fields. WorkOnce has no Parse types,
+ORM dependency, HTTP framework or bundled database driver.
 
-There are no bundled MongoDB, PostgreSQL or Redis adapters in this first version. Do not infer
-their guarantees from the SQLite tests.
+- `/memory`: non-durable reference implementation.
+- `/sqlite`: local-file SQLite with WAL/FULL commits and independent-process tests.
+- `/cas`: framework-free adapter builder over native read/query/compare-and-swap operations.
+- `/storage`: the full atomic contract; `/conformance`: shared adversarial adapter scenarios.
+- `/kernel`: pure transitions for adapter and refinement work.
+
+```ts
+import { createCompareExchangeStore } from '@workonce/core/cas';
+
+const store = createCompareExchangeStore({
+  getMany: nativeStore.readManyWithStorageTime,
+  query: nativeStore.queryIndexedWork,
+  compareExchange: nativeStore.replaceIfRevisionAndDeadlineMatch,
+});
+const work = createWorkOnce({ store, scope: 'my-installation' });
+const mail = work.define<MailInput>('mail');
+const cleanup = work.define<CleanupInput>('cleanup');
+```
+
+`nativeStore` is your application's implementation of the documented port, not a bundled helper.
+Its compare-and-swap must check both the expected revision and `validUntil` **at the actual
+storage write**. No process-local mutex, expiring-lock fallback or unconditional ORM save can
+substitute for that contract. Unknown write acknowledgements propagate as errors; they are not
+blindly retried as though no write occurred. See [storage](docs/storage.md).
+
+The old `/embedded` API has been removed. Keeping a separate queue machine in each feature's
+domain row was the wrong default topology. An application may share a transaction with its
+own domain data, but it should not rewrite a storage adapter for each job.
 
 ```sh
 npm ci
@@ -212,7 +275,7 @@ npm run test:consumer
 TLA2TOOLS_JAR=/path/to/tla2tools.jar npm run formal
 ```
 
-ESM and CommonJS are both built. Runtime core has no third-party dependencies. SQLite uses
-Node's `node:sqlite`; the reference and embedded adapters do not import it.
-
-The [initial benchmark](docs/performance.md) records measured SQLite control-plane cost, not a promised application speedup.
+ESM and CommonJS are built from clean output directories. Runtime core has no third-party
+dependencies. Only the optional `/sqlite` entry imports Node's `node:sqlite`.
+The [benchmark](docs/performance.md) records a measured SQLite control-plane baseline, not a
+promise that every application or BYO adapter became faster.

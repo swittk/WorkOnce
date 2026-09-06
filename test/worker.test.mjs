@@ -67,13 +67,15 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
   };
   const q = createWorkOnce({ store, scope: 't' }).define('work', { limits: { leaseMs: 500 } });
   await q.enqueue(null, { key: 'job' });
+  let abortedInHandler = false;
   const results = await q.process({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
     fail = true;
     await sleep(80);
-    assert.equal(run.signal.aborted, true);
+    abortedInHandler = run.signal.aborted;
     return run.succeed();
   });
   fail = false;
+  assert.equal(abortedInHandler, true);
   assert.equal(results[0].status, 'interrupted');
   assert.equal((await q.inspect('job')).phase.state, 'running');
 });

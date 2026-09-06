@@ -18,7 +18,9 @@ test('follow-up pump recovers pending delivery and bounded passes respect child 
   assert.equal((await parent.inspect('p')).pendingFollowups, 1);
   const controller = new AbortController();
   const pumping = work.runDispatcher({ signal: controller.signal, intervalMs: 5 });
-  for (let i = 0; i < 20 && !(await child.inspect('2')); i++) await sleep(5);
+  const deadline = performance.now() + 5000;
+  while ((await parent.inspect('p')).pendingFollowups > 0 && performance.now() < deadline)
+    await sleep(10);
   controller.abort();
   await pumping;
   assert.equal((await parent.inspect('p')).pendingFollowups, 0);

@@ -1,6 +1,6 @@
 import type { WorkStore, WorkQuery, StoreChange } from './storage.js';
 import type { WorkRecord } from './model.js';
-import { copy, dueAt, integer } from './kernel.js';
+import { copy, dueAt, integer, WorkConflict } from './kernel.js';
 /** Reference store only: detached rows and per-item atomic transitions, but no crash durability. */
 export function createMemoryStore(options: { now?: () => number } = {}): WorkStore {
   const rows = new Map<string, WorkRecord>();
@@ -16,7 +16,10 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
       const value = copy(change.value);
       if (change.next) {
         if (change.next.id !== id) throw new Error('Store decision changed work identity');
-        rows.set(id, copy(change.next));
+        const next = copy(change.next);
+        if (change.validUntil !== undefined && now() >= change.validUntil)
+          throw new WorkConflict('lease_expired');
+        rows.set(id, next);
       }
       return value;
     },
@@ -33,7 +36,10 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
       const clock = integer(now(), 'clock');
       integer(query.limit, 'limit', 1);
       let selected = [...rows.values()].filter(
-        (row) => row.scope === query.scope && (query.kind === undefined || row.kind === query.kind),
+        (row) =>
+          row.scope === query.scope &&
+          (query.kind === undefined || row.kind === query.kind) &&
+          (query.definition === undefined || row.definition === query.definition),
       );
       if (query.select === 'due')
         selected = selected.filter((row) => (dueAt(row) ?? Infinity) <= clock);

@@ -1,3 +1,5 @@
+# WorkOnce development notes
+
 2026-09-05
 - Owner requested WorkOnce, dynamic policies, manual retry gates, defer/poll, durable next work, parallel workers, BYO storage and conformance.
 - Clean implementation; no Conveyor code copied and no private application source belongs in this public repository.
@@ -9,3 +11,18 @@
 - ESM/CommonJS, memory reference, real SQLite and caller-supplied embedded-row port. Embedded port is only as strong as the provided serialization boundary.
 - Checks passed on Node 22.22.1 and Node 24.14.1: 17 shared conformance cases per memory/SQLite/embedded setup, 12 top-level unit/runtime tests, and real 8-process plus SIGKILL/reclaim tests on Node 22.22.1.
 - Bounded TLA checked with official v1.7.4 tool (SHA-256 936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88), 6262 distinct states. This is not a complete implementation refinement proof; see docs/assurance.md.
+
+2026-09-05 second pass
+- Removed the per-feature embedded-row helper from the public API. Applications provide one native compare-and-swap port for all work kinds; no framework dependency or object model enters this package.
+- Retry and defer policies can be async callbacks. Limits can be a per-input callback resolved at request creation; only the chosen data is stored.
+- Compare-and-swap writes carry a storage-checked exclusive lease deadline. A read-time guard alone is not sufficient after a slow or uncertain write.
+
+- Removed second copies of terminal work truth from the integration design rather than adding a domain callback projection engine. The generic next callback remains a durable request planner.
+- Added native write deadlines, definition filtering, consistent ASCII identity ordering, cached SQLite queries, arithmetic preflight, poison-child fairness, async observer handling and clean distribution builds.
+- Bounded formal model now preserves all issued claim tokens, including repeated claims by one worker: 8310 distinct states, not the old 6262-state worker-token overwrite abstraction.
+- Runtime remains framework/driver-free except the explicit built-in SQLite entry. BYO storage is supplied once, not per feature.
+2026-09-06 hardened pass
+- Re-ran the complete core gate after the second-pass redesign: 36 Node tests, 2 real OS-process/crash tests, packed ESM/CJS/types consumer, format check and bounded TLC all pass. TLC explored 13,782 states / 8,310 distinct states at depth 15.
+- Current claim discovery filters definition before the limit; old-definition rows cannot poison a current worker pass. Dispatch retains poison follow-ups and continues healthy siblings/pages. SQLite preserves the original failure if rollback itself fails.
+- Public tree was scanned for private application names/fixtures before commit; tracked source/docs are clean. Local ignored `.chatgpt` state may describe private dogfood and must remain untracked.
+- A private Parse-only dogfood adapter now passes the shared contract on two Parse backends, but it stays out of this public package until its capability surface stabilizes. Do not add framework-specific code merely to move application LOC.

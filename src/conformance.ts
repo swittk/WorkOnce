@@ -282,7 +282,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   await test('failed atomic decisions leave the stored row untouched', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
     const snapshot = await q.enqueue(null, { key: 'job' });
-    const before = await store.getMany([snapshot.id]);
+    const before = canonical((await store.getMany([snapshot.id])).rows);
     await assert.rejects(
       store.atomic(snapshot.id, (row) => {
         row!.generation = 500;
@@ -290,7 +290,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
       }),
     );
     const after = await store.getMany([snapshot.id]);
-    assert.equal(canonical(before.rows), canonical(after.rows));
+    assert.equal(before, canonical(after.rows));
   });
   return completed;
 }

@@ -24,6 +24,7 @@ import {
   integer,
   replayReceipt,
   retryRecord,
+  rerunRecord,
   sameRequest,
   settleRecord,
   renewRecord,
@@ -31,6 +32,14 @@ import {
   WorkConflict,
 } from './kernel.js';
 import { succeed, retry, defer, fail, type WorkTiming } from './outcomes.js';
+/** Compact cryptographic receipt identity; the canonical outcome itself can be very large. */
+async function createSubmissionHash(value: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(canonical(value));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join(
+    '',
+  );
+}
 import {
   processClaims,
   runWorker,
@@ -40,23 +49,95 @@ import {
   type ProcessResult,
 } from './worker.js';
 /** Defaults may be overridden per item; dynamic callbacks are evaluated in trusted application code. */
-export interface WorkDefinition<I, R extends string> {
+export interface WorkDefinition<I, R extends string, O = unknown> {
   /** Change deliberately when deployed policy/handler meaning changes. */
   version?: string;
+  /** Stable business identity derived from typed input when callers should not repeat key plumbing. */
+  key?: (input: I) => string;
   /** Persistent bounds. These include worker crashes, not only reported failures. */
-  limits?: Partial<WorkLimits>;
+  limits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
   /** A static policy or dynamic callback per failure/input. No callback goes into a row. */
   retry?: RetryDecision | ((context: RetryContext<I, R>) => RetryDecision | Promise<RetryDecision>);
+  /** Default prerequisite-check timing, optionally calculated from this input and actual wait reason. */
+  defer?: WorkTiming | ((context: RetryContext<I, R>) => WorkTiming | Promise<WorkTiming>);
+  /** Plan durable follow-up requests. This callback returns data; it must not send email or write domain rows. */
+  next?: (context: {
+    input: I;
+    result: O;
+    attempt: WorkAttempt;
+    /** Terminal result that created this durable continuation. */
+    outcome: 'succeed' | 'fail';
+    /** Present only when a typed failure result planned the continuation. */
+    reason?: R;
+  }) => WorkRequest[] | Promise<WorkRequest[]>;
 }
 /** The durable identity and optional per-item limits supplied by a producer. */
 export interface EnqueueOptions {
   /** A stable key for the business operation, not a random value on each retry. */
-  key: string;
+  key?: string;
   /** Initial not-before time. Duplicate enqueue never silently reschedules it. */
   availableAt?: number;
   /** Per-item bounds can differ from the kind's defaults. */
   limits?: Partial<WorkLimits>;
 }
+/** One prepared payload to hand to a foreign/external worker while this attempt stays leased. */
+export interface WorkHandoff<T> {
+  /** Distinguishes a handoff from a terminal/waiting WorkOutcome. */
+  type: 'handoff';
+  /** Small worker payload; large source bytes stay in application storage. */
+  input: T;
+}
+/** Wire-friendly lease returned only after the final owner-bound renewal commits. */
+export interface LeasedWork<T> {
+  /** Prepared application payload for the external worker. */
+  input: T;
+  /** Exact owner reference required by renew/settle. */
+  attempt: AttemptRef;
+  /** Storage-authoritative lease deadline in Unix milliseconds. */
+  leaseUntil: number;
+  /** Storage time observed with the final renewal. */
+  observedAt: number;
+}
+/** Maps a preparation error to an ordinary queue outcome; application decides the reason. */
+export type WorkHandoffErrorHandler<I, O, R extends string> = (
+  run: WorkRun<I, O, R>,
+  error: unknown,
+) => WorkOutcome<O, R> | Promise<WorkOutcome<O, R>>;
+
+/** Typed handle for one business item; it keeps key derivation out of every call site. */
+export class WorkItem<I, O, R extends string> {
+  constructor(
+    readonly queue: WorkQueue<I, O, R>,
+    readonly input: I,
+    readonly key: string,
+  ) {}
+  request(options: Omit<EnqueueOptions, 'key'> = {}): WorkRequest<I> {
+    return this.queue.request(this.input, { ...options, key: this.key });
+  }
+  enqueue(options: Omit<EnqueueOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
+    return this.queue.enqueue(this.input, { ...options, key: this.key });
+  }
+  inspect(): Promise<WorkSnapshot<I, O, R> | undefined> {
+    return this.queue.inspect(this.key);
+  }
+  restart(
+    options: {
+      expectedGeneration?: number;
+      check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
+    } = {},
+  ): Promise<WorkSnapshot<I, O, R>> {
+    return this.queue.restart({ key: this.key, ...options });
+  }
+  cancel(
+    options: { expectedGeneration?: number; reason?: string } = {},
+  ): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
+    return this.queue.cancelCurrent({ key: this.key, ...options });
+  }
+  wake(options: { expectedGeneration?: number } = {}): Promise<WorkSnapshot<I, O, R>> {
+    return this.queue.wakeCurrent({ key: this.key, ...options });
+  }
+}
+
 /** An attempt's ergonomic facade. Outcome helpers are pure, renew/settle explicitly write. */
 export class WorkRun<I, O, R extends string> {
   /** Fresh local cancellation signal supplied by the managed runner. */
@@ -77,20 +158,27 @@ export class WorkRun<I, O, R extends string> {
       ? [result?: O, options?: { next?: WorkRequest[] }]
       : [result: O, options?: { next?: WorkRequest[] }]
   ): WorkOutcome<O, R> {
-    return succeed((args[0] ?? null) as O, args[1]) as WorkOutcome<O, R>;
+    return (args.length === 0 ? succeed() : succeed(args[0], args[1])) as WorkOutcome<O, R>;
   }
   retry(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return retry(reason, timing);
   }
-  defer(reason: R, timing: WorkTiming): WorkOutcome<O, R> {
+  defer(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return defer(reason, timing);
   }
-  fail(reason: R, options: { manualRetry?: boolean } = {}): WorkOutcome<O, R> {
-    return fail(reason, options);
+  fail(
+    reason: R,
+    options: { manualRetry?: boolean; result?: O; next?: WorkRequest[] } = {},
+  ): WorkOutcome<O, R> {
+    return fail<R, O>(reason, options);
   }
   /** JSON transport contains only input, lease and store time, never store/configuration internals. */
   toJSON(): { input: I; attempt: WorkAttempt; observedAt: number } {
     return copy({ input: this.input, attempt: this.attempt, observedAt: this.observedAt });
+  }
+  /** Prepare data for a foreign worker without settling this attempt. */
+  handoff<T>(input: T): WorkHandoff<T> {
+    return { type: 'handoff', input: copy(input) };
   }
   renew(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.queue.renew(this.ref);
@@ -111,23 +199,39 @@ export class WorkQueue<I, O = null, R extends string = string> {
     readonly store: WorkStore,
     readonly scope: string,
     readonly kind: string,
-    readonly definition: WorkDefinition<I, R>,
+    readonly definition: WorkDefinition<I, R, O>,
   ) {}
+  /** Resolve one stable business key from an explicit option or this typed definition. */
+  key(input: I, explicit?: string): string {
+    const key = explicit ?? this.definition.key?.(input);
+    if (!key) throw new WorkConflict('key_conflict');
+    return key;
+  }
+  /** Bind typed input once, then use concise item-level commands. */
+  item(input: I, explicitKey?: string): WorkItem<I, O, R> {
+    return new WorkItem(this, input, this.key(input, explicitKey));
+  }
   /** Create an inert follow-up description. It does not enqueue until success is durably accepted. */
-  request(input: I, options: EnqueueOptions): WorkRequest<I> {
+  request(input: I, options: EnqueueOptions = {}): WorkRequest<I> {
     return copy({
-      id: workId(this.scope, this.kind, options.key),
+      id: workId(this.scope, this.kind, this.key(input, options.key)),
       scope: this.scope,
       kind: this.kind,
-      key: options.key,
+      key: this.key(input, options.key),
       definition: this.definition.version ?? '1',
       input,
-      limits: { ...defaults, ...this.definition.limits, ...options.limits },
+      limits: {
+        ...defaults,
+        ...(typeof this.definition.limits === 'function'
+          ? this.definition.limits(input)
+          : this.definition.limits),
+        ...options.limits,
+      },
       availableAt: options.availableAt ?? 0,
     });
   }
   /** Atomic create-or-return. Same key plus different payload/limits is not a retry. */
-  async enqueue(input: I, options: EnqueueOptions): Promise<WorkSnapshot<I, O, R>> {
+  async enqueue(input: I, options: EnqueueOptions = {}): Promise<WorkSnapshot<I, O, R>> {
     const request = this.request(input, options);
     return this.store.atomic(request.id, (row, now) => {
       if (row) {
@@ -145,6 +249,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       scope: this.scope,
       kind: this.kind,
       select: 'due',
+      definition: this.definition.version ?? '1',
       limit: Math.min(limit * 4, 1000),
     });
     const runs: WorkRun<I, O, R>[] = [];
@@ -165,13 +270,56 @@ export class WorkQueue<I, O = null, R extends string = string> {
     }
     return runs;
   }
+  /**
+   * Claim and prepare work for a foreign worker. The application callback owns only domain
+   * readiness/payload; WorkOnce owns per-item claim, wait/fail settlement, final renewal and
+   * stale-attempt handling.
+   */
+  async handoff<T>(
+    options: { workerId: string; limit?: number },
+    prepare: (
+      run: WorkRun<I, O, R>,
+    ) => WorkHandoff<T> | WorkOutcome<O, R> | Promise<WorkHandoff<T> | WorkOutcome<O, R>>,
+    onError: WorkHandoffErrorHandler<I, O, R>,
+  ): Promise<LeasedWork<T>[]> {
+    const leases: LeasedWork<T>[] = [];
+    for (const run of await this.claim(options)) {
+      try {
+        const prepared = await prepare(run);
+        if (prepared.type !== 'handoff') {
+          await run.settle(prepared);
+          continue;
+        }
+        const renewed = await run.renew();
+        leases.push({
+          input: prepared.input,
+          attempt: run.ref,
+          leaseUntil: renewed.attempt.leaseUntil,
+          observedAt: renewed.observedAt,
+        });
+      } catch (error) {
+        if (error instanceof WorkConflict) continue;
+        try {
+          await run.settle(await onError(run, error));
+        } catch (settleError) {
+          if (!(settleError instanceof WorkConflict)) throw settleError;
+        }
+      }
+    }
+    return leases;
+  }
   /** Atomic owner-bound heartbeat. An old process cannot renew a newer process's lease. */
   async renew(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.store.atomic(ref.workId, (row, now) => {
       this.requireRow(row);
       const next = renewRecord(row, ref, now);
       if (next.phase.state !== 'running') throw new WorkConflict('stale_attempt');
-      return { next, value: { attempt: next.phase.attempt, observedAt: now } };
+      if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
+      return {
+        next,
+        validUntil: row.phase.attempt.leaseUntil,
+        value: { attempt: next.phase.attempt, observedAt: now },
+      };
     });
   }
   /**
@@ -179,42 +327,85 @@ export class WorkQueue<I, O = null, R extends string = string> {
    * There is intentionally no settle(async domainCallback) overload: that would imply false fencing.
    */
   async settle(ref: AttemptRef, outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>> {
-    const submitted = copy(outcome);
-    const submission = canonical(submitted);
+    let submitted = copy(outcome);
+    const submissionHash = await createSubmissionHash(submitted);
     const current = await this.store.getMany([ref.workId]);
     const row = current.rows[0];
     this.requireRow(row);
-    const replay = replayReceipt(row, ref, submission);
+    const replay = replayReceipt(row, ref, submissionHash);
     if (replay) return copy(replay) as WorkPhase<O, R>;
     assertCurrent(row, ref, current.now);
     let decision: RetryDecision | undefined;
-    if (submitted.type === 'retry') {
+    if (submitted.type === 'retry' || submitted.type === 'defer') {
       if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
-      const policy = this.definition.retry ?? { retry: false, manualRetry: true };
-      decision =
-        typeof policy === 'function'
-          ? await policy({
-              input: row.input as I,
-              reason: submitted.reason,
-              attempt: row.phase.attempt,
-              retries: row.retries,
-              elapsedMs: effectiveNow(row, current.now) - (row.firstStartedAt ?? current.now),
-            })
-          : policy;
+      const context: RetryContext<I, R> = {
+        input: row.input as I,
+        reason: submitted.reason,
+        attempt: row.phase.attempt,
+        retries: row.retries,
+        deferrals: row.deferrals,
+        elapsedMs: effectiveNow(row, current.now) - (row.firstStartedAt ?? current.now),
+      };
+      if (submitted.type === 'retry') {
+        const policy = this.definition.retry ?? { retry: false, manualRetry: true };
+        decision = typeof policy === 'function' ? await policy(context) : policy;
+      } else if (submitted.at === undefined && submitted.afterMs === undefined) {
+        const policy = this.definition.defer ?? { afterMs: 1000 };
+        const timing = typeof policy === 'function' ? await policy(context) : policy;
+        submitted = { ...submitted, ...timing };
+      }
+    }
+    if (this.definition.next && submitted.type === 'succeed') {
+      if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
+      const planned = await this.definition.next({
+        input: row.input as I,
+        result: submitted.result,
+        attempt: row.phase.attempt,
+        outcome: 'succeed',
+      });
+      submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
+    } else if (
+      this.definition.next &&
+      submitted.type === 'fail' &&
+      submitted.result !== undefined
+    ) {
+      if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
+      const result = submitted.result;
+      const planned = await this.definition.next({
+        input: row.input as I,
+        result,
+        attempt: row.phase.attempt,
+        outcome: 'fail',
+        reason: submitted.reason,
+      });
+      submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
     }
     // Snapshot resolved policy so a caller cannot mutate it while a remote adapter is awaiting IO.
     const resolved = decision === undefined ? undefined : copy(decision);
     return this.store.atomic(ref.workId, (fresh, now) => {
       this.requireRow(fresh);
-      const duplicate = replayReceipt(fresh, ref, submission);
+      const duplicate = replayReceipt(fresh, ref, submissionHash);
       if (duplicate) return { value: duplicate as WorkPhase<O, R> };
-      const next = settleRecord(fresh, ref, submitted, submission, resolved, now);
-      return { next, value: next.phase as WorkPhase<O, R> };
+      const next = settleRecord(fresh, ref, submitted, submissionHash, resolved, now);
+      if (fresh.phase.state !== 'running') throw new WorkConflict('stale_attempt');
+      return {
+        next,
+        validUntil: fresh.phase.attempt.leaseUntil,
+        value: next.phase as WorkPhase<O, R>,
+      };
     });
   }
   /** Inspect a key. This is not authorization; expose only app-authorized keys over your transport. */
   async inspect(key: string): Promise<WorkSnapshot<I, O, R> | undefined> {
     return (await this.inspectMany([key]))[0];
+  }
+  /** Read an authenticated worker's opaque id; scope/kind/version are still checked by the queue. */
+  async inspectId(id: string): Promise<WorkSnapshot<I, O, R> | undefined> {
+    const result = await this.store.getMany([id]);
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    this.assertDefinition(row);
+    return this.snapshot(row, result.now);
   }
   /** One batched read, preserving the caller's order and missing entries. */
   async inspectMany(keys: readonly string[]): Promise<(WorkSnapshot<I, O, R> | undefined)[]> {
@@ -227,6 +418,79 @@ export class WorkQueue<I, O = null, R extends string = string> {
     const row = result.rows[0];
     this.requireRow(row);
     return copy(row.history);
+  }
+  /** Explicitly restart the current terminal generation: failed -> retry, succeeded -> rerun. */
+  async restart(options: {
+    key: string;
+    expectedGeneration?: number;
+    check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
+  }): Promise<WorkSnapshot<I, O, R>> {
+    let expectedRevision: number | undefined;
+    if (options.check) {
+      const snapshot = await this.inspect(options.key);
+      if (!snapshot) throw new WorkConflict('not_found');
+      if (!(await options.check(snapshot))) throw new WorkConflict('retry_denied');
+      expectedRevision = snapshot.revision;
+    }
+    return this.store.atomic(workId(this.scope, this.kind, options.key), (row, now) => {
+      this.requireRow(row);
+      if (expectedRevision !== undefined && row.revision !== expectedRevision)
+        throw new WorkConflict('generation_conflict');
+      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
+        throw new WorkConflict('generation_conflict');
+      const next =
+        row.phase.state === 'failed'
+          ? retryRecord(row, row.generation, now)
+          : row.phase.state === 'succeeded'
+            ? rerunRecord(row, row.generation, now)
+            : undefined;
+      if (!next) return { value: this.snapshot(row, now) };
+      return { next, value: this.snapshot(next, now) };
+    });
+  }
+  /** Cancel whatever unfinished generation is current and return the attempt that was running. */
+  async cancelCurrent(options: {
+    key: string;
+    expectedGeneration?: number;
+    reason?: string;
+  }): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
+    return this.store.atomic(workId(this.scope, this.kind, options.key), (row, now) => {
+      this.requireRow(row);
+      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
+        throw new WorkConflict('generation_conflict');
+      const activeAttempt =
+        row.phase.state === 'running'
+          ? {
+              workId: row.phase.attempt.workId,
+              generation: row.phase.attempt.generation,
+              fence: row.phase.attempt.fence,
+            }
+          : undefined;
+      const next = cancelRecord(row, row.generation, options.reason ?? 'cancelled', now);
+      return {
+        ...(next === row ? {} : { next }),
+        value: {
+          snapshot: this.snapshot(next, now),
+          ...(activeAttempt ? { activeAttempt } : {}),
+        },
+      };
+    });
+  }
+  /** Wake the current queued/waiting generation after the caller revalidated its domain condition. */
+  async wakeCurrent(options: {
+    key: string;
+    expectedGeneration?: number;
+  }): Promise<WorkSnapshot<I, O, R>> {
+    return this.store.atomic(workId(this.scope, this.kind, options.key), (row, clock) => {
+      this.requireRow(row);
+      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
+        throw new WorkConflict('generation_conflict');
+      const now = effectiveNow(row, clock);
+      if (row.phase.state !== 'waiting' && row.phase.state !== 'queued')
+        throw new WorkConflict('not_waiting');
+      const next = changed(row, { ...row.phase, availableAt: now }, now, 'wake');
+      return { next, value: this.snapshot(next, now) };
+    });
   }
   /** Manual retry gate is evaluated now, then revision/generation checked again at commit. */
   async retry(options: {
@@ -247,6 +511,28 @@ export class WorkQueue<I, O = null, R extends string = string> {
       if (expectedRevision !== undefined && row.revision !== expectedRevision)
         throw new WorkConflict('generation_conflict');
       const next = retryRecord(row, options.generation, now);
+      return { next, value: this.snapshot(next, now) };
+    });
+  }
+  /** Explicitly run a successfully completed item again as a new generation. */
+  async rerun(options: {
+    key: string;
+    generation: number;
+    check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
+  }): Promise<WorkSnapshot<I, O, R>> {
+    const id = workId(this.scope, this.kind, options.key);
+    let expectedRevision: number | undefined;
+    if (options.check) {
+      const snapshot = await this.inspect(options.key);
+      if (!snapshot) throw new WorkConflict('not_found');
+      if (!(await options.check(snapshot))) throw new WorkConflict('retry_denied');
+      expectedRevision = snapshot.revision;
+    }
+    return this.store.atomic(id, (row, now) => {
+      this.requireRow(row);
+      if (expectedRevision !== undefined && row.revision !== expectedRevision)
+        throw new WorkConflict('generation_conflict');
+      const next = rerunRecord(row, options.generation, now);
       return { next, value: this.snapshot(next, now) };
     });
   }
@@ -318,43 +604,89 @@ export class WorkQueue<I, O = null, R extends string = string> {
 /** Scope one kernel facade to an installation/tenant; the store remains application-supplied. */
 export function createWorkOnce(options: { store: WorkStore; scope: string }) {
   const { store, scope } = options;
+  // A delivery fairness cursor is only a scan optimization, never ownership or durable truth.
+  let outboxAfterId: string | undefined;
   const work = {
     define<I, O = null, R extends string = string>(
       kind: string,
-      definition: WorkDefinition<I, R> = {},
+      definition: WorkDefinition<I, R, O> = {},
     ): WorkQueue<I, O, R> {
       return new WorkQueue(store, scope, kind, definition);
     },
     /** Recoverable outbox dispatch. Parent success and intent are atomic; child insertion is deduped. */
     async dispatch(options: { limit?: number } = {}): Promise<number> {
       const limit = integer(options.limit ?? 100, 'limit', 1);
-      const result = await store.query({ scope, select: 'outbox', limit });
-      let sent = 0;
-      for (const parent of result.rows) {
-        for (const request of parent.outbox) {
-          if (sent === limit) return sent;
-          if (request.scope !== scope) throw new WorkConflict('key_conflict');
-          await store.atomic(request.id, (row, now) => {
-            if (row) {
-              if (!sameRequest(row, request)) throw new WorkConflict('key_conflict');
-              return { value: null };
-            }
-            return { next: createRecord(request, now), value: null };
-          });
-          await store.atomic(parent.id, (row, clock) => {
-            if (!row || row.generation !== parent.generation || row.fence !== parent.fence)
-              throw new WorkConflict('stale_attempt');
-            const next = changed(
-              { ...row, outbox: row.outbox.filter((item) => item.id !== request.id) },
-              row.phase,
-              effectiveNow(row, clock),
-              'dispatch',
-            );
-            return { next, value: null };
-          });
-          sent += 1;
-        }
+      let result = await store.query({
+        scope,
+        select: 'outbox',
+        limit,
+        ...(outboxAfterId === undefined ? {} : { afterId: outboxAfterId }),
+      });
+      if (!result.rows.length && outboxAfterId !== undefined) {
+        outboxAfterId = undefined;
+        result = await store.query({ scope, select: 'outbox', limit });
       }
+      if (!result.rows.length) return 0;
+      let sent = 0;
+      let attempted = 0;
+      const failures: unknown[] = [];
+      for (const parent of result.rows) {
+        outboxAfterId = parent.id;
+        for (const request of parent.outbox) {
+          if (attempted >= limit) break;
+          attempted++;
+          try {
+            if (request.scope !== scope) throw new WorkConflict('key_conflict');
+            await store.atomic(request.id, (row, now) => {
+              if (row) {
+                if (!sameRequest(row, request)) throw new WorkConflict('key_conflict');
+                return { value: null };
+              }
+              return { next: createRecord(request, now), value: null };
+            });
+            await store.atomic(parent.id, (row, clock) => {
+              if (!row || row.generation !== parent.generation || row.fence !== parent.fence)
+                throw new WorkConflict('stale_attempt');
+              if (!row.outbox.some((item) => item.id === request.id)) return { value: null };
+              const next = changed(
+                { ...row, outbox: row.outbox.filter((item) => item.id !== request.id) },
+                row.phase,
+                effectiveNow(row, clock),
+                'dispatch',
+              );
+              return { next, value: null };
+            });
+            sent++;
+          } catch (error) {
+            failures.push(error);
+            // Retain the failed intent but move it behind siblings, even with a one-child pass limit.
+            try {
+              await store.atomic(parent.id, (row, clock) => {
+                if (!row || row.generation !== parent.generation || row.fence !== parent.fence)
+                  return { value: null };
+                const failed = row.outbox.find((item) => item.id === request.id);
+                if (!failed || row.outbox.length < 2) return { value: null };
+                const next = changed(
+                  {
+                    ...row,
+                    outbox: [...row.outbox.filter((item) => item.id !== request.id), failed],
+                  },
+                  row.phase,
+                  effectiveNow(row, clock),
+                  'dispatch',
+                );
+                return { next, value: null };
+              });
+            } catch {
+              /* Rotation improves fairness only; the original durable intent and error remain. */
+            }
+          }
+        }
+        if (attempted >= limit) break;
+      }
+      // A poison child stays visible, but cannot stop healthy siblings or the next scan page.
+      if (failures.length === 1) throw failures[0];
+      if (failures.length) throw new AggregateError(failures, 'Some follow-up deliveries failed');
       return sent;
     },
     /** Supervise the durable follow-up pump alongside application workers. No in-memory hook is required. */

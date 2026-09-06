@@ -1,86 +1,107 @@
-# Storage contract
+# One store, shared by every work kind
 
-`WorkStore.atomic(id, decide)` is the correctness boundary. The store loads one detached row,
-reads its trusted clock, evaluates a **synchronous, side-effect-free** decision, commits the
-returned `next` row, and only then resolves its returned value. It must serialize this operation
-against every other writer of that item in the declared deployment.
+Applications supply storage once. The kernel owns the work records, retry/defer decisions,
+claim fences, terminal results and follow-up intents. Features do not store second copies of
+those fields in domain rows. Domain status, identity, authorization and external-effect safety
+remain application responsibilities.
 
-A database transaction, atomic CAS loop, or equivalent provider primitive can implement this.
-A CAS adapter may evaluate the decision again after contention. It must re-read the clock too.
-Do not invoke retry policy or domain side effects inside a retried storage decision. Never call
-an async decision and pretend that the promise is covered by an earlier compare.
+## Native compare-and-swap port
 
-The insert-if-missing case participates in the same boundary. Scope, kind and key are encoded
-unambiguously as a work identity. Do not remove/reuse an identity while older attempts might
-exist. Every committed claim advances its fence across manual retry generations.
+`createCompareExchangeStore` takes three operations:
 
-`getMany` preserves input order and missing entries. `query` provides bounded due, outbox and
-all-item views. Candidate discovery does not itself grant ownership: `atomic` must still check
-fresh eligibility. Duplicate/racing candidate reads are fine; unconditional saves are not.
+```ts
+interface CompareExchangePort {
+  getMany(ids: readonly string[]): Promise<{
+    rows: (WorkRecord | undefined)[];
+    now: number;
+  }>;
+  query(query: WorkQuery): Promise<{ rows: WorkRecord[]; now: number }>;
+  compareExchange(change: CompareExchange): Promise<boolean>;
+}
+```
 
-Adapters return detached JSON data. Numeric timestamps/counters must round-trip exactly;
-functions, Dates and arbitrary class instances are not work payloads. Results returned by
-`atomic` in the supplied adapters are detached JSON values as well. Use `null`, not `undefined`,
-for an empty returned value.
+`getMany` returns detached rows in the caller's order, with the trusted storage clock even when
+no records exist. `query` applies scope, kind, definition, due time, cursor and limit in storage.
+Candidate discovery is not ownership. The later compare-and-swap must recheck the exact version.
 
-## Clock and durability
+`compareExchange` receives the stable id, expected revision (absent means insert-if-absent),
+complete next record and optional exclusive `validUntil`. It must atomically require both the
+revision and `storageNow < validUntil`. The time guard belongs **in the write**, not merely in a
+preceding read. That prevents a delayed heartbeat/completion from committing after lease expiry,
+even when no second worker has reclaimed the record yet.
 
-Use one trusted clock associated with the storage authority. The kernel clamps a given item's
-clock to its last stored update time, but does not solve arbitrary clock skew between independent
-servers. Lease equality means expired. Expiration is checked **inside** the atomic operation.
+Return `true` only after a durable write. Return `false` only when storage proves the comparison
+did not apply. Throw on network/commit ambiguity. The builder retries ordinary contention, but
+never assumes that an unknown acknowledgement means nothing happened. Claim loss recovers by
+lease expiry; identical accepted settlement redelivery returns its saved receipt.
 
-SQLite obtains time from SQL while holding the write transaction. The clock override is for
-conformance tests. SQLite uses WAL, FULL synchronous commits and a busy timeout. Its local-file
-adapter supports independent processes sharing that local file, not separate files in isolated
-containers or an assumed-safe network filesystem.
+Native database drivers belong to the application's adapter. There is no Parse/ORM wrapper or
+implicit process-local-lock fallback in this package. Multi-process guarantees must be tested
+against that actual native store, not inferred from the memory reference.
 
-A claimed lease is not a promise that only one physical handler is alive. An old handler can
-still execute after a timeout; it simply cannot commit queue state with its old fence. Cooperative
-external systems need their own idempotency keys or fencing. Queuing and unrelated application
-DB writes are not automatically one transaction.
+## Full atomic interface
 
-## Embedded application rows
+Advanced adapters may implement `WorkStore.atomic(id, decide)` directly. The decision is a
+synchronous deterministic function of `(row, now)` only. It must not read clocks, use random
+values, perform IO, mutate captured state or await application callbacks. CAS adapters can
+re-evaluate it after contention. `next` and the returned value must remain detached from storage.
 
-`createEmbeddedStore(port)` reduces glue when an existing row already has durable work intent.
-Its `commit(row, next)` can persist work state and a small application projection in the same
-row. The port's `exclusive` operation must cover load through commit and every competing
-application writer. A transient network lease around an unconditional save is not sufficient.
+The store commits the returned row durably before resolving. `validUntil`, when supplied, must
+hold at its write linearization point. If expiry occurs between read and write, the operation
+must reject/re-evaluate instead of accepting stale authority. SQLite enforces the condition in
+its prepared write statement. The reference store rechecks before updating its map.
 
-A port supplied with a process-local mutex has a **single-backend-process** deployment contract.
-It can serve parallel external workers but must not be labeled a multi-backend adapter.
-An application with multiple API replicas must provide a real shared conditional transaction
-or equivalent protected write before claiming that stronger guarantee.
+IDs are unambiguous ASCII-escaped tuples of scope/kind/key. Preserve their bytewise ordering in
+cursor queries. Do not delete or reuse an id while an old attempt/receipt may remain in flight.
+A claim advances the fence across manual-retry generations. Counters and times must round-trip
+as exact safe integers; requests whose timing arithmetic already overflows are rejected before
+insertion.
+
+## Clocks and side effects
+
+Use a trusted clock associated with storage. The kernel prevents one record's update time from
+moving backward, but cannot repair arbitrary clock skew between unrelated authorities. Equality
+with lease expiry means expired. A stored lease is not evidence that the physical handler has
+stopped; cancellation/expiry cannot unsend a remote HTTP request.
+
+Cooperative external systems need their own idempotency keys or fencing. Queuing and unrelated
+application writes are not automatically a transaction. There is intentionally no
+`settle(ref, async () => writeDomainRows())` API claiming that an earlier lease check protects
+later writes. Use real shared transactions, durable outbox intent, or explicit idempotent recovery.
+
+If successful work already proves the external operation happened, read that result rather than
+maintaining another mutable copy of the same terminal status in a domain object.
 
 ## Conformance
 
+Run the shared suite unchanged against a fresh test database:
+
 ```ts
 import { runConformance } from '@workonce/core/conformance';
-
-await runConformance(async () => {
-  const fixture = await createEmptyTestDatabase();
-  return {
-    store: fixture.store,
-    advance: (ms) => fixture.advanceStorageClock(ms),
-    close: () => fixture.destroyOnlyTestData(),
-  };
-});
+await runConformance(async () => ({
+  store: await createTestStore(),
+  advance: (ms) => advanceTrustedTestClock(ms),
+  close: () => removeOnlyThisTestDatabase(),
+}));
 ```
 
-Run the suite unchanged. Then add separate OS-process, lost-ACK, crash/restart and durability tests
-for your real deployment. In-memory `Promise.all` tests alone do not certify cross-process writes.
-If the provider cannot supply the contract, do not hide a weaker implementation behind the same
-adapter name.
+Also run separate-process competition, worker death/restart, native deadline checks and unknown
+acknowledgement injection for the actual deployment. Promise races inside one process are not
+sufficient evidence for a multi-backend claim.
 
-## Performance boundaries
+## Performance and lifecycle
 
-The facade currently performs a bounded candidate query followed by per-item atomic claims.
-It does not pretend every provider supports a single bulk claim statement. `inspectMany` batches
-the caller's read; SQLite implements that within a read transaction using a prepared statement.
+Claiming uses bounded indexed discovery followed by per-item native atomic writes. The current
+facade does not claim every provider supports one bulk statement. `inspectMany` batches reads.
+SQLite caches prepared query shapes and uses a short write transaction; SQLite itself serializes
+writers per database file. Other adapters may allow per-row parallel writes.
 
-No global library mutex or network service exists. SQLite itself has one writer per database
-file. Other adapters may use per-row concurrency. Heartbeats do not append history events, but
-the reference SQLite adapter currently rewrites the compact JSON work row; use small payloads
-and understand this cost before applying it to high-rate, very large payloads.
+Heartbeats do not append history. SQLite currently rewrites the compact JSON row, so payloads
+should be references/small records, not file bodies. History is bounded to 128 transitions.
+The dispatcher retains failed intents, attempts healthy siblings and advances a fairness cursor;
+its cursor is an optimization, not durable authority.
 
-The retained transition history is the last 128 transitions, not an unlimited audit ledger.
-A benchmark is a measurement of that adapter and hardware, not a promise of application speedup.
+Backups and restore must include the native work store, not only application ORM classes. A
+separate work database needs its own coordinated backup/restore and worker fence. This kernel
+does not silently add tables to an application's portable backup format or pretend domain
+reconciliation can recover every lost receipt or retry budget.

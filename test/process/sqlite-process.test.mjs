@@ -10,7 +10,7 @@ import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 const childUrl = new URL('./worker-child.mjs', import.meta.url);
 function start(path, mode, id) {
-  return fork(childUrl, [path, mode, id], { stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
+  return fork(childUrl, [path, mode, id], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
 }
 async function message(child) {
   const timer = AbortSignal.timeout(15000);

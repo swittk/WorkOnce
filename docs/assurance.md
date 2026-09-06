@@ -1,65 +1,61 @@
-# What the checks establish
+# Verification boundaries
 
-The suite is deliberately split by what it actually exercises.
+## Shared and native adapter tests
 
-## Shared adapter conformance
+`src/conformance.ts` contains 17 shared scenarios. They cover competing claims, exact lease
+expiry, stale renew/settle/retry/defer/failure rejection, delayed retry eligibility, bounded
+prerequisite waiting, manual generations/gates, async policy races, retry denial, report replay,
+cancel/complete races, crashed-attempt budgets, deadlines, outbox delivery, wake revisions,
+scope/version boundaries and immutable rollback assertions.
 
-`src/conformance.ts` currently contains 17 scenarios. It tests competing claims, exact lease
-expiry, every stale settlement kind, current-owner renewal, backoff timing, separate bounded
-deferrals, manual retry gates/generations, async policy evaluation racing reclaim, non-retryable
-reasons, identical/conflicting report replay, cancellation/completion races, crashed-attempt
-budgets, elapsed deadlines, outbox delivery races, invalid follow-ups, wake revision checks,
-scope/version boundaries and rollback of a failed store decision.
+The public tests run that suite against memory, real SQLite and a native-CAS test port. A BYO
+application adapter runs the same suite independently; a tested reference port does not certify
+a different database or application transaction boundary.
 
-It runs against memory, actual SQLite and the generic embedded-row helper with an explicitly
-serialized test port. The embedded test fixture is not a certification of an arbitrary host
-application's mutex or database topology.
+Additional regression tests cover:
 
-## Runtime and real-process checks
+- Expiry between read and actual native write, and an unknown CAS acknowledgement.
+- Per-input limits and asynchronous retry, wait and continuation-planning callbacks.
+- Cancellation/reclaim while a policy or continuation callback is waiting.
+- Identical accepted outcomes not re-running those callbacks.
+- Undefined result rejection, safe arithmetic, version filtering before limits, Unicode cursor order.
+- Poison follow-up isolation/fairness, including a one-child dispatch limit.
+- Async error observer rejection and truthful cancellation assertions.
+- Managed parallel handlers, renewal, free-slot refill, safe worker serialization and inspection.
 
-`test/worker.test.mjs` tests bounded parallel handlers, automatic renewal, free-slot refill,
-neighbor failure isolation and abort after renewal failure.
+`test/process/sqlite-process.test.mjs` starts eight independent processes against the same SQLite
+file, then separately kills an owning worker with SIGKILL, reopens storage, reclaims its lease
+and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of
+network filesystems or untested third-party stores.
 
-`test/crash.test.mjs` injects lost acknowledgements after success and child insertion.
-`test/dispatcher.test.mjs` tests the recoverable follow-up pump and bounded delivery passes.
-`test/inspection.test.mjs` tests safe worker serialization and preserving application failure
-reasons separately from budget exhaustion.
+`npm run test:consumer` packs and installs the real clean-built distribution in an isolated
+consumer, runs ESM/CommonJS round trips and compiles both TypeScript module styles.
+`npm run check` also compiles the developer-facing typed API examples.
 
-`test/process/sqlite-process.test.mjs` starts eight independent Node processes against one
-SQLite file, races their claims, kills a claimed worker with SIGKILL, waits for its lease,
-reopens storage, reclaims with a higher fence and rejects the old process's callback.
+## Bounded formal model
 
-`npm run test:consumer` packs the real distribution, installs it into an isolated consumer,
-executes ESM and CommonJS round trips and compiles both module styles against the packed types.
+The model retains **every issued attempt token**, including older attempts from the same worker.
+Claims append tokens; success/failure/retry/renew select an individual token and must match the
+current generation/fence and unexpired lease. This tests the stale-token case rather than
+replacing old worker tokens with their latest value.
 
-`test/types/api.ts` checks the developer-facing input/result/reason types, timing alternatives,
-manual generation requirement and discriminated snapshots. `npm run check` compiles it.
+The configured bounds are two workers, four time ticks, four fences, two generations, two
+attempts and one automatic retry. TLC explored **8,310 distinct states / 13,782 generated**,
+complete graph depth 15, with no invariant violation. Invariants cover one authoritative owner,
+current-fence success, state/counter bounds and the parent/child outbox relationship.
 
-## Bounded TLA model
+This is bounded abstract safety evidence, **not a complete implementation refinement proof**.
+It does not model database internals, external side effects, all callback implementations or
+all deferred-work policies. Native tests and fault injection cover cases outside that small model.
 
-`formal/WorkOnce.tla` models a single work item, worker tokens, claims, retries, expiry,
-cancellation, manual generations and a durable outbox child. The checked configuration has
-2 workers, 4 time ticks, 4 fences, 2 generations, 2 attempts and 1 automatic retry.
+The pinned official TLC release is `v1.7.4`, SHA-256
+`936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88`.
+CI verifies the tool digest. Set `TLA2TOOLS_JAR` or use ignored `.artifacts/tla2tools.jar` locally.
 
-The initial run with TLC 2.19 explored 6,262 distinct states (10,546 generated, graph depth 15)
-without an invariant violation. It checks bounded ownership/state/outbox safety. It does not
-model SQL/Mongo internals, network storage durability, application writes, arbitrary retry
-callbacks, or exactly-once external effects. It does not claim a machine-checked full refinement
-proof from the TypeScript implementation to TLA. Runtime/conformance tests cover additional
-features such as deferral and dynamic callbacks which that small model does not yet include.
+## Explicit limits
 
-Install the official `tla2tools.jar` and set `TLA2TOOLS_JAR`; `scripts/formal.mjs` fails explicitly
-if the jar is missing. A local `.artifacts/tla2tools.jar` is also accepted and is never committed.
-
-## Release/review boundary
-
-Passing these checks is evidence, not a production certification. Deployment claims are limited
-to the adapters and failure modes actually exercised. This first version has memory and SQLite
-adapters and an embedded-port helper, not every database adapter discussed during planning.
-There is no migration, garbage-collection/tombstone API or distributed global-capacity limiter.
-
-Application integration must also verify authorization, its real transaction/serialization
-boundary, domain cancellation/cleanup ordering, and idempotent external operations. A queue
-fence alone cannot protect an arbitrary callback that was merely preceded by a lease check.
-
-The checked official TLC release is `v1.7.4`, SHA-256 `936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88`. CI verifies that digest before executing it.
+No distributed-global capacity limiter, arbitrary workflow replay, automatic database migration,
+ID reuse/garbage collection or exactly-once external-effect claim is made. The old per-domain
+embedded adapter helper was removed; supply one proven native store shared by all work kinds.
+Production deployment additionally needs authentication, an appropriate storage clock,
+coordinated backup/restore, correct external idempotency and the application's own domain guards.

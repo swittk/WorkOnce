@@ -67,7 +67,10 @@ export function copy<T>(value: T): T {
 }
 /** Caller keys are encoded, not delimiter-concatenated. */
 export function workId(scope: string, kind: string, key: string): string {
-  return JSON.stringify([scope, kind, key]);
+  return JSON.stringify([scope, kind, key]).replace(
+    /[^\x20-\x7e]/g,
+    (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'),
+  );
 }
 /** A request identity never silently changes its meaning when submitted twice. */
 export function sameRequest(row: WorkRequest, request: WorkRequest): boolean {
@@ -86,6 +89,10 @@ export function createRecord(request: WorkRequest, now: number): WorkRecord {
   integer(request.limits.maxAttempts, 'maxAttempts', 1);
   integer(request.limits.maxElapsedMs, 'maxElapsedMs', 1);
   integer(request.limits.maxDeferrals, 'maxDeferrals');
+  // Reject impossible timestamp arithmetic before an unclaimable item reaches storage.
+  const earliestStart = Math.max(now, request.availableAt);
+  add(earliestStart, request.limits.leaseMs);
+  add(earliestStart, request.limits.maxElapsedMs);
   return {
     ...copy(request),
     revision: 1,
@@ -235,20 +242,22 @@ export function renewRecord(row: WorkRecord, ref: AttemptRef, clock: number): Wo
 export function replayReceipt(
   row: WorkRecord,
   ref: AttemptRef,
-  submission: string,
+  submissionHash: string,
 ): WorkPhase | undefined {
   if (row.id !== ref.workId || row.generation !== ref.generation)
     throw new WorkConflict('stale_attempt');
   if (row.receipt?.attempt.fence !== ref.fence) return undefined;
-  if (row.receipt.submission !== submission) throw new WorkConflict('settlement_conflict');
-  return row.receipt.phase;
+  if (row.receipt.submissionHash !== submissionHash) throw new WorkConflict('settlement_conflict');
+  if (row.receipt.phase) return row.receipt.phase;
+  if (row.phase.state === 'succeeded' || row.phase.state === 'failed') return row.phase;
+  throw new WorkConflict('stale_attempt');
 }
 /** Pure settlement. Call it only inside an atomic store operation; it never invokes application callbacks. */
 export function settleRecord(
   row: WorkRecord,
   ref: AttemptRef,
   outcome: WorkOutcome,
-  submission: string,
+  submissionHash: string,
   decision: RetryDecision | undefined,
   clock: number,
 ): WorkRecord {
@@ -274,15 +283,29 @@ export function settleRecord(
       phase = { state: 'succeeded', result: copy(outcome.result), completedAt: now };
       break;
     }
-    case 'fail':
+    case 'fail': {
+      const ids = new Set<string>();
+      for (const request of outcome.next) {
+        if (
+          request.scope !== row.scope ||
+          request.id === row.id ||
+          request.id !== workId(request.scope, request.kind, request.key) ||
+          ids.has(request.id)
+        )
+          throw new WorkConflict('key_conflict');
+        createRecord(request, now);
+        ids.add(request.id);
+      }
       phase = {
         state: 'failed',
         reason: outcome.reason,
         manualRetry: outcome.manualRetry,
         failedAt: now,
+        ...(outcome.result === undefined ? {} : { result: copy(outcome.result) }),
         stoppedBy: 'reported_failure',
       };
       break;
+    }
     case 'retry':
     case 'defer': {
       const isRetry = outcome.type === 'retry';
@@ -324,10 +347,10 @@ export function settleRecord(
   const next = changed({ ...row, retries, deferrals }, phase, now, outcome.type);
   next.receipt = {
     attempt: { workId: row.id, generation: ref.generation, fence: ref.fence },
-    submission,
-    phase: copy(phase),
+    submissionHash,
+    ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}),
   };
-  if (outcome.type === 'succeed') next.outbox = copy(outcome.next);
+  if (outcome.type === 'succeed' || outcome.type === 'fail') next.outbox = copy(outcome.next);
   return next;
 }
 /** Explicit retry uses a generation precondition; duplicate clicks cannot restart a later failure. */
@@ -337,10 +360,39 @@ export function retryRecord(row: WorkRecord, generation: number, clock: number):
     throw new WorkConflict('retry_denied');
   const now = effectiveNow(row, clock);
   const next = changed(
-    { ...row, generation: add(row.generation, 1), attempts: 0, retries: 0, deferrals: 0 },
+    {
+      ...row,
+      generation: add(row.generation, 1),
+      attempts: 0,
+      retries: 0,
+      deferrals: 0,
+      outbox: [],
+    },
     { state: 'queued', availableAt: now },
     now,
     'manual_retry',
+  );
+  delete next.firstStartedAt;
+  delete next.receipt;
+  return next;
+}
+/** Explicit rerun of a completed generation. Enqueue itself never revives completed work. */
+export function rerunRecord(row: WorkRecord, generation: number, clock: number): WorkRecord {
+  if (row.generation !== generation) throw new WorkConflict('generation_conflict');
+  if (row.phase.state !== 'succeeded') throw new WorkConflict('retry_denied');
+  const now = effectiveNow(row, clock);
+  const next = changed(
+    {
+      ...row,
+      generation: add(row.generation, 1),
+      attempts: 0,
+      retries: 0,
+      deferrals: 0,
+      outbox: [],
+    },
+    { state: 'queued', availableAt: now },
+    now,
+    'rerun',
   );
   delete next.firstStartedAt;
   delete next.receipt;
