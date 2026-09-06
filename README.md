@@ -128,9 +128,11 @@ const recentHistory = await convert.history(key); // last 128 transitions
 
 The manual retry gate is re-evaluated at action time, and its observed revision/generation is
 checked again at commit. A second click for the same failed generation cannot restart a later
-generation. A stored `manualRetry: false` is not bypassed by a callback returning true.
-Application authorization and checks involving other domain rows still need their own atomic
-boundary; this check does not lock another database.
+generation. A stored `manualRetry: false` is not bypassed by a callback returning true. Retry and
+rerun are also denied while the terminal generation still has undispatched durable follow-ups;
+drain that outbox first so a new generation cannot overwrite committed intent. Application
+authorization and checks involving other domain rows still need their own atomic boundary; this
+check does not lock another database.
 
 `cancel({ key, generation, reason })` revokes an unfinished attempt. Already succeeded, failed
 or cancelled items stay terminal; the returned snapshot says what actually happened.

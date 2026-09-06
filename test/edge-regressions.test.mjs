@@ -76,6 +76,45 @@ test('a permanently conflicting child cannot starve its sibling even with limit 
   assert.ok(await child.inspect('healthy'));
   assert.equal((await q.inspect('parent')).pendingFollowups, 1);
 });
+test('a rejecting claim-poll observer still drains active claims before run rejects', async () => {
+  const base = createMemoryStore();
+  let queryCalls = 0;
+  const store = {
+    atomic: (...args) => base.atomic(...args),
+    getMany: (...args) => base.getMany(...args),
+    async query(...args) {
+      queryCalls++;
+      if (queryCalls > 1) throw new Error('claim poll failed');
+      return base.query(...args);
+    },
+  };
+  const q = createWorkOnce({ store, scope: 't' }).define('job');
+  await q.enqueue(null, { key: 'one' });
+  const stop = new AbortController();
+  let handlerFinished = false;
+  await assert.rejects(
+    q.run(
+      {
+        workerId: 'A',
+        concurrency: 2,
+        signal: stop.signal,
+        onError: async () => {
+          throw new Error('observer failed');
+        },
+      },
+      async (run) => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        handlerFinished = true;
+        return run.succeed();
+      },
+    ),
+    /observer failed/,
+  );
+  assert.equal(handlerFinished, true);
+  assert.equal((await q.inspect('one')).phase.state, 'succeeded');
+  stop.abort();
+});
+
 test('async runner error observers are awaited instead of leaking rejection', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 't' }),
     q = work.define('job');

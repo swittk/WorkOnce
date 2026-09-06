@@ -492,7 +492,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       return { next, value: this.snapshot(next, now) };
     });
   }
-  /** Manual retry gate is evaluated now, then revision/generation checked again at commit. */
+  /** Manual retry gate is evaluated now; pending prior follow-ups must drain before reset. */
   async retry(options: {
     key: string;
     generation: number;
@@ -514,7 +514,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       return { next, value: this.snapshot(next, now) };
     });
   }
-  /** Explicitly run a successfully completed item again as a new generation. */
+  /** Explicitly rerun completed work only after its prior durable follow-ups have drained. */
   async rerun(options: {
     key: string;
     generation: number;

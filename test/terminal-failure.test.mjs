@@ -23,7 +23,7 @@ test('typed failure keeps its diagnostic and atomically records durable follow-u
   assert.ok(await apply.inspect('apply-x'));
 });
 
-test('manual retry removes undispatched failure follow-ups from the old generation', async () => {
+test('manual retry waits for prior failure follow-ups to dispatch', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 't' });
   const apply = work.define('apply');
   const task = work.define('task');
@@ -32,8 +32,14 @@ test('manual retry removes undispatched failure follow-ups from the old generati
   await run.settle(
     run.fail('fix', { manualRetry: true, next: [apply.request(null, { key: 'old' })] }),
   );
-  await task.retry({ key: 'x', generation: 1 });
-  assert.equal((await task.inspect('x')).pendingFollowups, 0);
-  assert.equal(await work.dispatch(), 0);
-  assert.equal(await apply.inspect('old'), undefined);
+  await assert.rejects(
+    task.retry({ key: 'x', generation: 1 }),
+    (error) => error.code === 'retry_denied',
+  );
+  assert.equal((await task.inspect('x')).pendingFollowups, 1);
+  assert.equal(await work.dispatch(), 1);
+  assert.ok(await apply.inspect('old'));
+  const retried = await task.retry({ key: 'x', generation: 1 });
+  assert.equal(retried.generation, 2);
+  assert.equal(retried.pendingFollowups, 0);
 });

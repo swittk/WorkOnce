@@ -139,7 +139,12 @@ export async function runWorker<I, O, R extends string>(
         fatal = error;
         break;
       }
-      await options.onError(error);
+      try {
+        await options.onError(error);
+      } catch (observerError) {
+        fatal = observerError;
+        break;
+      }
       await waitForPoll(idleMs, options.signal);
       continue;
     }

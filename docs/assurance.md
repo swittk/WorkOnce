@@ -17,6 +17,8 @@ Additional regression tests cover:
 - Expiry between read and actual native write, and an unknown CAS acknowledgement.
 - Per-input limits and asynchronous retry, wait and continuation-planning callbacks.
 - Cancellation/reclaim while a policy or continuation callback is waiting.
+- Retry/rerun refusing to erase still-pending terminal follow-up intent.
+- A rejecting runner error observer still draining already-active claims before the runner rejects.
 - Identical accepted outcomes not re-running those callbacks.
 - Undefined result rejection, safe arithmetic, version filtering before limits, Unicode cursor order.
 - Poison follow-up isolation/fairness, including a one-child dispatch limit.

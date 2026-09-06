@@ -21,6 +21,25 @@ test('explicit rerun starts a new fenced generation without weakening enqueue de
   );
 });
 
+test('rerun waits for prior success follow-ups to dispatch', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 't' });
+  const apply = work.define('apply');
+  const q = work.define('render');
+  await q.enqueue(null, { key: 'a' });
+  const [run] = await q.claim({ workerId: 'A' });
+  await run.settle(run.succeed(null, { next: [apply.request(null, { key: 'apply-a' })] }));
+  await assert.rejects(
+    q.rerun({ key: 'a', generation: 1 }),
+    (error) => error.code === 'retry_denied',
+  );
+  assert.equal((await q.inspect('a')).pendingFollowups, 1);
+  assert.equal(await work.dispatch(), 1);
+  assert.ok(await apply.inspect('apply-a'));
+  const rerun = await q.rerun({ key: 'a', generation: 1 });
+  assert.equal(rerun.generation, 2);
+  assert.equal(rerun.pendingFollowups, 0);
+});
+
 test('rerun is explicit: unfinished and failed generations do not masquerade as completed work', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('render');
   await q.enqueue(null, { key: 'a' });

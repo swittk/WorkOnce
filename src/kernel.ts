@@ -353,10 +353,10 @@ export function settleRecord(
   if (outcome.type === 'succeed' || outcome.type === 'fail') next.outbox = copy(outcome.next);
   return next;
 }
-/** Explicit retry uses a generation precondition; duplicate clicks cannot restart a later failure. */
+/** Explicit retry uses a generation precondition and cannot discard prior durable follow-ups. */
 export function retryRecord(row: WorkRecord, generation: number, clock: number): WorkRecord {
   if (row.generation !== generation) throw new WorkConflict('generation_conflict');
-  if (row.phase.state !== 'failed' || !row.phase.manualRetry)
+  if (row.phase.state !== 'failed' || !row.phase.manualRetry || row.outbox.length > 0)
     throw new WorkConflict('retry_denied');
   const now = effectiveNow(row, clock);
   const next = changed(
@@ -366,7 +366,6 @@ export function retryRecord(row: WorkRecord, generation: number, clock: number):
       attempts: 0,
       retries: 0,
       deferrals: 0,
-      outbox: [],
     },
     { state: 'queued', availableAt: now },
     now,
@@ -376,10 +375,11 @@ export function retryRecord(row: WorkRecord, generation: number, clock: number):
   delete next.receipt;
   return next;
 }
-/** Explicit rerun of a completed generation. Enqueue itself never revives completed work. */
+/** Explicit rerun waits for prior durable follow-ups; enqueue itself never revives completed work. */
 export function rerunRecord(row: WorkRecord, generation: number, clock: number): WorkRecord {
   if (row.generation !== generation) throw new WorkConflict('generation_conflict');
-  if (row.phase.state !== 'succeeded') throw new WorkConflict('retry_denied');
+  if (row.phase.state !== 'succeeded' || row.outbox.length > 0)
+    throw new WorkConflict('retry_denied');
   const now = effectiveNow(row, clock);
   const next = changed(
     {
@@ -388,7 +388,6 @@ export function rerunRecord(row: WorkRecord, generation: number, clock: number):
       attempts: 0,
       retries: 0,
       deferrals: 0,
-      outbox: [],
     },
     { state: 'queued', availableAt: now },
     now,
