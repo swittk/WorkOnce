@@ -98,14 +98,14 @@ test('a definition can bind its canonical perform handler once and still allow a
   assert.equal((await queue.item({ id: 'b' }).inspect()).phase.result, 'override:b');
 });
 
-test('runAvailable and run fail before claiming when no bound or explicit perform handler exists', async () => {
+test('worker APIs reject their Promise before claiming when no perform handler exists', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 'missing-perform' });
   const queue = work.define('job');
   await queue.ensure(null, { key: 'a' });
-  assert.throws(() => queue.runAvailable({ workerId: 'local' }), /no perform handler/);
-  assert.equal((await queue.inspect('a')).phase.state, 'queued');
+  await assert.rejects(queue.runAvailable({ workerId: 'local' }), /no perform handler/);
+  await assert.rejects(queue.process({ workerId: 'local' }), /no perform handler/);
   const stop = new AbortController();
-  assert.throws(() => queue.run({ workerId: 'local', signal: stop.signal }), /no perform handler/);
+  await assert.rejects(queue.run({ workerId: 'local', signal: stop.signal }), /no perform handler/);
   assert.equal((await queue.inspect('a')).phase.state, 'queued');
 });
 

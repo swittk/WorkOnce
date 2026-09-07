@@ -27,7 +27,10 @@ test('runAvailable starts jobs in parallel and automatic renewal keeps long jobs
   assert.equal((await q.inspect('0')).attempts, 1);
 });
 test('a one-millisecond lease does not fail solely because automatic heartbeat cannot fit', async () => {
-  const q = createWorkOnce({ store: createMemoryStore(), scope: 'one-ms' }).define('work', {
+  const q = createWorkOnce({
+    store: createMemoryStore({ now: () => 100 }),
+    scope: 'one-ms',
+  }).define('work', {
     limits: { leaseMs: 1, maxAttempts: 2 },
   });
   await q.ensure(null, { key: 'job' });
@@ -36,9 +39,8 @@ test('a one-millisecond lease does not fail solely because automatic heartbeat c
     handlerCalls++;
     return run.succeed();
   });
-  if (result.status === 'interrupted')
-    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
-  else assert.equal(handlerCalls, 1);
+  assert.equal(result.status, 'settled');
+  assert.equal(handlerCalls, 1);
 });
 
 test('claim discovery latency is not charged to a lease granted afterward', async () => {

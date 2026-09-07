@@ -42,6 +42,7 @@ test('external worker runner hides claim heartbeat and settlement plumbing from 
 });
 
 test('a one-millisecond external lease does not fail solely because automatic heartbeat cannot fit', async () => {
+  let heartbeatCalls = 0;
   const transport = {
     async claim() {
       return [
@@ -54,6 +55,7 @@ test('a one-millisecond external lease does not fail solely because automatic he
       ];
     },
     async heartbeat() {
+      heartbeatCalls++;
       throw new Error('unexpected heartbeat');
     },
     async settle() {
@@ -65,9 +67,8 @@ test('a one-millisecond external lease does not fail solely because automatic he
     { workerId: 'relay', signal: new AbortController().signal },
     async (run) => run.succeed(),
   );
-  assert.ok(result);
-  if (result.status === 'interrupted')
-    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+  assert.equal(result?.status, 'settled');
+  assert.equal(heartbeatCalls, 0);
 });
 
 test('external claim response latency cannot extend authoritative ownership', async () => {
@@ -120,6 +121,45 @@ test('external heartbeat failure aborts the handler before it can report success
   assert.equal(sawAbort, true);
   assert.equal(result.status, 'interrupted');
   assert.equal((await queue.inspect('x')).phase.state, 'running');
+});
+
+test('malformed external heartbeat timing aborts ownership before settlement', async () => {
+  let settleCalls = 0;
+  const transport = {
+    async claim() {
+      return [
+        {
+          input: null,
+          attempt: { workId: 'x', generation: 1, fence: 1 },
+          observedAt: 100,
+          leaseUntil: 200,
+        },
+      ];
+    },
+    async heartbeat() {
+      return { leaseUntil: Number.NaN, observedAt: Number.NaN };
+    },
+    async settle() {
+      settleCalls++;
+      return { state: 'succeeded', result: null };
+    },
+  };
+  let sawAbort = false;
+  const [result] = await runExternalAvailable(
+    transport,
+    { workerId: 'relay', heartbeatMs: 5, signal: new AbortController().signal },
+    async (run) => {
+      await sleep(20);
+      sawAbort = run.signal.aborted;
+      run.signal.throwIfAborted();
+      return run.succeed();
+    },
+  );
+  assert.equal(sawAbort, true);
+  assert.equal(result?.status, 'interrupted');
+  if (result?.status === 'interrupted')
+    assert.match(String(result.error), /renewed lease must be positive/);
+  assert.equal(settleCalls, 0);
 });
 
 test('managed external runner refills freed slots and drains active work before observer failure escapes', async () => {

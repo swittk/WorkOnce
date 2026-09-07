@@ -49,6 +49,8 @@ const coverageKeys = [
   'dualExecutorCompetition',
   'externalClaimLimit',
   'oneMillisecondLease',
+  'invalidExternalRenewal',
+  'missingHandlerPromiseRejection',
 ];
 function newCoverage() {
   return Object.fromEntries(coverageKeys.map((key) => [key, 0]));
@@ -464,9 +466,65 @@ async function replayAndDynamicPolicies(coverage) {
     const [result] = await f.queue.runAvailable({ workerId: 'A' }, async (run) =>
       run.succeed({ value: 1 }),
     );
-    if (result.status === 'interrupted')
-      assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+    assert.equal(result.status, 'settled');
     hit(coverage, 'oneMillisecondLease');
+  }
+  {
+    scenarios++;
+    let settleCalls = 0;
+    const transport = {
+      async claim() {
+        return [
+          {
+            input: null,
+            attempt: { workId: 'renewal-invalid', generation: 1, fence: 1 },
+            observedAt: 100,
+            leaseUntil: 200,
+          },
+        ];
+      },
+      async heartbeat() {
+        return { leaseUntil: Number.NaN, observedAt: Number.NaN };
+      },
+      async settle() {
+        settleCalls++;
+        return { state: 'succeeded', result: null };
+      },
+    };
+    let sawAbort = false;
+    const [result] = await runExternalAvailable(
+      transport,
+      { workerId: 'external', heartbeatMs: 1, signal: new AbortController().signal },
+      async (run) => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        sawAbort = run.signal.aborted;
+        run.signal.throwIfAborted();
+        return run.succeed();
+      },
+    );
+    assert.equal(sawAbort, true);
+    assert.equal(result.status, 'interrupted');
+    assert.equal(settleCalls, 0);
+    hit(coverage, 'invalidExternalRenewal');
+  }
+  {
+    scenarios++;
+    const work = createWorkOnce({
+      store: createMemoryStore({ now: () => 1000 }),
+      scope: 'missing-handler',
+    });
+    const queue = work.define('job');
+    await queue.ensure(null, { key: 'x' });
+    const available = queue.runAvailable({ workerId: 'A' });
+    const compat = queue.process({ workerId: 'A' });
+    const managed = queue.run({ workerId: 'A', signal: new AbortController().signal });
+    assert.equal(typeof available.then, 'function');
+    assert.equal(typeof compat.then, 'function');
+    assert.equal(typeof managed.then, 'function');
+    await assert.rejects(available, /no perform handler/);
+    await assert.rejects(compat, /no perform handler/);
+    await assert.rejects(managed, /no perform handler/);
+    hit(coverage, 'missingHandlerPromiseRejection');
   }
   {
     scenarios++;

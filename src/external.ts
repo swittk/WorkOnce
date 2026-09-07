@@ -137,7 +137,10 @@ async function processLease<I, O, R extends string>(
     try {
       const renewed = await transport.heartbeat(lease.attempt);
       if (!stopped && !controller.signal.aborted) {
-        armExpiry(sentAt + renewed.leaseUntil - renewed.observedAt);
+        const renewedLeaseMs = renewed.leaseUntil - renewed.observedAt;
+        if (!Number.isSafeInteger(renewedLeaseMs) || renewedLeaseMs <= 0)
+          throw new RangeError('External renewed lease must be positive');
+        armExpiry(sentAt + renewedLeaseMs);
         if (heartbeatMs !== undefined)
           heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
       }

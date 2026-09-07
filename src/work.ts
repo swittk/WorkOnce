@@ -728,18 +728,21 @@ export class WorkQueue<I, O = null, R extends string = string> {
     });
   }
   /** Run one bounded pass over currently available work using the bound handler by default. */
-  runAvailable(
+  async runAvailable(
     options: WorkerOptions,
     handler?: WorkHandler<I, O, R>,
   ): Promise<RunAvailableResult<O, R>[]> {
     return processClaims(this, options, this.performHandler(handler));
   }
   /** Conventional worker synonym retained for compatibility; prefer `runAvailable()`. */
-  process(options: WorkerOptions, handler?: WorkHandler<I, O, R>): Promise<ProcessResult<O, R>[]> {
+  async process(
+    options: WorkerOptions,
+    handler?: WorkHandler<I, O, R>,
+  ): Promise<ProcessResult<O, R>[]> {
     return this.runAvailable(options, handler);
   }
   /** Run continuously with the bound `perform` handler unless an override is supplied. */
-  run(
+  async run(
     options: WorkerOptions & { signal: AbortSignal },
     handler?: WorkHandler<I, O, R>,
   ): Promise<void> {
