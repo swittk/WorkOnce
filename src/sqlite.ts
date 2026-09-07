@@ -191,6 +191,8 @@ export function createSqliteStore(
       },
       async query(query: WorkQuery) {
         integer(query.limit, 'limit', 1);
+        if (query.select === 'due' && query.afterId !== undefined)
+          throw new RangeError('afterId is not supported for due queries');
         const time = now();
         const clauses = ['scope=?'];
         const params: (string | number)[] = [query.scope];

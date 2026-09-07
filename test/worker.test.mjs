@@ -26,6 +26,28 @@ test('process starts jobs in parallel and automatic renewal keeps long jobs owne
   assert.ok(results.every((x) => x.status === 'settled'));
   assert.equal((await q.inspect('0')).attempts, 1);
 });
+test('claim discovery latency is not charged to a lease granted afterward', async () => {
+  const base = createMemoryStore();
+  const store = {
+    ...base,
+    async query(query) {
+      await sleep(120);
+      return base.query(query);
+    },
+  };
+  const q = createWorkOnce({ store, scope: 'claim-latency' }).define('work', {
+    limits: { leaseMs: 80 },
+  });
+  await q.enqueue(null, { key: 'job' });
+  let handlerCalls = 0;
+  const [result] = await q.process({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
+    handlerCalls++;
+    return run.succeed();
+  });
+  assert.equal(handlerCalls, 1);
+  assert.equal(result.status, 'settled');
+});
+
 test('one bad handler does not discard its healthy neighbor', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('work');
   await q.enqueue({ bad: true }, { key: 'a' });

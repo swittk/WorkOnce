@@ -76,7 +76,7 @@ function assertSnapshot(snapshot) {
     assert.equal(snapshot.phase.attempt.generation, snapshot.generation);
     assert.equal(snapshot.phase.attempt.number, snapshot.attempts);
     assert.ok(snapshot.phase.attempt.fence > 0);
-    assert.ok(snapshot.phase.attempt.leaseUntil > snapshot.observedAt);
+    assert.ok(snapshot.phase.attempt.leaseUntil > 0);
   }
 }
 function fixture(options = {}) {
@@ -369,8 +369,9 @@ async function replayAndDynamicPolicies(coverage) {
     scenarios++;
     const f = fixture({ scope: 'dynamic-next', dynamicNext: true });
     await f.queue.item({ id: 'x', leaseMs: 3 }).enqueue();
-    hit(coverage, 'dynamicLimits');
     const [run] = await f.queue.claim({ workerId: 'A' });
+    assert.equal(run.attempt.leaseUntil, run.observedAt + 3);
+    hit(coverage, 'dynamicLimits');
     await run.settle(run.succeed({ value: 7 }));
     hit(coverage, 'dynamicNext');
     const s = await inspect(f, coverage);

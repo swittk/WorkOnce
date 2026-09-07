@@ -96,6 +96,7 @@ async function processLease<I, O, R extends string>(
   lease: LeasedWork<I>,
   options: ExternalWorkerOptions,
   handler: ExternalWorkHandler<I, O, R>,
+  claimStartedAt: number,
 ): Promise<ExternalProcessResult<O, R>> {
   const controller = new AbortController();
   const run = new ExternalWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
@@ -141,7 +142,7 @@ async function processLease<I, O, R extends string>(
   try {
     if (heartbeatMs >= firstLeaseMs)
       throw new RangeError('heartbeatMs must be shorter than the lease');
-    armExpiry(performance.now() + firstLeaseMs);
+    armExpiry(claimStartedAt + firstLeaseMs);
     heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
     if (controller.signal.aborted) throw new Error('External ownership lost');
     const outcome = await handler(run, lease.input);
@@ -167,6 +168,7 @@ export async function processExternal<I, O, R extends string>(
   const limit = validateExternalWorkerOptions(options);
   if (options.signal.aborted) return [];
   let leases: LeasedWork<I>[];
+  const claimStartedAt = performance.now();
   try {
     leases = await transport.claim({
       workerId: options.workerId,
@@ -178,7 +180,9 @@ export async function processExternal<I, O, R extends string>(
     throw error;
   }
   // ExternalWorkTransport.claim is authoritative and must honor limit; never locally slice leased work.
-  return Promise.all(leases.map((lease) => processLease(transport, lease, options, handler)));
+  return Promise.all(
+    leases.map((lease) => processLease(transport, lease, options, handler, claimStartedAt)),
+  );
 }
 
 /** Managed external executor loop with bounded local concurrency and conservative lease-loss handling. */
@@ -198,6 +202,7 @@ export async function runExternal<I, O, R extends string>(
       continue;
     }
     let leases: LeasedWork<I>[];
+    const claimStartedAt = performance.now();
     try {
       leases = await transport.claim({
         workerId: options.workerId,
@@ -220,7 +225,7 @@ export async function runExternal<I, O, R extends string>(
       continue;
     }
     for (const lease of leases) {
-      const pending = processLease(transport, lease, options, handler)
+      const pending = processLease(transport, lease, options, handler, claimStartedAt)
         .then(async (result) => {
           if (result.status === 'interrupted' && !options.signal.aborted) {
             if (options.onError) await options.onError(result.error);

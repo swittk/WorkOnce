@@ -28,7 +28,7 @@ export interface WorkQuery {
   select: 'due' | 'outbox' | 'all';
   /** Bounded result count. */
   limit: number;
-  /** Exclusive id cursor. Compare it with the same UTF-8 byte order used to sort query results. */
+  /** Exclusive id cursor for `all`/`outbox`; `due` rejects it because its ordering is (dueAt,id). */
   afterId?: string;
 }
 /**

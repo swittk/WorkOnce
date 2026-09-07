@@ -110,12 +110,12 @@ test('8 independent OS processes cannot double-claim one SQLite item', async () 
 test('SIGKILL after durable claim, restart and late callback preserve fencing', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-crash-')),
     path = join(dir, 'queue.sqlite');
-  let child, late;
+  let child, late, store;
   try {
-    let store = createSqliteStore(path),
-      q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
-        limits: { leaseMs: 3000 },
-      });
+    store = createSqliteStore(path);
+    let q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
+      limits: { leaseMs: 3000 },
+    });
     await q.enqueue(null, { key: 'job' });
     store.close();
     child = start(path, 'crash', 'A');
@@ -145,6 +145,11 @@ test('SIGKILL after durable claim, restart and late callback preserve fencing', 
     assert.equal((await q.inspect('job')).phase.state, 'succeeded');
     store.close();
   } finally {
+    try {
+      store?.close();
+    } catch {
+      /* A success-path close may already have closed this handle. */
+    }
     if (child && !child.killed) child.kill();
     if (late && !late.killed) late.kill();
     await sleep(30);

@@ -18,8 +18,9 @@ for (const kind of ['memory', 'sqlite'])
       const old = work.define('job', { version: 'old' });
       const current = work.define('job', { version: 'new' });
       for (let i = 0; i < 10; i++) await old.enqueue(null, { key: String(i) });
-      await current.enqueue(null, { key: 'current' });
-      assert.equal((await current.claim({ workerId: 'new', limit: 1 })).length, 1);
+      const currentSnapshot = await current.enqueue(null, { key: 'current' });
+      const [currentClaim] = await current.claim({ workerId: 'new', limit: 1 });
+      assert.equal(currentClaim.ref.workId, currentSnapshot.id);
       const names = ['Z', 'é', '😀', '☀', 'a', '\uE000', '𐀀'];
       const q = work.define('unicode');
       for (const key of names) await q.enqueue(null, { key });
@@ -49,6 +50,31 @@ for (const kind of ['memory', 'sqlite'])
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+for (const kind of ['memory', 'sqlite'])
+  test(
+    kind + ': due queries reject the id-only cursor used by differently ordered views',
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'workonce-due-cursor-'));
+      const store =
+        kind === 'sqlite' ? createSqliteStore(join(dir, 'test.sqlite')) : createMemoryStore();
+      try {
+        await assert.rejects(
+          store.query({
+            scope: 'scope',
+            kind: 'job',
+            select: 'due',
+            afterId: 'cursor',
+            limit: 1,
+          }),
+          /afterId is not supported for due queries/,
+        );
+      } finally {
+        store.close?.();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
 
 test('sqlite upgrades the pre-definition table and preserves old work', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-upgrade-'));

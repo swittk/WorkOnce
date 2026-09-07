@@ -41,6 +41,31 @@ test('external worker runner hides claim heartbeat and settlement plumbing from 
     assert.equal((await queue.inspect(String(index))).phase.state, 'succeeded');
 });
 
+test('external claim response latency cannot extend authoritative ownership', async () => {
+  const { queue, transport: base } = fixture({ leaseMs: 80 });
+  await queue.enqueue(null, { key: 'x' });
+  const transport = {
+    ...base,
+    async claim(request) {
+      const leases = await base.claim(request);
+      await sleep(120);
+      return leases;
+    },
+  };
+  let effects = 0;
+  const [result] = await processExternal(
+    transport,
+    { workerId: 'relay', heartbeatMs: 20, signal: new AbortController().signal },
+    async (run) => {
+      effects++;
+      return run.succeed();
+    },
+  );
+  assert.equal(effects, 0);
+  assert.equal(result.status, 'interrupted');
+  assert.equal((await queue.inspect('x')).phase.state, 'running');
+});
+
 test('external heartbeat failure aborts the handler before it can report success', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 250 });
   await queue.enqueue(null, { key: 'x' });

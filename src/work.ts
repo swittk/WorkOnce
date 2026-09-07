@@ -60,6 +60,7 @@ import {
   processClaims,
   runWorker,
   waitForPoll,
+  markLocalClaimStartedAt,
   type WorkerOptions,
   type WorkHandler,
   type ProcessResult,
@@ -374,6 +375,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
     const runs: WorkRun<I, O, R>[] = [];
     for (const candidate of candidates.rows) {
       if (runs.length === limit) break;
+      const claimStartedAt = performance.now();
       const claimed = await this.store.atomic(candidate.id, (row, now) => {
         if (!row) return { value: null };
         this.assertDefinition(row);
@@ -382,10 +384,16 @@ export class WorkQueue<I, O = null, R extends string = string> {
           ? { next, value: next.phase.state === 'running' ? { row: next, now } : null }
           : { value: null };
       });
-      if (claimed && claimed.row.phase.state === 'running')
-        runs.push(
-          new WorkRun(this, claimed.row.input as I, claimed.row.phase.attempt, claimed.now),
+      if (claimed && claimed.row.phase.state === 'running') {
+        const run = new WorkRun(
+          this,
+          claimed.row.input as I,
+          claimed.row.phase.attempt,
+          claimed.now,
         );
+        markLocalClaimStartedAt(run, claimStartedAt);
+        runs.push(run);
+      }
     }
     return runs;
   }

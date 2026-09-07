@@ -1,6 +1,13 @@
 import type { WorkQueue, WorkRun } from './work.js';
 import type { WorkOutcome, WorkPhase } from './model.js';
 import { integer } from './kernel.js';
+
+const localClaimStartedAt = new WeakMap<object, number>();
+
+/** Record the monotonic lower bound immediately before one authoritative local claim attempt. */
+export function markLocalClaimStartedAt(run: object, startedAt: number): void {
+  localClaimStartedAt.set(run, startedAt);
+}
 /** Runtime knobs are local worker capacity, not an implied fleet-wide semaphore. */
 export interface WorkerOptions {
   /** A useful debugging label; fences, not this label, identify ownership. */
@@ -47,7 +54,6 @@ async function processClaim<I, O, R extends string>(
   run: WorkRun<I, O, R>,
   options: WorkerOptions,
   handler: WorkHandler<I, O, R>,
-  claimStartedAt: number,
 ): Promise<ProcessResult> {
   const controller = new AbortController();
   run.signal = controller.signal;
@@ -86,7 +92,7 @@ async function processClaim<I, O, R extends string>(
   }
   try {
     if (heartbeatMs >= leaseMs) throw new RangeError('heartbeatMs must be shorter than the lease');
-    armExpiry(claimStartedAt + leaseMs);
+    armExpiry((localClaimStartedAt.get(run) ?? performance.now()) + leaseMs);
     heartbeatTimer = setTimeout(() => {
       void heartbeat();
     }, heartbeatMs);
@@ -113,12 +119,11 @@ export async function processClaims<I, O, R extends string>(
 ): Promise<ProcessResult[]> {
   const limit = validateWorkerOptions(options);
   if (options.signal?.aborted) return [];
-  const started = performance.now();
   const claims = await queue.claim({
     workerId: options.workerId,
     limit,
   });
-  return Promise.all(claims.map((run) => processClaim(run, options, handler, started)));
+  return Promise.all(claims.map((run) => processClaim(run, options, handler)));
 }
 /** A managed runner with bounded local capacity. Multiple processes may use the same queue. */
 export async function runWorker<I, O, R extends string>(
@@ -136,7 +141,6 @@ export async function runWorker<I, O, R extends string>(
       await Promise.race(active);
       continue;
     }
-    const started = performance.now();
     let claims: WorkRun<I, O, R>[];
     try {
       claims = await queue.claim({ workerId: options.workerId, limit: available });
@@ -155,7 +159,7 @@ export async function runWorker<I, O, R extends string>(
       continue;
     }
     for (const claim of claims) {
-      const pending = processClaim(claim, options, handler, started)
+      const pending = processClaim(claim, options, handler)
         .then(async (result) => {
           if (result.status === 'interrupted' && !options.signal.aborted) {
             if (options.onError) await options.onError(result.error);

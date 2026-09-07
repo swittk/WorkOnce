@@ -36,6 +36,8 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
     async query(query: WorkQuery) {
       const clock = integer(now(), 'clock');
       integer(query.limit, 'limit', 1);
+      if (query.select === 'due' && query.afterId !== undefined)
+        throw new RangeError('afterId is not supported for due queries');
       let selected = [...rows.values()].filter(
         (row) =>
           row.scope === query.scope &&
