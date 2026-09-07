@@ -82,6 +82,7 @@ function validateRequest(value: unknown): asserts value is WorkRequest {
   stringValue(row.definition);
   validateLimits(row.limits);
   int(row.availableAt);
+  if (!Object.prototype.hasOwnProperty.call(row, 'input')) invalidPersistedRow();
   if (id !== workId(scope, kind, key)) invalidPersistedRow();
 }
 function validateAttemptRef(value: unknown): asserts value is AttemptRef {

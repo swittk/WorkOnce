@@ -189,6 +189,33 @@ test('sqlite validates restored rows and keeps definition in the due/list indexe
   }
 });
 
+test('sqlite rejects a persisted request whose input property is missing', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workonce-missing-input-'));
+  const databasePath = join(dir, 'test.sqlite');
+  let store = createSqliteStore(databasePath);
+  try {
+    const queue = createWorkOnce({ store, scope: 'missing-input' }).define('job');
+    const snapshot = await queue.ensure({ payload: 7 }, { key: 'x' });
+    store.close();
+    const db = new DatabaseSync(databasePath);
+    try {
+      const raw = db.prepare('SELECT body FROM workonce WHERE id=?').get(snapshot.id);
+      const body = JSON.parse(raw.body);
+      delete body.input;
+      db.prepare('UPDATE workonce SET body=? WHERE id=?').run(JSON.stringify(body), snapshot.id);
+    } finally {
+      db.close();
+    }
+    store = createSqliteStore(databasePath);
+    await assert.rejects(store.getMany([snapshot.id]), /Invalid persisted WorkOnce row/);
+  } finally {
+    try {
+      store.close();
+    } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('an impossible duration is rejected before storing an unclaimable job', async () => {
   const q = createWorkOnce({ store: createMemoryStore({ now: () => 1000 }), scope: 't' }).define(
     'job',
