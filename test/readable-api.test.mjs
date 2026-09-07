@@ -23,7 +23,7 @@ test('readable API names map to the same hardened lifecycle semantics', async ()
   });
 
   const item = job.item({ id: 'x' });
-  await item.enqueue();
+  await item.ensure();
   let [run] = await job.claim({ workerId: 'A' });
   assert.equal((await run.settle(run.wait('dependency_pending'))).state, 'waiting');
   now += 1;
@@ -45,10 +45,10 @@ test('readable aliases reject ambiguous duplicate configuration', async () => {
     executionLimits: { maxAttempts: 2 },
     limits: { maxAttempts: 3 },
   });
-  await assert.rejects(badLimits.enqueue(null, { key: 'x' }), /executionLimits or limits/);
+  await assert.rejects(badLimits.ensure(null, { key: 'x' }), /executionLimits or limits/);
 
   const badWait = work.define('bad-wait', { wait: { afterMs: 1 }, defer: { afterMs: 2 } });
-  await badWait.enqueue(null, { key: 'x' });
+  await badWait.ensure(null, { key: 'x' });
   const [run] = await badWait.claim({ workerId: 'A' });
   await assert.rejects(run.settle(run.wait('pending')), /wait or defer/);
 });
@@ -83,13 +83,13 @@ test('a definition can bind its canonical perform handler once and still allow a
       return run.succeed(`default:${input.id}`);
     },
   });
-  await queue.enqueue({ id: 'a' });
-  await queue.process({ workerId: 'local' });
+  await queue.ensure({ id: 'a' });
+  await queue.runAvailable({ workerId: 'local' });
   assert.equal(defaultCalls, 1);
   assert.equal((await queue.item({ id: 'a' }).inspect()).phase.result, 'default:a');
 
-  await queue.enqueue({ id: 'b' });
-  await queue.process({ workerId: 'override' }, async (run, input) => {
+  await queue.ensure({ id: 'b' });
+  await queue.runAvailable({ workerId: 'override' }, async (run, input) => {
     overrideCalls++;
     return run.succeed(`override:${input.id}`);
   });
@@ -98,13 +98,27 @@ test('a definition can bind its canonical perform handler once and still allow a
   assert.equal((await queue.item({ id: 'b' }).inspect()).phase.result, 'override:b');
 });
 
-test('process and run fail before claiming when no bound or explicit perform handler exists', async () => {
+test('runAvailable and run fail before claiming when no bound or explicit perform handler exists', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 'missing-perform' });
   const queue = work.define('job');
-  await queue.enqueue(null, { key: 'a' });
-  assert.throws(() => queue.process({ workerId: 'local' }), /no perform handler/);
+  await queue.ensure(null, { key: 'a' });
+  assert.throws(() => queue.runAvailable({ workerId: 'local' }), /no perform handler/);
   assert.equal((await queue.inspect('a')).phase.state, 'queued');
   const stop = new AbortController();
   assert.throws(() => queue.run({ workerId: 'local', signal: stop.signal }), /no perform handler/);
   assert.equal((await queue.inspect('a')).phase.state, 'queued');
+});
+
+test('enqueue/process remain exact compatibility aliases for ensure/runAvailable', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'readable-compat' });
+  const queue = work.define('job', {
+    key: (input) => input.id,
+    perform: async (run, input) => run.succeed(input.id),
+  });
+  const viaEnqueue = await queue.enqueue({ id: 'x' });
+  const viaEnsure = await queue.ensure({ id: 'x' });
+  assert.equal(viaEnqueue.id, viaEnsure.id);
+  const results = await queue.process({ workerId: 'compat' });
+  assert.equal(results[0]?.status, 'settled');
+  assert.equal((await queue.item({ id: 'x' }).inspect()).phase.result, 'x');
 });

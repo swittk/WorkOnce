@@ -41,7 +41,7 @@ try {
     { cwd: directory, stdio: 'pipe' },
   );
   const body = `const q=createWorkOnce({store:createMemoryStore(),scope:'consumer'}).define('work');
- await q.enqueue({value:1},{key:'test'});const [run]=await q.claim({workerId:'consumer'});
+ await q.ensure({value:1},{key:'test'});const [run]=await q.claim({workerId:'consumer'});
  const result=await run.settle(run.succeed({ok:true}));if(result.state!=='succeeded')throw new Error('Failed consumer round trip');`;
   writeFileSync(
     join(directory, 'consumer.mjs'),
@@ -60,7 +60,7 @@ try {
   for (const file of ['consumer.mjs', 'consumer.cjs'])
     execFileSync(process.execPath, [file], { cwd: directory, stdio: 'inherit' });
   const types =
-    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\nimport {runExternal} from '@workonce/core/external';\nvoid runExternal;\nconst q=createWorkOnce({store:createMemoryStore(),scope:'consumer'}).define<{id:string},{done:boolean}>('work');\nvoid q.process({workerId:'typed'},run=>run.succeed({done:true}));`.replaceAll(
+    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\nimport {runExternal,runExternalAvailable} from '@workonce/core/external';\nvoid runExternal; void runExternalAvailable;\nconst q=createWorkOnce({store:createMemoryStore(),scope:'consumer'}).define<{id:string},{done:boolean}>('work');\nvoid q.runAvailable({workerId:'typed'},run=>run.succeed({done:true}));`.replaceAll(
       '\\n',
       '\n',
     );

@@ -1,5 +1,5 @@
 import type { AttemptRef, WorkOutcome, WorkPhase, WorkSnapshot } from './model.js';
-import type { EnqueueOptions, LeasedWork } from './work.js';
+import type { EnsureOptions, LeasedWork } from './work.js';
 import { defer, fail, retry, succeed, wait, type WorkTiming } from './outcomes.js';
 import { integer } from './kernel.js';
 import { waitForPoll } from './worker.js';
@@ -23,7 +23,7 @@ export interface ExternalWorkTransport<I, O, R extends string> {
 export interface ExternalWorkService<I, WorkerInput, O, R extends string>
   extends ExternalWorkTransport<WorkerInput, O, R> {
   /** Idempotent producer entrypoint using the work definition's key callback when configured. */
-  ensure(input: I, options?: EnqueueOptions): Promise<WorkSnapshot<I, O, R>>;
+  ensure(input: I, options?: EnsureOptions): Promise<WorkSnapshot<I, O, R>>;
 }
 
 /** Runtime knobs are capacity of this external executor, never a fleet-wide semaphore. */
@@ -80,10 +80,15 @@ export type ExternalWorkHandler<I, O, R extends string> = (
   input: I,
 ) => WorkOutcome<O, R> | Promise<WorkOutcome<O, R>>;
 
-/** Per-lease result returned by the one-shot external worker processor. */
-export type ExternalProcessResult<O = unknown, R extends string = string> =
+/** Per-lease result returned by one bounded external run-available pass. */
+export type ExternalRunAvailableResult<O = unknown, R extends string = string> =
   | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
+/** Conventional worker synonym retained for compatibility; prefer `ExternalRunAvailableResult`. */
+export type ExternalProcessResult<
+  O = unknown,
+  R extends string = string,
+> = ExternalRunAvailableResult<O, R>;
 
 /** Validate process-wide knobs before claiming anything; per-lease checks only compare against that lease. */
 function validateExternalWorkerOptions(options: ExternalWorkerOptions): number {
@@ -97,7 +102,7 @@ async function processLease<I, O, R extends string>(
   options: ExternalWorkerOptions,
   handler: ExternalWorkHandler<I, O, R>,
   claimStartedAt: number,
-): Promise<ExternalProcessResult<O, R>> {
+): Promise<ExternalRunAvailableResult<O, R>> {
   const controller = new AbortController();
   const run = new ExternalWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
   run.signal = controller.signal;
@@ -116,10 +121,10 @@ async function processLease<I, O, R extends string>(
       error: new RangeError('External lease must be positive'),
     };
   }
-  const heartbeatMs = Math.min(
-    options.heartbeatMs ?? Math.max(1, Math.floor(firstLeaseMs / 3)),
-    2_147_483_647,
-  );
+  const heartbeatMs =
+    options.heartbeatMs === undefined && firstLeaseMs === 1
+      ? undefined
+      : Math.min(options.heartbeatMs ?? Math.max(1, Math.floor(firstLeaseMs / 3)), 2_147_483_647);
   function armExpiry(deadline: number) {
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
@@ -133,17 +138,18 @@ async function processLease<I, O, R extends string>(
       const renewed = await transport.heartbeat(lease.attempt);
       if (!stopped && !controller.signal.aborted) {
         armExpiry(sentAt + renewed.leaseUntil - renewed.observedAt);
-        heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
+        if (heartbeatMs !== undefined)
+          heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
       }
     } catch (error) {
       controller.abort(error);
     }
   }
   try {
-    if (heartbeatMs >= firstLeaseMs)
+    if (heartbeatMs !== undefined && heartbeatMs >= firstLeaseMs)
       throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry(claimStartedAt + firstLeaseMs);
-    heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
+    if (heartbeatMs !== undefined) heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
     if (controller.signal.aborted) throw new Error('External ownership lost');
     const outcome = await handler(run, lease.input);
     if (controller.signal.aborted) throw new Error('External ownership lost');
@@ -159,12 +165,12 @@ async function processLease<I, O, R extends string>(
   }
 }
 
-/** Claim only this executor's free slots and process returned external leases in parallel. */
-export async function processExternal<I, O, R extends string>(
+/** Run one bounded pass over external work currently available to this executor. */
+export async function runExternalAvailable<I, O, R extends string>(
   transport: ExternalWorkTransport<I, O, R>,
   options: ExternalWorkerOptions,
   handler: ExternalWorkHandler<I, O, R>,
-): Promise<ExternalProcessResult<O, R>[]> {
+): Promise<ExternalRunAvailableResult<O, R>[]> {
   const limit = validateExternalWorkerOptions(options);
   if (options.signal.aborted) return [];
   let leases: LeasedWork<I>[];
@@ -185,6 +191,15 @@ export async function processExternal<I, O, R extends string>(
   return Promise.all(
     leases.map((lease) => processLease(transport, lease, options, handler, claimStartedAt)),
   );
+}
+
+/** Conventional worker synonym retained for compatibility; prefer `runExternalAvailable()`. */
+export function processExternal<I, O, R extends string>(
+  transport: ExternalWorkTransport<I, O, R>,
+  options: ExternalWorkerOptions,
+  handler: ExternalWorkHandler<I, O, R>,
+): Promise<ExternalProcessResult<O, R>[]> {
+  return runExternalAvailable(transport, options, handler);
 }
 
 /** Managed external executor loop with bounded local concurrency and conservative lease-loss handling. */

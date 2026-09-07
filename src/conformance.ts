@@ -27,14 +27,14 @@ export async function runConformance(create: ConformanceFactory): Promise<string
       await f.close?.();
     }
   }
-  await test('enqueue identity, alias isolation and ordered batch reads', async ({ store }) => {
+  await test('ensure identity, alias isolation and ordered batch reads', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 'tenant' }).define<{ a: number }>('one');
     const input = { a: 1 };
-    const first = await q.enqueue(input, { key: 'same' });
+    const first = await q.ensure(input, { key: 'same' });
     input.a = 99;
-    const again = await q.enqueue({ a: 1 }, { key: 'same' });
+    const again = await q.ensure({ a: 1 }, { key: 'same' });
     assert.deepEqual(first, again);
-    await rejects(q.enqueue({ a: 2 }, { key: 'same' }), 'key_conflict');
+    await rejects(q.ensure({ a: 2 }, { key: 'same' }), 'key_conflict');
     const batch = await q.inspectMany(['missing', 'same', 'same']);
     assert.equal(batch[0], undefined);
     assert.equal(batch[1]!.input.a, 1);
@@ -43,7 +43,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   });
   await test('50 competing claimers produce one current owner', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const claims = await Promise.all(
       Array.from({ length: 50 }, (_, i) => q.claim({ workerId: String(i) })),
     );
@@ -55,7 +55,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     advance,
   }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one', { limits: { leaseMs: 10 } });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     advance(10);
     await rejects(a!.renew(), 'lease_expired');
@@ -76,7 +76,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const q = createWorkOnce({ store, scope: 't' }).define('one', {
       retry: { retry: true, afterMs: 20, maxRetries: 1, manualRetry: true },
     });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     assert.equal((await a!.settle(a!.retry('busy'))).state, 'waiting');
     assert.equal((await q.claim({ workerId: 'B' })).length, 0);
@@ -94,7 +94,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     advance,
   }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one', { limits: { maxDeferrals: 1 } });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     let [run] = await q.claim({ workerId: 'A' });
     await run!.settle(run!.defer('pending', { afterMs: 2 }));
     const snap = (await q.inspect('job'))!;
@@ -107,7 +107,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   });
   await test('manual retry gate and concurrent generation checks', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     await a!.settle(a!.fail('bad', { manualRetry: true }));
     await rejects(q.retry({ key: 'job', generation: 1, check: () => false }), 'retry_denied');
@@ -143,7 +143,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         return { retry: true, afterMs: input.urgent ? 1 : 20, maxRetries: 2, manualRetry: true };
       },
     });
-    await q.enqueue({ urgent: true }, { key: 'job' });
+    await q.ensure({ urgent: true }, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     const pending = a!.settle(a!.retry('busy'));
     await ready;
@@ -157,7 +157,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const q = createWorkOnce({ store, scope: 't' }).define('one', {
       retry: { retry: false, manualRetry: false },
     });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [run] = await q.claim({ workerId: 'A' });
     const phase = await run!.settle(run!.retry('forbidden', { afterMs: 0 }));
     assert.equal(phase.state, 'failed');
@@ -173,7 +173,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         return { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true };
       },
     });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     const outcome = a!.retry('busy');
     const receipt = await a!.settle(outcome);
@@ -186,7 +186,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   });
   await test('cancel versus completion has one coherent result', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     const raced = await Promise.allSettled([
       q.cancel({ key: 'job', generation: 1 }),
@@ -202,7 +202,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const q = createWorkOnce({ store, scope: 't' }).define('one', {
       limits: { leaseMs: 1, maxAttempts: 2 },
     });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     await q.claim({ workerId: 'A' });
     advance(1);
     await q.claim({ workerId: 'B' });
@@ -217,7 +217,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const q = createWorkOnce({ store, scope: 't' }).define('one', {
       limits: { leaseMs: 10, maxElapsedMs: 15 },
     });
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     advance(8);
     await a!.renew();
@@ -230,7 +230,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const work = createWorkOnce({ store, scope: 't' });
     const a = work.define('first');
     const b = work.define<{ value: number }>('second');
-    await a.enqueue(null, { key: 'job' });
+    await a.ensure(null, { key: 'job' });
     const [run] = await a.claim({ workerId: 'A' });
     const outcome = run!.succeed(null, {
       next: [b.request({ value: 1 }, { key: 'job-followup' })],
@@ -247,7 +247,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   await test('invalid follow-up never commits parent success', async ({ store }) => {
     const work = createWorkOnce({ store, scope: 't' });
     const a = work.define('one');
-    await a.enqueue(null, { key: 'job' });
+    await a.ensure(null, { key: 'job' });
     const [run] = await a.claim({ workerId: 'A' });
     await rejects(
       run!.settle(run!.succeed(null, { next: [a.request(null, { key: 'job' })] })),
@@ -259,7 +259,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     store,
   }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    await q.enqueue(null, { key: 'job' });
+    await q.ensure(null, { key: 'job' });
     const [a] = await q.claim({ workerId: 'A' });
     await a!.settle(a!.defer('wait', { afterMs: 1000 }));
     const snapshot = (await q.inspect('job'))!;
@@ -273,7 +273,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   await test('scope and definition version fence wrong handlers', async ({ store }) => {
     const a = createWorkOnce({ store, scope: 'a' }).define('one', { version: '1' });
     const b = createWorkOnce({ store, scope: 'b' }).define('one');
-    await a.enqueue(null, { key: 'job' });
+    await a.ensure(null, { key: 'job' });
     assert.equal((await b.claim({ workerId: 'B' })).length, 0);
     const [run] = await a.claim({ workerId: 'A' });
     await rejects(b.renew(run!.ref), 'not_found');
@@ -282,7 +282,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   });
   await test('failed atomic decisions leave the stored row untouched', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    const snapshot = await q.enqueue(null, { key: 'job' });
+    const snapshot = await q.ensure(null, { key: 'job' });
     const before = canonical((await store.getMany([snapshot.id])).rows);
     await assert.rejects(
       store.atomic(snapshot.id, (row) => {
@@ -295,7 +295,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
   });
   await test('stores reject skipped revisions and malformed write deadlines', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');
-    const snapshot = await q.enqueue(null, { key: 'job' });
+    const snapshot = await q.ensure(null, { key: 'job' });
     const before = canonical((await store.getMany([snapshot.id])).rows);
     await assert.rejects(
       store.atomic(snapshot.id, (row) => ({

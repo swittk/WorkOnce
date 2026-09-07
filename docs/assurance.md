@@ -16,7 +16,7 @@ WorkOnce assurance has four separate layers. None is presented as proof of exact
 
 The extractor inventories exported functions/constructors, public class methods, exported interface methods, returned callable objects such as `createWorkOnce().dispatch`, and callable policy fields. It then recursively walks every package-owned input/output/callback type, including optional/null/undefined flags, recursive references, index values and callback arguments/results.
 
-The reviewed manifest currently maps **119 public callables**, **21 callable policy/storage fields**, **105 reachable package-owned types**, and **329 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
+The reviewed manifest currently maps **124 public callables**, **21 callable policy/storage fields**, **107 reachable package-owned types**, and **333 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
@@ -24,7 +24,7 @@ The generated human summary is `formal/FORMAL_COVERAGE_GAPS.md`; despite the his
 
 ## Batched executable refinement and fuzz corpus
 
-`test/formal-bounded-refinement.test.mjs` drives the **real public WorkOnce API** through one in-process bounded corpus. It currently contains 29 deliberate lifecycle scenarios plus **96 deterministic seeded traces × 10 steps**. It checks the state after every step and covers 43 reviewed dimensions, including:
+`test/formal-bounded-refinement.test.mjs` drives the **real public WorkOnce API** through one in-process bounded corpus. It currently contains 31 deliberate lifecycle scenarios plus **96 deterministic seeded traces × 10 steps**. It checks the state after every step and covers 45 reviewed dimensions, including:
 
 - queued/running/retry-wait/defer-wait/succeeded/failed/cancelled states;
 - both worker identities, lease reclaim, increasing fences and stale renew/settle rejection;

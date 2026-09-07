@@ -54,7 +54,7 @@ const convert = work.define<Input, Output, Reason>('asset.convert', {
   },
 });
 
-await convert.enqueue(
+await convert.ensure(
   { assetId: 'asset-123', urgent: true },
   {
     key: 'asset-123:source-revision-2',
@@ -92,6 +92,9 @@ effects. Ownership is checked again after it returns. Static policy objects work
 
 ## Vocabulary that says what it does
 
+- `ensure(input)` = make sure this exact business work exists once; identical repeats return it.
+- `runAvailable(options)` = run one bounded pass over work available now.
+- `run(options)` = keep polling and running available work until its stop signal fires.
 - `retry(reason)` = this attempt failed temporarily; count a retry and run it again later.
 - `wait(reason)` = nothing failed; end this attempt, release the worker slot, and resume the work later.
 - `fail(reason)` = terminal automatic failure; optional manual retry may still be allowed.
@@ -104,16 +107,18 @@ attempt reference as opaque in normal application code. If worker A owns fence 1
 expires, and worker B reclaims the work with fence 18, a late result from A still carries 17 and
 is rejected because only 18 is current. Managed local/external runners carry this for you.
 
-Standard queue terminology aliases such as `defer`, `renew`, `next`, and `limits` remain available
-for compatibility, but examples use the literal application-facing names above.
+Conventional queue aliases remain available for compatibility: `enqueue` → `ensure`, `process` →
+`runAvailable`, `defer` → `wait`, `renew` → `heartbeat`, `next` → `thenDo`, and `limits` →
+`executionLimits`. Examples use the literal application-facing names above.
 
 ## Define the implementation once
 
 `perform` is the canonical in-process implementation for this work kind. Define it once, then call
-`process()` for one bounded batch or `run()` for a continuous worker without repeating the handler:
+`runAvailable()` for one bounded pass over currently available work or `run()` for a continuous worker
+without repeating the handler:
 
 ```ts
-await convert.process({ workerId: 'worker-1', concurrency: 4 });
+await convert.runAvailable({ workerId: 'worker-1', concurrency: 4 });
 
 await convert.run({
   workerId: 'worker-1',
@@ -122,7 +127,7 @@ await convert.run({
 });
 ```
 
-Tests, migrations, or alternate deployments may still pass an explicit handler to `process()` or
+Tests, migrations, or alternate deployments may still pass an explicit handler to `runAvailable()` or
 `run()`; that handler overrides `perform` for that execution only. If neither a bound `perform` nor
 an explicit handler exists, WorkOnce throws **before claiming any work**.
 
@@ -145,6 +150,7 @@ call site:
 
 ```ts
 const item = convert.item({ assetId: 'asset-123', urgent: true }, 'asset-123:source-revision-2');
+await item.ensure();
 const current = await item.inspect();
 
 if (current?.phase.state === 'failed' && current.phase.manualRetry) {
@@ -250,22 +256,32 @@ authoritative process and never returned as external leases. Only `run.handoff(p
 still-live attempt. That external executor must heartbeat and settle the exact attempt it received.
 A stale external result is rejected by the same ownership token rules as a stale local result.
 
-The executor side is transport-neutral:
+The executor side is transport-neutral. `runExternalAvailable()` performs one bounded claim pass;
+`runExternal()` continuously refills capacity until its stop signal fires:
 
 ```ts
-import { runExternal } from '@workonce/core';
+import { runExternal, runExternalAvailable } from '@workonce/core';
+
+const transport = {
+  claim: (request) => api.claim(request),
+  heartbeat: (attempt) => api.heartbeat(attempt),
+  settle: (attempt, outcome) => api.settle(attempt, outcome),
+};
+const performExternal = async (run, input) => {
+  const result = await doExternalWork(input, { signal: run.signal });
+  return run.succeed(result);
+};
+
+await runExternalAvailable(
+  transport,
+  { workerId: 'gpu-once', concurrency: 4, signal: shutdown.signal },
+  performExternal,
+);
 
 await runExternal(
-  {
-    claim: (request) => api.claim(request),
-    heartbeat: (attempt) => api.heartbeat(attempt),
-    settle: (attempt, outcome) => api.settle(attempt, outcome),
-  },
+  transport,
   { workerId: 'gpu-1', concurrency: 4, signal: shutdown.signal },
-  async (run, input) => {
-    const result = await doExternalWork(input, { signal: run.signal });
-    return run.succeed(result);
-  },
+  performExternal,
 );
 ```
 
@@ -288,7 +304,7 @@ counts accepted automatic retry decisions only. `maxDeferrals` counts accepted n
 starts a new generation; the fence never resets. Configure these bounds for long polling rather
 than expecting waits to be unlimited.
 
-Repeated enqueue with the same scope/kind/key and input/limits returns the existing item and
+Repeated `ensure()` with the same scope/kind/key and input/limits returns the existing item and
 never restarts it. Changed payload or limits require a new business key. Definition `version`
 (default `1`) prevents silently claiming work with a different deployed handler contract; retain
 matching workers while draining an older version. No implicit migration is provided.
@@ -303,7 +319,7 @@ fence/tombstone retention contract.
 
 ## Exhaustive formal implementation mapping
 
-WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 119 callables, 21 callable policy/storage fields and 329 fields, then executes 29 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 124 callables, 21 callable policy/storage fields and 333 fields, then executes 31 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
 
 ## ES2018 and Web Workers
 

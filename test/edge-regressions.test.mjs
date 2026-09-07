@@ -123,6 +123,38 @@ test('sqlite upgrades the pre-definition table and preserves old work', async ()
   }
 });
 
+test('sqlite rejects a legacy row whose definition cannot be restored as a string', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workonce-legacy-corrupt-'));
+  const databasePath = join(dir, 'test.sqlite');
+  const db = new DatabaseSync(databasePath);
+  try {
+    db.exec(`CREATE TABLE workonce (
+      id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL,
+      due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
+    );`);
+    db.prepare(
+      'INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) VALUES (?,?,?,?,?,?)',
+    ).run('bad', 'legacy', 'job', 0, 0, JSON.stringify({ definition: 42 }));
+  } finally {
+    db.close();
+  }
+  try {
+    assert.throws(() => createSqliteStore(databasePath), /Invalid persisted WorkOnce row/);
+    const inspect = new DatabaseSync(databasePath);
+    try {
+      const columns = inspect
+        .prepare('PRAGMA table_info(workonce)')
+        .all()
+        .map((row) => row.name);
+      assert.equal(columns.includes('definition'), false);
+    } finally {
+      inspect.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('sqlite validates restored rows and keeps definition in the due/list indexes', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-corrupt-'));
   const databasePath = join(dir, 'test.sqlite');

@@ -63,6 +63,7 @@ import {
   markLocalClaimStartedAt,
   type WorkerOptions,
   type WorkHandler,
+  type RunAvailableResult,
   type ProcessResult,
 } from './worker.js';
 /** Defaults may be overridden per item; dynamic callbacks are evaluated in trusted application code. */
@@ -71,7 +72,7 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
   version?: string;
   /** Stable business identity derived from typed input when callers should not repeat key plumbing. */
   key?: (input: I) => string;
-  /** Canonical in-process implementation used by `process()` and `run()` unless explicitly overridden. */
+  /** Canonical in-process implementation used by `runAvailable()` and `run()` unless overridden. */
   perform?: WorkHandler<I, O, R>;
   /** Preferred readable name for per-work execution safety bounds. This is not rate throttling. */
   executionLimits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
@@ -103,16 +104,18 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
   }) => WorkRequest[] | Promise<WorkRequest[]>;
 }
 /** The durable identity and optional per-item limits supplied by a producer. */
-export interface EnqueueOptions {
+export interface EnsureOptions {
   /** A stable key for the business operation, not a random value on each retry. */
   key?: string;
-  /** Initial not-before time. Duplicate enqueue never silently reschedules it. */
+  /** Initial not-before time. Repeated ensure never silently reschedules existing work. */
   availableAt?: number;
   /** Preferred readable per-item execution bounds; this does not throttle worker throughput. */
   executionLimits?: Partial<WorkLimits>;
   /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
   limits?: Partial<WorkLimits>;
 }
+/** Conventional queue synonym retained for compatibility; prefer `EnsureOptions`. */
+export type EnqueueOptions = EnsureOptions;
 /** One prepared payload to hand to a foreign/external worker while this attempt stays leased. */
 export interface WorkHandoff<T> {
   /** Distinguishes a handoff from a terminal/waiting WorkOutcome. */
@@ -146,12 +149,16 @@ export class WorkItem<I, O, R extends string> {
     readonly key: string,
   ) {}
   /** Build one inert request for durable follow-up planning without enqueueing it yet. */
-  request(options: Omit<EnqueueOptions, 'key'> = {}): WorkRequest<I> {
+  request(options: Omit<EnsureOptions, 'key'> = {}): WorkRequest<I> {
     return this.queue.request(this.input, { ...options, key: this.key });
   }
-  /** Ensure this business item exists exactly once and return its current durable snapshot. */
+  /** Ensure this business work exists exactly once and return its current durable snapshot. */
+  ensure(options: Omit<EnsureOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
+    return this.queue.ensure(this.input, { ...options, key: this.key });
+  }
+  /** Conventional queue synonym retained for compatibility; prefer `ensure()`. */
   enqueue(options: Omit<EnqueueOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
-    return this.queue.enqueue(this.input, { ...options, key: this.key });
+    return this.ensure(options);
   }
   /** Inspect this business item's current durable execution state. */
   inspect(): Promise<WorkSnapshot<I, O, R> | undefined> {
@@ -314,8 +321,8 @@ export class WorkQueue<I, O = null, R extends string = string> {
     const configured = this.definition.executionLimits ?? this.definition.limits;
     return typeof configured === 'function' ? configured(input) : configured;
   }
-  /** Resolve per-enqueue execution bounds while rejecting competing alias values. */
-  private resolveEnqueueExecutionLimits(options: EnqueueOptions): Partial<WorkLimits> | undefined {
+  /** Resolve per-ensure execution bounds while rejecting competing alias values. */
+  private resolveEnsureExecutionLimits(options: EnsureOptions): Partial<WorkLimits> | undefined {
     if (options.executionLimits !== undefined && options.limits !== undefined)
       throw new RangeError('Use executionLimits or limits, not both');
     return options.executionLimits ?? options.limits;
@@ -332,8 +339,8 @@ export class WorkQueue<I, O = null, R extends string = string> {
       throw new RangeError('Use thenDo or next, not both');
     return this.definition.thenDo ?? this.definition.next;
   }
-  /** Create an inert follow-up description. It does not enqueue until success is durably accepted. */
-  request(input: I, options: EnqueueOptions = {}): WorkRequest<I> {
+  /** Create an inert follow-up description; it is not persisted until terminal work accepts it. */
+  request(input: I, options: EnsureOptions = {}): WorkRequest<I> {
     const key = this.key(input, options.key);
     return copy({
       id: workId(this.scope, this.kind, key),
@@ -345,13 +352,13 @@ export class WorkQueue<I, O = null, R extends string = string> {
       limits: {
         ...defaults,
         ...this.resolveExecutionLimits(input),
-        ...this.resolveEnqueueExecutionLimits(options),
+        ...this.resolveEnsureExecutionLimits(options),
       },
       availableAt: options.availableAt ?? 0,
     });
   }
-  /** Atomic create-or-return. Same key plus different payload/limits is not a retry. */
-  async enqueue(input: I, options: EnqueueOptions = {}): Promise<WorkSnapshot<I, O, R>> {
+  /** Ensure this exact business work exists once; an identical existing request is returned. */
+  async ensure(input: I, options: EnsureOptions = {}): Promise<WorkSnapshot<I, O, R>> {
     const request = this.request(input, options);
     return this.store.atomic(request.id, (row, now) => {
       if (row) {
@@ -361,6 +368,10 @@ export class WorkQueue<I, O = null, R extends string = string> {
       const next = createRecord(request, now);
       return { next, value: this.snapshot(next, now) };
     });
+  }
+  /** Conventional queue synonym retained for compatibility; prefer `ensure()`. */
+  enqueue(input: I, options: EnqueueOptions = {}): Promise<WorkSnapshot<I, O, R>> {
+    return this.ensure(input, options);
   }
   /** Index lookup plus per-candidate atomic claim. Concurrent callers may receive fewer than limit. */
   async claim(options: { workerId: string; limit?: number }): Promise<WorkRun<I, O, R>[]> {
@@ -448,7 +459,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
   }): ExternalWorkService<I, T, O, R> {
     const queue = this;
     return {
-      ensure: (input, enqueueOptions = {}) => queue.enqueue(input, enqueueOptions),
+      ensure: (input, ensureOptions = {}) => queue.ensure(input, ensureOptions),
       claim: ({ workerId, limit }) =>
         queue.handoff({ workerId, limit }, options.prepare, options.onPrepareError),
       async heartbeat(attempt) {
@@ -716,9 +727,16 @@ export class WorkQueue<I, O = null, R extends string = string> {
       return { next, value: this.snapshot(next, now) };
     });
   }
-  /** Process one bounded batch with the bound `perform` handler unless an override is supplied. */
-  process(options: WorkerOptions, handler?: WorkHandler<I, O, R>): Promise<ProcessResult[]> {
+  /** Run one bounded pass over currently available work using the bound handler by default. */
+  runAvailable(
+    options: WorkerOptions,
+    handler?: WorkHandler<I, O, R>,
+  ): Promise<RunAvailableResult<O, R>[]> {
     return processClaims(this, options, this.performHandler(handler));
+  }
+  /** Conventional worker synonym retained for compatibility; prefer `runAvailable()`. */
+  process(options: WorkerOptions, handler?: WorkHandler<I, O, R>): Promise<ProcessResult<O, R>[]> {
+    return this.runAvailable(options, handler);
   }
   /** Run continuously with the bound `perform` handler unless an override is supplied. */
   run(

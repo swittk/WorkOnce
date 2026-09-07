@@ -326,6 +326,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
@@ -351,6 +352,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
@@ -576,6 +578,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.CompareExchangePort.compareExchange",
@@ -587,6 +590,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.CompareExchangePort.getMany",
@@ -598,6 +602,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.CompareExchangePort.query",
@@ -609,6 +614,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore",
@@ -620,6 +626,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.atomic",
@@ -631,6 +638,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.getMany",
@@ -642,6 +650,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.query",
@@ -783,7 +792,7 @@
       ],
       "key": "external.ExternalWorkService.ensure",
       "modelActions": [],
-      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
+      "signatureHash": "26cf6222e890277370928dbb051ab780deab5185d1cc4d02e2535dad1e6ec9f6"
     },
     {
       "classification": "worker-runtime",
@@ -912,6 +921,25 @@
         "Defer"
       ],
       "signatureHash": "a5bf5cbb0999138bb841620fb9124bd6b76b1b2d90e0641297aa97001802deb7"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.runExternalAvailable",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "c3bf6c5b847f725367b10a35a9a00a6174fcf6ad42b647147fad9de154a43d1f"
     },
     {
       "classification": "abstract-semantic",
@@ -1115,6 +1143,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "memory.createMemoryStore",
@@ -1126,6 +1155,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "memory.createMemoryStore.atomic",
@@ -1137,6 +1167,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "memory.createMemoryStore.getMany",
@@ -1148,6 +1179,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "memory.createMemoryStore.query",
@@ -1264,7 +1296,17 @@
       ],
       "key": "root.WorkItem.enqueue",
       "modelActions": [],
-      "signatureHash": "82f08f56d4e8edf0aaf0a4563cd3f94acdc6a295a2a40f1a2e3b0253d38c69e8"
+      "signatureHash": "d027f3dd6573961710e67db866d8e28445d6ad1317075fe5f1d2a4fa6c0bda78"
+    },
+    {
+      "classification": "ergonomic-wrapper",
+      "evidence": [
+        "test/item.test.mjs",
+        "test/types/api.ts"
+      ],
+      "key": "root.WorkItem.ensure",
+      "modelActions": [],
+      "signatureHash": "d027f3dd6573961710e67db866d8e28445d6ad1317075fe5f1d2a4fa6c0bda78"
     },
     {
       "classification": "observational",
@@ -1284,7 +1326,7 @@
       ],
       "key": "root.WorkItem.request",
       "modelActions": [],
-      "signatureHash": "a6c508661d57d2089885ff908251dc1841b38ce354fd27b6b798646573f7934e"
+      "signatureHash": "21eda4d1142ff7167491d1c767daddf2797d2866f36f8c820fc19ccefd9be9ed"
     },
     {
       "classification": "ergonomic-wrapper",
@@ -1387,7 +1429,17 @@
       ],
       "key": "root.WorkQueue.enqueue",
       "modelActions": [],
-      "signatureHash": "f9ca7fd1f338d566f11dacd842a0ccce2414cf1c04e04f7fa9a01d8c84dd3978"
+      "signatureHash": "eb6db9952bdde4cff6cf0064e3bdd7af702c7516f0c98fadd59b27026a2307db"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.WorkQueue.ensure",
+      "modelActions": [],
+      "signatureHash": "eb6db9952bdde4cff6cf0064e3bdd7af702c7516f0c98fadd59b27026a2307db"
     },
     {
       "classification": "worker-runtime",
@@ -1497,7 +1549,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "9f447348ef972c70b6b1fcdb7ad33e0e89ca824fb4d840fdca2f56428487984c"
+      "signatureHash": "ea755a6a77831f631a38ac13666828b0b979ba8bcc830ea78b5e105a7c2ca79c"
     },
     {
       "classification": "abstract-semantic",
@@ -1519,7 +1571,7 @@
       ],
       "key": "root.WorkQueue.request",
       "modelActions": [],
-      "signatureHash": "c5acd4f9420ba4b4a5465b4d587a5205f61af28bd8808445920d969815124e95"
+      "signatureHash": "2ab95eb27db5659cfd9c6d360c178e411ce24fc82188b1386344af8d6fabcb65"
     },
     {
       "classification": "abstract-semantic",
@@ -1576,6 +1628,25 @@
         "Defer"
       ],
       "signatureHash": "e13bfab485fa61d580e3422b68647b8f790c956545e343919ff65c060804586a"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "root.WorkQueue.runAvailable",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "416e77e89c1b96f34c2453cba7fdab3b539076d6ab750cd6baa95cae4300d15b"
     },
     {
       "classification": "abstract-semantic",
@@ -1899,6 +1970,23 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
+      "key": "root.runExternalAvailable",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "c3bf6c5b847f725367b10a35a9a00a6174fcf6ad42b647147fad9de154a43d1f"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
       "key": "root.succeed",
       "modelActions": [
         "Success"
@@ -1922,6 +2010,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "sqlite.createSqliteStore",
@@ -1933,6 +2022,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.atomic",
@@ -1944,6 +2034,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.close",
@@ -1955,6 +2046,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.getMany",
@@ -1966,6 +2058,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.query",
@@ -2199,6 +2292,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "store",
@@ -2224,7 +2318,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "availableAt",
-      "key": "EnqueueOptions|src/work.ts|0|483ec3cae4a4#availableAt",
+      "key": "EnsureOptions|src/work.ts|0|ad090f6aab6d#availableAt",
       "modelConcepts": [
         "available",
         "now"
@@ -2232,7 +2326,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "EnqueueOptions"
+      "typeName": "EnsureOptions"
     },
     {
       "allowsNull": false,
@@ -2247,14 +2341,14 @@
         "test/types/api.ts"
       ],
       "field": "executionLimits",
-      "key": "EnqueueOptions|src/work.ts|0|483ec3cae4a4#executionLimits",
+      "key": "EnsureOptions|src/work.ts|0|ad090f6aab6d#executionLimits",
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "f4307aa09e339ed116057dc68166b3da2385156c76e9f1c6c8dfbee4497e083f",
-      "typeName": "EnqueueOptions"
+      "typeName": "EnsureOptions"
     },
     {
       "allowsNull": false,
@@ -2269,14 +2363,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "EnqueueOptions|src/work.ts|0|483ec3cae4a4#key",
+      "key": "EnsureOptions|src/work.ts|0|ad090f6aab6d#key",
       "modelConcepts": [
         "identity"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "EnqueueOptions"
+      "typeName": "EnsureOptions"
     },
     {
       "allowsNull": false,
@@ -2291,14 +2385,14 @@
         "test/types/api.ts"
       ],
       "field": "limits",
-      "key": "EnqueueOptions|src/work.ts|0|483ec3cae4a4#limits",
+      "key": "EnsureOptions|src/work.ts|0|ad090f6aab6d#limits",
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "f4307aa09e339ed116057dc68166b3da2385156c76e9f1c6c8dfbee4497e083f",
-      "typeName": "EnqueueOptions"
+      "typeName": "EnsureOptions"
     },
     {
       "allowsNull": false,
@@ -2479,6 +2573,54 @@
       "source": "src/external.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "ExternalProcessResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "status",
+      "key": "ExternalRunAvailableResult|src/external.ts|0|aaf8253ea95d#status",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "2b59e4f78a08ba25e7946b3f8d77bd9788affec0ccab094fc35f64503a3b478c",
+      "typeName": "ExternalRunAvailableResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workId",
+      "key": "ExternalRunAvailableResult|src/external.ts|0|aaf8253ea95d#workId",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "ExternalRunAvailableResult"
     },
     {
       "allowsNull": false,
@@ -2872,7 +3014,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "ProcessResult|src/worker.ts|0|f1ef31f4b10e#status",
+      "key": "ProcessResult|src/worker.ts|0|98a015ed65fa#status",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2894,7 +3036,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "ProcessResult|src/worker.ts|0|f1ef31f4b10e#workId",
+      "key": "ProcessResult|src/worker.ts|0|98a015ed65fa#workId",
       "modelConcepts": [
         "identity"
       ],
@@ -3086,6 +3228,52 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "status",
+      "key": "RunAvailableResult|src/worker.ts|0|f68e87143aef#status",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/worker.ts",
+      "typeHash": "2b59e4f78a08ba25e7946b3f8d77bd9788affec0ccab094fc35f64503a3b478c",
+      "typeName": "RunAvailableResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workId",
+      "key": "RunAvailableResult|src/worker.ts|0|f68e87143aef#workId",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/worker.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "RunAvailableResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
         "exported-type",
@@ -3211,6 +3399,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "value",
@@ -4156,8 +4345,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "input",
-        "output"
+        "input"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -4232,6 +4420,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "afterId",
@@ -4343,6 +4532,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "select",
@@ -4440,6 +4630,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "store",
@@ -5929,6 +6120,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "maxConflicts",
@@ -6140,6 +6332,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
@@ -8106,6 +8299,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "busyTimeoutMs",
@@ -8129,6 +8323,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
@@ -9230,6 +9425,7 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "store",
@@ -9617,13 +9813,13 @@
         "test/conformance.test.mjs"
       ],
       "field": "phase",
-      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|0098d5f9dacd#phase",
+      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841#phase",
       "modelConcepts": [
         "state"
       ],
       "optional": false,
       "source": "src/worker.ts",
-      "typeHash": "305fef2a63b072bc1fa9e9548650a881eabfc1e9a8087e3333e6571760ff24d9",
+      "typeHash": "b8a1f003281b5bc2b0fe5e24e2b7c4f9ea843dd4036b2bce87e0871c28f1c80f",
       "typeName": "anonymous@src/worker.ts#0"
     },
     {
@@ -9641,7 +9837,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|0098d5f9dacd#status",
+      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841#status",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -9663,7 +9859,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|0098d5f9dacd#workId",
+      "key": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841#workId",
       "modelConcepts": [
         "identity"
       ],
@@ -9783,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "b45e4b64487df7ad341d4ddd0065fdb8acb5abcb053fe58f46cd4aa5821c5cb0",
+    "sourceDigest": "a335a48f2404934b139724b4b8188e46d0c7a76235b9ee1e3a41555ff39088d4",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -9852,8 +10048,8 @@
       "directions": [
         "input"
       ],
-      "identity": "EnqueueOptions|src/work.ts|0|483ec3cae4a4",
-      "name": "EnqueueOptions",
+      "identity": "EnsureOptions|src/work.ts|0|ad090f6aab6d",
+      "name": "EnsureOptions",
       "shapeHash": "3ab18a46ff7cf713619b463e8065397ed39bf4b490c87b70b8aaf9c8beafa6d8",
       "source": "src/work.ts"
     },
@@ -9882,6 +10078,16 @@
       ],
       "identity": "ExternalProcessResult|src/external.ts|0|d7261e87b489",
       "name": "ExternalProcessResult",
+      "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "identity": "ExternalRunAvailableResult|src/external.ts|0|aaf8253ea95d",
+      "name": "ExternalRunAvailableResult",
       "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
       "source": "src/external.ts"
     },
@@ -9966,7 +10172,7 @@
       "directions": [
         "output"
       ],
-      "identity": "ProcessResult|src/worker.ts|0|f1ef31f4b10e",
+      "identity": "ProcessResult|src/worker.ts|0|98a015ed65fa",
       "name": "ProcessResult",
       "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
       "source": "src/worker.ts"
@@ -9988,6 +10194,15 @@
       "name": "RetryDecision",
       "shapeHash": "bfc52e18e0f59c5cf6473a5aec5d30a1680fa17dbe23e543825824e6cd1d45dc",
       "source": "src/model.ts"
+    },
+    {
+      "directions": [
+        "output"
+      ],
+      "identity": "RunAvailableResult|src/worker.ts|0|f68e87143aef",
+      "name": "RunAvailableResult",
+      "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
+      "source": "src/worker.ts"
     },
     {
       "directions": [
@@ -10124,8 +10339,7 @@
     },
     {
       "directions": [
-        "input",
-        "output"
+        "input"
       ],
       "identity": "WorkPhase|src/model.ts|0|305fef2a63b0",
       "name": "WorkPhase",
@@ -10813,9 +11027,9 @@
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/worker.ts#0|src/worker.ts|0|0098d5f9dacd",
+      "identity": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841",
       "name": "anonymous@src/worker.ts#0",
-      "shapeHash": "b8a295abe29b0a7005a612afcfe3d91c157fe40b6f8b4301e8f815a79001b96f",
+      "shapeHash": "509f5c54530159ced15e649dcad2c5a0d99aa049cbca162b5cda27dd65c7cf56",
       "source": "src/worker.ts"
     },
     {

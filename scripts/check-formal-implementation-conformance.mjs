@@ -54,6 +54,7 @@ const evidenceByClassification = {
   'storage-boundary': [
     'test/cas.test.mjs',
     'test/conformance.test.mjs',
+    'test/edge-regressions.test.mjs',
     'test/process/sqlite-process.test.mjs',
   ],
   'ergonomic-wrapper': ['test/item.test.mjs', 'test/types/api.ts'],
@@ -226,7 +227,7 @@ function callableClassification(key) {
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
     return 'storage-boundary';
   if (key.startsWith('conformance.')) return 'assurance-infrastructure';
-  if (/\.(?:run|process|handoff)$/.test(key) || key.startsWith('external.'))
+  if (/\.(?:run|runAvailable|process|handoff)$/.test(key) || key.startsWith('external.'))
     return 'worker-runtime';
   if (/\.(?:inspect|inspectId|inspectMany|history|toJSON|key|request|item)$/.test(key))
     return 'observational';
@@ -351,13 +352,17 @@ function modelActionsForKey(key) {
   if (key.endsWith('.wake') || key.endsWith('.wakeCurrent')) return ['Wake'];
   if (key.endsWith('.dispatch') || key.endsWith('.runDispatcher'))
     return ['CreateChild', 'AckChild'];
-  if (key === 'root.WorkQueue.process' || key === 'root.WorkQueue.run')
+  if (
+    key === 'root.WorkQueue.runAvailable' ||
+    key === 'root.WorkQueue.process' ||
+    key === 'root.WorkQueue.run'
+  )
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
   if (key === 'root.WorkQueue.handoff')
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
   if (key === 'root.WorkQueue.serveExternal')
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
-  if (/^(?:root|external)\.(?:processExternal|runExternal)$/u.test(key))
+  if (/^(?:root|external)\.(?:runExternalAvailable|processExternal|runExternal)$/u.test(key))
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
   if (/ExternalWorkService\.(?:claim|heartbeat|settle)$/u.test(key)) {
     if (key.endsWith('.claim')) return ['Claim', 'ExhaustAttempts', 'ExhaustDeadline'];

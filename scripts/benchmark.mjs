@@ -12,7 +12,7 @@ for (let trial = 0; trial < 3; trial++) {
     const q = createWorkOnce({ store, scope: 'benchmark' }).define('noop');
     const start = performance.now();
     for (let i = 0; i < count; i++)
-      await q.enqueue({ assetId: `asset-${i}`, urgent: false }, { key: String(i) });
+      await q.ensure({ assetId: `asset-${i}`, urgent: false }, { key: String(i) });
     const enqueued = performance.now();
     let completed = 0;
     while (completed < count) {

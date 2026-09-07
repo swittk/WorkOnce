@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { createWorkOnce, processExternal, WorkConflict } from '../dist/index.js';
+import { pathToFileURL } from 'node:url';
+import { createWorkOnce, runExternalAvailable, WorkConflict } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 
 const coverageKeys = [
@@ -47,6 +48,7 @@ const coverageKeys = [
   'parallelClaimCompetition',
   'dualExecutorCompetition',
   'externalClaimLimit',
+  'oneMillisecondLease',
 ];
 function newCoverage() {
   return Object.fromEntries(coverageKeys.map((key) => [key, 0]));
@@ -147,7 +149,7 @@ async function terminalMatrix(coverage) {
         scenarios++;
         const f = fixture({ scope: `terminal-${workerId}-${terminal}-${withNext}` });
         const item = f.queue.item({ id: 'x' });
-        await item.enqueue();
+        await item.ensure();
         await inspect(f, coverage);
         const [run] = await f.queue.claim({ workerId });
         assert.ok(run);
@@ -208,7 +210,7 @@ async function waitingMatrix(coverage) {
   for (const reason of ['retryable', 'denied', 'manual-only']) {
     scenarios++;
     const f = fixture({ scope: `retry-${reason}` });
-    await f.queue.item({ id: 'x', maxRetries: 1 }).enqueue();
+    await f.queue.item({ id: 'x', maxRetries: 1 }).ensure();
     const [run] = await f.queue.claim({ workerId: 'A' });
     const phase = await run.settle(run.retry(reason));
     hit(coverage, 'dynamicRetry');
@@ -235,7 +237,7 @@ async function waitingMatrix(coverage) {
   for (const maxDeferrals of [1, 2]) {
     scenarios++;
     const f = fixture({ scope: `defer-${maxDeferrals}` });
-    await f.queue.item({ id: 'x', maxDeferrals }).enqueue();
+    await f.queue.item({ id: 'x', maxDeferrals }).ensure();
     let [run] = await f.queue.claim({ workerId: 'A' });
     let phase = await run.settle(run.wait('pending'));
     hit(coverage, 'defer', 'dynamicDefer');
@@ -263,7 +265,7 @@ async function fencingAndBudgets(coverage) {
   ]) {
     scenarios++;
     const f = fixture({ scope: `fence-${firstWorker}` });
-    await f.queue.item({ id: 'x', leaseMs: 1 }).enqueue();
+    await f.queue.item({ id: 'x', leaseMs: 1 }).ensure();
     const [old] = await f.queue.claim({ workerId: firstWorker });
     const oldFence = old.ref.fence;
     f.advance(1);
@@ -289,7 +291,7 @@ async function fencingAndBudgets(coverage) {
   {
     scenarios++;
     const f = fixture({ scope: 'attempt-budget' });
-    await f.queue.item({ id: 'x', leaseMs: 1, maxAttempts: 2 }).enqueue();
+    await f.queue.item({ id: 'x', leaseMs: 1, maxAttempts: 2 }).ensure();
     await f.queue.claim({ workerId: 'A' });
     f.advance(1);
     await f.queue.claim({ workerId: 'B' });
@@ -303,7 +305,7 @@ async function fencingAndBudgets(coverage) {
   {
     scenarios++;
     const f = fixture({ scope: 'deadline' });
-    await f.queue.item({ id: 'x', leaseMs: 2, maxAttempts: 3, maxElapsedMs: 2 }).enqueue();
+    await f.queue.item({ id: 'x', leaseMs: 2, maxAttempts: 3, maxElapsedMs: 2 }).ensure();
     const [a] = await f.queue.claim({ workerId: 'A' });
     f.advance(1);
     await a.heartbeat();
@@ -322,7 +324,7 @@ async function cancellationMatrix(coverage) {
     scenarios++;
     const f = fixture({ scope: 'cancel-queued' });
     const item = f.queue.item({ id: 'x' });
-    await item.enqueue();
+    await item.ensure();
     await item.cancel();
     hit(coverage, 'cancelQueued');
     await inspect(f, coverage);
@@ -331,7 +333,7 @@ async function cancellationMatrix(coverage) {
     scenarios++;
     const f = fixture({ scope: 'cancel-running' });
     const item = f.queue.item({ id: 'x' });
-    await item.enqueue();
+    await item.ensure();
     const [run] = await f.queue.claim({ workerId: 'A' });
     const result = await item.cancel();
     assert.equal(result.activeAttempt.fence, run.ref.fence);
@@ -343,7 +345,7 @@ async function cancellationMatrix(coverage) {
     scenarios++;
     const f = fixture({ scope: 'cancel-waiting' });
     const item = f.queue.item({ id: 'x' });
-    await item.enqueue();
+    await item.ensure();
     const [run] = await f.queue.claim({ workerId: 'A' });
     await run.settle(run.wait('pending'));
     await item.cancel();
@@ -357,7 +359,7 @@ async function replayAndDynamicPolicies(coverage) {
   {
     scenarios++;
     const f = fixture({ scope: 'receipt' });
-    await f.queue.item({ id: 'x' }).enqueue();
+    await f.queue.item({ id: 'x' }).ensure();
     const [run] = await f.queue.claim({ workerId: 'A' });
     const outcome = run.succeed({ value: 1 });
     const first = await run.settle(outcome);
@@ -369,7 +371,7 @@ async function replayAndDynamicPolicies(coverage) {
   {
     scenarios++;
     const f = fixture({ scope: 'dynamic-next', dynamicNext: true });
-    await f.queue.item({ id: 'x', leaseMs: 3 }).enqueue();
+    await f.queue.item({ id: 'x', leaseMs: 3 }).ensure();
     const [run] = await f.queue.claim({ workerId: 'A' });
     assert.equal(run.attempt.leaseUntil, run.observedAt + 3);
     hit(coverage, 'dynamicLimits');
@@ -383,7 +385,7 @@ async function replayAndDynamicPolicies(coverage) {
   {
     scenarios++;
     const f = fixture({ scope: 'parallel' });
-    await f.queue.item({ id: 'x' }).enqueue();
+    await f.queue.item({ id: 'x' }).ensure();
     const groups = await Promise.all(
       Array.from({ length: 16 }, (_, index) => f.queue.claim({ workerId: `W${index}` })),
     );
@@ -406,9 +408,9 @@ async function replayAndDynamicPolicies(coverage) {
       prepare: (run) => run.handoff({ id: run.input.id }),
       onPrepareError: (run) => run.fail('terminal'),
     });
-    await queue.enqueue({ id: 'x' });
+    await queue.ensure({ id: 'x' });
     const [local, leased] = await Promise.all([
-      queue.process({ workerId: 'local' }),
+      queue.runAvailable({ workerId: 'local' }),
       external.claim({ workerId: 'external', limit: 1 }),
     ]);
     assert.equal(local.length + leased.length, 1);
@@ -442,7 +444,7 @@ async function replayAndDynamicPolicies(coverage) {
     };
     let started = 0;
     await assert.rejects(
-      processExternal(
+      runExternalAvailable(
         oversized,
         { workerId: 'external', concurrency: 1, signal: new AbortController().signal },
         async (run) => {
@@ -457,13 +459,27 @@ async function replayAndDynamicPolicies(coverage) {
   }
   {
     scenarios++;
+    const f = fixture({ scope: 'one-millisecond-lease' });
+    await f.queue.item({ id: 'x', leaseMs: 1, maxAttempts: 2 }).ensure();
+    const [result] = await f.queue.runAvailable({ workerId: 'A' }, async (run) =>
+      run.succeed({ value: 1 }),
+    );
+    if (result.status === 'interrupted')
+      assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+    hit(coverage, 'oneMillisecondLease');
+  }
+  {
+    scenarios++;
     const f = fixture({ scope: 'worker-isolation' });
-    await f.queue.item({ id: 'bad', leaseMs: 1000 }).enqueue();
-    await f.queue.item({ id: 'good', leaseMs: 1000 }).enqueue();
-    const results = await f.queue.process({ workerId: 'batch', concurrency: 2 }, async (run) => {
-      if (run.input.id === 'bad') throw new Error('synthetic handler failure');
-      return run.succeed({ value: 1 });
-    });
+    await f.queue.item({ id: 'bad', leaseMs: 1000 }).ensure();
+    await f.queue.item({ id: 'good', leaseMs: 1000 }).ensure();
+    const results = await f.queue.runAvailable(
+      { workerId: 'batch', concurrency: 2 },
+      async (run) => {
+        if (run.input.id === 'bad') throw new Error('synthetic handler failure');
+        return run.succeed({ value: 1 });
+      },
+    );
     assert.equal(results.filter((result) => result.status === 'interrupted').length, 1);
     assert.equal(results.filter((result) => result.status === 'settled').length, 1);
     assert.equal((await f.queue.item({ id: 'good' }).inspect()).phase.state, 'succeeded');
@@ -496,7 +512,7 @@ async function fuzz(coverage) {
       maxDeferrals: 2,
       maxRetries: 1,
     });
-    await item.enqueue();
+    await item.ensure();
     const runs = [];
     for (let step = 0; step < steps; step++) {
       const s = await inspect(f, coverage);
@@ -568,6 +584,6 @@ export async function runBoundedRefinementCorpus() {
   };
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   console.log(JSON.stringify(await runBoundedRefinementCorpus(), null, 2));
 }

@@ -28,10 +28,12 @@ export type WorkHandler<I, O, R extends string> = (
   run: WorkRun<I, O, R>,
   input: I,
 ) => WorkOutcome<O, R> | Promise<WorkOutcome<O, R>>;
-/** A batch reports failures independently instead of losing successful neighboring jobs. */
-export type ProcessResult =
-  | { workId: string; status: 'settled'; phase: WorkPhase }
+/** One bounded run-available pass reports failures independently without losing healthy neighbors. */
+export type RunAvailableResult<O = unknown, R extends string = string> =
+  | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
+/** Conventional worker synonym retained for compatibility; prefer `RunAvailableResult`. */
+export type ProcessResult<O = unknown, R extends string = string> = RunAvailableResult<O, R>;
 /** Validate static worker knobs before any claim; per-claim checks only compare against that lease. */
 function validateWorkerOptions(options: WorkerOptions): number {
   if (options.heartbeatMs !== undefined) integer(options.heartbeatMs, 'heartbeatMs', 1);
@@ -54,7 +56,7 @@ async function processClaim<I, O, R extends string>(
   run: WorkRun<I, O, R>,
   options: WorkerOptions,
   handler: WorkHandler<I, O, R>,
-): Promise<ProcessResult> {
+): Promise<RunAvailableResult<O, R>> {
   const controller = new AbortController();
   run.signal = controller.signal;
   const stop = () => controller.abort();
@@ -64,10 +66,10 @@ async function processClaim<I, O, R extends string>(
   let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
   const leaseMs = run.attempt.leaseUntil - run.observedAt;
-  const heartbeatMs = Math.min(
-    options.heartbeatMs ?? Math.max(1, Math.floor(leaseMs / 3)),
-    2_147_483_647,
-  );
+  const heartbeatMs =
+    options.heartbeatMs === undefined && leaseMs === 1
+      ? undefined
+      : Math.min(options.heartbeatMs ?? Math.max(1, Math.floor(leaseMs / 3)), 2_147_483_647);
   function armExpiry(deadline: number) {
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
@@ -82,20 +84,23 @@ async function processClaim<I, O, R extends string>(
       if (!stopped && !controller.signal.aborted) {
         // Charge the whole round trip to the lease: never infer extra ownership from a slow reply.
         armExpiry(sentAt + renewed.attempt.leaseUntil - renewed.observedAt);
-        heartbeatTimer = setTimeout(() => {
-          void heartbeat();
-        }, heartbeatMs);
+        if (heartbeatMs !== undefined)
+          heartbeatTimer = setTimeout(() => {
+            void heartbeat();
+          }, heartbeatMs);
       }
     } catch (error) {
       controller.abort(error);
     }
   }
   try {
-    if (heartbeatMs >= leaseMs) throw new RangeError('heartbeatMs must be shorter than the lease');
+    if (heartbeatMs !== undefined && heartbeatMs >= leaseMs)
+      throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry((localClaimStartedAt.get(run) ?? performance.now()) + leaseMs);
-    heartbeatTimer = setTimeout(() => {
-      void heartbeat();
-    }, heartbeatMs);
+    if (heartbeatMs !== undefined)
+      heartbeatTimer = setTimeout(() => {
+        void heartbeat();
+      }, heartbeatMs);
     if (controller.signal.aborted) throw new Error('Worker ownership lost');
     const outcome = await handler(run, run.input);
     if (controller.signal.aborted) throw new Error('Worker ownership lost');
@@ -116,7 +121,7 @@ export async function processClaims<I, O, R extends string>(
   queue: WorkQueue<I, O, R>,
   options: WorkerOptions,
   handler: WorkHandler<I, O, R>,
-): Promise<ProcessResult[]> {
+): Promise<RunAvailableResult<O, R>[]> {
   const limit = validateWorkerOptions(options);
   if (options.signal?.aborted) return [];
   const claims = await queue.claim({

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { processExternal, runExternal } from '../dist/external.js';
+import { processExternal, runExternalAvailable, runExternal } from '../dist/external.js';
 
 function fixture(options = {}) {
   const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'external' });
@@ -16,14 +16,14 @@ function fixture(options = {}) {
 }
 
 test('external worker runner hides claim heartbeat and settlement plumbing from handlers', async () => {
-  const { queue, transport } = fixture({ leaseMs: 180 });
+  const { queue, transport } = fixture({ leaseMs: 500 });
   for (let index = 0; index < 3; index++) {
     await transport.ensure({ index }, { key: String(index) });
     await transport.ensure({ index }, { key: String(index) });
   }
   let active = 0;
   let peak = 0;
-  const results = await processExternal(
+  const results = await runExternalAvailable(
     transport,
     { workerId: 'relay', concurrency: 3, heartbeatMs: 40, signal: new AbortController().signal },
     async (run, input) => {
@@ -41,9 +41,38 @@ test('external worker runner hides claim heartbeat and settlement plumbing from 
     assert.equal((await queue.inspect(String(index))).phase.state, 'succeeded');
 });
 
+test('a one-millisecond external lease does not fail solely because automatic heartbeat cannot fit', async () => {
+  const transport = {
+    async claim() {
+      return [
+        {
+          input: null,
+          attempt: { workId: 'x', generation: 1, fence: 1 },
+          observedAt: 100,
+          leaseUntil: 101,
+        },
+      ];
+    },
+    async heartbeat() {
+      throw new Error('unexpected heartbeat');
+    },
+    async settle() {
+      return { state: 'succeeded', result: null };
+    },
+  };
+  const [result] = await runExternalAvailable(
+    transport,
+    { workerId: 'relay', signal: new AbortController().signal },
+    async (run) => run.succeed(),
+  );
+  assert.ok(result);
+  if (result.status === 'interrupted')
+    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+});
+
 test('external claim response latency cannot extend authoritative ownership', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 80 });
-  await queue.enqueue(null, { key: 'x' });
+  await queue.ensure(null, { key: 'x' });
   const transport = {
     ...base,
     async claim(request) {
@@ -53,7 +82,7 @@ test('external claim response latency cannot extend authoritative ownership', as
     },
   };
   let effects = 0;
-  const [result] = await processExternal(
+  const [result] = await runExternalAvailable(
     transport,
     { workerId: 'relay', heartbeatMs: 20, signal: new AbortController().signal },
     async (run) => {
@@ -68,7 +97,7 @@ test('external claim response latency cannot extend authoritative ownership', as
 
 test('external heartbeat failure aborts the handler before it can report success', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 250 });
-  await queue.enqueue(null, { key: 'x' });
+  await queue.ensure(null, { key: 'x' });
   let heartbeatCalls = 0;
   const transport = {
     ...base,
@@ -79,7 +108,7 @@ test('external heartbeat failure aborts the handler before it can report success
     },
   };
   let sawAbort = false;
-  const [result] = await processExternal(
+  const [result] = await runExternalAvailable(
     transport,
     { workerId: 'relay', heartbeatMs: 25, signal: new AbortController().signal },
     async (run) => {
@@ -95,7 +124,7 @@ test('external heartbeat failure aborts the handler before it can report success
 
 test('managed external runner refills freed slots and drains active work before observer failure escapes', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 1000 });
-  await queue.enqueue({ id: 'slow' }, { key: 'slow' });
+  await queue.ensure({ id: 'slow' }, { key: 'slow' });
   let claimCalls = 0;
   const transport = {
     ...base,
@@ -143,7 +172,7 @@ test('external worker options reject invalid heartbeat before any lease is claim
   };
   const signal = new AbortController().signal;
   await assert.rejects(
-    processExternal(transport, { workerId: 'relay', heartbeatMs: 0, signal }, async (run) =>
+    runExternalAvailable(transport, { workerId: 'relay', heartbeatMs: 0, signal }, async (run) =>
       run.succeed(),
     ),
     /heartbeatMs/,
@@ -181,7 +210,7 @@ test('external workers reject oversized claim responses before starting handlers
 
   let processStarted = 0;
   await assert.rejects(
-    processExternal(
+    runExternalAvailable(
       await oversizedTransport(),
       { workerId: 'relay', concurrency: 1, signal: new AbortController().signal },
       async (run) => {
@@ -254,7 +283,7 @@ test('managed external runner passes shutdown signal into an in-flight claim', a
 
 test('caller abort stops new external claims and drains an already-active handler', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 1000 });
-  await queue.enqueue({ id: 'slow' }, { key: 'slow' });
+  await queue.ensure({ id: 'slow' }, { key: 'slow' });
   const stop = new AbortController();
   let claims = 0;
   const transport = {
@@ -313,9 +342,9 @@ test('local run and external service compete through one claim/fence authority',
     prepare: (run) => run.handoff({ id: run.input.id }),
     onPrepareError: (run) => run.fail('prepare_failed'),
   });
-  await queue.enqueue({ id: 'one' });
+  await queue.ensure({ id: 'one' });
   const [local, external] = await Promise.all([
-    queue.process({ workerId: 'local' }),
+    queue.runAvailable({ workerId: 'local' }),
     service.claim({ workerId: 'outside', limit: 1 }),
   ]);
   assert.equal(local.length + external.length, 1);
@@ -324,4 +353,15 @@ test('local run and external service compete through one claim/fence authority',
     await service.settle(external[0].attempt, { type: 'succeed', result: 'external', next: [] });
   }
   assert.equal((await queue.item({ id: 'one' }).inspect()).phase.state, 'succeeded');
+});
+
+test('processExternal remains an exact compatibility alias for runExternalAvailable', async () => {
+  const { queue, transport } = fixture();
+  await queue.ensure({ id: 'compat' }, { key: 'compat' });
+  const results = await processExternal(
+    transport,
+    { workerId: 'compat', signal: new AbortController().signal },
+    async (run) => run.succeed(),
+  );
+  assert.equal(results[0]?.status, 'settled');
 });

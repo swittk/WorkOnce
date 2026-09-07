@@ -1,6 +1,7 @@
 export { createWorkOnce, WorkQueue, WorkRun, WorkItem } from './work.js';
 export type {
   WorkDefinition,
+  EnsureOptions,
   EnqueueOptions,
   WorkHandoff,
   LeasedWork,
@@ -23,12 +24,13 @@ export type {
   RetryContext,
   WorkEvent,
 } from './model.js';
-export type { WorkerOptions, WorkHandler, ProcessResult } from './worker.js';
-export { ExternalWorkRun, processExternal, runExternal } from './external.js';
+export type { WorkerOptions, WorkHandler, RunAvailableResult, ProcessResult } from './worker.js';
+export { ExternalWorkRun, runExternalAvailable, processExternal, runExternal } from './external.js';
 export type {
   ExternalWorkTransport,
   ExternalWorkService,
   ExternalWorkerOptions,
   ExternalWorkHandler,
+  ExternalRunAvailableResult,
   ExternalProcessResult,
 } from './external.js';

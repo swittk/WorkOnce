@@ -87,8 +87,16 @@ export function createSqliteStore(
         if (!lockedColumns.some((column) => column['name'] === 'definition')) {
           db.exec('ALTER TABLE workonce ADD COLUMN definition TEXT');
           db.exec(`UPDATE workonce
-          SET definition = CASE WHEN json_valid(body) THEN json_extract(body, '$.definition') END
+          SET definition = CASE
+            WHEN json_valid(body) THEN
+              CASE WHEN json_type(body, '$.definition') = 'text' THEN json_extract(body, '$.definition') END
+          END
           WHERE definition IS NULL`);
+          const invalidLegacy = db
+            .prepare('SELECT id FROM workonce WHERE definition IS NULL LIMIT 1')
+            .get() as Record<string, unknown> | undefined;
+          if (invalidLegacy)
+            throw new Error(`Invalid persisted WorkOnce row '${String(invalidLegacy['id'])}'`);
         }
         createCurrentIndexes();
         db.exec('COMMIT');

@@ -4,14 +4,14 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 
-test('process starts jobs in parallel and automatic renewal keeps long jobs owned', async () => {
+test('runAvailable starts jobs in parallel and automatic renewal keeps long jobs owned', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('work', {
     limits: { leaseMs: 300 },
   });
-  for (let i = 0; i < 4; i++) await q.enqueue({ i }, { key: String(i) });
+  for (let i = 0; i < 4; i++) await q.ensure({ i }, { key: String(i) });
   let active = 0,
     peak = 0;
-  const results = await q.process(
+  const results = await q.runAvailable(
     { workerId: 'worker', concurrency: 4, heartbeatMs: 40 },
     async (run, input) => {
       active++;
@@ -26,6 +26,21 @@ test('process starts jobs in parallel and automatic renewal keeps long jobs owne
   assert.ok(results.every((x) => x.status === 'settled'));
   assert.equal((await q.inspect('0')).attempts, 1);
 });
+test('a one-millisecond lease does not fail solely because automatic heartbeat cannot fit', async () => {
+  const q = createWorkOnce({ store: createMemoryStore(), scope: 'one-ms' }).define('work', {
+    limits: { leaseMs: 1, maxAttempts: 2 },
+  });
+  await q.ensure(null, { key: 'job' });
+  let handlerCalls = 0;
+  const [result] = await q.runAvailable({ workerId: 'worker' }, async (run) => {
+    handlerCalls++;
+    return run.succeed();
+  });
+  if (result.status === 'interrupted')
+    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+  else assert.equal(handlerCalls, 1);
+});
+
 test('claim discovery latency is not charged to a lease granted afterward', async () => {
   const base = createMemoryStore();
   const store = {
@@ -38,9 +53,9 @@ test('claim discovery latency is not charged to a lease granted afterward', asyn
   const q = createWorkOnce({ store, scope: 'claim-latency' }).define('work', {
     limits: { leaseMs: 80 },
   });
-  await q.enqueue(null, { key: 'job' });
+  await q.ensure(null, { key: 'job' });
   let handlerCalls = 0;
-  const [result] = await q.process({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
+  const [result] = await q.runAvailable({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
     handlerCalls++;
     return run.succeed();
   });
@@ -50,18 +65,21 @@ test('claim discovery latency is not charged to a lease granted afterward', asyn
 
 test('one bad handler does not discard its healthy neighbor', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('work');
-  await q.enqueue({ bad: true }, { key: 'a' });
-  await q.enqueue({ bad: false }, { key: 'b' });
-  const results = await q.process({ workerId: 'worker', concurrency: 2 }, async (run, input) => {
-    if (input.bad) throw new Error('handler bug');
-    return run.succeed();
-  });
+  await q.ensure({ bad: true }, { key: 'a' });
+  await q.ensure({ bad: false }, { key: 'b' });
+  const results = await q.runAvailable(
+    { workerId: 'worker', concurrency: 2 },
+    async (run, input) => {
+      if (input.bad) throw new Error('handler bug');
+      return run.succeed();
+    },
+  );
   assert.equal(results.filter((r) => r.status === 'interrupted').length, 1);
   assert.equal(results.filter((r) => r.status === 'settled').length, 1);
 });
 test('the managed runner refills free capacity without waiting for the slowest job', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('work');
-  for (let i = 0; i < 5; i++) await q.enqueue({ i }, { key: String(i) });
+  for (let i = 0; i < 5; i++) await q.ensure({ i }, { key: String(i) });
   const controller = new AbortController();
   const starts = [];
   let finished = 0;
@@ -88,9 +106,9 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
     },
   };
   const q = createWorkOnce({ store, scope: 't' }).define('work', { limits: { leaseMs: 500 } });
-  await q.enqueue(null, { key: 'job' });
+  await q.ensure(null, { key: 'job' });
   let abortedInHandler = false;
-  const results = await q.process({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
+  const results = await q.runAvailable({ workerId: 'worker', heartbeatMs: 20 }, async (run) => {
     fail = true;
     await sleep(80);
     abortedInHandler = run.signal.aborted;
@@ -106,15 +124,15 @@ test('invalid static heartbeat configuration fails before local work is claimed'
   const q = createWorkOnce({ store: createMemoryStore(), scope: 'heartbeat-config' }).define(
     'work',
   );
-  await q.enqueue(null, { key: 'process' });
+  await q.ensure(null, { key: 'run-available' });
   await assert.rejects(
-    q.process({ workerId: 'worker', heartbeatMs: 0 }, async (run) => run.succeed()),
+    q.runAvailable({ workerId: 'worker', heartbeatMs: 0 }, async (run) => run.succeed()),
     /heartbeatMs/,
   );
-  assert.equal((await q.inspect('process')).phase.state, 'queued');
-  assert.equal((await q.inspect('process')).attempts, 0);
+  assert.equal((await q.inspect('run-available')).phase.state, 'queued');
+  assert.equal((await q.inspect('run-available')).attempts, 0);
 
-  await q.enqueue(null, { key: 'run' });
+  await q.ensure(null, { key: 'run' });
   await assert.rejects(
     q.run(
       { workerId: 'worker', heartbeatMs: 1.5, signal: new AbortController().signal },
