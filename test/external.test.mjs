@@ -236,6 +236,46 @@ test('managed external runner wakes an empty poll when an active lease becomes f
   stop.abort();
 });
 
+test('managed external runner does not start leases returned after an active lease becomes fatal', async () => {
+  const { transport: base } = fixture({ leaseMs: 500 });
+  await base.ensure({ id: 'a' }, { key: 'a' });
+  await base.ensure({ id: 'b' }, { key: 'b' });
+  let claimCalls = 0;
+  let releaseSecondClaim;
+  const secondClaimGate = new Promise((resolve) => {
+    releaseSecondClaim = resolve;
+  });
+  const transport = {
+    ...base,
+    async claim(request) {
+      claimCalls++;
+      if (claimCalls === 1) return base.claim({ ...request, limit: 1 });
+      await secondClaimGate;
+      return base.claim({ ...request, limit: 1 });
+    },
+    async heartbeat() {
+      throw new Error('external renewal down');
+    },
+  };
+  const started = [];
+  const stop = new AbortController();
+  const running = runExternal(
+    transport,
+    { workerId: 'relay', concurrency: 2, heartbeatMs: 20, idleMs: 1000, signal: stop.signal },
+    async (run, input) => {
+      started.push(input.id);
+      if (input.id === 'a') await sleep(80);
+      return run.succeed();
+    },
+  );
+  while (claimCalls < 2) await sleep(1);
+  await sleep(120);
+  releaseSecondClaim();
+  await assert.rejects(running, /External ownership lost/);
+  assert.deepEqual(started, ['a']);
+  stop.abort();
+});
+
 test('external worker options reject invalid heartbeat before any lease is claimed', async () => {
   const { transport: base } = fixture();
   let claims = 0;

@@ -247,6 +247,7 @@ export async function runExternal<I, O, R extends string>(
       await waitForPoll(idleMs, options.signal);
       continue;
     }
+    if (fatal !== undefined || options.signal.aborted) break;
     for (const lease of leases) {
       const pending = processLease(transport, lease, options, handler, claimStartedAt)
         .then(async (result) => {

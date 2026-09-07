@@ -157,6 +157,53 @@ test('managed runner wakes an empty poll when an active claim becomes fatal', as
   stop.abort();
 });
 
+test('managed runner does not start claims returned after an active claim becomes fatal', async () => {
+  const q = createWorkOnce({ store: createMemoryStore(), scope: 'fatal-claim-gate' }).define(
+    'work',
+    {
+      key: (input) => input.id,
+      limits: { leaseMs: 500 },
+    },
+  );
+  await q.ensure({ id: 'a' });
+  await q.ensure({ id: 'b' });
+  const originalClaim = q.claim.bind(q);
+  let claimCalls = 0;
+  let releaseSecondClaim;
+  const secondClaimGate = new Promise((resolve) => {
+    releaseSecondClaim = resolve;
+  });
+  q.claim = async (options) => {
+    claimCalls++;
+    if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
+    await secondClaimGate;
+    return originalClaim({ ...options, limit: 1 });
+  };
+  let releaseHandler;
+  const handlerGate = new Promise((resolve) => {
+    releaseHandler = resolve;
+  });
+  const started = [];
+  const stop = new AbortController();
+  const running = q.run(
+    { workerId: 'worker', concurrency: 2, heartbeatMs: 100, idleMs: 1000, signal: stop.signal },
+    async (run, input) => {
+      started.push(input.id);
+      if (input.id === 'a') await handlerGate;
+      return run.succeed();
+    },
+  );
+  while (started.length < 1 || claimCalls < 2) await sleep(1);
+  await q.cancelCurrent({ key: 'a', reason: 'revoked' });
+  releaseHandler();
+  await sleep(20);
+  releaseSecondClaim();
+  await assert.rejects(running, /stale_attempt/);
+  assert.deepEqual(started, ['a']);
+  assert.equal((await q.inspect('b')).phase.state, 'running');
+  stop.abort();
+});
+
 test('invalid static heartbeat configuration fails before local work is claimed', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 'heartbeat-config' }).define(
     'work',

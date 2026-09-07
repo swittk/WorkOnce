@@ -164,6 +164,7 @@ export async function runWorker<I, O, R extends string>(
       await waitForPoll(idleMs, options.signal);
       continue;
     }
+    if (fatal !== undefined || options.signal.aborted) break;
     for (const claim of claims) {
       const pending = processClaim(claim, options, handler)
         .then(async (result) => {

@@ -45,6 +45,8 @@ const coverageKeys = [
   'workerErrorIsolation',
   'managedRunnerFatalWake',
   'managedExternalFatalWake',
+  'managedRunnerFatalClaimGate',
+  'managedExternalFatalClaimGate',
   'generationTwo',
   'fenceIncrease',
   'parallelClaimCompetition',
@@ -623,6 +625,99 @@ async function replayAndDynamicPolicies(coverage) {
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
     hit(coverage, 'managedExternalFatalWake');
+  }
+  {
+    scenarios++;
+    const queue = createWorkOnce({
+      store: createMemoryStore(),
+      scope: 'managed-runner-fatal-claim-gate',
+    }).define('job', { key: (input) => input.id, limits: { leaseMs: 500 } });
+    await queue.ensure({ id: 'a' });
+    await queue.ensure({ id: 'b' });
+    const originalClaim = queue.claim.bind(queue);
+    let claimCalls = 0;
+    let releaseSecondClaim;
+    const secondClaimGate = new Promise((resolve) => {
+      releaseSecondClaim = resolve;
+    });
+    queue.claim = async (options) => {
+      claimCalls++;
+      if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
+      await secondClaimGate;
+      return originalClaim({ ...options, limit: 1 });
+    };
+    let releaseHandler;
+    const handlerGate = new Promise((resolve) => {
+      releaseHandler = resolve;
+    });
+    const started = [];
+    const stop = new AbortController();
+    const running = queue.run(
+      { workerId: 'local', concurrency: 2, heartbeatMs: 100, idleMs: 1000, signal: stop.signal },
+      async (run, input) => {
+        started.push(input.id);
+        if (input.id === 'a') await handlerGate;
+        return run.succeed();
+      },
+    );
+    while (started.length < 1 || claimCalls < 2)
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    await queue.cancelCurrent({ key: 'a', reason: 'revoked' });
+    releaseHandler();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    releaseSecondClaim();
+    await assert.rejects(running, /stale_attempt/);
+    assert.deepEqual(started, ['a']);
+    stop.abort();
+    hit(coverage, 'managedRunnerFatalClaimGate');
+  }
+  {
+    scenarios++;
+    const queue = createWorkOnce({
+      store: createMemoryStore(),
+      scope: 'managed-external-fatal-claim-gate',
+    }).define('job', { limits: { leaseMs: 500 } });
+    const base = queue.serveExternal({
+      prepare: (run) => run.handoff(run.input),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await base.ensure({ id: 'a' }, { key: 'a' });
+    await base.ensure({ id: 'b' }, { key: 'b' });
+    let claimCalls = 0;
+    let releaseSecondClaim;
+    const secondClaimGate = new Promise((resolve) => {
+      releaseSecondClaim = resolve;
+    });
+    const transport = {
+      ...base,
+      async claim(request) {
+        claimCalls++;
+        if (claimCalls === 1) return base.claim({ ...request, limit: 1 });
+        await secondClaimGate;
+        return base.claim({ ...request, limit: 1 });
+      },
+      async heartbeat() {
+        throw new Error('external renewal down');
+      },
+    };
+    const started = [];
+    const stop = new AbortController();
+    const running = runExternal(
+      transport,
+      { workerId: 'external', concurrency: 2, heartbeatMs: 20, idleMs: 1000, signal: stop.signal },
+      async (run, input) => {
+        started.push(input.id);
+        if (input.id === 'a') await new Promise((resolve) => setTimeout(resolve, 80));
+        return run.succeed();
+      },
+    );
+    while (claimCalls < 2) await new Promise((resolve) => setTimeout(resolve, 1));
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    releaseSecondClaim();
+    await assert.rejects(running, /External ownership lost/);
+    assert.deepEqual(started, ['a']);
+    stop.abort();
+    hit(coverage, 'managedExternalFatalClaimGate');
   }
   return scenarios;
 }
