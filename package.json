@@ -107,7 +107,8 @@
     "README.md",
     "LICENSE",
     "docs",
-    "formal"
+    "formal",
+    "assurance"
   ],
   "engines": {
     "node": ">=22.16.0"
@@ -120,9 +121,14 @@
     "formal": "node scripts/formal.mjs",
     "prepack": "npm run build",
     "prepare": "npm run build",
-    "format:check": "prettier --check src test README.md docs",
+    "format:check": "prettier --check src test scripts README.md docs package.json .github/workflows/check.yml",
     "test:consumer": "npm run build && node scripts/consumer-smoke.mjs",
-    "bench": "npm run build && node scripts/benchmark.mjs"
+    "bench": "npm run build && node scripts/benchmark.mjs",
+    "assurance:manifest": "node scripts/check-formal-implementation-conformance.mjs",
+    "assurance:traces": "node scripts/check-bounded-trace-domain.mjs",
+    "assurance:update": "npm run build && node scripts/check-formal-implementation-conformance.mjs --write && node scripts/check-bounded-trace-domain.mjs --write",
+    "assurance": "node scripts/run-assurance.mjs",
+    "assurance:update:ack": "npm run build && node scripts/check-formal-implementation-conformance.mjs --write --ack-source-model-review && node scripts/check-bounded-trace-domain.mjs --write"
   },
   "devDependencies": {
     "typescript": "5.9.3",

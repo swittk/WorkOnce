@@ -233,6 +233,10 @@ No DAG engine, cron interpreter, workflow replay, global rate limiter or built-i
 “exactly once” external effects. No row deletion/ID reuse API: that would need a deliberate
 fence/tombstone retention contract.
 
+## Exhaustive formal implementation mapping
+
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 87 callables, 12 callable policy/storage fields and 287 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 184,174-state TLC graph check. See [assurance](docs/assurance.md).
+
 ## One adapter per backing store, not per job
 
 The application supplies its store **once**, and every work kind shares it. Job definitions do
@@ -270,11 +274,12 @@ own domain data, but it should not rewrite a storage adapter for each job.
 
 ```sh
 npm ci
-npm run check
-npm test
-npm run test:process
-npm run test:consumer
-TLA2TOOLS_JAR=/path/to/tla2tools.jar npm run formal
+TLA2TOOLS_JAR=/path/to/tla2tools.jar npm run assurance
+
+# Individual gates remain available:
+npm run assurance:manifest
+npm run assurance:traces
+npm run formal
 ```
 
 ESM and CommonJS are built from clean output directories. Runtime core has no third-party

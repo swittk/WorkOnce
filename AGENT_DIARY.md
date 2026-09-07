@@ -26,3 +26,11 @@
 - Current claim discovery filters definition before the limit; old-definition rows cannot poison a current worker pass. Dispatch retains poison follow-ups and continues healthy siblings/pages. SQLite preserves the original failure if rollback itself fails.
 - Public tree was scanned for private application names/fixtures before commit; tracked source/docs are clean. Local ignored `.chatgpt` state may describe private dogfood and must remain untracked.
 - A private Parse-only dogfood adapter now passes the shared contract on two Parse backends, but it stays out of this public package until its capability surface stabilizes. Do not add framework-specific code merely to move application LOC.
+
+2026-09-07 exhaustive formal implementation pass
+- Copied the current PayMeOnce/InventoryOnce assurance mechanics, not their domain model: compiler-discovered callable/type surface, fail-closed manifest, source/model semantic pairing, one batched implementation refinement corpus, and one TLC graph run.
+- Surface currently maps 87 callables, 12 callable policy/storage fields, 89 reachable package-owned types, and 287 fields; every field has a classification, abstraction concept, type hash, and executable evidence. Returned callable objects and type-only interface methods are included.
+- Bounded implementation corpus currently runs 28 deliberate scenarios plus 96 deterministic 10-step fuzz traces and requires 42 semantic coverage dimensions. No per-trace TLC process spawning.
+- TLA now covers retry denial/budget, defer/wake/deferral budget, manual retry permission, rerun, attempt/deadline exhaustion, follow-up obligations and reset blocking in addition to fenced claim/renew/success/failure/cancel. Current checked graph: 288013 generated / 184174 distinct states, depth 19.
+- Complete `npm run assurance` measured about 20 seconds wall on HPSERVER. TLC itself fell to about 2.3 seconds with bounded host parallelism + parallel GC. Keep this gate cheap enough for every review loop.
+- Ordinary `assurance:update` refuses source-only lifecycle drift; use `assurance:update:ack` only after an explicit review that the abstract machine intentionally remains unchanged.
