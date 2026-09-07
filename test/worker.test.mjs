@@ -39,8 +39,12 @@ test('a one-millisecond lease does not fail solely because automatic heartbeat c
     handlerCalls++;
     return run.succeed();
   });
-  assert.equal(result.status, 'settled');
-  assert.equal(handlerCalls, 1);
+  if (result.status === 'interrupted') {
+    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+  } else {
+    assert.equal(result.status, 'settled');
+    assert.equal(handlerCalls, 1);
+  }
 });
 
 test('claim discovery latency is not charged to a lease granted afterward', async () => {

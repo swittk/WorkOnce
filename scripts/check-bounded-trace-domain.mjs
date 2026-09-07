@@ -13,8 +13,10 @@ const evidenceFiles = [
 ];
 function digestFiles(files) {
   const hash = crypto.createHash('sha256');
-  for (const file of files)
-    hash.update(`${file}\n${fs.readFileSync(path.join(root, file), 'utf8')}\n---\n`);
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n?/gu, '\n');
+    hash.update(`${file}\n${content}\n---\n`);
+  }
   return hash.digest('hex');
 }
 const report = await runBoundedRefinementCorpus();
