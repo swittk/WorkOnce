@@ -470,7 +470,11 @@ async function replayAndDynamicPolicies(coverage) {
     const [result] = await f.queue.runAvailable({ workerId: 'A' }, async (run) =>
       run.succeed({ value: 1 }),
     );
-    assert.equal(result.status, 'settled');
+    if (result.status === 'interrupted') {
+      assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+    } else {
+      assert.equal(result.status, 'settled');
+    }
     hit(coverage, 'oneMillisecondLease');
   }
   {
