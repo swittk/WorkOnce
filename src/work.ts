@@ -213,11 +213,12 @@ export class WorkQueue<I, O = null, R extends string = string> {
   }
   /** Create an inert follow-up description. It does not enqueue until success is durably accepted. */
   request(input: I, options: EnqueueOptions = {}): WorkRequest<I> {
+    const key = this.key(input, options.key);
     return copy({
-      id: workId(this.scope, this.kind, this.key(input, options.key)),
+      id: workId(this.scope, this.kind, key),
       scope: this.scope,
       kind: this.kind,
-      key: this.key(input, options.key),
+      key,
       definition: this.definition.version ?? '1',
       input,
       limits: {

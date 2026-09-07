@@ -1,6 +1,7 @@
 import type { WorkStore, WorkQuery, StoreChange } from './storage.js';
 import type { WorkRecord } from './model.js';
 import { copy, dueAt, integer, WorkConflict } from './kernel.js';
+import { compareUtf8Text, validateStoreWrite } from './storage-validation.js';
 /** Reference store only: detached rows and per-item atomic transitions, but no crash durability. */
 export function createMemoryStore(options: { now?: () => number } = {}): WorkStore {
   const rows = new Map<string, WorkRecord>();
@@ -15,9 +16,9 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
       const change = decide(current ? copy(current) : undefined, integer(now(), 'clock'));
       const value = copy(change.value);
       if (change.next) {
-        if (change.next.id !== id) throw new Error('Store decision changed work identity');
+        validateStoreWrite(id, current, change.next, change.validUntil);
         const next = copy(change.next);
-        if (change.validUntil !== undefined && now() >= change.validUntil)
+        if (change.validUntil !== undefined && integer(now(), 'clock') >= change.validUntil)
           throw new WorkConflict('lease_expired');
         rows.set(id, next);
       }
@@ -44,16 +45,14 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
       if (query.select === 'due')
         selected = selected.filter((row) => (dueAt(row) ?? Infinity) <= clock);
       if (query.select === 'outbox') selected = selected.filter((row) => row.outbox.length > 0);
-      if (query.afterId !== undefined) selected = selected.filter((row) => row.id > query.afterId!);
+      if (query.afterId !== undefined)
+        selected = selected.filter((row) => compareUtf8Text(row.id, query.afterId!) > 0);
       selected.sort((a, b) =>
         query.select === 'due'
-          ? dueAt(a)! - dueAt(b)! || compareIds(a.id, b.id)
-          : compareIds(a.id, b.id),
+          ? dueAt(a)! - dueAt(b)! || compareUtf8Text(a.id, b.id)
+          : compareUtf8Text(a.id, b.id),
       );
       return { rows: selected.slice(0, query.limit).map(copy), now: clock };
     },
   };
-}
-function compareIds(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

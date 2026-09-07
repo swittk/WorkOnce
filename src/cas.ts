@@ -1,6 +1,7 @@
 import type { StoreChange, WorkQuery, WorkStore } from './storage.js';
 import type { WorkRecord } from './model.js';
 import { copy, integer } from './kernel.js';
+import { validateStoreWrite } from './storage-validation.js';
 /** A native compare-and-swap write. Revision and deadline are checked by storage, not JavaScript. */
 export interface CompareExchange {
   /** Stable item identity. */
@@ -47,11 +48,7 @@ export function createCompareExchangeStore(
         const value = copy(change.value);
         if (change.next === undefined) return value;
         const next = copy(change.next);
-        if (next.id !== id || next.revision !== (expectedRevision ?? 0) + 1) {
-          throw new Error(
-            'Store decisions must preserve identity and advance exactly one revision',
-          );
-        }
+        validateStoreWrite(id, current, next, change.validUntil);
         const applied = await port.compareExchange({
           id,
           expectedRevision,

@@ -235,7 +235,7 @@ fence/tombstone retention contract.
 
 ## Exhaustive formal implementation mapping
 
-WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 87 callables, 12 callable policy/storage fields and 287 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 184,174-state TLC graph check. See [assurance](docs/assurance.md).
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 119 callables, 13 callable policy/storage fields and 309 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
 
 ## One adapter per backing store, not per job
 

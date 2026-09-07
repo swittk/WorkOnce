@@ -30,9 +30,9 @@ Claim(w) ==
        /\ lease' = Min2(now + 1, started + MaxElapsed)
        /\ attempts' = attempts + 1
        /\ tokens' = tokens \cup {[worker |-> w, generation |-> generation, fence |-> fence+1]}
-  /\ manualRetryAllowed' = FALSE /\ stopReason' = "none"
+  /\ manualRetryAllowed' = FALSE /\ stopReason' = "none" /\ lastAcceptedFence' = 0
   /\ UNCHANGED <<generation, now, available, retries, deferrals, pendingNext,
-                 childCreated, terminalNeedsNext, lastAcceptedFence>>
+                 childCreated, terminalNeedsNext>>
 Renew(t) ==
   /\ Current(t)
   /\ lease' = Min2(now + 1, Deadline)
@@ -102,13 +102,15 @@ ManualRetry ==
   /\ generation' = generation + 1 /\ state' = "queued" /\ waitCause' = "none"
   /\ available' = now /\ attempts' = 0 /\ retries' = 0 /\ deferrals' = 0 /\ firstStarted' = -1
   /\ manualRetryAllowed' = FALSE /\ stopReason' = "none" /\ terminalNeedsNext' = FALSE
-  /\ UNCHANGED <<owner, fence, lease, now, tokens, pendingNext, childCreated, lastAcceptedFence>>
+  /\ childCreated' = FALSE /\ lastAcceptedFence' = 0
+  /\ UNCHANGED <<owner, fence, lease, now, tokens, pendingNext>>
 Rerun ==
   /\ state = "succeeded" /\ pendingNext = FALSE /\ generation < MaxGeneration
   /\ generation' = generation + 1 /\ state' = "queued" /\ waitCause' = "none"
   /\ available' = now /\ attempts' = 0 /\ retries' = 0 /\ deferrals' = 0 /\ firstStarted' = -1
   /\ manualRetryAllowed' = FALSE /\ stopReason' = "none" /\ terminalNeedsNext' = FALSE
-  /\ UNCHANGED <<owner, fence, lease, now, tokens, pendingNext, childCreated, lastAcceptedFence>>
+  /\ childCreated' = FALSE /\ lastAcceptedFence' = 0
+  /\ UNCHANGED <<owner, fence, lease, now, tokens, pendingNext>>
 ExhaustAttempts ==
   /\ Due /\ attempts >= MaxAttempts
   /\ state' = "failed" /\ waitCause' = "none" /\ owner' = 0
@@ -157,9 +159,12 @@ TypeOK == /\ state \in {"queued", "running", "waiting", "failed", "cancelled", "
           /\ owner \in Workers \cup {0}
           /\ attempts \in 0..MaxAttempts /\ retries \in 0..MaxRetries
           /\ deferrals \in 0..MaxDeferrals /\ firstStarted \in {-1} \cup 0..MaxTime
-OneOwner == Cardinality({t \in tokens : Current(t)}) <= 1
+          /\ lastAcceptedFence \in 0..MaxFence
+CurrentFenceUnique == Cardinality({t \in tokens : t.generation = generation /\ t.fence = fence}) <= 1
+RunningOwnerTokenIssued == state = "running" =>
+  [worker |-> owner, generation |-> generation, fence |-> fence] \in tokens
+AcceptedFenceIsCurrentOrClear == lastAcceptedFence = 0 \/ lastAcceptedFence = fence
 SuccessUsesCurrentFence == state = "succeeded" => lastAcceptedFence = fence
-AcceptedFenceNotFromFuture == lastAcceptedFence <= fence
 WaitingHasCause == state = "waiting" => waitCause \in {"retry", "defer"}
 RunningHasNoWaitCause == state = "running" => waitCause = "none"
 PendingFollowupIsTerminal == pendingNext => state \in {"succeeded", "failed"}

@@ -38,3 +38,14 @@ test('wakeCurrent uses the current revision internally for trusted domain events
   assert.equal((await item.wake()).phase.state, 'queued');
   assert.equal((await q.claim({ workerId: 'A' })).length, 1);
 });
+
+test('one request evaluates a dynamic work key exactly once', () => {
+  let calls = 0;
+  const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('job', {
+    key: () => `key-${++calls}`,
+  });
+  const request = q.request(null);
+  assert.equal(calls, 1);
+  assert.equal(request.key, 'key-1');
+  assert.equal(request.id, JSON.stringify(['t', 'job', 'key-1']));
+});

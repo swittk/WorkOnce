@@ -106,3 +106,114 @@ test('managed remote runner refills freed slots and drains active work before ob
   assert.equal((await queue.inspect('slow')).phase.state, 'succeeded');
   stop.abort();
 });
+
+test('remote worker options reject invalid heartbeat before any lease is claimed', async () => {
+  const { transport: base } = fixture();
+  let claims = 0;
+  const transport = {
+    ...base,
+    claim(request) {
+      claims++;
+      return base.claim(request);
+    },
+  };
+  const signal = new AbortController().signal;
+  await assert.rejects(
+    processRemoteWork(transport, { workerId: 'relay', heartbeatMs: 0, signal }, async (run) =>
+      run.succeed(),
+    ),
+    /heartbeatMs/,
+  );
+  await assert.rejects(
+    runRemoteWorker(transport, { workerId: 'relay', heartbeatMs: 1.5, signal }, async (run) =>
+      run.succeed(),
+    ),
+    /heartbeatMs/,
+  );
+  assert.equal(claims, 0);
+});
+
+test('authoritative remote service never returns more than the requested claim limit', async () => {
+  const { transport } = fixture();
+  for (let index = 0; index < 3; index++) await transport.ensure({ index }, { key: String(index) });
+  const first = await transport.claim({ workerId: 'relay', limit: 2 });
+  assert.equal(first.length, 2);
+  const second = await transport.claim({ workerId: 'relay', limit: 2 });
+  assert.equal(second.length, 1);
+});
+
+test('managed remote runner rethrows the original claim failure when no observer exists', async () => {
+  const { transport: base } = fixture();
+  const failure = new Error('original claim failure');
+  const transport = {
+    ...base,
+    async claim() {
+      throw failure;
+    },
+  };
+  await assert.rejects(
+    runRemoteWorker(
+      transport,
+      { workerId: 'relay', signal: new AbortController().signal },
+      async (run) => run.succeed(),
+    ),
+    (error) => error === failure,
+  );
+});
+
+test('managed remote runner passes shutdown signal into an in-flight claim', async () => {
+  const { transport: base } = fixture();
+  const stop = new AbortController();
+  let receivedSignal;
+  const transport = {
+    ...base,
+    claim(request) {
+      receivedSignal = request.signal;
+      return new Promise((resolve, reject) => {
+        if (request.signal?.aborted) return reject(request.signal.reason);
+        request.signal?.addEventListener('abort', () => reject(request.signal.reason), {
+          once: true,
+        });
+      });
+    },
+  };
+  const running = runRemoteWorker(
+    transport,
+    { workerId: 'relay', signal: stop.signal },
+    async (run) => run.succeed(),
+  );
+  await sleep(10);
+  stop.abort(new Error('shutdown'));
+  await running;
+  assert.equal(receivedSignal, stop.signal);
+});
+
+test('caller abort stops new remote claims and drains an already-active handler', async () => {
+  const { queue, transport: base } = fixture({ leaseMs: 1000 });
+  await queue.enqueue({ id: 'slow' }, { key: 'slow' });
+  const stop = new AbortController();
+  let claims = 0;
+  const transport = {
+    ...base,
+    claim(request) {
+      claims++;
+      return base.claim(request);
+    },
+  };
+  let finished = false;
+  const running = runRemoteWorker(
+    transport,
+    { workerId: 'relay', concurrency: 1, signal: stop.signal },
+    async (run) => {
+      await sleep(60);
+      finished = true;
+      return run.succeed();
+    },
+  );
+  await sleep(15);
+  stop.abort(new Error('shutdown'));
+  await running;
+  assert.equal(finished, true);
+  assert.equal(claims, 1);
+  assert.equal((await queue.inspect('slow')).phase.state, 'running');
+});

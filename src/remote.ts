@@ -14,8 +14,13 @@ import { waitForPoll } from './worker.js';
 
 /** Application-supplied transport for one remote/external worker kind. HTTP/auth stay outside WorkOnce. */
 export interface RemoteWorkTransport<I, O, R extends string> {
-  /** Fetch leases already prepared and fenced by the authoritative WorkOnce service. */
-  claim(options: { workerId: string; limit: number }): Promise<LeasedWork<I>[]>;
+  /** Fetch at most limit leases already prepared and fenced by the authoritative WorkOnce service. */
+  claim(options: {
+    workerId: string;
+    limit: number;
+    /** Lets network transports cancel an in-flight poll during graceful shutdown. */
+    signal?: AbortSignal;
+  }): Promise<LeasedWork<I>[]>;
   /** Renew only this exact authoritative attempt; stale/expired attempts must reject. */
   renew(attempt: AttemptRef): Promise<{ leaseUntil: number; observedAt: number }>;
   /** Submit one pure outcome. Unknown acknowledgements must reject rather than rerun the handler locally. */
@@ -45,7 +50,7 @@ export function createRemoteWorkService<I, WorkerInput, O, R extends string>(
 ): RemoteWorkService<I, WorkerInput, O, R> {
   return {
     ensure: (input, options = {}) => queue.enqueue(input, options),
-    claim: (options) => queue.handoff(options, prepare, onPrepareError),
+    claim: ({ workerId, limit }) => queue.handoff({ workerId, limit }, prepare, onPrepareError),
     async renew(attempt) {
       const renewed = await queue.renew(attempt);
       return {
@@ -104,6 +109,12 @@ export type RemoteProcessResult =
   | { workId: string; status: 'settled'; phase: WorkPhase }
   | { workId: string; status: 'interrupted'; error: unknown };
 
+/** Validate process-wide knobs before claiming anything; per-lease checks only compare against that lease. */
+function validateRemoteWorkerOptions(options: RemoteWorkerOptions): number {
+  if (options.heartbeatMs !== undefined) integer(options.heartbeatMs, 'heartbeatMs', 1);
+  return integer(options.concurrency ?? 1, 'concurrency', 1);
+}
+
 async function processLease<I, O, R extends string>(
   transport: RemoteWorkTransport<I, O, R>,
   lease: LeasedWork<I>,
@@ -152,7 +163,6 @@ async function processLease<I, O, R extends string>(
     }
   }
   try {
-    integer(heartbeatMs, 'heartbeatMs', 1);
     if (heartbeatMs >= firstLeaseMs)
       throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry(performance.now() + firstLeaseMs);
@@ -178,11 +188,20 @@ export async function processRemoteWork<I, O, R extends string>(
   options: RemoteWorkerOptions,
   handler: RemoteWorkHandler<I, O, R>,
 ): Promise<RemoteProcessResult[]> {
+  const limit = validateRemoteWorkerOptions(options);
   if (options.signal.aborted) return [];
-  const leases = await transport.claim({
-    workerId: options.workerId,
-    limit: integer(options.concurrency ?? 1, 'concurrency', 1),
-  });
+  let leases: LeasedWork<I>[];
+  try {
+    leases = await transport.claim({
+      workerId: options.workerId,
+      limit,
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (options.signal.aborted) return [];
+    throw error;
+  }
+  // RemoteWorkTransport.claim is authoritative and must honor limit; never locally slice leased work.
   return Promise.all(leases.map((lease) => processLease(transport, lease, options, handler)));
 }
 
@@ -192,7 +211,7 @@ export async function runRemoteWorker<I, O, R extends string>(
   options: RemoteWorkerOptions,
   handler: RemoteWorkHandler<I, O, R>,
 ): Promise<void> {
-  const capacity = integer(options.concurrency ?? 1, 'concurrency', 1);
+  const capacity = validateRemoteWorkerOptions(options);
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
   let fatal: unknown;
@@ -204,8 +223,13 @@ export async function runRemoteWorker<I, O, R extends string>(
     }
     let leases: LeasedWork<I>[];
     try {
-      leases = await transport.claim({ workerId: options.workerId, limit: available });
+      leases = await transport.claim({
+        workerId: options.workerId,
+        limit: available,
+        signal: options.signal,
+      });
     } catch (error) {
+      if (options.signal.aborted) break;
       if (!options.onError) {
         fatal = error;
         break;

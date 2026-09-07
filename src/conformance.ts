@@ -195,6 +195,7 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     const phase = (await q.inspect('job'))!.phase;
     assert.ok(phase.state === 'cancelled' || phase.state === 'succeeded');
     if (phase.state === 'cancelled') assert.equal(raced[1]!.status, 'rejected');
+    else assert.equal(raced[0]!.status, 'rejected');
     assert.equal((await q.claim({ workerId: 'B' })).length, 0);
   });
   await test('crashed workers cannot bypass the total claim budget', async ({ store, advance }) => {
@@ -291,6 +292,27 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     );
     const after = await store.getMany([snapshot.id]);
     assert.equal(before, canonical(after.rows));
+  });
+  await test('stores reject skipped revisions and malformed write deadlines', async ({ store }) => {
+    const q = createWorkOnce({ store, scope: 't' }).define('one');
+    const snapshot = await q.enqueue(null, { key: 'job' });
+    const before = canonical((await store.getMany([snapshot.id])).rows);
+    await assert.rejects(
+      store.atomic(snapshot.id, (row) => ({
+        next: { ...row!, revision: row!.revision },
+        value: null,
+      })),
+      /revision/,
+    );
+    await assert.rejects(
+      store.atomic(snapshot.id, (row) => ({
+        next: { ...row!, revision: row!.revision + 1 },
+        validUntil: Number.NaN,
+        value: null,
+      })),
+      /validUntil/,
+    );
+    assert.equal(canonical((await store.getMany([snapshot.id])).rows), before);
   });
   return completed;
 }

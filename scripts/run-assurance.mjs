@@ -16,6 +16,13 @@ function run(label, command, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
   console.log(`[assurance] ${label}: ${Math.round(performance.now() - started)} ms`);
 }
+function runNpm(label, args) {
+  if (process.platform === 'win32') {
+    run(label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]);
+    return;
+  }
+  run(label, 'npm', args);
+}
 const unitTests = fs
   .readdirSync(path.join(root, 'test'))
   .filter((name) => name.endsWith('.test.mjs'))
@@ -26,9 +33,17 @@ const processTests = fs
   .filter((name) => name.endsWith('.test.mjs'))
   .sort()
   .map((name) => `test/process/${name}`);
-run('format', process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'format:check']);
-run('type surface', process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'check']);
-run('single build', process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build']);
+runNpm('format', ['run', 'format:check']);
+runNpm('type surface', ['run', 'check']);
+runNpm('single build', ['run', 'build']);
+run('formal config parser', process.execPath, [
+  'scripts/check-formal-implementation-conformance.mjs',
+  '--self-test-config-checks',
+]);
+run('type identity trivia', process.execPath, [
+  'scripts/formal-implementation-surface.cjs',
+  '--self-test-trivia-ordinals',
+]);
 run('public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']);
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('real process faults', process.execPath, ['--test', ...processTests]);

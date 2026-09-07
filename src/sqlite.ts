@@ -2,6 +2,12 @@ import { DatabaseSync } from 'node:sqlite';
 import type { WorkQuery, WorkStore, StoreChange } from './storage.js';
 import type { WorkRecord } from './model.js';
 import { canonical, copy, dueAt, integer, WorkConflict } from './kernel.js';
+import {
+  parsePersistedWorkRecord,
+  validateStoredMetadata,
+  validateStoreWrite,
+} from './storage-validation.js';
+
 /** A real durable store. SQLite serializes short writes; unrelated database files do not share a lock. */
 export function createSqliteStore(
   path: string,
@@ -10,22 +16,51 @@ export function createSqliteStore(
   const db = new DatabaseSync(path, { timeout: options.busyTimeoutMs ?? 5000 });
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
     CREATE TABLE IF NOT EXISTS workonce (
-      id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL,
+      id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL, definition TEXT NOT NULL,
       due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS workonce_due ON workonce(scope,kind,due_at,id) WHERE due_at IS NOT NULL;
+    );`);
+
+  // Pre-release databases created before definition-filtered claims stored definition only in JSON.
+  const columns = db.prepare('PRAGMA table_info(workonce)').all() as Record<string, unknown>[];
+  if (!columns.some((column) => column['name'] === 'definition')) {
+    db.exec('ALTER TABLE workonce ADD COLUMN definition TEXT');
+    db.exec(`UPDATE workonce
+      SET definition = CASE WHEN json_valid(body) THEN json_extract(body, '$.definition') END
+      WHERE definition IS NULL`);
+  }
+  // Use versioned monotone index names so independent process startup never races DROP/CREATE.
+  // Older pre-definition indexes may remain harmlessly until an explicit maintenance migration removes them.
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS workonce_due_v2
+      ON workonce(scope,kind,definition,due_at,id) WHERE due_at IS NOT NULL;
     CREATE INDEX IF NOT EXISTS workonce_outbox ON workonce(scope,id) WHERE pending_next > 0;
-    CREATE INDEX IF NOT EXISTS workonce_list ON workonce(scope,kind,id);`);
-  const read = db.prepare('SELECT body FROM workonce WHERE id=?');
-  const write =
-    db.prepare(`INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) SELECT ?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
-    ON CONFLICT(id) DO UPDATE SET scope=excluded.scope,kind=excluded.kind,due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`);
+    CREATE INDEX IF NOT EXISTS workonce_list_v2 ON workonce(scope,kind,definition,id);`);
+
+  const storedColumns = 'id,scope,kind,definition,due_at,pending_next,body';
+  const read = db.prepare(`SELECT ${storedColumns} FROM workonce WHERE id=?`);
+  const write = db.prepare(`INSERT INTO workonce(id,scope,kind,definition,due_at,pending_next,body)
+    SELECT ?,?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
+    ON CONFLICT(id) DO UPDATE SET
+      scope=excluded.scope,kind=excluded.kind,definition=excluded.definition,
+      due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`);
   const queries = new Map<string, ReturnType<typeof db.prepare>>();
   const clock = db.prepare("SELECT CAST(unixepoch('subsec')*1000 AS INTEGER) AS now");
   const now = () => integer(options.now ? options.now() : Number(clock.get()!['now']), 'clock');
-  function parseRow(value: ReturnType<typeof read.get>): WorkRecord | undefined {
-    return value ? (JSON.parse(String(value['body'])) as WorkRecord) : undefined;
+
+  function parseStored(value: Record<string, unknown> | undefined): WorkRecord | undefined {
+    if (!value) return undefined;
+    const row = parsePersistedWorkRecord(value['body']);
+    validateStoredMetadata(row, {
+      id: value['id'],
+      scope: value['scope'],
+      kind: value['kind'],
+      definition: value['definition'],
+      dueAt: value['due_at'],
+      pendingNext: value['pending_next'],
+    });
+    return row;
   }
+
   return {
     async atomic<T>(
       id: string,
@@ -33,16 +68,18 @@ export function createSqliteStore(
     ): Promise<T> {
       db.exec('BEGIN IMMEDIATE');
       try {
-        const change = decide(parseRow(read.get(id)), now());
+        const current = parseStored(read.get(id) as Record<string, unknown> | undefined);
+        const change = decide(current ? copy(current) : undefined, now());
         // Validate/encode the returned value before commit so serialization errors roll back too.
         const value = copy(change.value);
         if (change.next) {
+          validateStoreWrite(id, current, change.next, change.validUntil);
           const row = change.next;
-          if (row.id !== id) throw new Error('Store decision changed work identity');
           const stored = write.run(
             row.id,
             row.scope,
             row.kind,
+            row.definition,
             dueAt(row) ?? null,
             row.outbox.length,
             canonical(row),
@@ -67,7 +104,9 @@ export function createSqliteStore(
       // One bounded read transaction gives a consistent batch snapshot and clock.
       db.exec('BEGIN');
       try {
-        const rows = ids.map((id) => parseRow(read.get(id)));
+        const rows = ids.map((id) =>
+          parseStored(read.get(id) as Record<string, unknown> | undefined),
+        );
         const time = now();
         db.exec('COMMIT');
         return { rows, now: time };
@@ -90,7 +129,7 @@ export function createSqliteStore(
         params.push(query.kind);
       }
       if (query.definition !== undefined) {
-        clauses.push("json_extract(body, '$.definition')=?");
+        clauses.push('definition=?');
         params.push(query.definition);
       }
       if (query.select === 'due') {
@@ -104,17 +143,14 @@ export function createSqliteStore(
       }
       params.push(query.limit);
       const order = query.select === 'due' ? 'due_at,id' : 'id';
-      const sql = `SELECT body FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`;
+      const sql = `SELECT ${storedColumns} FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`;
       let statement = queries.get(sql);
       if (!statement) {
         statement = db.prepare(sql);
         queries.set(sql, statement);
       }
-      const found = statement.all(...params);
-      return {
-        rows: found.map((value) => JSON.parse(String(value['body'])) as WorkRecord),
-        now: time,
-      };
+      const found = statement.all(...params) as Record<string, unknown>[];
+      return { rows: found.map((value) => parseStored(value)!), now: time };
     },
     close() {
       db.close();

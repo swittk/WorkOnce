@@ -25,6 +25,6 @@ for (const adapter of ['memory', 'sqlite'])
         },
       };
     });
-    assert.equal(passed.length, 17);
+    assert.equal(passed.length, 18);
     console.log(adapter, passed);
   });

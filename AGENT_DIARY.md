@@ -10,7 +10,7 @@
 - Implemented pure outcome settlement (no arbitrary protected-callback promise), dynamic retry policy, deferred checks, separate total/retry/defer budgets, expected-generation manual retries, cancellation, wake and recent history.
 - Added atomic success plus outbox, idempotent dispatcher and supervised delivery loop. Strong queue-state fencing does not imply exactly-once external effects.
 - ESM/CommonJS, memory reference, real SQLite and caller-supplied embedded-row port. Embedded port is only as strong as the provided serialization boundary.
-- Checks passed on Node 22.22.1 and Node 24.14.1: 17 shared conformance cases per memory/SQLite/embedded setup, 12 top-level unit/runtime tests, and real 8-process plus SIGKILL/reclaim tests on Node 22.22.1.
+- Checks passed on Node 22.22.1 and Node 24.14.1: 18 shared conformance cases per memory/SQLite/embedded setup, 12 top-level unit/runtime tests, and real 8-process plus SIGKILL/reclaim tests on Node 22.22.1.
 - Bounded TLA checked with official v1.7.4 tool (SHA-256 936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88), 6262 distinct states. This is not a complete implementation refinement proof; see docs/assurance.md.
 
 2026-09-05 second pass
@@ -31,10 +31,10 @@
 
 2026-09-07 exhaustive formal implementation pass
 
-- Copied the current PayMeOnce/InventoryOnce assurance mechanics, not their domain model: compiler-discovered callable/type surface, fail-closed manifest, source/model semantic pairing, one batched implementation refinement corpus, and one TLC graph run.
-- Surface currently maps 87 callables, 12 callable policy/storage fields, 89 reachable package-owned types, and 287 fields; every field has a classification, abstraction concept, type hash, and executable evidence. Returned callable objects and type-only interface methods are included.
+- Copied the owner's current hardened-kernel assurance mechanics, not their domain model: compiler-discovered callable/type surface, fail-closed manifest, source/model semantic pairing, one batched implementation refinement corpus, and one TLC graph run.
+- Surface currently maps 119 callables, 13 callable policy/storage fields, 99 reachable package-owned types, and 309 fields; every field has a classification, abstraction concept, type hash, and executable evidence. Returned callable objects and type-only interface methods are included.
 - Bounded implementation corpus currently runs 28 deliberate scenarios plus 96 deterministic 10-step fuzz traces and requires 42 semantic coverage dimensions. No per-trace TLC process spawning.
-- TLA now covers retry denial/budget, defer/wake/deferral budget, manual retry permission, rerun, attempt/deadline exhaustion, follow-up obligations and reset blocking in addition to fenced claim/renew/success/failure/cancel. Current checked graph: 288013 generated / 184174 distinct states, depth 19.
+- TLA now covers retry denial/budget, defer/wake/deferral budget, manual retry permission, rerun, attempt/deadline exhaustion, follow-up obligations and reset blocking in addition to fenced claim/renew/success/failure/cancel. Current checked graph after resetting generation-local continuation evidence: 203641 generated / 135366 distinct states, depth 19. Ownership checks now require the current fence token to be unique and the running owner token to have actually been issued; the old tautological OneOwner check is gone.
 - Complete `npm run assurance` measured about 20 seconds wall on HPSERVER. TLC itself fell to about 2.3 seconds with bounded host parallelism + parallel GC. Keep this gate cheap enough for every review loop.
 - Ordinary `assurance:update` refuses source-only lifecycle drift; use `assurance:update:ack` only after an explicit review that the abstract machine intentionally remains unchanged.
 - Email-relay dogfood exposed repeated foreign-worker heartbeat/poll/settle glue. Added framework-neutral `runRemoteWorker` plus `createRemoteWorkService`; transport/auth/Parse stay application-owned. Remote runtime maps to the same existing fenced lifecycle rather than adding TLA states, and its public surface/evidence is included in the exhaustive manifest.

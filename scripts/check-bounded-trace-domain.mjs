@@ -36,9 +36,10 @@ const current = {
 };
 if (Object.values(current.domain).some((covered) => !covered))
   throw new Error('Bounded trace domain has uncovered reviewed dimensions.');
+const canonicalCurrent = `${JSON.stringify(current, null, 2)}\n`;
 if (write) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, `${JSON.stringify(current, null, 2)}\n`);
+  fs.writeFileSync(target, canonicalCurrent);
   console.log(
     `Wrote ${path.relative(root, target)} with ${Object.keys(current.domain).length} covered dimensions.`,
   );
@@ -47,12 +48,10 @@ if (write) {
     throw new Error(
       'Missing assurance/bounded-trace-domain.json. Run npm run assurance:update and review it.',
     );
-  const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
-  const previousDomain = JSON.stringify(previous.domain);
-  const currentDomain = JSON.stringify(current.domain);
-  if (previousDomain !== currentDomain || previous.evidenceDigest !== current.evidenceDigest) {
+  const committed = fs.readFileSync(target, 'utf8');
+  if (committed !== canonicalCurrent) {
     throw new Error(
-      'Bounded trace domain/evidence drifted. Run npm run assurance:update and review the new semantic coverage.',
+      'Bounded trace report drifted. Run npm run assurance:update and review the complete observed coverage.',
     );
   }
   console.log(

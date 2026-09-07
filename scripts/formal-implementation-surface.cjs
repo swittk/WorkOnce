@@ -199,6 +199,74 @@ function sourceOwnedDeclarations(symbol) {
 function shortHash(value) {
   return crypto.createHash('sha256').update(value).digest('hex').slice(0, 12);
 }
+const declarationOrdinalCache = new WeakMap();
+function declarationStableBaseName(declaration) {
+  if (
+    (ts.isInterfaceDeclaration(declaration) ||
+      ts.isTypeAliasDeclaration(declaration) ||
+      ts.isClassDeclaration(declaration)) &&
+    declaration.name
+  )
+    return declaration.name.text;
+  if (ts.isTypeLiteralNode(declaration) || ts.isMappedTypeNode(declaration)) return '__anonymous__';
+  return undefined;
+}
+function declarationOrdinal(declaration) {
+  const cached = declarationOrdinalCache.get(declaration);
+  if (cached !== undefined) return cached;
+  const source = declaration.getSourceFile();
+  const targetName = declarationStableBaseName(declaration);
+  if (targetName === undefined) throw new Error('Unsupported package-owned type declaration.');
+  const matches = [];
+  const visit = (node) => {
+    if (declarationStableBaseName(node) === targetName) matches.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  matches.sort((left, right) => left.getStart(source) - right.getStart(source));
+  matches.forEach((node, index) => declarationOrdinalCache.set(node, index));
+  const ordinal = declarationOrdinalCache.get(declaration);
+  if (ordinal === undefined) throw new Error('Could not assign package-owned declaration ordinal.');
+  return ordinal;
+}
+if (process.argv.includes('--self-test-trivia-ordinals')) {
+  const fingerprint = (text) => {
+    const source = ts.createSourceFile('synthetic.ts', text, ts.ScriptTarget.Latest, true);
+    const declarations = [];
+    const visit = (node) => {
+      if (declarationStableBaseName(node) !== undefined) declarations.push(node);
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return declarations.map(
+      (declaration) =>
+        `${declarationStableBaseName(declaration)}#${declarationOrdinal(declaration)}`,
+    );
+  };
+  const baseline = fingerprint(`
+interface Same { value: string }
+type Alias = { value: number };
+type Again = { value: boolean };
+`);
+  const withTrivia = fingerprint(`
+// leading comment which must not change a public type identity
+
+interface Same { value: string }
+/* another comment */
+type Alias = { value: number };
+
+// shifted lines and whitespace
+type Again = { value: boolean };
+`);
+  if (JSON.stringify(baseline) !== JSON.stringify(withTrivia)) {
+    throw new Error(
+      `Declaration ordinal self-test drifted under trivia: ${JSON.stringify({ baseline, withTrivia })}`,
+    );
+  }
+  console.log('Declaration ordinal trivia self-test passed.');
+  process.exit(0);
+}
+
 function packageTypeIdentity(type) {
   const symbol = type.aliasSymbol ?? type.getSymbol();
   const declarations = sourceOwnedDeclarations(symbol).filter(
@@ -213,14 +281,15 @@ function packageTypeIdentity(type) {
   const declaration = declarations[0];
   const file = path.relative(root, declaration.getSourceFile().fileName);
   const rendered = typeText(type, declaration);
+  const ordinal = declarationOrdinal(declaration);
   const name =
     symbol.name === '__type' || symbol.name === '__object'
-      ? `anonymous@${file}:${declaration.getSourceFile().getLineAndCharacterOfPosition(declaration.getStart()).line + 1}`
+      ? `anonymous@${file}#${ordinal}`
       : symbol.name;
   const argumentsLength = (checker.getTypeArguments?.(type) ?? []).length;
   const genericSuffix = argumentsLength ? `<${shortHash(rendered)}>` : '';
   return {
-    identity: `${name}${genericSuffix}|${file}|${declaration.pos}|${shortHash(rendered)}`,
+    identity: `${name}${genericSuffix}|${file}|${ordinal}|${shortHash(rendered)}`,
     name: `${name}${genericSuffix}`,
     declaration,
   };

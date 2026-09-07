@@ -122,40 +122,91 @@ function surface() {
     throw new Error(result.stderr || `surface extractor exited ${result.status}`);
   return JSON.parse(result.stdout);
 }
-function readConfiguredChecks() {
-  const cfg = fs.readFileSync(path.join(root, 'formal/WorkOnce.cfg'), 'utf8');
+function readConfiguredChecksFromText(cfg) {
   const tokens = [];
   let list = false;
+  const stopKeywords = new Set([
+    'SPECIFICATION',
+    'CONSTANT',
+    'CONSTANTS',
+    'CHECK_DEADLOCK',
+    'CONSTRAINT',
+    'CONSTRAINTS',
+    'ACTION_CONSTRAINT',
+    'ACTION_CONSTRAINTS',
+    'INIT',
+    'NEXT',
+    'SYMMETRY',
+    'VIEW',
+    'ALIAS',
+  ]);
+  const addNames = (text) => {
+    const names = text.trim().split(/\s+/u).filter(Boolean);
+    if (names.length === 0) return false;
+    for (const name of names) {
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name))
+        throw new Error(`Invalid configured formal token '${name}'.`);
+      tokens.push(name);
+    }
+    return true;
+  };
   for (const raw of cfg.split(/\r?\n/u)) {
-    const line = raw.trim();
+    const line = raw.split('\\*')[0].trim();
     if (!line) continue;
-    const inline = /^(?:INVARIANT|PROPERTY)\s+([A-Za-z_][A-Za-z0-9_]*)$/u.exec(line);
-    if (inline) {
-      tokens.push(inline[1]);
+    const directive = /^(INVARIANT|INVARIANTS|PROPERTY|PROPERTIES)\b(.*)$/u.exec(line);
+    if (directive) {
+      const rest = directive[2].trim();
+      list = rest.length === 0;
+      if (rest.length > 0) addNames(rest);
+      continue;
+    }
+    const first = line.split(/\s+/u, 1)[0];
+    if (stopKeywords.has(first)) {
       list = false;
       continue;
     }
-    const inlineList = /^(?:INVARIANTS|PROPERTIES)\s+(.+)$/u.exec(line);
-    if (inlineList) {
-      for (const token of inlineList[1].trim().split(/\s+/u)) {
-        if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(token))
-          throw new Error(`Invalid configured formal token '${token}'.`);
-        tokens.push(token);
-      }
-      list = false;
+    if (list) {
+      if (!addNames(line)) throw new Error(`Invalid configured formal check list line '${line}'.`);
       continue;
     }
-    if (/^(?:INVARIANTS|PROPERTIES)$/u.test(line)) {
-      list = true;
-      continue;
-    }
-    if (/^(?:SPECIFICATION|CONSTANTS?|CHECK_DEADLOCK)\b/u.test(line)) {
-      list = false;
-      continue;
-    }
-    if (list && /^[A-Za-z_][A-Za-z0-9_]*$/u.test(line)) tokens.push(line);
   }
   return [...new Set(tokens)].sort(compareExact);
+}
+function readConfiguredChecks() {
+  return readConfiguredChecksFromText(
+    fs.readFileSync(path.join(root, 'formal/WorkOnce.cfg'), 'utf8'),
+  );
+}
+if (process.argv.includes('--self-test-config-checks')) {
+  const parsed = readConfiguredChecksFromText(`
+INVARIANT TypeOK OneOwner
+PROPERTIES
+  EventuallyDone
+  ALWAYS_OK
+CONSTRAINT StateBound
+ACTION_CONSTRAINT StepBound
+INIT Init
+NEXT Next
+SYMMETRY Symmetry
+VIEW View
+ALIAS Alias
+INVARIANTS
+  FinalSafety
+CHECK_DEADLOCK FALSE
+`);
+  const expected = ['ALWAYS_OK', 'EventuallyDone', 'FinalSafety', 'OneOwner', 'TypeOK'];
+  if (JSON.stringify(parsed) !== JSON.stringify(expected)) {
+    throw new Error(`Configured-check parser self-test failed: ${JSON.stringify(parsed)}`);
+  }
+  let rejected = false;
+  try {
+    readConfiguredChecksFromText('INVARIANTS\nBad,Token\n');
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error('Configured-check parser accepted invalid list content.');
+  console.log('Configured-check parser self-test passed.');
+  process.exit(0);
 }
 function callableClassification(key) {
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
@@ -410,7 +461,7 @@ function compareRows(previous, current, label) {
       `${label} drifted. Run npm run assurance:update, review every changed public mapping, and commit the manifest with the semantic change.`,
     );
 }
-function writeReport(manifest) {
+function renderReport(manifest) {
   const lines = [
     '# Formal implementation coverage',
     '',
@@ -439,7 +490,7 @@ function writeReport(manifest) {
     'The manifest is compiler-discovered. Any new public callable, reachable package-owned input/output/callback field, signature/type change, configured TLA invariant, or bound source/model semantic change fails assurance until this file and the machine-reviewed manifest are deliberately updated.',
     '',
   );
-  fs.writeFileSync(reportPath, `${lines.join('\n').trimEnd()}\n`);
+  return `${lines.join('\n').trimEnd()}\n`;
 }
 
 const live = surface();
@@ -474,7 +525,7 @@ if (write) {
   }
   fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
   fs.writeFileSync(manifestPath, canonicalText(current));
-  writeReport(current);
+  fs.writeFileSync(reportPath, renderReport(current));
   console.log(
     `Wrote ${path.relative(root, manifestPath)} with ${current.callables.length} callables, ${current.callableFields.length} callable fields, ${current.fields.length} fields.`,
   );
@@ -484,6 +535,13 @@ if (write) {
       'Missing assurance/formal-implementation-manifest.json. Run npm run assurance:update and review it.',
     );
   compareRows(previous, current, 'Formal implementation manifest');
+  const expectedReport = renderReport(current);
+  const actualReport = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : '';
+  if (actualReport !== expectedReport) {
+    throw new Error(
+      `${path.relative(root, reportPath)} drifted. Run npm run assurance:update and commit the regenerated report.`,
+    );
+  }
   console.log(
     `Formal implementation manifest matches ${current.callables.length} callables, ${current.callableFields.length} callable fields, ${current.fields.length} fields.`,
   );
