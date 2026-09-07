@@ -1,4 +1,4 @@
-import { createWorkOnce, type WorkSnapshot } from '../../src/index.js';
+import { createWorkOnce, runExternalAvailable, type WorkSnapshot } from '../../src/index.js';
 import { createMemoryStore } from '../../src/memory.js';
 const work = createWorkOnce({ store: createMemoryStore(), scope: 'example' });
 interface Input {
@@ -69,3 +69,21 @@ const external = queue.serveExternal({
   onPrepareError: (run) => run.retry('busy'),
 });
 void external.claim({ workerId: 'outside', limit: 1 });
+const externalFollowup = queue.request(
+  { assetId: 'follow', urgent: false },
+  { key: 'external-followup' },
+);
+void runExternalAvailable(
+  external,
+  { workerId: 'outside', signal: new AbortController().signal },
+  async (run) => run.succeed({ checksum: 'external' }, { thenDo: [externalFollowup] }),
+);
+void runExternalAvailable(
+  external,
+  { workerId: 'outside-fail', signal: new AbortController().signal },
+  async (run) =>
+    run.fail('invalid', {
+      result: { checksum: 'partial' },
+      thenDo: [externalFollowup],
+    }),
+);

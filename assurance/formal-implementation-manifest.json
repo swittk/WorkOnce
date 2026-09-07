@@ -722,7 +722,7 @@
       "modelActions": [
         "Fail"
       ],
-      "signatureHash": "b9b36ef526f7ab6b1a3a74d708f53c0f65e8cd420b096066146d366e7d343b62"
+      "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
       "classification": "worker-runtime",
@@ -750,7 +750,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "a42c370dfe3b88466cd7759188c040ce88022667b76ec0e0c56f3ca263ad479c"
+      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
     },
     {
       "classification": "worker-runtime",
@@ -1218,7 +1218,7 @@
       "modelActions": [
         "Fail"
       ],
-      "signatureHash": "b9b36ef526f7ab6b1a3a74d708f53c0f65e8cd420b096066146d366e7d343b62"
+      "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
       "classification": "abstract-semantic",
@@ -1242,7 +1242,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "a42c370dfe3b88466cd7759188c040ce88022667b76ec0e0c56f3ca263ad479c"
+      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
     },
     {
       "classification": "abstract-semantic",
@@ -9979,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "2d705668cb9a759d1af1452283af00093bbbbfd604f1b63721ed9cbe3202c027",
+    "sourceDigest": "046f7c7205a75f76e93147b06f1fcebe5c49c5c58604b10e82ec41e7af658d15",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

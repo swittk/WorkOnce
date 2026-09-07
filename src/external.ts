@@ -1,6 +1,14 @@
 import type { AttemptRef, WorkOutcome, WorkPhase, WorkSnapshot } from './model.js';
 import type { EnsureOptions, LeasedWork } from './work.js';
-import { defer, fail, retry, succeed, wait, type WorkTiming } from './outcomes.js';
+import {
+  defer,
+  fail,
+  retry,
+  succeed,
+  wait,
+  type FollowUpOptions,
+  type WorkTiming,
+} from './outcomes.js';
 import { integer } from './kernel.js';
 import { waitForPoll } from './worker.js';
 
@@ -53,8 +61,12 @@ export class ExternalWorkRun<O, R extends string> {
     readonly observedAt: number,
   ) {}
   /** Report successful completion; the external-work service still performs the authoritative settlement. */
-  succeed(...args: O extends null ? [result?: O] : [result: O]): WorkOutcome<O, R> {
-    return (args.length === 0 ? succeed() : succeed(args[0])) as WorkOutcome<O, R>;
+  succeed(
+    ...args: O extends null
+      ? [result?: O, options?: FollowUpOptions]
+      : [result: O, options?: FollowUpOptions]
+  ): WorkOutcome<O, R> {
+    return (args.length === 0 ? succeed() : succeed(args[0], args[1])) as WorkOutcome<O, R>;
   }
   /** Report a temporary failure that should be retried later. */
   retry(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
@@ -69,7 +81,10 @@ export class ExternalWorkRun<O, R extends string> {
     return defer(reason, timing);
   }
   /** Report a terminal failure, optionally permitting a later manual retry. */
-  fail(reason: R, options: { manualRetry?: boolean; result?: O } = {}): WorkOutcome<O, R> {
+  fail(
+    reason: R,
+    options: { manualRetry?: boolean; result?: O } & FollowUpOptions = {},
+  ): WorkOutcome<O, R> {
     return fail<R, O>(reason, options);
   }
 }

@@ -51,6 +51,7 @@ const coverageKeys = [
   'fenceIncrease',
   'parallelClaimCompetition',
   'dualExecutorCompetition',
+  'externalSuccessFollowup',
   'externalClaimLimit',
   'oneMillisecondLease',
   'invalidExternalRenewal',
@@ -430,6 +431,40 @@ async function replayAndDynamicPolicies(coverage) {
     }
     assert.equal((await queue.item({ id: 'x' }).inspect()).phase.state, 'succeeded');
     hit(coverage, 'parallelClaimCompetition', 'dualExecutorCompetition');
+  }
+  {
+    scenarios++;
+    const store = createMemoryStore();
+    const work = createWorkOnce({ store, scope: 'external-success-followup' });
+    const parent = work.define('parent');
+    const child = work.define('child');
+    const external = parent.serveExternal({
+      prepare: (run) => run.handoff(run.input),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await external.ensure({ id: 'x' }, { key: 'x' });
+    const [result] = await runExternalAvailable(
+      external,
+      { workerId: 'external', concurrency: 1, signal: new AbortController().signal },
+      async (run, input) =>
+        run.succeed(
+          { value: 2 },
+          { thenDo: [child.request({ parent: input.id }, { key: `child:${input.id}` })] },
+        ),
+    );
+    assert.equal(result.status, 'settled');
+    let snapshot = await parent.inspect('x');
+    assertSnapshot(snapshot);
+    snapshotCoverage(coverage, snapshot);
+    assert.equal(snapshot.pendingFollowups, 1);
+    hit(coverage, 'externalSuccessFollowup', 'successFollowup', 'followupBlocksReset');
+    assert.equal(await work.dispatch(), 1);
+    hit(coverage, 'followupDispatch');
+    snapshot = await parent.inspect('x');
+    assertSnapshot(snapshot);
+    snapshotCoverage(coverage, snapshot);
+    assert.equal(snapshot.pendingFollowups, 0);
+    assert.equal((await child.inspect('child:x')).phase.state, 'queued');
   }
   {
     scenarios++;

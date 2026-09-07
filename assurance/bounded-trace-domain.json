@@ -4,7 +4,7 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs"
   ],
-  "evidenceDigest": "bd6813bc5dc04547f827dea044eebfa65c207b35d136343d6e3614199d83c39c",
+  "evidenceDigest": "7d2dfad1a5d987104bc3f806d7a769dad7b1d1ec7af565bc4fe27fbc63e80426",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -23,6 +23,7 @@
     "dynamicNext": true,
     "dynamicRetry": true,
     "externalClaimLimit": true,
+    "externalSuccessFollowup": true,
     "failed": true,
     "failureFollowup": true,
     "fenceIncrease": true,
@@ -59,7 +60,7 @@
     "workerErrorIsolation": true
   },
   "observed": {
-    "deterministicScenarios": 37,
+    "deterministicScenarios": 38,
     "fuzzTraces": 96,
     "fuzzStepsPerTrace": 10,
     "coverageCounts": {
@@ -67,7 +68,7 @@
       "running": 127,
       "waitingRetry": 77,
       "waitingDefer": 86,
-      "succeeded": 24,
+      "succeeded": 26,
       "failed": 45,
       "cancelled": 56,
       "claimA": 6,
@@ -91,10 +92,10 @@
       "cancelWaiting": 1,
       "attemptBudgetExhausted": 1,
       "deadlineExceeded": 1,
-      "successFollowup": 2,
+      "successFollowup": 3,
       "failureFollowup": 4,
-      "followupDispatch": 7,
-      "followupBlocksReset": 6,
+      "followupDispatch": 8,
+      "followupBlocksReset": 7,
       "identicalSettlementReplay": 1,
       "conflictingSettlementRejected": 1,
       "dynamicLimits": 1,
@@ -110,6 +111,7 @@
       "fenceIncrease": 2,
       "parallelClaimCompetition": 2,
       "dualExecutorCompetition": 1,
+      "externalSuccessFollowup": 1,
       "externalClaimLimit": 1,
       "oneMillisecondLease": 1,
       "invalidExternalRenewal": 1,

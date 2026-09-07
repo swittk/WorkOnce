@@ -15,6 +15,33 @@ function fixture(options = {}) {
   return { work, queue, transport };
 }
 
+test('external success facade preserves durable follow-ups through authoritative settlement', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'external-success-followup' });
+  const parent = work.define('parent', { executionLimits: { leaseMs: 500 } });
+  const child = work.define('child');
+  const transport = parent.serveExternal({
+    prepare: (run) => run.handoff(run.input),
+    onPrepareError: (run) => run.fail('prepare_failed'),
+  });
+  await transport.ensure({ id: 'p' }, { key: 'p' });
+
+  const [result] = await runExternalAvailable(
+    transport,
+    { workerId: 'relay', signal: new AbortController().signal },
+    async (run, input) =>
+      run.succeed(
+        { handled: input.id },
+        { thenDo: [child.request({ parent: input.id }, { key: `child:${input.id}` })] },
+      ),
+  );
+
+  assert.equal(result.status, 'settled');
+  assert.equal((await parent.inspect('p')).pendingFollowups, 1);
+  assert.equal(await work.dispatch(), 1);
+  assert.equal((await parent.inspect('p')).pendingFollowups, 0);
+  assert.equal((await child.inspect('child:p')).phase.state, 'queued');
+});
+
 test('external worker runner hides claim heartbeat and settlement plumbing from handlers', async () => {
   const { queue, transport } = fixture({ leaseMs: 500 });
   for (let index = 0; index < 3; index++) {
