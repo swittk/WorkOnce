@@ -14,7 +14,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "onError",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#onError",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#onError",
       "modelActions": [],
       "modelConcepts": [
         "observationOnly"
@@ -767,6 +767,65 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
+      "key": "remote.RemoteWorkService.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "signatureHash": "84e881137b591a3260240c225297b4cf4c04eff7f8a8455f879bc90d40ec190f"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.RemoteWorkService.ensure",
+      "modelActions": [],
+      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.RemoteWorkService.renew",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.RemoteWorkService.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
       "key": "remote.RemoteWorkTransport.claim",
       "modelActions": [
         "Claim",
@@ -817,6 +876,77 @@
       "key": "remote.RemoteWorkerOptions.onError",
       "modelActions": [],
       "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.createRemoteWorkService",
+      "modelActions": [],
+      "signatureHash": "fd6a81b3d6ce45880a3a6513c0f3f5efae2f89ed5f123d9e9e45ea7769845964"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.createRemoteWorkService.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "signatureHash": "84e881137b591a3260240c225297b4cf4c04eff7f8a8455f879bc90d40ec190f"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.createRemoteWorkService.ensure",
+      "modelActions": [],
+      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.createRemoteWorkService.renew",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "remote.createRemoteWorkService.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
     },
     {
       "classification": "worker-runtime",
@@ -1380,6 +1510,67 @@
       "key": "root.WorkRun.toJSON",
       "modelActions": [],
       "signatureHash": "e77732cb8324cd47cb075afa6a8b0821bd6d5fd3017f0eee24d199e81f5fd88d"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.createRemoteWorkService",
+      "modelActions": [],
+      "signatureHash": "fd6a81b3d6ce45880a3a6513c0f3f5efae2f89ed5f123d9e9e45ea7769845964"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.createRemoteWorkService.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "signatureHash": "84e881137b591a3260240c225297b4cf4c04eff7f8a8455f879bc90d40ec190f"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.createRemoteWorkService.ensure",
+      "modelActions": [],
+      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.createRemoteWorkService.renew",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.createRemoteWorkService.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
     },
     {
       "classification": "ergonomic-wrapper",
@@ -2020,7 +2211,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "RemoteProcessResult|src/remote.ts|2687|ac730cc068b9#status",
+      "key": "RemoteProcessResult|src/remote.ts|4199|ac730cc068b9#status",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2043,7 +2234,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "RemoteProcessResult|src/remote.ts|2687|ac730cc068b9#workId",
+      "key": "RemoteProcessResult|src/remote.ts|4199|ac730cc068b9#workId",
       "modelConcepts": [
         "identity"
       ],
@@ -2067,7 +2258,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "attempt",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|1704|fe2698f7287e#attempt",
+      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|3216|fe2698f7287e#attempt",
       "modelConcepts": [
         "fence",
         "tokens"
@@ -2092,7 +2283,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "leaseUntil",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|1704|fe2698f7287e#leaseUntil",
+      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|3216|fe2698f7287e#leaseUntil",
       "modelConcepts": [
         "lease"
       ],
@@ -2116,7 +2307,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "observedAt",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|1704|fe2698f7287e#observedAt",
+      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|3216|fe2698f7287e#observedAt",
       "modelConcepts": [
         "now"
       ],
@@ -2142,7 +2333,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "signal",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|1704|fe2698f7287e#signal",
+      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|3216|fe2698f7287e#signal",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2167,7 +2358,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "concurrency",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#concurrency",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#concurrency",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2190,7 +2381,7 @@
         "test/types/api.ts"
       ],
       "field": "heartbeatMs",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#heartbeatMs",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#heartbeatMs",
       "modelConcepts": [
         "observationOnly"
       ],
@@ -2213,7 +2404,7 @@
         "test/types/api.ts"
       ],
       "field": "idleMs",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#idleMs",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#idleMs",
       "modelConcepts": [
         "observationOnly"
       ],
@@ -2236,7 +2427,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "onError",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#onError",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#onError",
       "modelConcepts": [
         "observationOnly"
       ],
@@ -2261,7 +2452,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "signal",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#signal",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#signal",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2284,7 +2475,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workerId",
-      "key": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec#workerId",
+      "key": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec#workerId",
       "modelConcepts": [
         "owner",
         "tokens"
@@ -3249,6 +3440,50 @@
       "source": "src/work.ts",
       "typeHash": "f30ced3368ee589d3c32ee7576f2838dc9e2807115379329a07d35d920612e68",
       "typeName": "WorkHandoff<d13150c28db8>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "callback-result"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "input",
+      "key": "WorkHandoff<d4912b883c0d>|src/work.ts|2950|d4912b883c0d#input",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "ab1171b4bfc4fd5f289cc6edf21c0b207438eb311e53da28af13e534508de332",
+      "typeName": "WorkHandoff<d4912b883c0d>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "callback-result"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "type",
+      "key": "WorkHandoff<d4912b883c0d>|src/work.ts|2950|d4912b883c0d#type",
+      "modelConcepts": [
+        "state"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "f30ced3368ee589d3c32ee7576f2838dc9e2807115379329a07d35d920612e68",
+      "typeName": "WorkHandoff<d4912b883c0d>"
     },
     {
       "allowsNull": false,
@@ -7269,50 +7504,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "manualRetry",
-      "key": "anonymous@src/remote.ts:50|src/remote.ts|2424|a70685abc349#manualRetry",
-      "modelConcepts": [
-        "manualRetryAllowed"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
-      "typeName": "anonymous@src/remote.ts:50"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "opaque-payload",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/terminal-receipt.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "result",
-      "key": "anonymous@src/remote.ts:50|src/remote.ts|2424|a70685abc349#result",
-      "modelConcepts": [
-        "opaquePayload"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
-      "typeName": "anonymous@src/remote.ts:50"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
         "exported-type",
         "output"
       ],
@@ -7321,14 +7512,14 @@
         "test/conformance.test.mjs"
       ],
       "field": "phase",
-      "key": "anonymous@src/remote.ts:61|src/remote.ts|2726|0098d5f9dacd#phase",
+      "key": "anonymous@src/remote.ts:104|src/remote.ts|4238|0098d5f9dacd#phase",
       "modelConcepts": [
         "state"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "305fef2a63b072bc1fa9e9548650a881eabfc1e9a8087e3333e6571760ff24d9",
-      "typeName": "anonymous@src/remote.ts:61"
+      "typeName": "anonymous@src/remote.ts:104"
     },
     {
       "allowsNull": false,
@@ -7346,14 +7537,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "anonymous@src/remote.ts:61|src/remote.ts|2726|0098d5f9dacd#status",
+      "key": "anonymous@src/remote.ts:104|src/remote.ts|4238|0098d5f9dacd#status",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "58442863e380bb48e7935a0013a2f4d460e8ab4d9e6a3a75327034fbc2bc0e4a",
-      "typeName": "anonymous@src/remote.ts:61"
+      "typeName": "anonymous@src/remote.ts:104"
     },
     {
       "allowsNull": false,
@@ -7369,14 +7560,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "anonymous@src/remote.ts:61|src/remote.ts|2726|0098d5f9dacd#workId",
+      "key": "anonymous@src/remote.ts:104|src/remote.ts|4238|0098d5f9dacd#workId",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/remote.ts:61"
+      "typeName": "anonymous@src/remote.ts:104"
     },
     {
       "allowsNull": false,
@@ -7394,14 +7585,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "error",
-      "key": "anonymous@src/remote.ts:62|src/remote.ts|2786|1d6e5489e6b7#error",
+      "key": "anonymous@src/remote.ts:105|src/remote.ts|4298|1d6e5489e6b7#error",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc",
-      "typeName": "anonymous@src/remote.ts:62"
+      "typeName": "anonymous@src/remote.ts:105"
     },
     {
       "allowsNull": false,
@@ -7419,14 +7610,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "anonymous@src/remote.ts:62|src/remote.ts|2786|1d6e5489e6b7#status",
+      "key": "anonymous@src/remote.ts:105|src/remote.ts|4298|1d6e5489e6b7#status",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "89adf65813e07e7c8f2ef568099ad92bf51fbe1b8e7900062c50c9e68bba8b2f",
-      "typeName": "anonymous@src/remote.ts:62"
+      "typeName": "anonymous@src/remote.ts:105"
     },
     {
       "allowsNull": false,
@@ -7442,14 +7633,58 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "anonymous@src/remote.ts:62|src/remote.ts|2786|1d6e5489e6b7#workId",
+      "key": "anonymous@src/remote.ts:105|src/remote.ts|4298|1d6e5489e6b7#workId",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/remote.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/remote.ts:62"
+      "typeName": "anonymous@src/remote.ts:105"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "manualRetry",
+      "key": "anonymous@src/remote.ts:93|src/remote.ts|3936|a70685abc349#manualRetry",
+      "modelConcepts": [
+        "manualRetryAllowed"
+      ],
+      "optional": true,
+      "source": "src/remote.ts",
+      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
+      "typeName": "anonymous@src/remote.ts:93"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "result",
+      "key": "anonymous@src/remote.ts:93|src/remote.ts|3936|a70685abc349#result",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": true,
+      "source": "src/remote.ts",
+      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
+      "typeName": "anonymous@src/remote.ts:93"
     },
     {
       "allowsNull": false,
@@ -8865,7 +9100,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "7a7c30833ed5175e78ad43117dd6041567855f0ef3461905b641b194977189a4",
+    "sourceDigest": "a8850f2695f36455cc0ecd889691945e668f082f1d6e8f9fd8160924004f6dc4",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -8961,7 +9196,7 @@
         "exported-type",
         "output"
       ],
-      "identity": "RemoteProcessResult|src/remote.ts|2687|ac730cc068b9",
+      "identity": "RemoteProcessResult|src/remote.ts|4199|ac730cc068b9",
       "name": "RemoteProcessResult",
       "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
       "source": "src/remote.ts"
@@ -8971,7 +9206,7 @@
         "exported-type",
         "input"
       ],
-      "identity": "RemoteWorkHandler|src/remote.ts|2535|f688a621756e",
+      "identity": "RemoteWorkHandler|src/remote.ts|4047|f688a621756e",
       "name": "RemoteWorkHandler",
       "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
       "source": "src/remote.ts"
@@ -8982,7 +9217,7 @@
         "exported-type",
         "output"
       ],
-      "identity": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|1704|fe2698f7287e",
+      "identity": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|3216|fe2698f7287e",
       "name": "RemoteWorkRun<fe2698f7287e>",
       "shapeHash": "00474a7c29e1ce8b4e9748f800f5ca0314fde3f0f173d2d99a1848bcfaac0a84",
       "source": "src/remote.ts"
@@ -8990,9 +9225,19 @@
     {
       "directions": [
         "exported-type",
+        "output"
+      ],
+      "identity": "RemoteWorkService<df7e531ba19d>|src/remote.ts|1121|df7e531ba19d",
+      "name": "RemoteWorkService<df7e531ba19d>",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/remote.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
         "input"
       ],
-      "identity": "RemoteWorkTransport<d0a7691d0638>|src/remote.ts|274|d0a7691d0638",
+      "identity": "RemoteWorkTransport<d0a7691d0638>|src/remote.ts|409|d0a7691d0638",
       "name": "RemoteWorkTransport<d0a7691d0638>",
       "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
       "source": "src/remote.ts"
@@ -9002,7 +9247,7 @@
         "exported-type",
         "input"
       ],
-      "identity": "RemoteWorkerOptions|src/remote.ts|986|767c41dcddec",
+      "identity": "RemoteWorkerOptions|src/remote.ts|2498|767c41dcddec",
       "name": "RemoteWorkerOptions",
       "shapeHash": "50f5521eb43d916617ec117ef489c0d4b60d5e17924ee0161938effc7717ad7e",
       "source": "src/remote.ts"
@@ -9106,6 +9351,15 @@
       "identity": "WorkHandoff<d13150c28db8>|src/work.ts|2950|d13150c28db8",
       "name": "WorkHandoff<d13150c28db8>",
       "shapeHash": "0835ae5f70d1e1bffb179fd5b425664ca945fb545d597dbfbadf4bec6f43cbb2",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "callback-result"
+      ],
+      "identity": "WorkHandoff<d4912b883c0d>|src/work.ts|2950|d4912b883c0d",
+      "name": "WorkHandoff<d4912b883c0d>",
+      "shapeHash": "755f1bb2c8744f0332ee2df01159076fdf9c29bfb427aeb4a34215058f460d64",
       "source": "src/work.ts"
     },
     {
@@ -9567,20 +9821,11 @@
     },
     {
       "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/remote.ts:50|src/remote.ts|2424|a70685abc349",
-      "name": "anonymous@src/remote.ts:50",
-      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
         "exported-type",
         "output"
       ],
-      "identity": "anonymous@src/remote.ts:61|src/remote.ts|2726|0098d5f9dacd",
-      "name": "anonymous@src/remote.ts:61",
+      "identity": "anonymous@src/remote.ts:104|src/remote.ts|4238|0098d5f9dacd",
+      "name": "anonymous@src/remote.ts:104",
       "shapeHash": "b8a295abe29b0a7005a612afcfe3d91c157fe40b6f8b4301e8f815a79001b96f",
       "source": "src/remote.ts"
     },
@@ -9589,9 +9834,18 @@
         "exported-type",
         "output"
       ],
-      "identity": "anonymous@src/remote.ts:62|src/remote.ts|2786|1d6e5489e6b7",
-      "name": "anonymous@src/remote.ts:62",
+      "identity": "anonymous@src/remote.ts:105|src/remote.ts|4298|1d6e5489e6b7",
+      "name": "anonymous@src/remote.ts:105",
       "shapeHash": "32bbcd57a7ccffd56cd2a35a6e9f8eccc5d42d5ea3797046084cff36bb164820",
+      "source": "src/remote.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/remote.ts:93|src/remote.ts|3936|a70685abc349",
+      "name": "anonymous@src/remote.ts:93",
+      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
       "source": "src/remote.ts"
     },
     {

@@ -1,32 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { createWorkOnce } from '../dist/index.js';
+import { createRemoteWorkService, createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { processRemoteWork, runRemoteWorker } from '../dist/remote.js';
 
 function fixture(options = {}) {
   const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'remote' });
   const queue = work.define('job', { limits: { leaseMs: options.leaseMs ?? 300 } });
-  const transport = {
-    claim: (request) =>
-      queue.handoff(
-        request,
-        (run) => run.handoff(run.input),
-        (run) => run.fail('prepare_failed'),
-      ),
-    renew: async (attempt) => {
-      const renewed = await queue.renew(attempt);
-      return { leaseUntil: renewed.attempt.leaseUntil, observedAt: renewed.observedAt };
-    },
-    settle: (attempt, outcome) => queue.settle(attempt, outcome),
-  };
+  const transport = createRemoteWorkService(
+    queue,
+    (run) => run.handoff(run.input),
+    (run) => run.fail('prepare_failed'),
+  );
   return { work, queue, transport };
 }
 
 test('remote worker runner hides claim heartbeat and settlement plumbing from handlers', async () => {
   const { queue, transport } = fixture({ leaseMs: 180 });
-  for (let index = 0; index < 3; index++) await queue.enqueue({ index }, { key: String(index) });
+  for (let index = 0; index < 3; index++) {
+    await transport.ensure({ index }, { key: String(index) });
+    await transport.ensure({ index }, { key: String(index) });
+  }
   let active = 0;
   let peak = 0;
   const results = await processRemoteWork(

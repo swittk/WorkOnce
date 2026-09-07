@@ -1,5 +1,13 @@
 import type { AttemptRef, WorkOutcome, WorkPhase } from './model.js';
-import type { LeasedWork } from './work.js';
+import type {
+  EnqueueOptions,
+  LeasedWork,
+  WorkHandoff,
+  WorkHandoffErrorHandler,
+  WorkQueue,
+  WorkRun,
+} from './work.js';
+import type { WorkSnapshot } from './model.js';
 import { defer, fail, retry, succeed, type WorkTiming } from './outcomes.js';
 import { integer } from './kernel.js';
 import { waitForPoll } from './worker.js';
@@ -12,6 +20,41 @@ export interface RemoteWorkTransport<I, O, R extends string> {
   renew(attempt: AttemptRef): Promise<{ leaseUntil: number; observedAt: number }>;
   /** Submit one pure outcome. Unknown acknowledgements must reject rather than rerun the handler locally. */
   settle(attempt: AttemptRef, outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>>;
+}
+
+/** Server-side façade for a remote work kind. Framework/auth/serialization remain application-owned. */
+export interface RemoteWorkService<I, WorkerInput, O, R extends string>
+  extends RemoteWorkTransport<WorkerInput, O, R> {
+  /** Idempotent producer entrypoint using the work definition's key callback when configured. */
+  ensure(input: I, options?: EnqueueOptions): Promise<WorkSnapshot<I, O, R>>;
+}
+
+/**
+ * Bind one authoritative WorkQueue to a transport-neutral remote service. The application only
+ * authenticates/validates its HTTP/RPC boundary and forwards these methods.
+ */
+export function createRemoteWorkService<I, WorkerInput, O, R extends string>(
+  queue: WorkQueue<I, O, R>,
+  prepare: (
+    run: WorkRun<I, O, R>,
+  ) =>
+    | WorkHandoff<WorkerInput>
+    | WorkOutcome<O, R>
+    | Promise<WorkHandoff<WorkerInput> | WorkOutcome<O, R>>,
+  onPrepareError: WorkHandoffErrorHandler<I, O, R>,
+): RemoteWorkService<I, WorkerInput, O, R> {
+  return {
+    ensure: (input, options = {}) => queue.enqueue(input, options),
+    claim: (options) => queue.handoff(options, prepare, onPrepareError),
+    async renew(attempt) {
+      const renewed = await queue.renew(attempt);
+      return {
+        leaseUntil: renewed.attempt.leaseUntil,
+        observedAt: renewed.observedAt,
+      };
+    },
+    settle: (attempt, outcome) => queue.settle(attempt, outcome),
+  };
 }
 
 /** Runtime knobs are capacity of this remote-worker process, never a fleet-wide semaphore. */

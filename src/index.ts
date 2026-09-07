@@ -22,9 +22,15 @@ export type {
   WorkEvent,
 } from './model.js';
 export type { WorkerOptions, WorkHandler, ProcessResult } from './worker.js';
-export { RemoteWorkRun, processRemoteWork, runRemoteWorker } from './remote.js';
+export {
+  RemoteWorkRun,
+  createRemoteWorkService,
+  processRemoteWork,
+  runRemoteWorker,
+} from './remote.js';
 export type {
   RemoteWorkTransport,
+  RemoteWorkService,
   RemoteWorkerOptions,
   RemoteWorkHandler,
   RemoteProcessResult,
