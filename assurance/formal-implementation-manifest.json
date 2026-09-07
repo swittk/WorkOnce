@@ -9783,7 +9783,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "21c8aed28ebb85b22f5e0bf301f2d5ae6c511e73ca123d74f8dbc1f6fce6ee93",
+    "sourceDigest": "d24c8486d04093ebac3dc77abdd0559714d62e6169df3f967c6a87c80093ee79",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

@@ -161,7 +161,7 @@ function readConfiguredChecksFromText(cfg) {
     const directive = /^(INVARIANT|INVARIANTS|PROPERTY|PROPERTIES)\b(.*)$/u.exec(line);
     if (directive) {
       const rest = directive[2].trim();
-      list = rest.length === 0;
+      list = true;
       if (rest.length > 0) addNames(rest);
       continue;
     }
@@ -185,6 +185,7 @@ function readConfiguredChecks() {
 if (process.argv.includes('--self-test-config-checks')) {
   const parsed = readConfiguredChecksFromText(`
 INVARIANT TypeOK OneOwner
+  InlineContinued
 PROPERTIES
   EventuallyDone
   ALWAYS_OK
@@ -199,7 +200,14 @@ INVARIANTS
   FinalSafety
 CHECK_DEADLOCK FALSE
 `);
-  const expected = ['ALWAYS_OK', 'EventuallyDone', 'FinalSafety', 'OneOwner', 'TypeOK'];
+  const expected = [
+    'ALWAYS_OK',
+    'EventuallyDone',
+    'FinalSafety',
+    'InlineContinued',
+    'OneOwner',
+    'TypeOK',
+  ];
   if (JSON.stringify(parsed) !== JSON.stringify(expected)) {
     throw new Error(`Configured-check parser self-test failed: ${JSON.stringify(parsed)}`);
   }

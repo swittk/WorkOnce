@@ -28,7 +28,7 @@ export interface WorkQuery {
   select: 'due' | 'outbox' | 'all';
   /** Bounded result count. */
   limit: number;
-  /** Exclusive stable identity cursor, used for inspection and fair outbox scans. */
+  /** Exclusive id cursor. Compare it with the same UTF-8 byte order used to sort query results. */
   afterId?: string;
 }
 /**
@@ -37,10 +37,12 @@ export interface WorkQuery {
  * time inside that boundary. Decisions must be deterministic for (row, now), without clocks,
  * randomness, IO or mutation of captured state. The synchronous decision must not await or perform effects;
  * adapters may retry it. A read/check/unconditional-save implementation is NOT conformant.
- * getMany/query return detached rows. Never delete/reuse an id while stale workers may exist.
+ * getMany/query return detached rows. Query ids and afterId use one UTF-8 byte-sequence order
+ * (matching SQLite BINARY), never UTF-16 or locale collation. Never delete/reuse an id while stale
+ * workers may exist.
  */
 export interface WorkStore {
-  /** Serialize one deterministic transition for an exact work id and commit it durably. */
+  /** Serialize one deterministic transition; commit durably only when its decision supplies `next`. */
   atomic<T>(
     id: string,
     decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,

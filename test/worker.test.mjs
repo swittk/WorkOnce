@@ -79,3 +79,27 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
   assert.equal(results[0].status, 'interrupted');
   assert.equal((await q.inspect('job')).phase.state, 'running');
 });
+
+test('invalid static heartbeat configuration fails before local work is claimed', async () => {
+  const q = createWorkOnce({ store: createMemoryStore(), scope: 'heartbeat-config' }).define(
+    'work',
+  );
+  await q.enqueue(null, { key: 'process' });
+  await assert.rejects(
+    q.process({ workerId: 'worker', heartbeatMs: 0 }, async (run) => run.succeed()),
+    /heartbeatMs/,
+  );
+  assert.equal((await q.inspect('process')).phase.state, 'queued');
+  assert.equal((await q.inspect('process')).attempts, 0);
+
+  await q.enqueue(null, { key: 'run' });
+  await assert.rejects(
+    q.run(
+      { workerId: 'worker', heartbeatMs: 1.5, signal: new AbortController().signal },
+      async (run) => run.succeed(),
+    ),
+    /heartbeatMs/,
+  );
+  assert.equal((await q.inspect('run')).phase.state, 'queued');
+  assert.equal((await q.inspect('run')).attempts, 0);
+});

@@ -46,7 +46,8 @@ synchronous deterministic function of `(row, now)` only. It must not read clocks
 values, perform IO, mutate captured state or await application callbacks. CAS adapters can
 re-evaluate it after contention. `next` and the returned value must remain detached from storage.
 
-The store commits the returned row durably before resolving. `validUntil`, when supplied, must
+When `next` is supplied, the store commits that row durably before resolving. A decision with no
+`next` performs no write. `validUntil`, when supplied, must
 hold at its write linearization point. If expiry occurs between read and write, the operation
 must reject/re-evaluate instead of accepting stale authority. SQLite enforces the condition in
 its prepared write statement. The reference store rechecks before updating its map.
@@ -62,7 +63,7 @@ insertion.
 Use a trusted clock associated with storage. The kernel prevents one record's update time from
 moving backward, but cannot repair arbitrary clock skew between unrelated authorities. Equality
 with lease expiry means expired. A stored lease is not evidence that the physical handler has
-stopped; cancellation/expiry cannot unsend a external HTTP request.
+stopped; cancellation/expiry cannot unsend an external HTTP request.
 
 Cooperative external systems need their own idempotency keys or fencing. Queuing and unrelated
 application writes are not automatically a transaction. There is intentionally no
@@ -78,11 +79,17 @@ Run the shared suite unchanged against a fresh test database:
 
 ```ts
 import { runConformance } from '@workonce/core/conformance';
-await runConformance(async () => ({
-  store: await createTestStore(),
-  advance: (ms) => advanceTrustedTestClock(ms),
-  close: () => removeOnlyThisTestDatabase(),
-}));
+await runConformance(async () => {
+  const store = await createTestStore();
+  return {
+    store,
+    advance: (ms) => advanceTrustedTestClock(ms),
+    close: async () => {
+      store.close?.();
+      await removeOnlyThisTestDatabase();
+    },
+  };
+});
 ```
 
 Also run separate-process competition, worker death/restart, native deadline checks and unknown

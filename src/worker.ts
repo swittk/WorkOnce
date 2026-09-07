@@ -25,6 +25,11 @@ export type WorkHandler<I, O, R extends string> = (
 export type ProcessResult =
   | { workId: string; status: 'settled'; phase: WorkPhase }
   | { workId: string; status: 'interrupted'; error: unknown };
+/** Validate static worker knobs before any claim; per-claim checks only compare against that lease. */
+function validateWorkerOptions(options: WorkerOptions): number {
+  if (options.heartbeatMs !== undefined) integer(options.heartbeatMs, 'heartbeatMs', 1);
+  return integer(options.concurrency ?? 1, 'concurrency', 1);
+}
 /** Wait between empty polls while allowing graceful worker shutdown to end the delay early. */
 export function waitForPoll(ms: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted) return Promise.resolve();
@@ -80,7 +85,6 @@ async function processClaim<I, O, R extends string>(
     }
   }
   try {
-    integer(heartbeatMs, 'heartbeatMs', 1);
     if (heartbeatMs >= leaseMs) throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry(claimStartedAt + leaseMs);
     heartbeatTimer = setTimeout(() => {
@@ -107,11 +111,12 @@ export async function processClaims<I, O, R extends string>(
   options: WorkerOptions,
   handler: WorkHandler<I, O, R>,
 ): Promise<ProcessResult[]> {
+  const limit = validateWorkerOptions(options);
   if (options.signal?.aborted) return [];
   const started = performance.now();
   const claims = await queue.claim({
     workerId: options.workerId,
-    limit: integer(options.concurrency ?? 1, 'concurrency', 1),
+    limit,
   });
   return Promise.all(claims.map((run) => processClaim(run, options, handler, started)));
 }
@@ -121,7 +126,7 @@ export async function runWorker<I, O, R extends string>(
   options: WorkerOptions & { signal: AbortSignal },
   handler: WorkHandler<I, O, R>,
 ): Promise<void> {
-  const capacity = integer(options.concurrency ?? 1, 'concurrency', 1);
+  const capacity = validateWorkerOptions(options);
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
   let fatal: unknown;
