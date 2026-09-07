@@ -20,7 +20,7 @@ const semanticSourceFiles = [
   'src/worker.ts',
   'src/storage.ts',
   'src/cas.ts',
-  'src/remote.ts',
+  'src/external.ts',
   'src/retry-policy.ts',
 ];
 const modelFiles = ['formal/WorkOnce.tla', 'formal/WorkOnce.cfg'];
@@ -32,7 +32,7 @@ const expectedEntrypoints = [
   'kernel',
   'conformance',
   'cas',
-  'remote',
+  'external',
 ];
 const evidenceByClassification = {
   'abstract-semantic': ['test/formal-bounded-refinement.test.mjs', 'test/conformance.test.mjs'],
@@ -47,7 +47,7 @@ const evidenceByClassification = {
   ],
   'worker-runtime': [
     'test/worker.test.mjs',
-    'test/remote.test.mjs',
+    'test/external.test.mjs',
     'test/handoff.test.mjs',
     'test/edge-regressions.test.mjs',
   ],
@@ -218,7 +218,8 @@ function callableClassification(key) {
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
     return 'storage-boundary';
   if (key.startsWith('conformance.')) return 'assurance-infrastructure';
-  if (/\.(?:run|process|handoff)$/.test(key) || key.startsWith('remote.')) return 'worker-runtime';
+  if (/\.(?:run|process|handoff)$/.test(key) || key.startsWith('external.'))
+    return 'worker-runtime';
   if (/\.(?:inspect|inspectId|inspectMany|history|toJSON|key|request|item)$/.test(key))
     return 'observational';
   if (/WorkItem\./.test(key) || key === 'root.createWorkOnce') return 'ergonomic-wrapper';
@@ -232,6 +233,7 @@ function callableFieldClassification(typeName, fieldName) {
     )
   )
     return 'policy-callback';
+  if (typeName.startsWith('WorkDefinition') && fieldName === 'perform') return 'worker-runtime';
   if (typeName === 'WorkerOptions' && fieldName === 'onError') return 'worker-runtime';
   if (fieldName === 'now') return 'storage-boundary';
   if (fieldName === 'check') return 'policy-callback';
@@ -345,12 +347,19 @@ function modelActionsForKey(key) {
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
   if (key === 'root.WorkQueue.handoff')
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
-  if (/^(?:root|remote)\.(?:processRemoteWork|runRemoteWorker)$/u.test(key))
+  if (key === 'root.WorkQueue.serveExternal')
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
-  if (/^(?:root|remote)\.RemoteWorkRun\.succeed$/u.test(key)) return ['Success'];
-  if (/^(?:root|remote)\.RemoteWorkRun\.fail$/u.test(key)) return ['Fail'];
-  if (/^(?:root|remote)\.RemoteWorkRun\.retry$/u.test(key)) return ['Retry'];
-  if (/^(?:root|remote)\.RemoteWorkRun\.(?:wait|defer)$/u.test(key)) return ['Defer'];
+  if (/^(?:root|external)\.(?:processExternal|runExternal)$/u.test(key))
+    return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
+  if (/ExternalWorkService\.(?:claim|heartbeat|settle)$/u.test(key)) {
+    if (key.endsWith('.claim')) return ['Claim', 'ExhaustAttempts', 'ExhaustDeadline'];
+    if (key.endsWith('.heartbeat')) return ['Renew'];
+    return ['Success', 'Fail', 'Retry', 'Defer'];
+  }
+  if (/^(?:root|external)\.ExternalWorkRun\.succeed$/u.test(key)) return ['Success'];
+  if (/^(?:root|external)\.ExternalWorkRun\.fail$/u.test(key)) return ['Fail'];
+  if (/^(?:root|external)\.ExternalWorkRun\.retry$/u.test(key)) return ['Retry'];
+  if (/^(?:root|external)\.ExternalWorkRun\.(?:wait|defer)$/u.test(key)) return ['Defer'];
   if (key === 'root.exponentialBackoff') return ['Retry'];
   return [];
 }
@@ -358,6 +367,7 @@ function modelActionsForField(typeName, fieldName) {
   if (typeName.startsWith('WorkDefinition')) {
     if (fieldName === 'retry') return ['Retry'];
     if (fieldName === 'wait' || fieldName === 'defer') return ['Defer'];
+    if (fieldName === 'perform') return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
     if (fieldName === 'thenDo' || fieldName === 'next') return ['CreateChild'];
   }
   return [];

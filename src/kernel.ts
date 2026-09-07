@@ -398,7 +398,7 @@ export function rerunRecord(row: WorkRecord, generation: number, clock: number):
   delete next.receipt;
   return next;
 }
-/** Cancellation revokes authority; it is not proof that a remote side effect stopped. */
+/** Cancellation revokes authority; it is not proof that an external side effect stopped. */
 export function cancelRecord(
   row: WorkRecord,
   generation: number,

@@ -1,4 +1,5 @@
 import type { WorkStore } from './storage.js';
+import type { ExternalWorkService } from './external.js';
 import type {
   AttemptRef,
   RetryContext,
@@ -43,10 +44,17 @@ import {
 /** Compact cryptographic receipt identity; the canonical outcome itself can be very large. */
 async function createSubmissionHash(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(canonical(value));
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join(
     '',
   );
+}
+/** Internal multi-error container compatible with ES2018 runtimes that lack AggregateError. */
+class WorkDispatchError extends Error {
+  constructor(readonly errors: unknown[]) {
+    super('Some follow-up deliveries failed');
+    this.name = 'WorkDispatchError';
+  }
 }
 import {
   processClaims,
@@ -62,6 +70,8 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
   version?: string;
   /** Stable business identity derived from typed input when callers should not repeat key plumbing. */
   key?: (input: I) => string;
+  /** Canonical in-process implementation used by `process()` and `run()` unless explicitly overridden. */
+  perform?: WorkHandler<I, O, R>;
   /** Preferred readable name for per-work execution safety bounds. This is not rate throttling. */
   executionLimits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
   /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
@@ -417,6 +427,29 @@ export class WorkQueue<I, O = null, R extends string = string> {
     }
     return leases;
   }
+  /**
+   * Serve this work kind to an executor outside this WorkOnce runtime. Preparation may wait,
+   * retry or fail locally; only `run.handoff(...)` exports a still-live attempt. The external
+   * executor must heartbeat and settle that exact attempt through this authoritative service.
+   */
+  serveExternal<T>(options: {
+    prepare: (
+      run: WorkRun<I, O, R>,
+    ) => WorkHandoff<T> | WorkOutcome<O, R> | Promise<WorkHandoff<T> | WorkOutcome<O, R>>;
+    onPrepareError: WorkHandoffErrorHandler<I, O, R>;
+  }): ExternalWorkService<I, T, O, R> {
+    const queue = this;
+    return {
+      ensure: (input, enqueueOptions = {}) => queue.enqueue(input, enqueueOptions),
+      claim: ({ workerId, limit }) =>
+        queue.handoff({ workerId, limit }, options.prepare, options.onPrepareError),
+      async heartbeat(attempt) {
+        const beat = await queue.heartbeat(attempt);
+        return { leaseUntil: beat.attempt.leaseUntil, observedAt: beat.observedAt };
+      },
+      settle: (attempt, outcome) => queue.settle(attempt, outcome),
+    };
+  }
   /** Preferred readable heartbeat operation; extends only the current authoritative lease. */
   heartbeat(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.renew(ref);
@@ -490,7 +523,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       });
       submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
     }
-    // Snapshot resolved policy so a caller cannot mutate it while a remote adapter is awaiting IO.
+    // Snapshot resolved policy so a caller cannot mutate it while a external transport is awaiting IO.
     const resolved = decision === undefined ? undefined : copy(decision);
     return this.store.atomic(ref.workId, (fresh, now) => {
       this.requireRow(fresh);
@@ -675,16 +708,22 @@ export class WorkQueue<I, O = null, R extends string = string> {
       return { next, value: this.snapshot(next, now) };
     });
   }
-  /** A bounded group of jobs. Handlers run independently; one rejection does not discard the batch. */
-  process(options: WorkerOptions, handler: WorkHandler<I, O, R>): Promise<ProcessResult[]> {
-    return processClaims(this, options, handler);
+  /** Process one bounded batch with the bound `perform` handler unless an override is supplied. */
+  process(options: WorkerOptions, handler?: WorkHandler<I, O, R>): Promise<ProcessResult[]> {
+    return processClaims(this, options, this.performHandler(handler));
   }
-  /** Managed poller; caller owns the lifetime through an AbortSignal. */
+  /** Run continuously with the bound `perform` handler unless an override is supplied. */
   run(
     options: WorkerOptions & { signal: AbortSignal },
-    handler: WorkHandler<I, O, R>,
+    handler?: WorkHandler<I, O, R>,
   ): Promise<void> {
-    return runWorker(this, options, handler);
+    return runWorker(this, options, this.performHandler(handler));
+  }
+  /** Resolve the one handler used for this execution, failing before any claim when none exists. */
+  private performHandler(override?: WorkHandler<I, O, R>): WorkHandler<I, O, R> {
+    const handler = override ?? this.definition.perform;
+    if (!handler) throw new Error(`Work kind '${this.kind}' has no perform handler`);
+    return handler;
   }
   private requireRow(row: WorkRecord | undefined): asserts row is WorkRecord {
     if (!row) throw new WorkConflict('not_found');
@@ -796,7 +835,7 @@ export function createWorkOnce(options: { store: WorkStore; scope: string }) {
       }
       // A poison child stays visible, but cannot stop healthy siblings or the next scan page.
       if (failures.length === 1) throw failures[0];
-      if (failures.length) throw new AggregateError(failures, 'Some follow-up deliveries failed');
+      if (failures.length) throw new WorkDispatchError(failures);
       return sent;
     },
     /** Supervise the durable follow-up pump alongside application workers. No in-memory hook is required. */

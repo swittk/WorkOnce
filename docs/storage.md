@@ -62,7 +62,7 @@ insertion.
 Use a trusted clock associated with storage. The kernel prevents one record's update time from
 moving backward, but cannot repair arbitrary clock skew between unrelated authorities. Equality
 with lease expiry means expired. A stored lease is not evidence that the physical handler has
-stopped; cancellation/expiry cannot unsend a remote HTTP request.
+stopped; cancellation/expiry cannot unsend a external HTTP request.
 
 Cooperative external systems need their own idempotency keys or fencing. Queuing and unrelated
 application writes are not automatically a transaction. There is intentionally no
@@ -105,3 +105,5 @@ Backups and restore must include the native work store, not only application ORM
 separate work database needs its own coordinated backup/restore and worker fence. This kernel
 does not silently add tables to an application's portable backup format or pretend domain
 reconciliation can recover every lost receipt or retry budget.
+
+The optional `/sqlite` adapter uses `node:sqlite` and requires Node >= 22.16; the default/browser graph does not import it.

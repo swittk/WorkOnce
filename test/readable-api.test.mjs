@@ -71,3 +71,40 @@ test('exponentialBackoff grows deterministically and caps the delay', () => {
   assert.equal(policy({ retries: 2 }).afterMs, 25);
   assert.equal(policy({ retries: 100 }).afterMs, 25);
 });
+
+test('a definition can bind its canonical perform handler once and still allow an explicit override', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'bound-perform' });
+  let defaultCalls = 0;
+  let overrideCalls = 0;
+  const queue = work.define('job', {
+    key: (input) => input.id,
+    perform: async (run, input) => {
+      defaultCalls++;
+      return run.succeed(`default:${input.id}`);
+    },
+  });
+  await queue.enqueue({ id: 'a' });
+  await queue.process({ workerId: 'local' });
+  assert.equal(defaultCalls, 1);
+  assert.equal((await queue.item({ id: 'a' }).inspect()).phase.result, 'default:a');
+
+  await queue.enqueue({ id: 'b' });
+  await queue.process({ workerId: 'override' }, async (run, input) => {
+    overrideCalls++;
+    return run.succeed(`override:${input.id}`);
+  });
+  assert.equal(defaultCalls, 1);
+  assert.equal(overrideCalls, 1);
+  assert.equal((await queue.item({ id: 'b' }).inspect()).phase.result, 'override:b');
+});
+
+test('process and run fail before claiming when no bound or explicit perform handler exists', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'missing-perform' });
+  const queue = work.define('job');
+  await queue.enqueue(null, { key: 'a' });
+  assert.throws(() => queue.process({ workerId: 'local' }), /no perform handler/);
+  assert.equal((await queue.inspect('a')).phase.state, 'queued');
+  const stop = new AbortController();
+  assert.throws(() => queue.run({ workerId: 'local', signal: stop.signal }), /no perform handler/);
+  assert.equal((await queue.inspect('a')).phase.state, 'queued');
+});

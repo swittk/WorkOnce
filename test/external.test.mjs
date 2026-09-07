@@ -1,22 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { createRemoteWorkService, createWorkOnce } from '../dist/index.js';
+import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { processRemoteWork, runRemoteWorker } from '../dist/remote.js';
+import { processExternal, runExternal } from '../dist/external.js';
 
 function fixture(options = {}) {
-  const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'remote' });
+  const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'external' });
   const queue = work.define('job', { executionLimits: { leaseMs: options.leaseMs ?? 300 } });
-  const transport = createRemoteWorkService(
-    queue,
-    (run) => run.handoff(run.input),
-    (run) => run.fail('prepare_failed'),
-  );
+  const transport = queue.serveExternal({
+    prepare: (run) => run.handoff(run.input),
+    onPrepareError: (run) => run.fail('prepare_failed'),
+  });
   return { work, queue, transport };
 }
 
-test('remote worker runner hides claim heartbeat and settlement plumbing from handlers', async () => {
+test('external worker runner hides claim heartbeat and settlement plumbing from handlers', async () => {
   const { queue, transport } = fixture({ leaseMs: 180 });
   for (let index = 0; index < 3; index++) {
     await transport.ensure({ index }, { key: String(index) });
@@ -24,7 +23,7 @@ test('remote worker runner hides claim heartbeat and settlement plumbing from ha
   }
   let active = 0;
   let peak = 0;
-  const results = await processRemoteWork(
+  const results = await processExternal(
     transport,
     { workerId: 'relay', concurrency: 3, heartbeatMs: 40, signal: new AbortController().signal },
     async (run, input) => {
@@ -42,7 +41,7 @@ test('remote worker runner hides claim heartbeat and settlement plumbing from ha
     assert.equal((await queue.inspect(String(index))).phase.state, 'succeeded');
 });
 
-test('remote heartbeat failure aborts the handler before it can report success', async () => {
+test('external heartbeat failure aborts the handler before it can report success', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 250 });
   await queue.enqueue(null, { key: 'x' });
   let heartbeatCalls = 0;
@@ -55,7 +54,7 @@ test('remote heartbeat failure aborts the handler before it can report success',
     },
   };
   let sawAbort = false;
-  const [result] = await processRemoteWork(
+  const [result] = await processExternal(
     transport,
     { workerId: 'relay', heartbeatMs: 25, signal: new AbortController().signal },
     async (run) => {
@@ -69,7 +68,7 @@ test('remote heartbeat failure aborts the handler before it can report success',
   assert.equal((await queue.inspect('x')).phase.state, 'running');
 });
 
-test('managed remote runner refills freed slots and drains active work before observer failure escapes', async () => {
+test('managed external runner refills freed slots and drains active work before observer failure escapes', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 1000 });
   await queue.enqueue({ id: 'slow' }, { key: 'slow' });
   let claimCalls = 0;
@@ -84,7 +83,7 @@ test('managed remote runner refills freed slots and drains active work before ob
   const stop = new AbortController();
   let finished = false;
   await assert.rejects(
-    runRemoteWorker(
+    runExternal(
       transport,
       {
         workerId: 'relay',
@@ -107,7 +106,7 @@ test('managed remote runner refills freed slots and drains active work before ob
   stop.abort();
 });
 
-test('remote worker options reject invalid heartbeat before any lease is claimed', async () => {
+test('external worker options reject invalid heartbeat before any lease is claimed', async () => {
   const { transport: base } = fixture();
   let claims = 0;
   const transport = {
@@ -119,13 +118,13 @@ test('remote worker options reject invalid heartbeat before any lease is claimed
   };
   const signal = new AbortController().signal;
   await assert.rejects(
-    processRemoteWork(transport, { workerId: 'relay', heartbeatMs: 0, signal }, async (run) =>
+    processExternal(transport, { workerId: 'relay', heartbeatMs: 0, signal }, async (run) =>
       run.succeed(),
     ),
     /heartbeatMs/,
   );
   await assert.rejects(
-    runRemoteWorker(transport, { workerId: 'relay', heartbeatMs: 1.5, signal }, async (run) =>
+    runExternal(transport, { workerId: 'relay', heartbeatMs: 1.5, signal }, async (run) =>
       run.succeed(),
     ),
     /heartbeatMs/,
@@ -133,7 +132,7 @@ test('remote worker options reject invalid heartbeat before any lease is claimed
   assert.equal(claims, 0);
 });
 
-test('authoritative remote service never returns more than the requested claim limit', async () => {
+test('authoritative external service never returns more than the requested claim limit', async () => {
   const { transport } = fixture();
   for (let index = 0; index < 3; index++) await transport.ensure({ index }, { key: String(index) });
   const first = await transport.claim({ workerId: 'relay', limit: 2 });
@@ -142,7 +141,7 @@ test('authoritative remote service never returns more than the requested claim l
   assert.equal(second.length, 1);
 });
 
-test('managed remote runner rethrows the original claim failure when no observer exists', async () => {
+test('managed external runner rethrows the original claim failure when no observer exists', async () => {
   const { transport: base } = fixture();
   const failure = new Error('original claim failure');
   const transport = {
@@ -152,7 +151,7 @@ test('managed remote runner rethrows the original claim failure when no observer
     },
   };
   await assert.rejects(
-    runRemoteWorker(
+    runExternal(
       transport,
       { workerId: 'relay', signal: new AbortController().signal },
       async (run) => run.succeed(),
@@ -161,7 +160,7 @@ test('managed remote runner rethrows the original claim failure when no observer
   );
 });
 
-test('managed remote runner passes shutdown signal into an in-flight claim', async () => {
+test('managed external runner passes shutdown signal into an in-flight claim', async () => {
   const { transport: base } = fixture();
   const stop = new AbortController();
   let receivedSignal;
@@ -177,10 +176,8 @@ test('managed remote runner passes shutdown signal into an in-flight claim', asy
       });
     },
   };
-  const running = runRemoteWorker(
-    transport,
-    { workerId: 'relay', signal: stop.signal },
-    async (run) => run.succeed(),
+  const running = runExternal(transport, { workerId: 'relay', signal: stop.signal }, async (run) =>
+    run.succeed(),
   );
   await sleep(10);
   stop.abort(new Error('shutdown'));
@@ -188,7 +185,7 @@ test('managed remote runner passes shutdown signal into an in-flight claim', asy
   assert.equal(receivedSignal, stop.signal);
 });
 
-test('caller abort stops new remote claims and drains an already-active handler', async () => {
+test('caller abort stops new external claims and drains an already-active handler', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 1000 });
   await queue.enqueue({ id: 'slow' }, { key: 'slow' });
   const stop = new AbortController();
@@ -201,7 +198,7 @@ test('caller abort stops new remote claims and drains an already-active handler'
     },
   };
   let finished = false;
-  const running = runRemoteWorker(
+  const running = runExternal(
     transport,
     { workerId: 'relay', concurrency: 1, signal: stop.signal },
     async (run) => {
@@ -216,4 +213,48 @@ test('caller abort stops new remote claims and drains an already-active handler'
   assert.equal(finished, true);
   assert.equal(claims, 1);
   assert.equal((await queue.inspect('slow')).phase.state, 'running');
+});
+
+test('serveExternal exports only a live handoff and settles local wait outcomes before returning', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'external-preparation' });
+  const queue = work.define('job', { key: (input) => input.id });
+  const service = queue.serveExternal({
+    prepare: (run) =>
+      run.input.ready ? run.handoff({ id: run.input.id }) : run.wait('not_ready', { afterMs: 100 }),
+    onPrepareError: (run) => run.fail('prepare_failed'),
+  });
+  await service.ensure({ id: 'wait', ready: false });
+  await service.ensure({ id: 'go', ready: true });
+  const leases = await service.claim({ workerId: 'outside', limit: 2 });
+  assert.equal(leases.length, 1);
+  assert.equal(leases[0].input.id, 'go');
+  assert.equal((await queue.item({ id: 'wait', ready: false }).inspect()).phase.state, 'waiting');
+  assert.equal((await queue.item({ id: 'go', ready: true }).inspect()).phase.state, 'running');
+});
+
+test('local run and external service compete through one claim/fence authority', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'dual-topology' });
+  let localExecutions = 0;
+  const queue = work.define('job', {
+    key: (input) => input.id,
+    perform: async (run) => {
+      localExecutions++;
+      return run.succeed('local');
+    },
+  });
+  const service = queue.serveExternal({
+    prepare: (run) => run.handoff({ id: run.input.id }),
+    onPrepareError: (run) => run.fail('prepare_failed'),
+  });
+  await queue.enqueue({ id: 'one' });
+  const [local, external] = await Promise.all([
+    queue.process({ workerId: 'local' }),
+    service.claim({ workerId: 'outside', limit: 1 }),
+  ]);
+  assert.equal(local.length + external.length, 1);
+  assert.ok(localExecutions === 0 || localExecutions === 1);
+  if (external.length) {
+    await service.settle(external[0].attempt, { type: 'succeed', result: 'external', next: [] });
+  }
+  assert.equal((await queue.item({ id: 'one' }).inspect()).phase.state, 'succeeded');
 });

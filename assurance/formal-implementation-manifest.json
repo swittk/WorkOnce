@@ -14,16 +14,16 @@
         "test/conformance.test.mjs"
       ],
       "field": "onError",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#onError",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#onError",
       "modelActions": [],
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": true,
       "signatureHash": "c5d9bed7c96b287c7355c5e051bfe1e51daf8c974b22eb2934e6109d95993087",
-      "source": "src/remote.ts",
+      "source": "src/external.ts",
       "typeHash": "07b283c3194f4291c28d87ea4d47429cb6a808490ffbbee81b2c46f2d262275b",
-      "typeName": "RemoteWorkerOptions"
+      "typeName": "ExternalWorkerOptions"
     },
     {
       "allowsNull": false,
@@ -31,7 +31,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -61,7 +60,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -91,7 +89,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -118,7 +115,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -148,7 +144,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -176,9 +171,42 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": true,
+      "classification": "worker-runtime",
+      "directions": [
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "perform",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": true,
+      "signatureHash": "87d751c45eb47275d4e65e883b534ddf51ae04d8f515a87968434c6926fa35c6",
+      "source": "src/work.ts",
+      "typeHash": "6da1f47bac59d5312be510f72c740ee98c1113b22cbcf8339fe59ebd58c1b1bc",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -209,7 +237,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -239,7 +266,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -273,7 +299,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -343,27 +369,49 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": true,
-      "classification": "policy-callback",
+      "classification": "abstract-semantic",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs",
-        "test/readable-api.test.mjs"
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
       ],
-      "field": "check",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#check",
+      "field": "onPrepareError",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|94ae4ee8bfef#onPrepareError",
       "modelActions": [],
       "modelConcepts": [
-        "manualRetryAllowed",
-        "generation"
+        "observationOnly"
       ],
-      "optional": true,
-      "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
+      "optional": false,
+      "signatureHash": "bc3bc3d639383c060d72c00e01733a67c5947394a17c5551bd93ff49dc9b2977",
       "source": "src/work.ts",
-      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#16"
+      "typeHash": "83dcf2e723ef47d9fc182421a3747e0bc928bb84860dfb4fb157015efb313564",
+      "typeName": "anonymous@src/work.ts#14"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "prepare",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|94ae4ee8bfef#prepare",
+      "modelActions": [],
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": false,
+      "signatureHash": "43fb0e73727c60d457ab2e304b6757be37e7823b77ca4bcf7ff8f8628da5f3a4",
+      "source": "src/work.ts",
+      "typeHash": "99fdb0587038aa96e43d2798d0d623a055b152aedd276aa0e97c255d1da3c40f",
+      "typeName": "anonymous@src/work.ts#14"
     },
     {
       "allowsNull": false,
@@ -379,7 +427,7 @@
         "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#check",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|10709b001125#check",
       "modelActions": [],
       "modelConcepts": [
         "manualRetryAllowed",
@@ -389,7 +437,7 @@
       "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#20"
+      "typeName": "anonymous@src/work.ts#17"
     },
     {
       "allowsNull": false,
@@ -416,6 +464,32 @@
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
       "typeName": "anonymous@src/work.ts#21"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|297778ca437f#check",
+      "modelActions": [],
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#22"
     },
     {
       "allowsNull": false,
@@ -600,6 +674,244 @@
       "key": "conformance.runConformance",
       "modelActions": [],
       "signatureHash": "473b37805e6da2e242f743c26ad3a42eb4e7aa7dfdaed5a7b0bf5912b4454a4b"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun",
+      "modelActions": [],
+      "signatureHash": "aa31e158703eced7a8992fa28e7dd966d29d49c5d78dd79d7eeef2e8a27b8a93"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun.defer",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun.fail",
+      "modelActions": [
+        "Fail"
+      ],
+      "signatureHash": "b9b36ef526f7ab6b1a3a74d708f53c0f65e8cd420b096066146d366e7d343b62"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun.retry",
+      "modelActions": [
+        "Retry"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun.succeed",
+      "modelActions": [
+        "Success"
+      ],
+      "signatureHash": "a42c370dfe3b88466cd7759188c040ce88022667b76ec0e0c56f3ca263ad479c"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkRun.wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkService.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkService.ensure",
+      "modelActions": [],
+      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkService.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkService.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkTransport.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "signatureHash": "86a90d0054b712acf25cfd80f4622f72931084e969f9c81aba85c97ba157ae84"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkTransport.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkTransport.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.ExternalWorkerOptions.onError",
+      "modelActions": [],
+      "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.processExternal",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "09c2447ad1972af0b2fa47dace87e400f274ef7f9190bc09ca754d85912c3eaa"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "key": "external.runExternal",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "a5bf5cbb0999138bb841620fb9124bd6b76b1b2d90e0641297aa97001802deb7"
     },
     {
       "classification": "abstract-semantic",
@@ -843,313 +1155,14 @@
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     },
     {
-      "classification": "worker-runtime",
+      "classification": "abstract-semantic",
       "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
       ],
-      "key": "remote.RemoteWorkRun",
+      "key": "root.ExternalWorkRun",
       "modelActions": [],
-      "signatureHash": "7aa5c7dc4f82519be3884f7cf55da11286547ba84937d664bac408ce9b6d01c2"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkRun.defer",
-      "modelActions": [
-        "Defer"
-      ],
-      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkRun.fail",
-      "modelActions": [
-        "Fail"
-      ],
-      "signatureHash": "b9b36ef526f7ab6b1a3a74d708f53c0f65e8cd420b096066146d366e7d343b62"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkRun.retry",
-      "modelActions": [
-        "Retry"
-      ],
-      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkRun.succeed",
-      "modelActions": [
-        "Success"
-      ],
-      "signatureHash": "a42c370dfe3b88466cd7759188c040ce88022667b76ec0e0c56f3ca263ad479c"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkRun.wait",
-      "modelActions": [
-        "Defer"
-      ],
-      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkService.claim",
-      "modelActions": [
-        "Claim",
-        "ExhaustAttempts",
-        "ExhaustDeadline"
-      ],
-      "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkService.ensure",
-      "modelActions": [],
-      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkService.heartbeat",
-      "modelActions": [
-        "Renew"
-      ],
-      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkService.settle",
-      "modelActions": [
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkTransport.claim",
-      "modelActions": [
-        "Claim",
-        "ExhaustAttempts",
-        "ExhaustDeadline"
-      ],
-      "signatureHash": "86a90d0054b712acf25cfd80f4622f72931084e969f9c81aba85c97ba157ae84"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkTransport.heartbeat",
-      "modelActions": [
-        "Renew"
-      ],
-      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkTransport.settle",
-      "modelActions": [
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.RemoteWorkerOptions.onError",
-      "modelActions": [],
-      "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.createRemoteWorkService",
-      "modelActions": [],
-      "signatureHash": "fd6a81b3d6ce45880a3a6513c0f3f5efae2f89ed5f123d9e9e45ea7769845964"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.createRemoteWorkService.claim",
-      "modelActions": [
-        "Claim",
-        "ExhaustAttempts",
-        "ExhaustDeadline"
-      ],
-      "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.createRemoteWorkService.ensure",
-      "modelActions": [],
-      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.createRemoteWorkService.heartbeat",
-      "modelActions": [
-        "Renew"
-      ],
-      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.createRemoteWorkService.settle",
-      "modelActions": [
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.processRemoteWork",
-      "modelActions": [
-        "Claim",
-        "Renew",
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "5bf82285a800622c439125ab08c7549e326bae1e9001d9ce3c5d2abed05ff303"
-    },
-    {
-      "classification": "worker-runtime",
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "key": "remote.runRemoteWorker",
-      "modelActions": [
-        "Claim",
-        "Renew",
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "a7e83455f479df2c72f34c6cbbee0c960f51c5b13d220fce238651016693a1bd"
+      "signatureHash": "aa31e158703eced7a8992fa28e7dd966d29d49c5d78dd79d7eeef2e8a27b8a93"
     },
     {
       "classification": "abstract-semantic",
@@ -1157,17 +1170,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.RemoteWorkRun",
-      "modelActions": [],
-      "signatureHash": "7aa5c7dc4f82519be3884f7cf55da11286547ba84937d664bac408ce9b6d01c2"
-    },
-    {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.RemoteWorkRun.defer",
+      "key": "root.ExternalWorkRun.defer",
       "modelActions": [
         "Defer"
       ],
@@ -1179,7 +1182,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.RemoteWorkRun.fail",
+      "key": "root.ExternalWorkRun.fail",
       "modelActions": [
         "Fail"
       ],
@@ -1191,7 +1194,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.RemoteWorkRun.retry",
+      "key": "root.ExternalWorkRun.retry",
       "modelActions": [
         "Retry"
       ],
@@ -1203,7 +1206,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.RemoteWorkRun.succeed",
+      "key": "root.ExternalWorkRun.succeed",
       "modelActions": [
         "Success"
       ],
@@ -1215,7 +1218,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.RemoteWorkRun.wait",
+      "key": "root.ExternalWorkRun.wait",
       "modelActions": [
         "Defer"
       ],
@@ -1390,7 +1393,7 @@
       "classification": "worker-runtime",
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -1481,7 +1484,7 @@
       "classification": "worker-runtime",
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -1494,7 +1497,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "dacc6821283c939ae364716f791f0e6f4b04f237a6dbfb1a2b6fa228dc8dbe23"
+      "signatureHash": "9f447348ef972c70b6b1fcdb7ad33e0e89ca824fb4d840fdca2f56428487984c"
     },
     {
       "classification": "abstract-semantic",
@@ -1559,7 +1562,7 @@
       "classification": "worker-runtime",
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -1572,7 +1575,24 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "3fdb6cd31796a514e48ddb32bf338d582da50dbb02c7a373fecd5a491939f127"
+      "signatureHash": "e13bfab485fa61d580e3422b68647b8f790c956545e343919ff65c060804586a"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.WorkQueue.serveExternal",
+      "modelActions": [
+        "Claim",
+        "Renew",
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "signatureHash": "5a4e0430c876037c7293025f120018cac334afbc4b319c26e5b98c0f0497e33b"
     },
     {
       "classification": "abstract-semantic",
@@ -1651,7 +1671,7 @@
       "classification": "worker-runtime",
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -1745,67 +1765,6 @@
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.createRemoteWorkService",
-      "modelActions": [],
-      "signatureHash": "fd6a81b3d6ce45880a3a6513c0f3f5efae2f89ed5f123d9e9e45ea7769845964"
-    },
-    {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.createRemoteWorkService.claim",
-      "modelActions": [
-        "Claim",
-        "ExhaustAttempts",
-        "ExhaustDeadline"
-      ],
-      "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
-    },
-    {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.createRemoteWorkService.ensure",
-      "modelActions": [],
-      "signatureHash": "691cda07c19db1af4ce483178b2ca0daf65c441ce4dfcd44326c0e43ea145f3d"
-    },
-    {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.createRemoteWorkService.heartbeat",
-      "modelActions": [
-        "Renew"
-      ],
-      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
-    },
-    {
-      "classification": "abstract-semantic",
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "key": "root.createRemoteWorkService.settle",
-      "modelActions": [
-        "Success",
-        "Fail",
-        "Retry",
-        "Defer"
-      ],
-      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
-    },
-    {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
@@ -1894,7 +1853,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.processRemoteWork",
+      "key": "root.processExternal",
       "modelActions": [
         "Claim",
         "Renew",
@@ -1903,7 +1862,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "5bf82285a800622c439125ab08c7549e326bae1e9001d9ce3c5d2abed05ff303"
+      "signatureHash": "09c2447ad1972af0b2fa47dace87e400f274ef7f9190bc09ca754d85912c3eaa"
     },
     {
       "classification": "abstract-semantic",
@@ -1923,7 +1882,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.runRemoteWorker",
+      "key": "root.runExternal",
       "modelActions": [
         "Claim",
         "Renew",
@@ -1932,7 +1891,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "a7e83455f479df2c72f34c6cbbee0c960f51c5b13d220fce238651016693a1bd"
+      "signatureHash": "a5bf5cbb0999138bb841620fb9124bd6b76b1b2d90e0641297aa97001802deb7"
     },
     {
       "classification": "abstract-semantic",
@@ -2047,6 +2006,7 @@
   "diagnostics": {
     "maximumTypeDepth": 7,
     "recursiveTypeReferences": [
+      "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09",
       "external:1"
     ],
     "truncatedTypes": []
@@ -2059,7 +2019,7 @@
     "kernel",
     "conformance",
     "cas",
-    "remote"
+    "external"
   ],
   "fields": [
     {
@@ -2476,6 +2436,296 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "status",
+      "key": "ExternalProcessResult|src/external.ts|0|d7261e87b489#status",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "2b59e4f78a08ba25e7946b3f8d77bd9788affec0ccab094fc35f64503a3b478c",
+      "typeName": "ExternalProcessResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workId",
+      "key": "ExternalProcessResult|src/external.ts|0|d7261e87b489#workId",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "ExternalProcessResult"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "callback-argument",
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "4c92b3f65c34012c2f74adf111eeeff133277add92ee092c6f091393076402ce",
+      "typeName": "ExternalWorkRun<6fddad540f0b>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "callback-argument",
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "leaseUntil",
+      "key": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b#leaseUntil",
+      "modelConcepts": [
+        "lease"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExternalWorkRun<6fddad540f0b>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "callback-argument",
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "observedAt",
+      "key": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b#observedAt",
+      "modelConcepts": [
+        "now"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExternalWorkRun<6fddad540f0b>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "callback-argument",
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "signal",
+      "key": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b#signal",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
+      "typeName": "ExternalWorkRun<6fddad540f0b>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "concurrency",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#concurrency",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "heartbeatMs",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#heartbeatMs",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "idleMs",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#idleMs",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "abstract-semantic",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "onError",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#onError",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "07b283c3194f4291c28d87ea4d47429cb6a808490ffbbee81b2c46f2d262275b",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "signal",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#signal",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workerId",
+      "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#workerId",
+      "modelConcepts": [
+        "owner",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "ExternalWorkerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
       "classification": "abstract-semantic",
       "directions": [
         "input"
@@ -2617,7 +2867,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -2652,296 +2902,6 @@
       "source": "src/worker.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "ProcessResult"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "status",
-      "key": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1#status",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "2b59e4f78a08ba25e7946b3f8d77bd9788affec0ccab094fc35f64503a3b478c",
-      "typeName": "RemoteProcessResult"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workId",
-      "key": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1#workId",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "RemoteProcessResult"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "callback-argument",
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "attempt",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|0|fe2698f7287e#attempt",
-      "modelConcepts": [
-        "fence",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "4c92b3f65c34012c2f74adf111eeeff133277add92ee092c6f091393076402ce",
-      "typeName": "RemoteWorkRun<fe2698f7287e>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "callback-argument",
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "leaseUntil",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|0|fe2698f7287e#leaseUntil",
-      "modelConcepts": [
-        "lease"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "RemoteWorkRun<fe2698f7287e>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "callback-argument",
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "observedAt",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|0|fe2698f7287e#observedAt",
-      "modelConcepts": [
-        "now"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "RemoteWorkRun<fe2698f7287e>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "callback-argument",
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "signal",
-      "key": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|0|fe2698f7287e#signal",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
-      "typeName": "RemoteWorkRun<fe2698f7287e>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "concurrency",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#concurrency",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "RemoteWorkerOptions"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "observational",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
-      ],
-      "field": "heartbeatMs",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#heartbeatMs",
-      "modelConcepts": [
-        "observationOnly"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "RemoteWorkerOptions"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "observational",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
-      ],
-      "field": "idleMs",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#idleMs",
-      "modelConcepts": [
-        "observationOnly"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "RemoteWorkerOptions"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "abstract-semantic",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "onError",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#onError",
-      "modelConcepts": [
-        "observationOnly"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "07b283c3194f4291c28d87ea4d47429cb6a808490ffbbee81b2c46f2d262275b",
-      "typeName": "RemoteWorkerOptions"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "signal",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#signal",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
-      "typeName": "RemoteWorkerOptions"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workerId",
-      "key": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec#workerId",
-      "modelConcepts": [
-        "owner",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "RemoteWorkerOptions"
     },
     {
       "allowsNull": false,
@@ -3419,29 +3379,6 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "cause",
-      "key": "WorkConflict|src/kernel.ts|0|1000925f03ba#cause",
-      "modelConcepts": [
-        "waitCause"
-      ],
-      "optional": true,
-      "source": "node_modules/typescript/lib/lib.es2022.error.d.ts",
-      "typeHash": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc",
-      "typeName": "WorkConflict"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
       "classification": "observational",
       "directions": [
         "exported-type",
@@ -3536,7 +3473,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3562,7 +3498,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3590,7 +3525,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3615,7 +3549,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3643,7 +3576,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3667,9 +3599,33 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": true,
+      "classification": "worker-runtime",
+      "directions": [
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "perform",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "6da1f47bac59d5312be510f72c740ee98c1113b22cbcf8339fe59ebd58c1b1bc",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3696,7 +3652,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3722,7 +3677,6 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3746,7 +3700,6 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
@@ -3983,50 +3936,6 @@
       "source": "src/work.ts",
       "typeHash": "f30ced3368ee589d3c32ee7576f2838dc9e2807115379329a07d35d920612e68",
       "typeName": "WorkHandoff<d13150c28db8>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "opaque-payload",
-      "directions": [
-        "callback-result"
-      ],
-      "evidence": [
-        "test/terminal-receipt.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "input",
-      "key": "WorkHandoff<d4912b883c0d>|src/work.ts|0|d4912b883c0d#input",
-      "modelConcepts": [
-        "opaquePayload"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "ab1171b4bfc4fd5f289cc6edf21c0b207438eb311e53da28af13e534508de332",
-      "typeName": "WorkHandoff<d4912b883c0d>"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "callback-result"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "type",
-      "key": "WorkHandoff<d4912b883c0d>|src/work.ts|0|d4912b883c0d#type",
-      "modelConcepts": [
-        "state"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "f30ced3368ee589d3c32ee7576f2838dc9e2807115379329a07d35d920612e68",
-      "typeName": "WorkHandoff<d4912b883c0d>"
     },
     {
       "allowsNull": false,
@@ -5556,7 +5465,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -5880,7 +5789,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -5948,7 +5857,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -5972,7 +5881,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -6031,6 +5940,194 @@
       "source": "src/cas.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
       "typeName": "anonymous@src/cas.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "manualRetry",
+      "key": "anonymous@src/external.ts#2|src/external.ts|2|a70685abc349#manualRetry",
+      "modelConcepts": [
+        "manualRetryAllowed"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
+      "typeName": "anonymous@src/external.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "result",
+      "key": "anonymous@src/external.ts#2|src/external.ts|2|a70685abc349#result",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": true,
+      "source": "src/external.ts",
+      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
+      "typeName": "anonymous@src/external.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "phase",
+      "key": "anonymous@src/external.ts#3|src/external.ts|3|d4f683fe8841#phase",
+      "modelConcepts": [
+        "state"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "b8a1f003281b5bc2b0fe5e24e2b7c4f9ea843dd4036b2bce87e0871c28f1c80f",
+      "typeName": "anonymous@src/external.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "status",
+      "key": "anonymous@src/external.ts#3|src/external.ts|3|d4f683fe8841#status",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "58442863e380bb48e7935a0013a2f4d460e8ab4d9e6a3a75327034fbc2bc0e4a",
+      "typeName": "anonymous@src/external.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workId",
+      "key": "anonymous@src/external.ts#3|src/external.ts|3|d4f683fe8841#workId",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/external.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "error",
+      "key": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7#error",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc",
+      "typeName": "anonymous@src/external.ts#4"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "status",
+      "key": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7#status",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "89adf65813e07e7c8f2ef568099ad92bf51fbe1b8e7900062c50c9e68bba8b2f",
+      "typeName": "anonymous@src/external.ts#4"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workId",
+      "key": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7#workId",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/external.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/external.ts#4"
     },
     {
       "allowsNull": false,
@@ -6112,7 +6209,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -6137,7 +6233,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -6162,7 +6257,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -6188,7 +6282,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -6213,7 +6306,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -6238,7 +6330,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -7866,7 +7957,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -7892,7 +7982,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -7918,7 +8007,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -7944,7 +8032,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -8007,194 +8094,6 @@
       "source": "src/outcomes.ts",
       "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
       "typeName": "anonymous@src/outcomes.ts#8"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "manualRetry",
-      "key": "anonymous@src/remote.ts#2|src/remote.ts|2|a70685abc349#manualRetry",
-      "modelConcepts": [
-        "manualRetryAllowed"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
-      "typeName": "anonymous@src/remote.ts#2"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "opaque-payload",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/terminal-receipt.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "result",
-      "key": "anonymous@src/remote.ts#2|src/remote.ts|2|a70685abc349#result",
-      "modelConcepts": [
-        "opaquePayload"
-      ],
-      "optional": true,
-      "source": "src/remote.ts",
-      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
-      "typeName": "anonymous@src/remote.ts#2"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "phase",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#phase",
-      "modelConcepts": [
-        "state"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "b8a1f003281b5bc2b0fe5e24e2b7c4f9ea843dd4036b2bce87e0871c28f1c80f",
-      "typeName": "anonymous@src/remote.ts#3"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "status",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#status",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "58442863e380bb48e7935a0013a2f4d460e8ab4d9e6a3a75327034fbc2bc0e4a",
-      "typeName": "anonymous@src/remote.ts#3"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workId",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#workId",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/remote.ts#3"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "error",
-      "key": "anonymous@src/remote.ts#4|src/remote.ts|4|1d6e5489e6b7#error",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc",
-      "typeName": "anonymous@src/remote.ts#4"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "status",
-      "key": "anonymous@src/remote.ts#4|src/remote.ts|4|1d6e5489e6b7#status",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "89adf65813e07e7c8f2ef568099ad92bf51fbe1b8e7900062c50c9e68bba8b2f",
-      "typeName": "anonymous@src/remote.ts#4"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workId",
-      "key": "anonymous@src/remote.ts#4|src/remote.ts|4|1d6e5489e6b7#workId",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/remote.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/remote.ts#4"
     },
     {
       "allowsNull": false,
@@ -8537,46 +8436,45 @@
     {
       "allowsNull": false,
       "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "attempt",
-      "key": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e#attempt",
-      "modelConcepts": [
-        "fence",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
-      "typeName": "anonymous@src/work.ts#14"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
+      "callable": true,
       "classification": "abstract-semantic",
       "directions": [
-        "output"
+        "input"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "field": "observedAt",
-      "key": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e#observedAt",
+      "field": "onPrepareError",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|94ae4ee8bfef#onPrepareError",
       "modelConcepts": [
-        "now"
+        "observationOnly"
       ],
       "optional": false,
       "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeHash": "83dcf2e723ef47d9fc182421a3747e0bc928bb84860dfb4fb157015efb313564",
+      "typeName": "anonymous@src/work.ts#14"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "prepare",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|94ae4ee8bfef#prepare",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "99fdb0587038aa96e43d2798d0d623a055b152aedd276aa0e97c255d1da3c40f",
       "typeName": "anonymous@src/work.ts#14"
     },
     {
@@ -8627,6 +8525,51 @@
     {
       "allowsNull": false,
       "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|4863c4a03c5e#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
+      "typeName": "anonymous@src/work.ts#16"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "observedAt",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|4863c4a03c5e#observedAt",
+      "modelConcepts": [
+        "now"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#16"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
       "callable": true,
       "classification": "policy-callback",
       "directions": [
@@ -8638,7 +8581,7 @@
         "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#check",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|10709b001125#check",
       "modelConcepts": [
         "manualRetryAllowed",
         "generation"
@@ -8646,7 +8589,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#16"
+      "typeName": "anonymous@src/work.ts#17"
     },
     {
       "allowsNull": false,
@@ -8661,51 +8604,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#expectedGeneration",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#16"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#16"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#expectedGeneration",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|10709b001125#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
@@ -8727,7 +8626,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#key",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|10709b001125#key",
       "modelConcepts": [
         "identity"
       ],
@@ -8735,6 +8634,50 @@
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "anonymous@src/work.ts#17"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "expectedGeneration",
+      "key": "anonymous@src/work.ts#18|src/work.ts|18|e6f82840fb0a#expectedGeneration",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#18"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "key",
+      "key": "anonymous@src/work.ts#18|src/work.ts|18|e6f82840fb0a#key",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#18"
     },
     {
       "allowsNull": false,
@@ -8749,7 +8692,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#reason",
+      "key": "anonymous@src/work.ts#18|src/work.ts|18|e6f82840fb0a#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
@@ -8757,7 +8700,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#17"
+      "typeName": "anonymous@src/work.ts#18"
     },
     {
       "allowsNull": false,
@@ -8769,19 +8712,19 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
       "field": "activeAttempt",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0#activeAttempt",
+      "key": "anonymous@src/work.ts#19|src/work.ts|19|c34c2fcf71b0#activeAttempt",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "4c92b3f65c34012c2f74adf111eeeff133277add92ee092c6f091393076402ce",
-      "typeName": "anonymous@src/work.ts#18"
+      "typeName": "anonymous@src/work.ts#19"
     },
     {
       "allowsNull": false,
@@ -8796,57 +8739,13 @@
         "test/types/api.ts"
       ],
       "field": "snapshot",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0#snapshot",
+      "key": "anonymous@src/work.ts#19|src/work.ts|19|c34c2fcf71b0#snapshot",
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "9505628265c456cf56c4787c620415abf28954838545763e0a9725e0878907e2",
-      "typeName": "anonymous@src/work.ts#18"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d#expectedGeneration",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#19"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "anonymous@src/work.ts#19"
     },
     {
@@ -8964,30 +8863,6 @@
     {
       "allowsNull": false,
       "allowsUndefined": false,
-      "callable": true,
-      "classification": "policy-callback",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs",
-        "test/readable-api.test.mjs"
-      ],
-      "field": "check",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#check",
-      "modelConcepts": [
-        "manualRetryAllowed",
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#20"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
@@ -8997,12 +8872,12 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
-      "field": "generation",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#generation",
+      "field": "expectedGeneration",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|bed754d2846d#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
-      "optional": false,
+      "optional": true,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
       "typeName": "anonymous@src/work.ts#20"
@@ -9020,7 +8895,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#key",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|bed754d2846d#key",
       "modelConcepts": [
         "identity"
       ],
@@ -9100,6 +8975,30 @@
     {
       "allowsNull": false,
       "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|297778ca437f#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#22"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
@@ -9110,7 +9009,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "generation",
-      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#generation",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|297778ca437f#generation",
       "modelConcepts": [
         "generation"
       ],
@@ -9132,7 +9031,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#key",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|297778ca437f#key",
       "modelConcepts": [
         "identity"
       ],
@@ -9140,6 +9039,50 @@
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "anonymous@src/work.ts#22"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "generation",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|ef5c463c4b53#generation",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#23"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "key",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|ef5c463c4b53#key",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#23"
     },
     {
       "allowsNull": false,
@@ -9154,7 +9097,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#reason",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|ef5c463c4b53#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
@@ -9162,7 +9105,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#22"
+      "typeName": "anonymous@src/work.ts#23"
     },
     {
       "allowsNull": false,
@@ -9177,81 +9120,13 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "generation",
-      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#generation",
+      "key": "anonymous@src/work.ts#24|src/work.ts|24|48d3420156f5#generation",
       "modelConcepts": [
         "generation"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#23"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#23"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "revision",
-      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#revision",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#23"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "worker-runtime",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/worker.test.mjs",
-        "test/remote.test.mjs",
-        "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "signal",
-      "key": "anonymous@src/work.ts#24|src/work.ts|24|5104e16c3b1f#signal",
-      "modelConcepts": [
-        "workerRuntime"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
       "typeName": "anonymous@src/work.ts#24"
     },
     {
@@ -9266,15 +9141,83 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
-      "field": "scope",
-      "key": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf#scope",
+      "field": "key",
+      "key": "anonymous@src/work.ts#24|src/work.ts|24|48d3420156f5#key",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#24"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "revision",
+      "key": "anonymous@src/work.ts#24|src/work.ts|24|48d3420156f5#revision",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#24"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "worker-runtime",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "signal",
+      "key": "anonymous@src/work.ts#25|src/work.ts|25|5104e16c3b1f#signal",
+      "modelConcepts": [
+        "workerRuntime"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
       "typeName": "anonymous@src/work.ts#25"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "scope",
+      "key": "anonymous@src/work.ts#26|src/work.ts|26|2e8566f8edaf#scope",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#26"
     },
     {
       "allowsNull": false,
@@ -9290,14 +9233,14 @@
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "store",
-      "key": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf#store",
+      "key": "anonymous@src/work.ts#26|src/work.ts|26|2e8566f8edaf#store",
       "modelConcepts": [
         "storageAtomicity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "5d9f1ebfdae4f512d286a05a78b6f3389cc5722517d659b97c960b67b01a1628",
-      "typeName": "anonymous@src/work.ts#25"
+      "typeName": "anonymous@src/work.ts#26"
     },
     {
       "allowsNull": false,
@@ -9492,7 +9435,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -9693,7 +9636,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -9739,7 +9682,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -9763,7 +9706,7 @@
       ],
       "evidence": [
         "test/worker.test.mjs",
-        "test/remote.test.mjs",
+        "test/external.test.mjs",
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
@@ -9840,7 +9783,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "15d74f6d11d922df6867ef39da16f61bbea96c837af4161746da554dad8da4af",
+    "sourceDigest": "21c8aed28ebb85b22f5e0bf301f2d5ae6c511e73ca123d74f8dbc1f6fce6ee93",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -9849,7 +9792,7 @@
       "src/worker.ts",
       "src/storage.ts",
       "src/cas.ts",
-      "src/remote.ts",
+      "src/external.ts",
       "src/retry-policy.ts"
     ]
   },
@@ -9934,6 +9877,75 @@
     },
     {
       "directions": [
+        "exported-type",
+        "output"
+      ],
+      "identity": "ExternalProcessResult|src/external.ts|0|d7261e87b489",
+      "name": "ExternalProcessResult",
+      "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "ExternalWorkHandler|src/external.ts|0|537f5873510d",
+      "name": "ExternalWorkHandler",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "callback-argument",
+        "exported-type",
+        "output"
+      ],
+      "identity": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b",
+      "name": "ExternalWorkRun<6fddad540f0b>",
+      "shapeHash": "00474a7c29e1ce8b4e9748f800f5ca0314fde3f0f173d2d99a1848bcfaac0a84",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type"
+      ],
+      "identity": "ExternalWorkService<84953945624c>|src/external.ts|0|84953945624c",
+      "name": "ExternalWorkService<84953945624c>",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "output"
+      ],
+      "identity": "ExternalWorkService<a37e1e89164b>|src/external.ts|0|a37e1e89164b",
+      "name": "ExternalWorkService<a37e1e89164b>",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "ExternalWorkTransport<7c1ad135c47d>|src/external.ts|0|7c1ad135c47d",
+      "name": "ExternalWorkTransport<7c1ad135c47d>",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550",
+      "name": "ExternalWorkerOptions",
+      "shapeHash": "50f5521eb43d916617ec117ef489c0d4b60d5e17924ee0161938effc7717ad7e",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
         "input"
       ],
       "identity": "FollowUpOptions|src/outcomes.ts|0|418d3ab8ec30",
@@ -9958,67 +9970,6 @@
       "name": "ProcessResult",
       "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
       "source": "src/worker.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "identity": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1",
-      "name": "RemoteProcessResult",
-      "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "identity": "RemoteWorkHandler|src/remote.ts|0|f688a621756e",
-      "name": "RemoteWorkHandler",
-      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "callback-argument",
-        "exported-type",
-        "output"
-      ],
-      "identity": "RemoteWorkRun<fe2698f7287e>|src/remote.ts|0|fe2698f7287e",
-      "name": "RemoteWorkRun<fe2698f7287e>",
-      "shapeHash": "00474a7c29e1ce8b4e9748f800f5ca0314fde3f0f173d2d99a1848bcfaac0a84",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "identity": "RemoteWorkService<df7e531ba19d>|src/remote.ts|0|df7e531ba19d",
-      "name": "RemoteWorkService<df7e531ba19d>",
-      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "identity": "RemoteWorkTransport<d0a7691d0638>|src/remote.ts|0|d0a7691d0638",
-      "name": "RemoteWorkTransport<d0a7691d0638>",
-      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "input"
-      ],
-      "identity": "RemoteWorkerOptions|src/remote.ts|0|767c41dcddec",
-      "name": "RemoteWorkerOptions",
-      "shapeHash": "50f5521eb43d916617ec117ef489c0d4b60d5e17924ee0161938effc7717ad7e",
-      "source": "src/remote.ts"
     },
     {
       "directions": [
@@ -10077,18 +10028,17 @@
       ],
       "identity": "WorkConflict|src/kernel.ts|0|1000925f03ba",
       "name": "WorkConflict",
-      "shapeHash": "59c56ff983a41f27492cd5edae8ac3029deece0894bd308177a4bbd54773882e",
+      "shapeHash": "2f937156dcfcd98c2a3af0f4c1e6def8e74573e20d4913b6ed785c177406f52f",
       "source": "src/kernel.ts"
     },
     {
       "directions": [
-        "callback-argument",
         "input",
         "output"
       ],
       "identity": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09",
       "name": "WorkDefinition<df9ebd876c09>",
-      "shapeHash": "a9b266da91124caf3f34f6c36876ed89fb105a51eba0ae18bf0a1170ab643baf",
+      "shapeHash": "e28477ac3992db851d24e05ca20a722b2e28fb99b92f7a744e603b01052ac120",
       "source": "src/work.ts"
     },
     {
@@ -10104,7 +10054,8 @@
     },
     {
       "directions": [
-        "input"
+        "input",
+        "output"
       ],
       "identity": "WorkHandler|src/worker.ts|0|6da1f47bac59",
       "name": "WorkHandler",
@@ -10119,15 +10070,6 @@
       "identity": "WorkHandoff<d13150c28db8>|src/work.ts|0|d13150c28db8",
       "name": "WorkHandoff<d13150c28db8>",
       "shapeHash": "0835ae5f70d1e1bffb179fd5b425664ca945fb545d597dbfbadf4bec6f43cbb2",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "callback-result"
-      ],
-      "identity": "WorkHandoff<d4912b883c0d>|src/work.ts|0|d4912b883c0d",
-      "name": "WorkHandoff<d4912b883c0d>",
-      "shapeHash": "755f1bb2c8744f0332ee2df01159076fdf9c29bfb427aeb4a34215058f460d64",
       "source": "src/work.ts"
     },
     {
@@ -10328,6 +10270,35 @@
       "directions": [
         "input"
       ],
+      "identity": "anonymous@src/external.ts#2|src/external.ts|2|a70685abc349",
+      "name": "anonymous@src/external.ts#2",
+      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "identity": "anonymous@src/external.ts#3|src/external.ts|3|d4f683fe8841",
+      "name": "anonymous@src/external.ts#3",
+      "shapeHash": "509f5c54530159ced15e649dcad2c5a0d99aa049cbca162b5cda27dd65c7cf56",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "output"
+      ],
+      "identity": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7",
+      "name": "anonymous@src/external.ts#4",
+      "shapeHash": "32bbcd57a7ccffd56cd2a35a6e9f8eccc5d42d5ea3797046084cff36bb164820",
+      "source": "src/external.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
       "identity": "anonymous@src/memory.ts#0|src/memory.ts|0|475491532737",
       "name": "anonymous@src/memory.ts#0",
       "shapeHash": "251846ce67dbd0c0b2e826423d79fb7ff94d1763d453534a794b9935bba80739",
@@ -10347,7 +10318,6 @@
     },
     {
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -10359,7 +10329,6 @@
     },
     {
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -10550,7 +10519,6 @@
     },
     {
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -10562,7 +10530,6 @@
     },
     {
       "directions": [
-        "callback-argument",
         "callback-result",
         "input",
         "output"
@@ -10580,35 +10547,6 @@
       "name": "anonymous@src/outcomes.ts#8",
       "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
       "source": "src/outcomes.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/remote.ts#2|src/remote.ts|2|a70685abc349",
-      "name": "anonymous@src/remote.ts#2",
-      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "identity": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841",
-      "name": "anonymous@src/remote.ts#3",
-      "shapeHash": "509f5c54530159ced15e649dcad2c5a0d99aa049cbca162b5cda27dd65c7cf56",
-      "source": "src/remote.ts"
-    },
-    {
-      "directions": [
-        "exported-type",
-        "output"
-      ],
-      "identity": "anonymous@src/remote.ts#4|src/remote.ts|4|1d6e5489e6b7",
-      "name": "anonymous@src/remote.ts#4",
-      "shapeHash": "32bbcd57a7ccffd56cd2a35a6e9f8eccc5d42d5ea3797046084cff36bb164820",
-      "source": "src/remote.ts"
     },
     {
       "directions": [
@@ -10675,11 +10613,11 @@
     },
     {
       "directions": [
-        "output"
+        "input"
       ],
-      "identity": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e",
+      "identity": "anonymous@src/work.ts#14|src/work.ts|14|94ae4ee8bfef",
       "name": "anonymous@src/work.ts#14",
-      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
+      "shapeHash": "809d6b3975dd80f0d1243a9968cbf5c45fe33e2389b651a27cb9601be6b81cae",
       "source": "src/work.ts"
     },
     {
@@ -10693,10 +10631,19 @@
     },
     {
       "directions": [
+        "output"
+      ],
+      "identity": "anonymous@src/work.ts#16|src/work.ts|16|4863c4a03c5e",
+      "name": "anonymous@src/work.ts#16",
+      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125",
-      "name": "anonymous@src/work.ts#16",
+      "identity": "anonymous@src/work.ts#17|src/work.ts|17|10709b001125",
+      "name": "anonymous@src/work.ts#17",
       "shapeHash": "d593507af72aed6441fc34be5a5fc1782ae7ce7d002225a15da05c4f34bd2a85",
       "source": "src/work.ts"
     },
@@ -10704,8 +10651,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a",
-      "name": "anonymous@src/work.ts#17",
+      "identity": "anonymous@src/work.ts#18|src/work.ts|18|e6f82840fb0a",
+      "name": "anonymous@src/work.ts#18",
       "shapeHash": "a141fdb5e161a95f924606c21d192816f52dc1c6cff5d319d6f1225134cf2036",
       "source": "src/work.ts"
     },
@@ -10713,18 +10660,9 @@
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0",
-      "name": "anonymous@src/work.ts#18",
-      "shapeHash": "f113da17f0e274c16c5c4393560057903c4f4f11765411eade8778090942b657",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d",
+      "identity": "anonymous@src/work.ts#19|src/work.ts|19|c34c2fcf71b0",
       "name": "anonymous@src/work.ts#19",
-      "shapeHash": "cc282dfc7c10d0272d547f092f173a558038dbe25883adeb29993119054c003b",
+      "shapeHash": "f113da17f0e274c16c5c4393560057903c4f4f11765411eade8778090942b657",
       "source": "src/work.ts"
     },
     {
@@ -10740,9 +10678,9 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f",
+      "identity": "anonymous@src/work.ts#20|src/work.ts|20|bed754d2846d",
       "name": "anonymous@src/work.ts#20",
-      "shapeHash": "5f0b8fdcaa8e47d15afcad9c6f0e9a6f739ed65bf4c62e97775761d0ca3d1aad",
+      "shapeHash": "cc282dfc7c10d0272d547f092f173a558038dbe25883adeb29993119054c003b",
       "source": "src/work.ts"
     },
     {
@@ -10758,8 +10696,17 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53",
+      "identity": "anonymous@src/work.ts#22|src/work.ts|22|297778ca437f",
       "name": "anonymous@src/work.ts#22",
+      "shapeHash": "5f0b8fdcaa8e47d15afcad9c6f0e9a6f739ed65bf4c62e97775761d0ca3d1aad",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#23|src/work.ts|23|ef5c463c4b53",
+      "name": "anonymous@src/work.ts#23",
       "shapeHash": "b9669907b3b5df36e4d33d674ef174d1a2d2997076a93579f49c7f05601a1820",
       "source": "src/work.ts"
     },
@@ -10767,8 +10714,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5",
-      "name": "anonymous@src/work.ts#23",
+      "identity": "anonymous@src/work.ts#24|src/work.ts|24|48d3420156f5",
+      "name": "anonymous@src/work.ts#24",
       "shapeHash": "b1e61323bf526f97978fab6d45bb33a8237531e94ef985a05b9d2470a98107cc",
       "source": "src/work.ts"
     },
@@ -10776,8 +10723,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#24|src/work.ts|24|5104e16c3b1f",
-      "name": "anonymous@src/work.ts#24",
+      "identity": "anonymous@src/work.ts#25|src/work.ts|25|5104e16c3b1f",
+      "name": "anonymous@src/work.ts#25",
       "shapeHash": "a33531691a5d0b94df3e0bd0433dd1377d62f9441ed1b042799be62fae43809d",
       "source": "src/work.ts"
     },
@@ -10785,8 +10732,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf",
-      "name": "anonymous@src/work.ts#25",
+      "identity": "anonymous@src/work.ts#26|src/work.ts|26|2e8566f8edaf",
+      "name": "anonymous@src/work.ts#26",
       "shapeHash": "9feb7b6339c0b1d8cbf9a33d5e9c6220384dca26935b30a836d8ffc300c883ab",
       "source": "src/work.ts"
     },

@@ -20,7 +20,7 @@ test('deadline exhaustion retains the actual waiting reason and explains why ret
   assert.equal(history[1].workerId, 'worker-A');
   assert.equal(history.at(-1).reason, 'pending_cleanup');
 });
-test('claim JSON exposes only the remote-worker contract, not adapter or retry callbacks', async () => {
+test('claim JSON exposes only the external-executor contract, not adapter or retry callbacks', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 't' }).define('work');
   await q.enqueue({ assetId: 'id' }, { key: 'job' });
   const [run] = await q.claim({ workerId: 'A' });

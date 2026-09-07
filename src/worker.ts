@@ -46,7 +46,7 @@ async function processClaim<I, O, R extends string>(
 ): Promise<ProcessResult> {
   const controller = new AbortController();
   run.signal = controller.signal;
-  const stop = () => controller.abort(options.signal?.reason ?? new Error('Worker stopped'));
+  const stop = () => controller.abort();
   options.signal?.addEventListener('abort', stop, { once: true });
   if (options.signal?.aborted) stop();
   let stopped = false;
@@ -86,9 +86,9 @@ async function processClaim<I, O, R extends string>(
     heartbeatTimer = setTimeout(() => {
       void heartbeat();
     }, heartbeatMs);
-    controller.signal.throwIfAborted();
+    if (controller.signal.aborted) throw new Error('Worker ownership lost');
     const outcome = await handler(run, run.input);
-    controller.signal.throwIfAborted();
+    if (controller.signal.aborted) throw new Error('Worker ownership lost');
     // Never rerun a handler because delivering its completed outcome failed.
     const phase = await run.settle(outcome);
     return { workId: run.ref.workId, status: 'settled', phase };

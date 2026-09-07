@@ -28,7 +28,7 @@ export interface WorkRequest<I = unknown> {
   /** Earliest first claim. */
   availableAt: number;
 }
-/** Carry this whole reference through a remote worker. It is not an authentication credential. */
+/** Carry this whole reference through a external executor. It is not an authentication credential. */
 export interface AttemptRef {
   /** Exact durable work identity. */
   workId: string;

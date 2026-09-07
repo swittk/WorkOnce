@@ -38,7 +38,7 @@ const entrypointSources = {
   kernel: 'src/kernel.ts',
   conformance: 'src/conformance.ts',
   cas: 'src/cas.ts',
-  remote: 'src/remote.ts',
+  external: 'src/external.ts',
 };
 
 function compareExact(left, right) {

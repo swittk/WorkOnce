@@ -15,6 +15,13 @@ for (const file of packed.files) {
   if (/(^|\/)(node_modules|\.chatgpt|\.artifacts|\.git|\.env)(\/|$)/.test(file.path))
     throw new Error(`Unexpected packed path: ${file.path}`);
 }
+const packedPaths = new Set(packed.files.map((file) => file.path));
+if (!packedPaths.has('dist/external.js') || !packedPaths.has('dist-cjs/external.js')) {
+  throw new Error('Packed WorkOnce is missing the external executor subpath');
+}
+if (packedPaths.has('dist/remote.js') || packedPaths.has('dist-cjs/remote.js')) {
+  throw new Error('Packed WorkOnce still contains the removed remote subpath');
+}
 const directory = mkdtempSync(join(tmpdir(), 'workonce-consumer-'));
 try {
   writeFileSync(
@@ -38,14 +45,14 @@ try {
  const result=await run.settle(run.succeed({ok:true}));if(result.state!=='succeeded')throw new Error('Failed consumer round trip');`;
   writeFileSync(
     join(directory, 'consumer.mjs'),
-    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\n${body}`.replaceAll(
+    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\nimport {runExternal} from '@workonce/core/external';\nif(typeof runExternal!=='function')throw new Error('Missing external executor');\n${body}`.replaceAll(
       '\\n',
       '\n',
     ),
   );
   writeFileSync(
     join(directory, 'consumer.cjs'),
-    `const {createWorkOnce}=require('@workonce/core');\nconst {createMemoryStore}=require('@workonce/core/memory');\n(async()=>{${body}})().catch(error=>{console.error(error);process.exitCode=1;});`.replaceAll(
+    `const {createWorkOnce}=require('@workonce/core');\nconst {createMemoryStore}=require('@workonce/core/memory');\nconst {runExternal}=require('@workonce/core/external');\nif(typeof runExternal!=='function')throw new Error('Missing external executor');\n(async()=>{${body}})().catch(error=>{console.error(error);process.exitCode=1;});`.replaceAll(
       '\\n',
       '\n',
     ),
@@ -53,7 +60,7 @@ try {
   for (const file of ['consumer.mjs', 'consumer.cjs'])
     execFileSync(process.execPath, [file], { cwd: directory, stdio: 'inherit' });
   const types =
-    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\nconst q=createWorkOnce({store:createMemoryStore(),scope:'consumer'}).define<{id:string},{done:boolean}>('work');\nvoid q.process({workerId:'typed'},run=>run.succeed({done:true}));`.replaceAll(
+    `import {createWorkOnce} from '@workonce/core';\nimport {createMemoryStore} from '@workonce/core/memory';\nimport {runExternal} from '@workonce/core/external';\nvoid runExternal;\nconst q=createWorkOnce({store:createMemoryStore(),scope:'consumer'}).define<{id:string},{done:boolean}>('work');\nvoid q.process({workerId:'typed'},run=>run.succeed({done:true}));`.replaceAll(
       '\\n',
       '\n',
     );
@@ -66,7 +73,7 @@ try {
       '--strict',
       '--noEmit',
       '--target',
-      'ES2022',
+      'ES2018',
       '--module',
       'NodeNext',
       '--moduleResolution',

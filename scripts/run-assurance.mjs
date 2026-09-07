@@ -36,6 +36,7 @@ const processTests = fs
 runNpm('format', ['run', 'format:check']);
 runNpm('type surface', ['run', 'check']);
 runNpm('single build', ['run', 'build']);
+runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',
   '--self-test-config-checks',

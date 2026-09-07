@@ -1,19 +1,11 @@
-import type { AttemptRef, WorkOutcome, WorkPhase } from './model.js';
-import type {
-  EnqueueOptions,
-  LeasedWork,
-  WorkHandoff,
-  WorkHandoffErrorHandler,
-  WorkQueue,
-  WorkRun,
-} from './work.js';
-import type { WorkSnapshot } from './model.js';
+import type { AttemptRef, WorkOutcome, WorkPhase, WorkSnapshot } from './model.js';
+import type { EnqueueOptions, LeasedWork } from './work.js';
 import { defer, fail, retry, succeed, wait, type WorkTiming } from './outcomes.js';
 import { integer } from './kernel.js';
 import { waitForPoll } from './worker.js';
 
-/** Application-supplied transport for one remote/external worker kind. HTTP/auth stay outside WorkOnce. */
-export interface RemoteWorkTransport<I, O, R extends string> {
+/** Application-supplied transport for one external worker kind. HTTP/auth stay outside WorkOnce. */
+export interface ExternalWorkTransport<I, O, R extends string> {
   /** Fetch at most limit leases already prepared and fenced by the authoritative WorkOnce service. */
   claim(options: {
     workerId: string;
@@ -27,43 +19,15 @@ export interface RemoteWorkTransport<I, O, R extends string> {
   settle(attempt: AttemptRef, outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>>;
 }
 
-/** Server-side façade for a remote work kind. Framework/auth/serialization remain application-owned. */
-export interface RemoteWorkService<I, WorkerInput, O, R extends string>
-  extends RemoteWorkTransport<WorkerInput, O, R> {
+/** Authoritative service exposed to an executor outside this WorkOnce runtime. */
+export interface ExternalWorkService<I, WorkerInput, O, R extends string>
+  extends ExternalWorkTransport<WorkerInput, O, R> {
   /** Idempotent producer entrypoint using the work definition's key callback when configured. */
   ensure(input: I, options?: EnqueueOptions): Promise<WorkSnapshot<I, O, R>>;
 }
 
-/**
- * Bind one authoritative WorkQueue to a transport-neutral remote service. The application only
- * authenticates/validates its HTTP/RPC boundary and forwards these methods.
- */
-export function createRemoteWorkService<I, WorkerInput, O, R extends string>(
-  queue: WorkQueue<I, O, R>,
-  prepare: (
-    run: WorkRun<I, O, R>,
-  ) =>
-    | WorkHandoff<WorkerInput>
-    | WorkOutcome<O, R>
-    | Promise<WorkHandoff<WorkerInput> | WorkOutcome<O, R>>,
-  onPrepareError: WorkHandoffErrorHandler<I, O, R>,
-): RemoteWorkService<I, WorkerInput, O, R> {
-  return {
-    ensure: (input, options = {}) => queue.enqueue(input, options),
-    claim: ({ workerId, limit }) => queue.handoff({ workerId, limit }, prepare, onPrepareError),
-    async heartbeat(attempt) {
-      const renewed = await queue.heartbeat(attempt);
-      return {
-        leaseUntil: renewed.attempt.leaseUntil,
-        observedAt: renewed.observedAt,
-      };
-    },
-    settle: (attempt, outcome) => queue.settle(attempt, outcome),
-  };
-}
-
-/** Runtime knobs are capacity of this remote-worker process, never a fleet-wide semaphore. */
-export interface RemoteWorkerOptions {
+/** Runtime knobs are capacity of this external executor, never a fleet-wide semaphore. */
+export interface ExternalWorkerOptions {
   /** Debug/claim label sent to the authoritative service. */
   workerId: string;
   /** Maximum simultaneous leases held by this process. */
@@ -78,17 +42,17 @@ export interface RemoteWorkerOptions {
   onError?: (error: unknown) => void | Promise<void>;
 }
 
-/** Per-attempt facade for a foreign TypeScript worker. Outcome helpers are pure wire data. */
-export class RemoteWorkRun<O, R extends string> {
+/** Per-attempt facade for an executor outside the authoritative WorkOnce runtime. Outcome helpers are pure wire data. */
+export class ExternalWorkRun<O, R extends string> {
   /** Cooperative cancellation signal aborted when ownership is lost or the worker shuts down. */
   signal: AbortSignal = new AbortController().signal;
-  /** Create the per-attempt remote facade from one authoritative leased work item. */
+  /** Create the per-attempt external facade from one authoritative leased work item. */
   constructor(
     readonly attempt: AttemptRef,
     readonly leaseUntil: number,
     readonly observedAt: number,
   ) {}
-  /** Report successful completion; the remote service still performs the authoritative settlement. */
+  /** Report successful completion; the external-work service still performs the authoritative settlement. */
   succeed(...args: O extends null ? [result?: O] : [result: O]): WorkOutcome<O, R> {
     return (args.length === 0 ? succeed() : succeed(args[0])) as WorkOutcome<O, R>;
   }
@@ -96,7 +60,7 @@ export class RemoteWorkRun<O, R extends string> {
   retry(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return retry(reason, timing);
   }
-  /** Wait without counting a failure retry; this remote attempt ends and the work resumes later. */
+  /** Wait without counting a failure retry; this external attempt ends and the work resumes later. */
   wait(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return wait(reason, timing);
   }
@@ -110,33 +74,33 @@ export class RemoteWorkRun<O, R extends string> {
   }
 }
 
-/** Handler contract for one remote leased item. */
-export type RemoteWorkHandler<I, O, R extends string> = (
-  run: RemoteWorkRun<O, R>,
+/** Handler contract for one externally leased item. */
+export type ExternalWorkHandler<I, O, R extends string> = (
+  run: ExternalWorkRun<O, R>,
   input: I,
 ) => WorkOutcome<O, R> | Promise<WorkOutcome<O, R>>;
 
-/** Per-lease result returned by the one-shot remote worker processor. */
-export type RemoteProcessResult<O = unknown, R extends string = string> =
+/** Per-lease result returned by the one-shot external worker processor. */
+export type ExternalProcessResult<O = unknown, R extends string = string> =
   | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
 
 /** Validate process-wide knobs before claiming anything; per-lease checks only compare against that lease. */
-function validateRemoteWorkerOptions(options: RemoteWorkerOptions): number {
+function validateExternalWorkerOptions(options: ExternalWorkerOptions): number {
   if (options.heartbeatMs !== undefined) integer(options.heartbeatMs, 'heartbeatMs', 1);
   return integer(options.concurrency ?? 1, 'concurrency', 1);
 }
 
 async function processLease<I, O, R extends string>(
-  transport: RemoteWorkTransport<I, O, R>,
+  transport: ExternalWorkTransport<I, O, R>,
   lease: LeasedWork<I>,
-  options: RemoteWorkerOptions,
-  handler: RemoteWorkHandler<I, O, R>,
-): Promise<RemoteProcessResult<O, R>> {
+  options: ExternalWorkerOptions,
+  handler: ExternalWorkHandler<I, O, R>,
+): Promise<ExternalProcessResult<O, R>> {
   const controller = new AbortController();
-  const run = new RemoteWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
+  const run = new ExternalWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
   run.signal = controller.signal;
-  const stop = () => controller.abort(options.signal.reason ?? new Error('Remote worker stopped'));
+  const stop = () => controller.abort();
   options.signal.addEventListener('abort', stop, { once: true });
   if (options.signal.aborted) stop();
   let stopped = false;
@@ -148,7 +112,7 @@ async function processLease<I, O, R extends string>(
     return {
       workId: lease.attempt.workId,
       status: 'interrupted',
-      error: new RangeError('Remote lease must be positive'),
+      error: new RangeError('External lease must be positive'),
     };
   }
   const heartbeatMs = Math.min(
@@ -158,7 +122,7 @@ async function processLease<I, O, R extends string>(
   function armExpiry(deadline: number) {
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
-    if (remaining <= 0) controller.abort(new Error('Confirmed remote lease deadline passed'));
+    if (remaining <= 0) controller.abort(new Error('Confirmed external lease deadline passed'));
     else expiryTimer = setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647));
   }
   async function heartbeat() {
@@ -179,9 +143,9 @@ async function processLease<I, O, R extends string>(
       throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry(performance.now() + firstLeaseMs);
     heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
-    controller.signal.throwIfAborted();
+    if (controller.signal.aborted) throw new Error('External ownership lost');
     const outcome = await handler(run, lease.input);
-    controller.signal.throwIfAborted();
+    if (controller.signal.aborted) throw new Error('External ownership lost');
     const phase = await transport.settle(lease.attempt, outcome);
     return { workId: lease.attempt.workId, status: 'settled', phase };
   } catch (error) {
@@ -194,13 +158,13 @@ async function processLease<I, O, R extends string>(
   }
 }
 
-/** Claim only this process's free slots and process the returned remote leases in parallel. */
-export async function processRemoteWork<I, O, R extends string>(
-  transport: RemoteWorkTransport<I, O, R>,
-  options: RemoteWorkerOptions,
-  handler: RemoteWorkHandler<I, O, R>,
-): Promise<RemoteProcessResult<O, R>[]> {
-  const limit = validateRemoteWorkerOptions(options);
+/** Claim only this executor's free slots and process returned external leases in parallel. */
+export async function processExternal<I, O, R extends string>(
+  transport: ExternalWorkTransport<I, O, R>,
+  options: ExternalWorkerOptions,
+  handler: ExternalWorkHandler<I, O, R>,
+): Promise<ExternalProcessResult<O, R>[]> {
+  const limit = validateExternalWorkerOptions(options);
   if (options.signal.aborted) return [];
   let leases: LeasedWork<I>[];
   try {
@@ -213,17 +177,17 @@ export async function processRemoteWork<I, O, R extends string>(
     if (options.signal.aborted) return [];
     throw error;
   }
-  // RemoteWorkTransport.claim is authoritative and must honor limit; never locally slice leased work.
+  // ExternalWorkTransport.claim is authoritative and must honor limit; never locally slice leased work.
   return Promise.all(leases.map((lease) => processLease(transport, lease, options, handler)));
 }
 
-/** Managed remote worker loop with bounded local concurrency and conservative lease-loss handling. */
-export async function runRemoteWorker<I, O, R extends string>(
-  transport: RemoteWorkTransport<I, O, R>,
-  options: RemoteWorkerOptions,
-  handler: RemoteWorkHandler<I, O, R>,
+/** Managed external executor loop with bounded local concurrency and conservative lease-loss handling. */
+export async function runExternal<I, O, R extends string>(
+  transport: ExternalWorkTransport<I, O, R>,
+  options: ExternalWorkerOptions,
+  handler: ExternalWorkHandler<I, O, R>,
 ): Promise<void> {
-  const capacity = validateRemoteWorkerOptions(options);
+  const capacity = validateExternalWorkerOptions(options);
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
   let fatal: unknown;

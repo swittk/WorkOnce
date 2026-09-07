@@ -45,6 +45,7 @@ const coverageKeys = [
   'generationTwo',
   'fenceIncrease',
   'parallelClaimCompetition',
+  'dualExecutorCompetition',
 ];
 function newCoverage() {
   return Object.fromEntries(coverageKeys.map((key) => [key, 0]));
@@ -386,6 +387,39 @@ async function replayAndDynamicPolicies(coverage) {
     );
     assert.equal(groups.flat().length, 1);
     hit(coverage, 'parallelClaimCompetition');
+  }
+  {
+    scenarios++;
+    let localExecutions = 0;
+    const store = createMemoryStore();
+    const work = createWorkOnce({ store, scope: 'dual-executor' });
+    const queue = work.define('job', {
+      key: (input) => input.id,
+      perform: async (run) => {
+        localExecutions++;
+        return run.succeed({ value: 1 });
+      },
+    });
+    const external = queue.serveExternal({
+      prepare: (run) => run.handoff({ id: run.input.id }),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await queue.enqueue({ id: 'x' });
+    const [local, leased] = await Promise.all([
+      queue.process({ workerId: 'local' }),
+      external.claim({ workerId: 'external', limit: 1 }),
+    ]);
+    assert.equal(local.length + leased.length, 1);
+    assert.ok(localExecutions === 0 || localExecutions === 1);
+    if (leased.length) {
+      await external.settle(leased[0].attempt, {
+        type: 'succeed',
+        result: { value: 2 },
+        next: [],
+      });
+    }
+    assert.equal((await queue.item({ id: 'x' }).inspect()).phase.state, 'succeeded');
+    hit(coverage, 'parallelClaimCompetition', 'dualExecutorCompetition');
   }
   {
     scenarios++;

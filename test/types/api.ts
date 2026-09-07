@@ -19,11 +19,14 @@ const queue = work.define<Input, Output, Reason>('convert', {
           maxRetries: 5,
           manualRetry: true,
         },
+  perform: async (run) =>
+    run.input.urgent ? run.retry('busy') : run.succeed({ checksum: 'bound' }),
 });
 void queue.enqueue({ assetId: 'id', urgent: true }, { key: 'id' });
 // @ts-expect-error Strongly typed input is not an arbitrary payload.
 void queue.enqueue({ other: 3 }, { key: 'id' });
-void queue.process({ workerId: 'w' }, (run) => {
+void queue.process({ workerId: 'w' });
+void queue.process({ workerId: 'override' }, (run) => {
   if (run.input.urgent) return run.retry('busy', { afterMs: 5 });
   return run.succeed({ checksum: 'hash' });
 });
@@ -50,3 +53,9 @@ const dynamic = work.define<Input, Output, Reason>('dynamic', {
   wait: async (context) => ({ afterMs: context.deferrals ? 30_000 : 1000 }),
 });
 void dynamic.process({ workerId: 'typed' }, (run) => run.wait('busy'));
+
+const external = queue.serveExternal({
+  prepare: (run) => run.handoff({ assetId: run.input.assetId }),
+  onPrepareError: (run) => run.retry('busy'),
+});
+void external.claim({ workerId: 'outside', limit: 1 });

@@ -24,16 +24,11 @@ export type {
   WorkEvent,
 } from './model.js';
 export type { WorkerOptions, WorkHandler, ProcessResult } from './worker.js';
-export {
-  RemoteWorkRun,
-  createRemoteWorkService,
-  processRemoteWork,
-  runRemoteWorker,
-} from './remote.js';
+export { ExternalWorkRun, processExternal, runExternal } from './external.js';
 export type {
-  RemoteWorkTransport,
-  RemoteWorkService,
-  RemoteWorkerOptions,
-  RemoteWorkHandler,
-  RemoteProcessResult,
-} from './remote.js';
+  ExternalWorkTransport,
+  ExternalWorkService,
+  ExternalWorkerOptions,
+  ExternalWorkHandler,
+  ExternalProcessResult,
+} from './external.js';

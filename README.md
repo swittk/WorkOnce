@@ -44,6 +44,14 @@ const convert = work.define<Input, Output, Reason>('asset.convert', {
     }
     return normalBackoff(context);
   },
+  perform: async (run, input) => {
+    const status = await provider.inspect(input.assetId, { signal: run.signal });
+    if (status.state === 'pending') return run.wait('provider_pending', { afterMs: 10_000 });
+    if (status.state === 'busy')
+      return run.retry('provider_busy', { afterMs: status.retryAfterMs });
+    if (status.state === 'invalid') return run.fail('invalid_source', { manualRetry: false });
+    return run.succeed({ derivativeId: status.derivativeId });
+  },
 });
 
 await convert.enqueue(
@@ -94,46 +102,41 @@ effects. Ownership is checked again after it returns. Static policy objects work
 The low-level record still uses the distributed-systems term **fencing token** (`fence`). Treat the
 attempt reference as opaque in normal application code. If worker A owns fence 17, its lease
 expires, and worker B reclaims the work with fence 18, a late result from A still carries 17 and
-is rejected because only 18 is current. Managed local/remote runners carry this for you.
+is rejected because only 18 is current. Managed local/external runners carry this for you.
 
 Standard queue terminology aliases such as `defer`, `renew`, `next`, and `limits` remain available
 for compatibility, but examples use the literal application-facing names above.
 
-## Four readable outcomes
+## Define the implementation once
 
-`run` is the current attempt, not a global or React context. Outcome helpers return data;
-the runner performs the guarded commit.
+`perform` is the canonical in-process implementation for this work kind. Define it once, then call
+`process()` for one bounded batch or `run()` for a continuous worker without repeating the handler:
 
 ```ts
-await convert.process({ workerId: 'worker-1', concurrency: 4 }, async (run, input) => {
-  // Application/provider-specific code. Start-or-find must itself be retry safe.
-  const remote = await provider.inspect(input.assetId, { signal: run.signal });
+await convert.process({ workerId: 'worker-1', concurrency: 4 });
 
-  if (remote.state === 'pending') {
-    return run.wait('provider_pending', { afterMs: 10_000 });
-  }
-  if (remote.state === 'busy') {
-    return run.retry('provider_busy', { afterMs: remote.retryAfterMs });
-  }
-  if (remote.state === 'invalid') {
-    return run.fail('invalid_source', { manualRetry: false });
-  }
-  return run.succeed({ derivativeId: remote.derivativeId });
+await convert.run({
+  workerId: 'worker-1',
+  concurrency: 4,
+  signal: shutdown.signal,
 });
 ```
 
-`provider` above is your application service, not a WorkOnce API. For a continuously running
-worker, use `convert.run({ workerId, concurrency, signal }, handler)`. Each local slot is
-refilled independently. Run more worker processes against the **same durable store** without
-changing handler code. `concurrency` is per runner, not a global fleet quota.
+Tests, migrations, or alternate deployments may still pass an explicit handler to `process()` or
+`run()`; that handler overrides `perform` for that execution only. If neither a bound `perform` nor
+an explicit handler exists, WorkOnce throws **before claiming any work**.
 
-A lease loss aborts `run.signal` conservatively. Pass that signal into HTTP/SDK calls when they
+`run` inside `perform` is the current attempt, not a global or React context. Its four normal
+outcomes are `succeed`, `retry`, `wait`, and `fail`.
+
+A lost lease aborts `run.signal` conservatively. Pass that signal into HTTP/SDK calls when they
 support `AbortSignal`. If a dependency does **not** support cancellation, you may ignore the signal:
 WorkOnce safety does not depend on cooperative cancellation. The physical call may finish, but its
 late outcome cannot settle after ownership moved to a newer attempt. External side effects still
-need their own idempotency key or external fencing because WorkOnce cannot unsend a request.
-CPU-heavy synchronous work must not block the runtime responsible for heartbeats; move that work to
-a worker thread/process. A thrown handler error is an interruption, not a guessed retry policy.
+need their own idempotency key or provider-side fencing because WorkOnce cannot unsend a request.
+CPU-heavy synchronous work must not block the runtime responsible for heartbeats; put that work in
+a Web Worker, worker thread, subprocess, or other executor. A thrown handler error is an
+interruption, not a guessed retry policy.
 
 ## Manual retry, rerun, cancellation and inspection
 
@@ -217,53 +220,62 @@ Supervise `work.runDispatcher({ signal })` alongside your workers, or call
 child kind too. Delivery requires a running dispatcher and eventually available storage;
 WorkOnce does not claim the child is emitted merely because the parent succeeded. Failed children remain pending; healthy siblings are still attempted, and bounded dispatch scans rotate past failed entries rather than permanently starving other work.
 
-## Remote / separate-process workers
+## Execute outside this runtime
 
-The remote API is generic BYO transport. WorkOnce supplies the authoritative service façade and
-the worker runtime; your application supplies authentication plus HTTP/RPC/IPC serialization.
-No HTTP framework, Parse type, or database driver enters WorkOnce.
+External execution is **not a different kind of WorkOnce work**. It is another executor topology
+over the same claim/heartbeat/settlement authority. A local worker and an external executor racing
+the same item still compete for one current attempt.
 
-Server side:
+The authoritative process calls `serveExternal()` on the ordinary work definition:
 
 ```ts
-const service = createRemoteWorkService(
-  convert,
-  async (run) => {
+const service = convert.serveExternal({
+  prepare: async (run) => {
     const source = await prepareSource(run.input.assetId);
     if (!source.ready) return run.wait('provider_pending', { afterMs: 10_000 });
     return run.handoff({ assetId: run.input.assetId, sourceUrl: source.url });
   },
-  (run) => run.retry('provider_busy'),
-);
+  onPrepareError: (run) => run.retry('provider_busy'),
+});
 
-// Your authenticated endpoints simply forward service.ensure / claim / heartbeat / settle.
+// Authenticated HTTP/RPC/IPC handlers forward only:
+// service.ensure(...)
+// service.claim(...)
+// service.heartbeat(...)
+// service.settle(...)
 ```
 
-Remote TypeScript worker:
+`prepare` does **not** mean the work succeeded. `wait`, `retry`, and `fail` are settled by the
+authoritative process and never returned as external leases. Only `run.handoff(payload)` exports a
+still-live attempt. That external executor must heartbeat and settle the exact attempt it received.
+A stale external result is rejected by the same ownership token rules as a stale local result.
+
+The executor side is transport-neutral:
 
 ```ts
-await runRemoteWorker(
+import { runExternal } from '@workonce/core';
+
+await runExternal(
   {
     claim: (request) => api.claim(request),
     heartbeat: (attempt) => api.heartbeat(attempt),
     settle: (attempt, outcome) => api.settle(attempt, outcome),
   },
-  { workerId: 'relay-1', concurrency: 4, signal: shutdown.signal },
+  { workerId: 'gpu-1', concurrency: 4, signal: shutdown.signal },
   async (run, input) => {
-    const result = await doRemoteWork(input, { signal: run.signal });
+    const result = await doExternalWork(input, { signal: run.signal });
     return run.succeed(result);
   },
 );
 ```
 
-A Python or other-language worker implements the same tiny wire contract: `claim`, `heartbeat`,
-and `settle`. The attempt reference is opaque transport data, not an authentication credential.
-The managed runner handles polling, local concurrency, heartbeats, lease-loss aborts, and draining
-active work during shutdown.
+Python or another language implements the same tiny `claim / heartbeat / settle` wire contract.
+WorkOnce owns no HTTP framework, authentication mechanism, serialization format, or process
+launcher. The attempt reference is opaque transport data, **not** an authentication credential.
 
 There is deliberately **no** `settle(ref, async () => writeDomainRows())`. Checking ownership
 before an unrelated write cannot make that later write fenced. Use a shared transaction where the
-storage system actually supports it, or make application/external effects idempotent and recoverable.
+storage system truly supports it, or make application/external effects idempotent and recoverable.
 
 ## What is bounded
 
@@ -291,7 +303,20 @@ fence/tombstone retention contract.
 
 ## Exhaustive formal implementation mapping
 
-WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 128 callables, 18 callable policy/storage fields and 329 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 119 callables, 21 callable policy/storage fields and 329 fields, then executes 29 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
+
+## ES2018 and Web Workers
+
+The whole package is emitted at an **ES2018** syntax target. The default `@workonce/core` import graph
+is additionally compiled in CI with only `ES2018 + WebWorker` libraries and **no Node ambient
+types**. It may not import Node builtins or third-party runtime packages, and assurance enforces a
+96 KiB raw / 24 KiB gzip root-runtime budget. The current graph is comfortably below that budget.
+
+The default runtime uses standard worker/browser primitives: Promises, timers, `performance.now()`,
+`TextEncoder`, Web Crypto `crypto.subtle`, and `AbortController`. ES2018 output does not polyfill a
+missing Web API; polyfill `AbortController` in an older WebKit build if that specific environment
+lacks it. The optional `/sqlite` subpath is intentionally **Node-only (Node >= 22.16)** because it imports
+`node:sqlite`; importing the default package does not pull it into a browser or Web Worker bundle.
 
 ## One adapter per backing store, not per job
 
@@ -338,7 +363,7 @@ npm run assurance:traces
 npm run formal
 ```
 
-ESM and CommonJS are built from clean output directories. Runtime core has no third-party
-dependencies. Only the optional `/sqlite` entry imports Node's `node:sqlite`.
+ESM and CommonJS are built from clean output directories at the ES2018 target. Runtime core has no
+third-party dependencies. Only the optional `/sqlite` entry imports Node's `node:sqlite`.
 The [benchmark](docs/performance.md) records a measured SQLite control-plane baseline, not a
 promise that every application or BYO adapter became faster.

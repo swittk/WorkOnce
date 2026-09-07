@@ -78,14 +78,14 @@
         "default": "./dist-cjs/cas.js"
       }
     },
-    "./remote": {
+    "./external": {
       "import": {
-        "types": "./dist/remote.d.ts",
-        "default": "./dist/remote.js"
+        "types": "./dist/external.d.ts",
+        "default": "./dist/external.js"
       },
       "require": {
-        "types": "./dist-cjs/remote.d.ts",
-        "default": "./dist-cjs/remote.js"
+        "types": "./dist-cjs/external.d.ts",
+        "default": "./dist-cjs/external.js"
       }
     }
   },
@@ -109,8 +109,8 @@
       "cas": [
         "dist/cas.d.ts"
       ],
-      "remote": [
-        "dist/remote.d.ts"
+      "external": [
+        "dist/external.d.ts"
       ]
     }
   },
@@ -123,9 +123,6 @@
     "formal",
     "assurance"
   ],
-  "engines": {
-    "node": ">=22.16.0"
-  },
   "scripts": {
     "build": "node scripts/clean.mjs && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
     "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
@@ -141,7 +138,9 @@
     "assurance:traces": "node scripts/check-bounded-trace-domain.mjs",
     "assurance:update": "npm run build && node scripts/check-formal-implementation-conformance.mjs --write && node scripts/check-bounded-trace-domain.mjs --write",
     "assurance": "node scripts/run-assurance.mjs",
-    "assurance:update:ack": "npm run build && node scripts/check-formal-implementation-conformance.mjs --write --ack-source-model-review && node scripts/check-bounded-trace-domain.mjs --write"
+    "assurance:update:ack": "npm run build && node scripts/check-formal-implementation-conformance.mjs --write --ack-source-model-review && node scripts/check-bounded-trace-domain.mjs --write",
+    "check:web": "tsc --noEmit -p tsconfig.webworker.json && node scripts/check-web-runtime.mjs",
+    "test:web": "npm run build && npm run check:web"
   },
   "devDependencies": {
     "typescript": "5.9.3",
