@@ -9,6 +9,7 @@ import type {
 export type { AttemptRef, WorkAttempt, WorkOutcome, WorkRecord, WorkRequest } from './model.js';
 /** Expected conflicts have stable codes, not message parsing. */
 export class WorkConflict extends Error {
+  /** Create one typed WorkOnce conflict that callers may branch on without message parsing. */
   constructor(
     readonly code:
       | 'not_found'

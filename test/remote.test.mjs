@@ -7,7 +7,7 @@ import { processRemoteWork, runRemoteWorker } from '../dist/remote.js';
 
 function fixture(options = {}) {
   const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'remote' });
-  const queue = work.define('job', { limits: { leaseMs: options.leaseMs ?? 300 } });
+  const queue = work.define('job', { executionLimits: { leaseMs: options.leaseMs ?? 300 } });
   const transport = createRemoteWorkService(
     queue,
     (run) => run.handoff(run.input),
@@ -42,16 +42,16 @@ test('remote worker runner hides claim heartbeat and settlement plumbing from ha
     assert.equal((await queue.inspect(String(index))).phase.state, 'succeeded');
 });
 
-test('remote renewal failure aborts the handler before it can report success', async () => {
+test('remote heartbeat failure aborts the handler before it can report success', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 250 });
   await queue.enqueue(null, { key: 'x' });
-  let renewCalls = 0;
+  let heartbeatCalls = 0;
   const transport = {
     ...base,
-    async renew(attempt) {
-      renewCalls++;
-      if (renewCalls === 1) throw new Error('network unavailable');
-      return base.renew(attempt);
+    async heartbeat(attempt) {
+      heartbeatCalls++;
+      if (heartbeatCalls === 1) throw new Error('network unavailable');
+      return base.heartbeat(attempt);
     },
   };
   let sawAbort = false;

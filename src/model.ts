@@ -160,9 +160,11 @@ export interface WorkSnapshot<I = unknown, O = unknown, R extends string = strin
   generation: number;
   /** Revision is useful for conditional UI actions. */
   revision: number;
-  /** Claims/retries/deferrals are separate counters. */
+  /** Claims started in the current generation, including reclaimed attempts. */
   attempts: number;
+  /** Automatic failure retries already accepted in the current generation. */
   retries: number;
+  /** Non-failure waits already accepted in the current generation. */
   deferrals: number;
   /** Discriminated execution state, separate from application review/approval state. */
   phase: WorkPhase<O, R>;

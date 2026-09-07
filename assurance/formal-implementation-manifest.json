@@ -37,7 +37,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "defer",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#defer",
@@ -66,7 +67,38 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "executionLimits",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#executionLimits",
+      "modelActions": [],
+      "modelConcepts": [
+        "attempts",
+        "Deadline",
+        "deferrals",
+        "lease"
+      ],
+      "optional": true,
+      "signatureHash": "80b85f0fbd436b7b7d55d0d0189c025731fd66ff4d40fe694ac89e70eb1a150c",
+      "source": "src/work.ts",
+      "typeHash": "f64793ce3e93a1a37242be5bdae8912e9a7c7f5fde977db992c96cc9fc838359",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "key",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#key",
@@ -92,7 +124,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "limits",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#limits",
@@ -121,7 +154,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "next",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#next",
@@ -150,7 +184,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "retry",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#retry",
@@ -166,6 +201,66 @@
       "signatureHash": "b3f581c254069508798bcc4d2b1e5505cb32ddff76b5696b367651dbdd41c02a",
       "source": "src/work.ts",
       "typeHash": "58d1c6aa979df86b43d5775559389e895cc7f43ac3ff39cacad30ddcb27da5e0",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "thenDo",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#thenDo",
+      "modelActions": [
+        "CreateChild"
+      ],
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "signatureHash": "ce06f3a944960279ffc527083874aa69d238466c16eff9ba8f17fa6f29b65394",
+      "source": "src/work.ts",
+      "typeHash": "040d3124ee3e7734754a5f05a5eda3c64fca1a3e75b074297468d300af7b1b84",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "wait",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "modelConcepts": [
+        "deferrals",
+        "available"
+      ],
+      "optional": true,
+      "signatureHash": "7dffaa31c450505e5bbb116270fb0e23191fb2c45284bf3dcaf4016aa9085055",
+      "source": "src/work.ts",
+      "typeHash": "3e969262ca9625029d8d6b6559dd3e6b4a642db6cc1bbf490106e7f767c78f6b",
       "typeName": "WorkDefinition<df9ebd876c09>"
     },
     {
@@ -254,10 +349,11 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#13|src/work.ts|13|10709b001125#check",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#check",
       "modelActions": [],
       "modelConcepts": [
         "manualRetryAllowed",
@@ -267,7 +363,7 @@
       "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#13"
+      "typeName": "anonymous@src/work.ts#16"
     },
     {
       "allowsNull": false,
@@ -279,10 +375,11 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|297778ca437f#check",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#check",
       "modelActions": [],
       "modelConcepts": [
         "manualRetryAllowed",
@@ -292,7 +389,7 @@
       "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#17"
+      "typeName": "anonymous@src/work.ts#20"
     },
     {
       "allowsNull": false,
@@ -304,10 +401,11 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|297778ca437f#check",
+      "key": "anonymous@src/work.ts#21|src/work.ts|21|297778ca437f#check",
       "modelActions": [],
       "modelConcepts": [
         "manualRetryAllowed",
@@ -317,7 +415,7 @@
       "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#18"
+      "typeName": "anonymous@src/work.ts#21"
     },
     {
       "allowsNull": false,
@@ -329,10 +427,11 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#1|src/work.ts|1|5b20d12051f4#check",
+      "key": "anonymous@src/work.ts#2|src/work.ts|2|5b20d12051f4#check",
       "modelActions": [],
       "modelConcepts": [
         "manualRetryAllowed",
@@ -342,7 +441,59 @@
       "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#1"
+      "typeName": "anonymous@src/work.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#3|src/work.ts|3|5b20d12051f4#check",
+      "modelActions": [],
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#4|src/work.ts|4|5b20d12051f4#check",
+      "modelActions": [],
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "signatureHash": "a628c68e3d3c7322a160ea4fb06e109b100f6eaa6f38b65817576f91c16c2960",
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#4"
     }
   ],
   "callables": [
@@ -767,6 +918,20 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
+      "key": "remote.RemoteWorkRun.wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
+    },
+    {
+      "classification": "worker-runtime",
+      "evidence": [
+        "test/worker.test.mjs",
+        "test/remote.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
       "key": "remote.RemoteWorkService.claim",
       "modelActions": [
         "Claim",
@@ -795,7 +960,7 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
-      "key": "remote.RemoteWorkService.renew",
+      "key": "remote.RemoteWorkService.heartbeat",
       "modelActions": [
         "Renew"
       ],
@@ -842,7 +1007,7 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
-      "key": "remote.RemoteWorkTransport.renew",
+      "key": "remote.RemoteWorkTransport.heartbeat",
       "modelActions": [
         "Renew"
       ],
@@ -925,7 +1090,7 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs"
       ],
-      "key": "remote.createRemoteWorkService.renew",
+      "key": "remote.createRemoteWorkService.heartbeat",
       "modelActions": [
         "Renew"
       ],
@@ -965,7 +1130,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "6819fced6b969090386d9d362e15bbb2a99cfda7b031eaabe4146df869679a5f"
+      "signatureHash": "5bf82285a800622c439125ab08c7549e326bae1e9001d9ce3c5d2abed05ff303"
     },
     {
       "classification": "worker-runtime",
@@ -1050,6 +1215,18 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
+      "key": "root.RemoteWorkRun.wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
       "key": "root.WorkConflict",
       "modelActions": [],
       "signatureHash": "2d4d12750cb0548b999e6fbaecf55969b40213088fb53dd32cda987150fc96aa"
@@ -1112,11 +1289,31 @@
         "test/item.test.mjs",
         "test/types/api.ts"
       ],
+      "key": "root.WorkItem.rerun",
+      "modelActions": [],
+      "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
+    },
+    {
+      "classification": "ergonomic-wrapper",
+      "evidence": [
+        "test/item.test.mjs",
+        "test/types/api.ts"
+      ],
       "key": "root.WorkItem.restart",
       "modelActions": [
         "ManualRetry",
         "Rerun"
       ],
+      "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
+    },
+    {
+      "classification": "ergonomic-wrapper",
+      "evidence": [
+        "test/item.test.mjs",
+        "test/types/api.ts"
+      ],
+      "key": "root.WorkItem.retry",
+      "modelActions": [],
       "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
     },
     {
@@ -1207,6 +1404,18 @@
         "Defer"
       ],
       "signatureHash": "edb034b3d2b40c63c0f4600c69ff7850ae5dfe6f4b884d89628f1a92a44e8b38"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.WorkQueue.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "72dc40078cb90de77292fdacb1cea9205a2abb01090062e3c67025e1f3ecac85"
     },
     {
       "classification": "observational",
@@ -1436,7 +1645,7 @@
       "modelActions": [
         "Fail"
       ],
-      "signatureHash": "7ea8c0cdcc8bc70a89407c85285c01145f2b91a9daaaf72840af626e2fedea98"
+      "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
       "classification": "worker-runtime",
@@ -1449,6 +1658,18 @@
       "key": "root.WorkRun.handoff",
       "modelActions": [],
       "signatureHash": "c3130c5c44c2022d515a766cb03e8863051f8648ab1090abbb252cb538a8b75c"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.WorkRun.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "signatureHash": "5fd69f14a5abe00f184ea5b1ac330facfec8d3474b069396c798403ba9a9ba9e"
     },
     {
       "classification": "abstract-semantic",
@@ -1499,7 +1720,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "d2137e99381f784e30435bf38faf078cf96555e5f5e28e2fd721b00212d7a90a"
+      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
     },
     {
       "classification": "observational",
@@ -1510,6 +1731,18 @@
       "key": "root.WorkRun.toJSON",
       "modelActions": [],
       "signatureHash": "e77732cb8324cd47cb075afa6a8b0821bd6d5fd3017f0eee24d199e81f5fd88d"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.WorkRun.wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
@@ -1551,7 +1784,7 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "key": "root.createRemoteWorkService.renew",
+      "key": "root.createRemoteWorkService.heartbeat",
       "modelActions": [
         "Renew"
       ],
@@ -1631,6 +1864,19 @@
       "signatureHash": "696c046f2873d6a4f97883930f768f35bb0317a7ad78b53e704a9e28df0e0b95"
     },
     {
+      "classification": "policy-callback",
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "key": "root.exponentialBackoff",
+      "modelActions": [
+        "Retry"
+      ],
+      "signatureHash": "4f30d7f17f594d88517f931d28e5e5e019d01c9620d9b352a3e23e96a402aa43"
+    },
+    {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -1640,7 +1886,7 @@
       "modelActions": [
         "Fail"
       ],
-      "signatureHash": "fe818631c37d983771c53812a2248582c96a46120edbe9b66feed8f8efe76c60"
+      "signatureHash": "807e97f6b173d9db4de6602540884a55dbbefdc0cd40e6646cd833d3f46565f1"
     },
     {
       "classification": "abstract-semantic",
@@ -1657,7 +1903,7 @@
         "Retry",
         "Defer"
       ],
-      "signatureHash": "6819fced6b969090386d9d362e15bbb2a99cfda7b031eaabe4146df869679a5f"
+      "signatureHash": "5bf82285a800622c439125ab08c7549e326bae1e9001d9ce3c5d2abed05ff303"
     },
     {
       "classification": "abstract-semantic",
@@ -1698,7 +1944,19 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "42ab2f5883092f8a6be06dc896dac3f06349e97bdaa048a7e255d2072a230d5a"
+      "signatureHash": "2f5d628817efcaa77f51d573e31ab2c491c9b1d4397ed6e529302471a62b9cce"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "key": "root.wait",
+      "modelActions": [
+        "Defer"
+      ],
+      "signatureHash": "696c046f2873d6a4f97883930f768f35bb0317a7ad78b53e704a9e28df0e0b95"
     },
     {
       "classification": "storage-boundary",
@@ -2020,6 +2278,28 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
+      "classification": "observational",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "executionLimits",
+      "key": "EnqueueOptions|src/work.ts|0|483ec3cae4a4#executionLimits",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "f4307aa09e339ed116057dc68166b3da2385156c76e9f1c6c8dfbee4497e083f",
+      "typeName": "EnqueueOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
         "input"
@@ -2059,6 +2339,184 @@
       "source": "src/work.ts",
       "typeHash": "f4307aa09e339ed116057dc68166b3da2385156c76e9f1c6c8dfbee4497e083f",
       "typeName": "EnqueueOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "retries",
+      "key": "ExponentialBackoffContext|src/retry-policy.ts|0|372a0b1ffe97#retries",
+      "modelConcepts": [
+        "retries"
+      ],
+      "optional": false,
+      "source": "src/retry-policy.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExponentialBackoffContext"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "initialDelayMs",
+      "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#initialDelayMs",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": false,
+      "source": "src/retry-policy.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExponentialBackoffOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "manualRetry",
+      "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#manualRetry",
+      "modelConcepts": [
+        "manualRetryAllowed"
+      ],
+      "optional": true,
+      "source": "src/retry-policy.ts",
+      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
+      "typeName": "ExponentialBackoffOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "maxDelayMs",
+      "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#maxDelayMs",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": false,
+      "source": "src/retry-policy.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExponentialBackoffOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "maxRetries",
+      "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#maxRetries",
+      "modelConcepts": [
+        "retries"
+      ],
+      "optional": false,
+      "source": "src/retry-policy.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExponentialBackoffOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "multiplier",
+      "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#multiplier",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/retry-policy.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "ExponentialBackoffOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "next",
+      "key": "FollowUpOptions|src/outcomes.ts|0|418d3ab8ec30#next",
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
+      "typeName": "FollowUpOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "thenDo",
+      "key": "FollowUpOptions|src/outcomes.ts|0|418d3ab8ec30#thenDo",
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
+      "typeName": "FollowUpOptions"
     },
     {
       "allowsNull": false,
@@ -2211,7 +2669,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "RemoteProcessResult|src/remote.ts|0|ac730cc068b9#status",
+      "key": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1#status",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -2234,7 +2692,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "RemoteProcessResult|src/remote.ts|0|ac730cc068b9#workId",
+      "key": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1#workId",
       "modelConcepts": [
         "identity"
       ],
@@ -3084,7 +3542,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "defer",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#defer",
@@ -3109,7 +3568,36 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "executionLimits",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#executionLimits",
+      "modelConcepts": [
+        "attempts",
+        "Deadline",
+        "deferrals",
+        "lease"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "f64793ce3e93a1a37242be5bdae8912e9a7c7f5fde977db992c96cc9fc838359",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "key",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#key",
@@ -3133,7 +3621,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "limits",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#limits",
@@ -3160,7 +3649,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "next",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#next",
@@ -3185,7 +3675,8 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "retry",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#retry",
@@ -3197,6 +3688,32 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "58d1c6aa979df86b43d5775559389e895cc7f43ac3ff39cacad30ddcb27da5e0",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "thenDo",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#thenDo",
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "040d3124ee3e7734754a5f05a5eda3c64fca1a3e75b074297468d300af7b1b84",
       "typeName": "WorkDefinition<df9ebd876c09>"
     },
     {
@@ -3221,6 +3738,32 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "WorkDefinition<df9ebd876c09>"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "callback-argument",
+        "input",
+        "output"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "wait",
+      "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#wait",
+      "modelConcepts": [
+        "deferrals",
+        "available"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "3e969262ca9625029d8d6b6559dd3e6b4a642db6cc1bbf490106e7f767c78f6b",
       "typeName": "WorkDefinition<df9ebd876c09>"
     },
     {
@@ -3704,7 +4247,6 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "exported-type",
         "input",
         "output"
       ],
@@ -3729,6 +4271,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5797,6 +6340,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5821,6 +6365,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5844,6 +6389,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5868,6 +6414,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6061,6 +6608,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6084,6 +6632,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6107,6 +6656,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6130,6 +6680,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6153,6 +6704,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6176,6 +6728,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6200,6 +6753,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6223,6 +6777,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6246,6 +6801,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -7420,61 +7976,15 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "field": "next",
-      "key": "anonymous@src/outcomes.ts#3|src/outcomes.ts|3|a5c6e9ce2e93#next",
-      "modelConcepts": [
-        "pendingNext",
-        "childCreated"
-      ],
-      "optional": true,
-      "source": "src/outcomes.ts",
-      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
-      "typeName": "anonymous@src/outcomes.ts#3"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
       "field": "manualRetry",
-      "key": "anonymous@src/outcomes.ts#9|src/outcomes.ts|9|ec9a50ec53b4#manualRetry",
+      "key": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349#manualRetry",
       "modelConcepts": [
         "manualRetryAllowed"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
       "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
-      "typeName": "anonymous@src/outcomes.ts#9"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "next",
-      "key": "anonymous@src/outcomes.ts#9|src/outcomes.ts|9|ec9a50ec53b4#next",
-      "modelConcepts": [
-        "pendingNext",
-        "childCreated"
-      ],
-      "optional": true,
-      "source": "src/outcomes.ts",
-      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
-      "typeName": "anonymous@src/outcomes.ts#9"
+      "typeName": "anonymous@src/outcomes.ts#8"
     },
     {
       "allowsNull": false,
@@ -7489,14 +7999,14 @@
         "test/conformance.test.mjs"
       ],
       "field": "result",
-      "key": "anonymous@src/outcomes.ts#9|src/outcomes.ts|9|ec9a50ec53b4#result",
+      "key": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349#result",
       "modelConcepts": [
         "opaquePayload"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
       "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
-      "typeName": "anonymous@src/outcomes.ts#9"
+      "typeName": "anonymous@src/outcomes.ts#8"
     },
     {
       "allowsNull": false,
@@ -7556,13 +8066,13 @@
         "test/conformance.test.mjs"
       ],
       "field": "phase",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|0098d5f9dacd#phase",
+      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#phase",
       "modelConcepts": [
         "state"
       ],
       "optional": false,
       "source": "src/remote.ts",
-      "typeHash": "305fef2a63b072bc1fa9e9548650a881eabfc1e9a8087e3333e6571760ff24d9",
+      "typeHash": "b8a1f003281b5bc2b0fe5e24e2b7c4f9ea843dd4036b2bce87e0871c28f1c80f",
       "typeName": "anonymous@src/remote.ts#3"
     },
     {
@@ -7581,7 +8091,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "status",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|0098d5f9dacd#status",
+      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#status",
       "modelConcepts": [
         "workerRuntime"
       ],
@@ -7604,7 +8114,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "workId",
-      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|0098d5f9dacd#workId",
+      "key": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841#workId",
       "modelConcepts": [
         "identity"
       ],
@@ -7848,96 +8358,6 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "limit",
-      "key": "anonymous@src/work.ts#10|src/work.ts|10|65900c46c85c#limit",
-      "modelConcepts": [
-        "observationOnly"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#10"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workerId",
-      "key": "anonymous@src/work.ts#10|src/work.ts|10|65900c46c85c#workerId",
-      "modelConcepts": [
-        "owner",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#10"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "limit",
-      "key": "anonymous@src/work.ts#11|src/work.ts|11|65900c46c85c#limit",
-      "modelConcepts": [
-        "observationOnly"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#11"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "workerId",
-      "key": "anonymous@src/work.ts#11|src/work.ts|11|65900c46c85c#workerId",
-      "modelConcepts": [
-        "owner",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#11"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
         "output"
@@ -7947,7 +8367,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "attempt",
-      "key": "anonymous@src/work.ts#12|src/work.ts|12|4863c4a03c5e#attempt",
+      "key": "anonymous@src/work.ts#10|src/work.ts|10|4863c4a03c5e#attempt",
       "modelConcepts": [
         "fence",
         "tokens"
@@ -7955,7 +8375,7 @@
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
-      "typeName": "anonymous@src/work.ts#12"
+      "typeName": "anonymous@src/work.ts#10"
     },
     {
       "allowsNull": false,
@@ -7970,14 +8390,239 @@
         "test/conformance.test.mjs"
       ],
       "field": "observedAt",
-      "key": "anonymous@src/work.ts#12|src/work.ts|12|4863c4a03c5e#observedAt",
+      "key": "anonymous@src/work.ts#10|src/work.ts|10|4863c4a03c5e#observedAt",
       "modelConcepts": [
         "now"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#10"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "anonymous@src/work.ts#11|src/work.ts|11|4863c4a03c5e#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
+      "typeName": "anonymous@src/work.ts#11"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "observedAt",
+      "key": "anonymous@src/work.ts#11|src/work.ts|11|4863c4a03c5e#observedAt",
+      "modelConcepts": [
+        "now"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#11"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "limit",
+      "key": "anonymous@src/work.ts#12|src/work.ts|12|65900c46c85c#limit",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
       "typeName": "anonymous@src/work.ts#12"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workerId",
+      "key": "anonymous@src/work.ts#12|src/work.ts|12|65900c46c85c#workerId",
+      "modelConcepts": [
+        "owner",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#12"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "limit",
+      "key": "anonymous@src/work.ts#13|src/work.ts|13|65900c46c85c#limit",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#13"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "workerId",
+      "key": "anonymous@src/work.ts#13|src/work.ts|13|65900c46c85c#workerId",
+      "modelConcepts": [
+        "owner",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#13"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
+      "typeName": "anonymous@src/work.ts#14"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "observedAt",
+      "key": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e#observedAt",
+      "modelConcepts": [
+        "now"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#14"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "anonymous@src/work.ts#15|src/work.ts|15|4863c4a03c5e#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
+      "typeName": "anonymous@src/work.ts#15"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "output"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "observedAt",
+      "key": "anonymous@src/work.ts#15|src/work.ts|15|4863c4a03c5e#observedAt",
+      "modelConcepts": [
+        "now"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#15"
     },
     {
       "allowsNull": false,
@@ -7989,10 +8634,11 @@
       ],
       "evidence": [
         "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
       ],
       "field": "check",
-      "key": "anonymous@src/work.ts#13|src/work.ts|13|10709b001125#check",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#check",
       "modelConcepts": [
         "manualRetryAllowed",
         "generation"
@@ -8000,7 +8646,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#13"
+      "typeName": "anonymous@src/work.ts#16"
     },
     {
       "allowsNull": false,
@@ -8015,14 +8661,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#13|src/work.ts|13|10709b001125#expectedGeneration",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#13"
+      "typeName": "anonymous@src/work.ts#16"
     },
     {
       "allowsNull": false,
@@ -8037,14 +8683,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#13|src/work.ts|13|10709b001125#key",
+      "key": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125#key",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#13"
+      "typeName": "anonymous@src/work.ts#16"
     },
     {
       "allowsNull": false,
@@ -8059,14 +8705,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#14|src/work.ts|14|e6f82840fb0a#expectedGeneration",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#14"
+      "typeName": "anonymous@src/work.ts#17"
     },
     {
       "allowsNull": false,
@@ -8081,14 +8727,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#14|src/work.ts|14|e6f82840fb0a#key",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#key",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#14"
+      "typeName": "anonymous@src/work.ts#17"
     },
     {
       "allowsNull": false,
@@ -8103,7 +8749,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/work.ts#14|src/work.ts|14|e6f82840fb0a#reason",
+      "key": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
@@ -8111,7 +8757,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#14"
+      "typeName": "anonymous@src/work.ts#17"
     },
     {
       "allowsNull": false,
@@ -8128,14 +8774,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "activeAttempt",
-      "key": "anonymous@src/work.ts#15|src/work.ts|15|c34c2fcf71b0#activeAttempt",
+      "key": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0#activeAttempt",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "4c92b3f65c34012c2f74adf111eeeff133277add92ee092c6f091393076402ce",
-      "typeName": "anonymous@src/work.ts#15"
+      "typeName": "anonymous@src/work.ts#18"
     },
     {
       "allowsNull": false,
@@ -8150,14 +8796,14 @@
         "test/types/api.ts"
       ],
       "field": "snapshot",
-      "key": "anonymous@src/work.ts#15|src/work.ts|15|c34c2fcf71b0#snapshot",
+      "key": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0#snapshot",
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "9505628265c456cf56c4787c620415abf28954838545763e0a9725e0878907e2",
-      "typeName": "anonymous@src/work.ts#15"
+      "typeName": "anonymous@src/work.ts#18"
     },
     {
       "allowsNull": false,
@@ -8172,189 +8818,11 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|bed754d2846d#expectedGeneration",
+      "key": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
       "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#16"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#16|src/work.ts|16|bed754d2846d#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#16"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "policy-callback",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
-      ],
-      "field": "check",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|297778ca437f#check",
-      "modelConcepts": [
-        "manualRetryAllowed",
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#17"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "generation",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|297778ca437f#generation",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#17"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#17|src/work.ts|17|297778ca437f#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#17"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "policy-callback",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
-      ],
-      "field": "check",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|297778ca437f#check",
-      "modelConcepts": [
-        "manualRetryAllowed",
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#18"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "generation",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|297778ca437f#generation",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#18"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "key",
-      "key": "anonymous@src/work.ts#18|src/work.ts|18|297778ca437f#key",
-      "modelConcepts": [
-        "identity"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#18"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "generation",
-      "key": "anonymous@src/work.ts#19|src/work.ts|19|ef5c463c4b53#generation",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": false,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
       "typeName": "anonymous@src/work.ts#19"
@@ -8372,7 +8840,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#19|src/work.ts|19|ef5c463c4b53#key",
+      "key": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d#key",
       "modelConcepts": [
         "identity"
       ],
@@ -8380,6 +8848,298 @@
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "anonymous@src/work.ts#19"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "attempt",
+      "key": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64#attempt",
+      "modelConcepts": [
+        "fence",
+        "tokens"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
+      "typeName": "anonymous@src/work.ts#1"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "input",
+      "key": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64#input",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "a83dd0ccbffe39d071cc317ddf6e97f5c6b1c87af91919271f9fa140b0508c6c",
+      "typeName": "anonymous@src/work.ts#1"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "outcome",
+      "key": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64#outcome",
+      "modelConcepts": [
+        "state"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "e6cda2d6e827e2ec4687b94a5cb73b70adbe56d3ccd9c7fb51be00a981cb436d",
+      "typeName": "anonymous@src/work.ts#1"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "reason",
+      "key": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64#reason",
+      "modelConcepts": [
+        "stopReason",
+        "waitCause"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "8c2574892063f995fdf756bce07f46c1a5193e54cd52837ed91e32008ccf41ac",
+      "typeName": "anonymous@src/work.ts#1"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "callback-argument"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "result",
+      "key": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64#result",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
+      "typeName": "anonymous@src/work.ts#1"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#20"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "generation",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#generation",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#20"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "key",
+      "key": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f#key",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#20"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#21|src/work.ts|21|297778ca437f#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#21"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "generation",
+      "key": "anonymous@src/work.ts#21|src/work.ts|21|297778ca437f#generation",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#21"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "key",
+      "key": "anonymous@src/work.ts#21|src/work.ts|21|297778ca437f#key",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#21"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "generation",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#generation",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#22"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "key",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#key",
+      "modelConcepts": [
+        "identity"
+      ],
+      "optional": false,
+      "source": "src/work.ts",
+      "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+      "typeName": "anonymous@src/work.ts#22"
     },
     {
       "allowsNull": false,
@@ -8394,7 +9154,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/work.ts#19|src/work.ts|19|ef5c463c4b53#reason",
+      "key": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
@@ -8402,52 +9162,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#19"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "policy-callback",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/continuation-policy.test.mjs"
-      ],
-      "field": "check",
-      "key": "anonymous@src/work.ts#1|src/work.ts|1|5b20d12051f4#check",
-      "modelConcepts": [
-        "manualRetryAllowed",
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
-      "typeName": "anonymous@src/work.ts#1"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#1|src/work.ts|1|5b20d12051f4#expectedGeneration",
-      "modelConcepts": [
-        "generation"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#1"
+      "typeName": "anonymous@src/work.ts#22"
     },
     {
       "allowsNull": false,
@@ -8462,14 +9177,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "generation",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|48d3420156f5#generation",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#generation",
       "modelConcepts": [
         "generation"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#20"
+      "typeName": "anonymous@src/work.ts#23"
     },
     {
       "allowsNull": false,
@@ -8484,14 +9199,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "key",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|48d3420156f5#key",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#key",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#20"
+      "typeName": "anonymous@src/work.ts#23"
     },
     {
       "allowsNull": false,
@@ -8506,14 +9221,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "revision",
-      "key": "anonymous@src/work.ts#20|src/work.ts|20|48d3420156f5#revision",
+      "key": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5#revision",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#20"
+      "typeName": "anonymous@src/work.ts#23"
     },
     {
       "allowsNull": false,
@@ -8530,14 +9245,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "signal",
-      "key": "anonymous@src/work.ts#21|src/work.ts|21|5104e16c3b1f#signal",
+      "key": "anonymous@src/work.ts#24|src/work.ts|24|5104e16c3b1f#signal",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
-      "typeName": "anonymous@src/work.ts#21"
+      "typeName": "anonymous@src/work.ts#24"
     },
     {
       "allowsNull": false,
@@ -8552,14 +9267,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "scope",
-      "key": "anonymous@src/work.ts#22|src/work.ts|22|2e8566f8edaf#scope",
+      "key": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf#scope",
       "modelConcepts": [
         "identity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#22"
+      "typeName": "anonymous@src/work.ts#25"
     },
     {
       "allowsNull": false,
@@ -8575,14 +9290,38 @@
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "store",
-      "key": "anonymous@src/work.ts#22|src/work.ts|22|2e8566f8edaf#store",
+      "key": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf#store",
       "modelConcepts": [
         "storageAtomicity"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "5d9f1ebfdae4f512d286a05a78b6f3389cc5722517d659b97c960b67b01a1628",
-      "typeName": "anonymous@src/work.ts#22"
+      "typeName": "anonymous@src/work.ts#25"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#2|src/work.ts|2|5b20d12051f4#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#2"
     },
     {
       "allowsNull": false,
@@ -8597,7 +9336,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#2|src/work.ts|2|5c1d5a159cc5#expectedGeneration",
+      "key": "anonymous@src/work.ts#2|src/work.ts|2|5b20d12051f4#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
@@ -8605,6 +9344,120 @@
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
       "typeName": "anonymous@src/work.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#3|src/work.ts|3|5b20d12051f4#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "expectedGeneration",
+      "key": "anonymous@src/work.ts#3|src/work.ts|3|5b20d12051f4#expectedGeneration",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "policy-callback",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/continuation-policy.test.mjs",
+        "test/readable-api.test.mjs"
+      ],
+      "field": "check",
+      "key": "anonymous@src/work.ts#4|src/work.ts|4|5b20d12051f4#check",
+      "modelConcepts": [
+        "manualRetryAllowed",
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "258868926e124732b0bb38a14355c442c421fd23b4cbfbf4d0e9420aa39b50a1",
+      "typeName": "anonymous@src/work.ts#4"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "expectedGeneration",
+      "key": "anonymous@src/work.ts#4|src/work.ts|4|5b20d12051f4#expectedGeneration",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#4"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "identity-retry-semantic",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/edge-regressions.test.mjs"
+      ],
+      "field": "expectedGeneration",
+      "key": "anonymous@src/work.ts#5|src/work.ts|5|5c1d5a159cc5#expectedGeneration",
+      "modelConcepts": [
+        "generation"
+      ],
+      "optional": true,
+      "source": "src/work.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "anonymous@src/work.ts#5"
     },
     {
       "allowsNull": false,
@@ -8619,7 +9472,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/work.ts#2|src/work.ts|2|5c1d5a159cc5#reason",
+      "key": "anonymous@src/work.ts#5|src/work.ts|5|5c1d5a159cc5#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
@@ -8627,7 +9480,7 @@
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
-      "typeName": "anonymous@src/work.ts#2"
+      "typeName": "anonymous@src/work.ts#5"
     },
     {
       "allowsNull": false,
@@ -8644,14 +9497,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "activeAttempt",
-      "key": "anonymous@src/work.ts#3|src/work.ts|3|c34c2fcf71b0#activeAttempt",
+      "key": "anonymous@src/work.ts#6|src/work.ts|6|c34c2fcf71b0#activeAttempt",
       "modelConcepts": [
         "workerRuntime"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "4c92b3f65c34012c2f74adf111eeeff133277add92ee092c6f091393076402ce",
-      "typeName": "anonymous@src/work.ts#3"
+      "typeName": "anonymous@src/work.ts#6"
     },
     {
       "allowsNull": false,
@@ -8666,14 +9519,14 @@
         "test/types/api.ts"
       ],
       "field": "snapshot",
-      "key": "anonymous@src/work.ts#3|src/work.ts|3|c34c2fcf71b0#snapshot",
+      "key": "anonymous@src/work.ts#6|src/work.ts|6|c34c2fcf71b0#snapshot",
       "modelConcepts": [
         "observationOnly"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "9505628265c456cf56c4787c620415abf28954838545763e0a9725e0878907e2",
-      "typeName": "anonymous@src/work.ts#3"
+      "typeName": "anonymous@src/work.ts#6"
     },
     {
       "allowsNull": false,
@@ -8688,60 +9541,14 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "expectedGeneration",
-      "key": "anonymous@src/work.ts#4|src/work.ts|4|6feab407fbe5#expectedGeneration",
+      "key": "anonymous@src/work.ts#7|src/work.ts|7|6feab407fbe5#expectedGeneration",
       "modelConcepts": [
         "generation"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#4"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "next",
-      "key": "anonymous@src/work.ts#5|src/work.ts|5|a5c6e9ce2e93#next",
-      "modelConcepts": [
-        "pendingNext",
-        "childCreated"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
-      "typeName": "anonymous@src/work.ts#5"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "next",
-      "key": "anonymous@src/work.ts#6|src/work.ts|6|a5c6e9ce2e93#next",
-      "modelConcepts": [
-        "pendingNext",
-        "childCreated"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
-      "typeName": "anonymous@src/work.ts#6"
+      "typeName": "anonymous@src/work.ts#7"
     },
     {
       "allowsNull": false,
@@ -8756,37 +9563,14 @@
         "test/conformance.test.mjs"
       ],
       "field": "manualRetry",
-      "key": "anonymous@src/work.ts#7|src/work.ts|7|ec9a50ec53b4#manualRetry",
+      "key": "anonymous@src/work.ts#8|src/work.ts|8|a70685abc349#manualRetry",
       "modelConcepts": [
         "manualRetryAllowed"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
-      "typeName": "anonymous@src/work.ts#7"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "next",
-      "key": "anonymous@src/work.ts#7|src/work.ts|7|ec9a50ec53b4#next",
-      "modelConcepts": [
-        "pendingNext",
-        "childCreated"
-      ],
-      "optional": true,
-      "source": "src/work.ts",
-      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
-      "typeName": "anonymous@src/work.ts#7"
+      "typeName": "anonymous@src/work.ts#8"
     },
     {
       "allowsNull": false,
@@ -8801,14 +9585,14 @@
         "test/conformance.test.mjs"
       ],
       "field": "result",
-      "key": "anonymous@src/work.ts#7|src/work.ts|7|ec9a50ec53b4#result",
+      "key": "anonymous@src/work.ts#8|src/work.ts|8|a70685abc349#result",
       "modelConcepts": [
         "opaquePayload"
       ],
       "optional": true,
       "source": "src/work.ts",
       "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
-      "typeName": "anonymous@src/work.ts#7"
+      "typeName": "anonymous@src/work.ts#8"
     },
     {
       "allowsNull": false,
@@ -8823,7 +9607,7 @@
         "test/edge-regressions.test.mjs"
       ],
       "field": "attempt",
-      "key": "anonymous@src/work.ts#8|src/work.ts|8|22d3b429747a#attempt",
+      "key": "anonymous@src/work.ts#9|src/work.ts|9|22d3b429747a#attempt",
       "modelConcepts": [
         "fence",
         "tokens"
@@ -8831,7 +9615,7 @@
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
-      "typeName": "anonymous@src/work.ts#8"
+      "typeName": "anonymous@src/work.ts#9"
     },
     {
       "allowsNull": false,
@@ -8846,58 +9630,13 @@
         "test/conformance.test.mjs"
       ],
       "field": "input",
-      "key": "anonymous@src/work.ts#8|src/work.ts|8|22d3b429747a#input",
+      "key": "anonymous@src/work.ts#9|src/work.ts|9|22d3b429747a#input",
       "modelConcepts": [
         "opaquePayload"
       ],
       "optional": false,
       "source": "src/work.ts",
       "typeHash": "a83dd0ccbffe39d071cc317ddf6e97f5c6b1c87af91919271f9fa140b0508c6c",
-      "typeName": "anonymous@src/work.ts#8"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "abstract-semantic",
-      "directions": [
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
-      ],
-      "field": "observedAt",
-      "key": "anonymous@src/work.ts#8|src/work.ts|8|22d3b429747a#observedAt",
-      "modelConcepts": [
-        "now"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/work.ts#8"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
-      "classification": "identity-retry-semantic",
-      "directions": [
-        "output"
-      ],
-      "evidence": [
-        "test/formal-bounded-refinement.test.mjs",
-        "test/edge-regressions.test.mjs"
-      ],
-      "field": "attempt",
-      "key": "anonymous@src/work.ts#9|src/work.ts|9|4863c4a03c5e#attempt",
-      "modelConcepts": [
-        "fence",
-        "tokens"
-      ],
-      "optional": false,
-      "source": "src/work.ts",
-      "typeHash": "854507da211e4992828fdc296945eb8601764d81541ce5da796170e95225ac48",
       "typeName": "anonymous@src/work.ts#9"
     },
     {
@@ -8913,7 +9652,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "observedAt",
-      "key": "anonymous@src/work.ts#9|src/work.ts|9|4863c4a03c5e#observedAt",
+      "key": "anonymous@src/work.ts#9|src/work.ts|9|22d3b429747a#observedAt",
       "modelConcepts": [
         "now"
       ],
@@ -9101,7 +9840,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "2e415a6c6f83ae3ab7d3b76da0273571497c987b3b89efd1c52fbebd3a724fd8",
+    "sourceDigest": "15d74f6d11d922df6867ef39da16f61bbea96c837af4161746da554dad8da4af",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -9110,7 +9849,8 @@
       "src/worker.ts",
       "src/storage.ts",
       "src/cas.ts",
-      "src/remote.ts"
+      "src/remote.ts",
+      "src/retry-policy.ts"
     ]
   },
   "types": [
@@ -9171,8 +9911,35 @@
       ],
       "identity": "EnqueueOptions|src/work.ts|0|483ec3cae4a4",
       "name": "EnqueueOptions",
-      "shapeHash": "c2dc11d51c64b4074bc8a9d701d5ccdf0552b61de1492cce61ec25da5dbacee8",
+      "shapeHash": "3ab18a46ff7cf713619b463e8065397ed39bf4b490c87b70b8aaf9c8beafa6d8",
       "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "callback-argument"
+      ],
+      "identity": "ExponentialBackoffContext|src/retry-policy.ts|0|372a0b1ffe97",
+      "name": "ExponentialBackoffContext",
+      "shapeHash": "63a0307439966d86bb8be10a215d02f6926a683cc6f31426cb1e9c7fdd9a0004",
+      "source": "src/retry-policy.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44",
+      "name": "ExponentialBackoffOptions",
+      "shapeHash": "2a5aa3915fdc3cef5572dd47748d7ea5b61ca8f08d9b82604aa71e2326c35509",
+      "source": "src/retry-policy.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "FollowUpOptions|src/outcomes.ts|0|418d3ab8ec30",
+      "name": "FollowUpOptions",
+      "shapeHash": "7695f41897d2417aa38066cf9bcc275689133aa91ba0e0eff57634ddb03729e0",
+      "source": "src/outcomes.ts"
     },
     {
       "directions": [
@@ -9197,7 +9964,7 @@
         "exported-type",
         "output"
       ],
-      "identity": "RemoteProcessResult|src/remote.ts|0|ac730cc068b9",
+      "identity": "RemoteProcessResult|src/remote.ts|0|ecc2106059c1",
       "name": "RemoteProcessResult",
       "shapeHash": "a2eabf9f0ceb75568135f6020400f657a9d7f0d06be641ef997c15ec41a1b313",
       "source": "src/remote.ts"
@@ -9321,7 +10088,7 @@
       ],
       "identity": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09",
       "name": "WorkDefinition<df9ebd876c09>",
-      "shapeHash": "878f64d2ea99d988db9ec58ea9b03aea31256e90615b516d6f7d597423fc60ac",
+      "shapeHash": "a9b266da91124caf3f34f6c36876ed89fb105a51eba0ae18bf0a1170ab643baf",
       "source": "src/work.ts"
     },
     {
@@ -9415,7 +10182,6 @@
     },
     {
       "directions": [
-        "exported-type",
         "input",
         "output"
       ],
@@ -9427,6 +10193,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "WorkPhase|src/model.ts|0|b8a1f003281b",
@@ -9617,6 +10384,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "anonymous@src/model.ts#2|src/model.ts|2|5fce63193a5b",
@@ -9649,6 +10417,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "anonymous@src/model.ts#3|src/model.ts|3|bf5db0e14cf5",
@@ -9659,6 +10428,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e",
@@ -9806,18 +10576,9 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/outcomes.ts#3|src/outcomes.ts|3|a5c6e9ce2e93",
-      "name": "anonymous@src/outcomes.ts#3",
-      "shapeHash": "6e77d2cd7d4d4848802626f531fd0d1dcade826cbfbe1036d4e8098939288412",
-      "source": "src/outcomes.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/outcomes.ts#9|src/outcomes.ts|9|ec9a50ec53b4",
-      "name": "anonymous@src/outcomes.ts#9",
-      "shapeHash": "a7e79119f3c0bdeaf5c4a1b1e4f7ed81af961e8eaeaf779b1460a68705bedace",
+      "identity": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349",
+      "name": "anonymous@src/outcomes.ts#8",
+      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
       "source": "src/outcomes.ts"
     },
     {
@@ -9834,9 +10595,9 @@
         "exported-type",
         "output"
       ],
-      "identity": "anonymous@src/remote.ts#3|src/remote.ts|3|0098d5f9dacd",
+      "identity": "anonymous@src/remote.ts#3|src/remote.ts|3|d4f683fe8841",
       "name": "anonymous@src/remote.ts#3",
-      "shapeHash": "b8a295abe29b0a7005a612afcfe3d91c157fe40b6f8b4301e8f815a79001b96f",
+      "shapeHash": "509f5c54530159ced15e649dcad2c5a0d99aa049cbca162b5cda27dd65c7cf56",
       "source": "src/remote.ts"
     },
     {
@@ -9878,28 +10639,19 @@
     },
     {
       "directions": [
-        "input"
+        "output"
       ],
-      "identity": "anonymous@src/work.ts#10|src/work.ts|10|65900c46c85c",
+      "identity": "anonymous@src/work.ts#10|src/work.ts|10|4863c4a03c5e",
       "name": "anonymous@src/work.ts#10",
-      "shapeHash": "4241a4e9f91c411ff5d1bc4f4f7b9ee318bf410a6c296509d717d78882d72488",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/work.ts#11|src/work.ts|11|65900c46c85c",
-      "name": "anonymous@src/work.ts#11",
-      "shapeHash": "4241a4e9f91c411ff5d1bc4f4f7b9ee318bf410a6c296509d717d78882d72488",
+      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
       "source": "src/work.ts"
     },
     {
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/work.ts#12|src/work.ts|12|4863c4a03c5e",
-      "name": "anonymous@src/work.ts#12",
+      "identity": "anonymous@src/work.ts#11|src/work.ts|11|4863c4a03c5e",
+      "name": "anonymous@src/work.ts#11",
       "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
       "source": "src/work.ts"
     },
@@ -9907,8 +10659,44 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#13|src/work.ts|13|10709b001125",
+      "identity": "anonymous@src/work.ts#12|src/work.ts|12|65900c46c85c",
+      "name": "anonymous@src/work.ts#12",
+      "shapeHash": "4241a4e9f91c411ff5d1bc4f4f7b9ee318bf410a6c296509d717d78882d72488",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#13|src/work.ts|13|65900c46c85c",
       "name": "anonymous@src/work.ts#13",
+      "shapeHash": "4241a4e9f91c411ff5d1bc4f4f7b9ee318bf410a6c296509d717d78882d72488",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "output"
+      ],
+      "identity": "anonymous@src/work.ts#14|src/work.ts|14|4863c4a03c5e",
+      "name": "anonymous@src/work.ts#14",
+      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "output"
+      ],
+      "identity": "anonymous@src/work.ts#15|src/work.ts|15|4863c4a03c5e",
+      "name": "anonymous@src/work.ts#15",
+      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#16|src/work.ts|16|10709b001125",
+      "name": "anonymous@src/work.ts#16",
       "shapeHash": "d593507af72aed6441fc34be5a5fc1782ae7ce7d002225a15da05c4f34bd2a85",
       "source": "src/work.ts"
     },
@@ -9916,8 +10704,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#14|src/work.ts|14|e6f82840fb0a",
-      "name": "anonymous@src/work.ts#14",
+      "identity": "anonymous@src/work.ts#17|src/work.ts|17|e6f82840fb0a",
+      "name": "anonymous@src/work.ts#17",
       "shapeHash": "a141fdb5e161a95f924606c21d192816f52dc1c6cff5d319d6f1225134cf2036",
       "source": "src/work.ts"
     },
@@ -9925,8 +10713,8 @@
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/work.ts#15|src/work.ts|15|c34c2fcf71b0",
-      "name": "anonymous@src/work.ts#15",
+      "identity": "anonymous@src/work.ts#18|src/work.ts|18|c34c2fcf71b0",
+      "name": "anonymous@src/work.ts#18",
       "shapeHash": "f113da17f0e274c16c5c4393560057903c4f4f11765411eade8778090942b657",
       "source": "src/work.ts"
     },
@@ -9934,17 +10722,26 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#16|src/work.ts|16|bed754d2846d",
-      "name": "anonymous@src/work.ts#16",
+      "identity": "anonymous@src/work.ts#19|src/work.ts|19|bed754d2846d",
+      "name": "anonymous@src/work.ts#19",
       "shapeHash": "cc282dfc7c10d0272d547f092f173a558038dbe25883adeb29993119054c003b",
       "source": "src/work.ts"
     },
     {
       "directions": [
+        "callback-argument"
+      ],
+      "identity": "anonymous@src/work.ts#1|src/work.ts|1|2e47d854ad64",
+      "name": "anonymous@src/work.ts#1",
+      "shapeHash": "e5c0ec68f6279df41c34950ba7ff5a96f6e3af8ea096f05b915acc09390b7447",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#17|src/work.ts|17|297778ca437f",
-      "name": "anonymous@src/work.ts#17",
+      "identity": "anonymous@src/work.ts#20|src/work.ts|20|297778ca437f",
+      "name": "anonymous@src/work.ts#20",
       "shapeHash": "5f0b8fdcaa8e47d15afcad9c6f0e9a6f739ed65bf4c62e97775761d0ca3d1aad",
       "source": "src/work.ts"
     },
@@ -9952,8 +10749,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#18|src/work.ts|18|297778ca437f",
-      "name": "anonymous@src/work.ts#18",
+      "identity": "anonymous@src/work.ts#21|src/work.ts|21|297778ca437f",
+      "name": "anonymous@src/work.ts#21",
       "shapeHash": "5f0b8fdcaa8e47d15afcad9c6f0e9a6f739ed65bf4c62e97775761d0ca3d1aad",
       "source": "src/work.ts"
     },
@@ -9961,8 +10758,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#19|src/work.ts|19|ef5c463c4b53",
-      "name": "anonymous@src/work.ts#19",
+      "identity": "anonymous@src/work.ts#22|src/work.ts|22|ef5c463c4b53",
+      "name": "anonymous@src/work.ts#22",
       "shapeHash": "b9669907b3b5df36e4d33d674ef174d1a2d2997076a93579f49c7f05601a1820",
       "source": "src/work.ts"
     },
@@ -9970,17 +10767,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#1|src/work.ts|1|5b20d12051f4",
-      "name": "anonymous@src/work.ts#1",
-      "shapeHash": "546eed864781747969005ab8c72dded0a998dfd138e54ef47b9af995c1210154",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/work.ts#20|src/work.ts|20|48d3420156f5",
-      "name": "anonymous@src/work.ts#20",
+      "identity": "anonymous@src/work.ts#23|src/work.ts|23|48d3420156f5",
+      "name": "anonymous@src/work.ts#23",
       "shapeHash": "b1e61323bf526f97978fab6d45bb33a8237531e94ef985a05b9d2470a98107cc",
       "source": "src/work.ts"
     },
@@ -9988,8 +10776,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#21|src/work.ts|21|5104e16c3b1f",
-      "name": "anonymous@src/work.ts#21",
+      "identity": "anonymous@src/work.ts#24|src/work.ts|24|5104e16c3b1f",
+      "name": "anonymous@src/work.ts#24",
       "shapeHash": "a33531691a5d0b94df3e0bd0433dd1377d62f9441ed1b042799be62fae43809d",
       "source": "src/work.ts"
     },
@@ -9997,8 +10785,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#22|src/work.ts|22|2e8566f8edaf",
-      "name": "anonymous@src/work.ts#22",
+      "identity": "anonymous@src/work.ts#25|src/work.ts|25|2e8566f8edaf",
+      "name": "anonymous@src/work.ts#25",
       "shapeHash": "9feb7b6339c0b1d8cbf9a33d5e9c6220384dca26935b30a836d8ffc300c883ab",
       "source": "src/work.ts"
     },
@@ -10006,8 +10794,35 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#2|src/work.ts|2|5c1d5a159cc5",
+      "identity": "anonymous@src/work.ts#2|src/work.ts|2|5b20d12051f4",
       "name": "anonymous@src/work.ts#2",
+      "shapeHash": "546eed864781747969005ab8c72dded0a998dfd138e54ef47b9af995c1210154",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#3|src/work.ts|3|5b20d12051f4",
+      "name": "anonymous@src/work.ts#3",
+      "shapeHash": "546eed864781747969005ab8c72dded0a998dfd138e54ef47b9af995c1210154",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#4|src/work.ts|4|5b20d12051f4",
+      "name": "anonymous@src/work.ts#4",
+      "shapeHash": "546eed864781747969005ab8c72dded0a998dfd138e54ef47b9af995c1210154",
+      "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/work.ts#5|src/work.ts|5|5c1d5a159cc5",
+      "name": "anonymous@src/work.ts#5",
       "shapeHash": "34bffbdf7e02942940f3be6efbb5b8892b241ba5aea094c672db2345620ed2dd",
       "source": "src/work.ts"
     },
@@ -10015,8 +10830,8 @@
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/work.ts#3|src/work.ts|3|c34c2fcf71b0",
-      "name": "anonymous@src/work.ts#3",
+      "identity": "anonymous@src/work.ts#6|src/work.ts|6|c34c2fcf71b0",
+      "name": "anonymous@src/work.ts#6",
       "shapeHash": "f113da17f0e274c16c5c4393560057903c4f4f11765411eade8778090942b657",
       "source": "src/work.ts"
     },
@@ -10024,8 +10839,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#4|src/work.ts|4|6feab407fbe5",
-      "name": "anonymous@src/work.ts#4",
+      "identity": "anonymous@src/work.ts#7|src/work.ts|7|6feab407fbe5",
+      "name": "anonymous@src/work.ts#7",
       "shapeHash": "47975fa57319a94f7f7e6ea7f97136ddad0929a83bb6c05592643d853bf977eb",
       "source": "src/work.ts"
     },
@@ -10033,45 +10848,18 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/work.ts#5|src/work.ts|5|a5c6e9ce2e93",
-      "name": "anonymous@src/work.ts#5",
-      "shapeHash": "6e77d2cd7d4d4848802626f531fd0d1dcade826cbfbe1036d4e8098939288412",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/work.ts#6|src/work.ts|6|a5c6e9ce2e93",
-      "name": "anonymous@src/work.ts#6",
-      "shapeHash": "6e77d2cd7d4d4848802626f531fd0d1dcade826cbfbe1036d4e8098939288412",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/work.ts#7|src/work.ts|7|ec9a50ec53b4",
-      "name": "anonymous@src/work.ts#7",
-      "shapeHash": "a7e79119f3c0bdeaf5c4a1b1e4f7ed81af961e8eaeaf779b1460a68705bedace",
-      "source": "src/work.ts"
-    },
-    {
-      "directions": [
-        "output"
-      ],
-      "identity": "anonymous@src/work.ts#8|src/work.ts|8|22d3b429747a",
+      "identity": "anonymous@src/work.ts#8|src/work.ts|8|a70685abc349",
       "name": "anonymous@src/work.ts#8",
-      "shapeHash": "6dc20ba05c39e6980f556856cf8a1669bf71815e0512d3987d2c74ca6f00fee6",
+      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
       "source": "src/work.ts"
     },
     {
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/work.ts#9|src/work.ts|9|4863c4a03c5e",
+      "identity": "anonymous@src/work.ts#9|src/work.ts|9|22d3b429747a",
       "name": "anonymous@src/work.ts#9",
-      "shapeHash": "8144becefe98a22efe1d1cb7f0eb50b73890e4cfdd9485d2c115042c1a44dc0e",
+      "shapeHash": "6dc20ba05c39e6980f556856cf8a1669bf71815e0512d3987d2c74ca6f00fee6",
       "source": "src/work.ts"
     },
     {

@@ -6,3 +6,5 @@ Use strong TypeScript types; validate numeric invariants and external wire data,
 Never pretend an arbitrary callback is protected after a lease precheck. Store commits own fencing; external effects need their own idempotency or transaction.
 Run npm test, npm run check, npm run test:process, and npm run formal before calling the core verified. Record bounded-model limits honestly.
 Only swittk/WorkOnce governs code review. Do not publish to npm or merge without owner instruction.
+When requesting CodeRabbit full review, the GitHub comment must contain exactly `@coderabbitai full review` and nothing else; put context in separate comments only after the full review finishes.
+Public/exported contracts and their direct public members require meaningful purpose JSDoc; `test/documentation.test.mjs` enforces this and rejects tautological filler.

@@ -40,10 +40,13 @@ export interface WorkQuery {
  * getMany/query return detached rows. Never delete/reuse an id while stale workers may exist.
  */
 export interface WorkStore {
+  /** Serialize one deterministic transition for an exact work id and commit it durably. */
   atomic<T>(
     id: string,
     decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,
   ): Promise<T>;
+  /** Read exact ids in caller order together with one storage-time observation. */
   getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
+  /** Query a bounded indexed work view; candidate discovery never grants ownership by itself. */
   query(query: WorkQuery): Promise<{ rows: WorkRecord[]; now: number }>;
 }

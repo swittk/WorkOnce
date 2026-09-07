@@ -25,6 +25,7 @@ export type WorkHandler<I, O, R extends string> = (
 export type ProcessResult =
   | { workId: string; status: 'settled'; phase: WorkPhase }
   | { workId: string; status: 'interrupted'; error: unknown };
+/** Wait between empty polls while allowing graceful worker shutdown to end the delay early. */
 export function waitForPoll(ms: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted) return Promise.resolve();
   return new Promise((resolve) => {
@@ -66,7 +67,7 @@ async function processClaim<I, O, R extends string>(
     if (stopped || controller.signal.aborted) return;
     const sentAt = performance.now();
     try {
-      const renewed = await run.renew();
+      const renewed = await run.heartbeat();
       if (!stopped && !controller.signal.aborted) {
         // Charge the whole round trip to the lease: never infer extra ownership from a slow reply.
         armExpiry(sentAt + renewed.attempt.leaseUntil - renewed.observedAt);

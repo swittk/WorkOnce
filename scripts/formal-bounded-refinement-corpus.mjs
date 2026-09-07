@@ -85,7 +85,7 @@ function fixture(options = {}) {
   const child = work.define('child', { key: (input) => input.id });
   const queue = work.define('job', {
     key: (input) => input.id,
-    limits: (input) => ({
+    executionLimits: (input) => ({
       leaseMs: input.leaseMs ?? 2,
       maxAttempts: input.maxAttempts ?? 3,
       maxElapsedMs: input.maxElapsedMs ?? 8,
@@ -100,12 +100,12 @@ function fixture(options = {}) {
             manualRetry: true,
           }
         : { retry: false, manualRetry: reason === 'manual-only' },
-    defer: async ({ input, deferrals }) => ({
+    wait: async ({ input, deferrals }) => ({
       afterMs: (input.deferAfterMs ?? 1) + Math.min(deferrals, 1),
     }),
     ...(options.dynamicNext
       ? {
-          next: async ({ input, result, attempt, outcome }) => [
+          thenDo: async ({ input, result, attempt, outcome }) => [
             child.request(
               { id: `${input.id}:${outcome}:${attempt.generation}:${result.value}` },
               { key: `${input.id}:${outcome}:${attempt.generation}:${result.value}` },
@@ -235,14 +235,14 @@ async function waitingMatrix(coverage) {
     const f = fixture({ scope: `defer-${maxDeferrals}` });
     await f.queue.item({ id: 'x', maxDeferrals }).enqueue();
     let [run] = await f.queue.claim({ workerId: 'A' });
-    let phase = await run.settle(run.defer('pending'));
+    let phase = await run.settle(run.wait('pending'));
     hit(coverage, 'defer', 'dynamicDefer');
     assert.equal(phase.state, 'waiting');
     let waiting = await inspect(f, coverage);
     await f.queue.wake({ key: 'x', generation: waiting.generation, revision: waiting.revision });
     hit(coverage, 'wake');
     [run] = await f.queue.claim({ workerId: 'B' });
-    phase = await run.settle(run.defer('pending'));
+    phase = await run.settle(run.wait('pending'));
     hit(coverage, 'defer');
     if (maxDeferrals === 1) {
       assert.equal(phase.state, 'failed');
@@ -268,18 +268,18 @@ async function fencingAndBudgets(coverage) {
     const [current] = await f.queue.claim({ workerId: secondWorker });
     assert.ok(current.ref.fence > oldFence);
     hit(coverage, 'leaseReclaim', 'fenceIncrease');
-    await expectConflict(old.renew(), 'stale_attempt');
+    await expectConflict(old.heartbeat(), 'stale_attempt');
     hit(coverage, 'staleRenew');
     for (const outcome of [
       old.succeed({ value: 1 }),
       old.fail('terminal'),
       old.retry('retryable'),
-      old.defer('pending'),
+      old.wait('pending'),
     ]) {
       await expectConflict(old.settle(outcome), 'stale_attempt');
       hit(coverage, 'staleSettle');
     }
-    await current.renew();
+    await current.heartbeat();
     hit(coverage, 'renew');
     await current.settle(current.succeed({ value: 2 }));
     await inspect(f, coverage);
@@ -304,7 +304,7 @@ async function fencingAndBudgets(coverage) {
     await f.queue.item({ id: 'x', leaseMs: 2, maxAttempts: 3, maxElapsedMs: 2 }).enqueue();
     const [a] = await f.queue.claim({ workerId: 'A' });
     f.advance(1);
-    await a.renew();
+    await a.heartbeat();
     f.advance(1);
     assert.equal((await f.queue.claim({ workerId: 'B' })).length, 0);
     const s = await inspect(f, coverage);
@@ -343,7 +343,7 @@ async function cancellationMatrix(coverage) {
     const item = f.queue.item({ id: 'x' });
     await item.enqueue();
     const [run] = await f.queue.claim({ workerId: 'A' });
-    await run.settle(run.defer('pending'));
+    await run.settle(run.wait('pending'));
     await item.cancel();
     hit(coverage, 'cancelWaiting');
     await inspect(f, coverage);
@@ -446,10 +446,10 @@ async function fuzz(coverage) {
             f.advance(1);
             continue;
           }
-          if (pick === 0) await run.renew();
+          if (pick === 0) await run.heartbeat();
           else if (pick === 1) await run.settle(run.retry('retryable'));
           else if (pick === 2) await run.settle(run.retry('denied'));
-          else if (pick === 3) await run.settle(run.defer('pending'));
+          else if (pick === 3) await run.settle(run.wait('pending'));
           else if (pick === 4) await run.settle(run.fail('terminal', { manualRetry: true }));
           else if (pick === 5) await item.cancel();
           else await run.settle(run.succeed({ value: seed }));

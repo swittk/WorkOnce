@@ -1,8 +1,8 @@
 # WorkOnce
 
-A small TypeScript durable-work kernel: typed jobs, current-attempt fencing, dynamic retries,
-manual retry gates, deferred checks, cancellation and durable follow-up work. Bring your own
-storage. There is no WorkOnce server to deploy.
+A small TypeScript durable-work kernel: typed jobs, crash-safe ownership, dynamic retry/wait
+policies, cancellation and durable follow-up work. Bring your own storage. There is no WorkOnce
+server to deploy.
 
 This is the first reviewable implementation, not a claim that a finite test suite proves every
 possible deployment. See [assurance](docs/assurance.md) and [storage](docs/storage.md).
@@ -10,7 +10,7 @@ possible deployment. See [assurance](docs/assurance.md) and [storage](docs/stora
 ## Define once, decide dynamically
 
 ```ts
-import { createWorkOnce } from '@workonce/core';
+import { createWorkOnce, exponentialBackoff } from '@workonce/core';
 import { createSqliteStore } from '@workonce/core/sqlite';
 
 const work = createWorkOnce({
@@ -22,23 +22,27 @@ type Input = { assetId: string; urgent: boolean };
 type Output = { derivativeId: string };
 type Reason = 'provider_busy' | 'provider_pending' | 'invalid_source';
 
+const normalBackoff = exponentialBackoff({
+  initialDelayMs: 5_000,
+  maxDelayMs: 60_000,
+  maxRetries: 8,
+});
+
 const convert = work.define<Input, Output, Reason>('asset.convert', {
-  limits: (input) => ({
+  executionLimits: (input) => ({
     leaseMs: input.urgent ? 30_000 : 60_000,
     maxAttempts: 100,
     maxElapsedMs: 3_600_000,
     maxDeferrals: 80,
   }),
-  retry: ({ input, reason, retries }) => {
-    if (reason === 'invalid_source') {
+  retry: (context) => {
+    if (context.reason === 'invalid_source') {
       return { retry: false, manualRetry: false };
     }
-    return {
-      retry: true,
-      afterMs: input.urgent ? 1000 : Math.min(5000 * 2 ** retries, 60_000),
-      maxRetries: input.urgent ? 20 : 8,
-      manualRetry: true,
-    };
+    if (context.input.urgent) {
+      return { retry: true, afterMs: 1_000, maxRetries: 20, manualRetry: true };
+    }
+    return normalBackoff(context);
   },
 });
 
@@ -50,14 +54,15 @@ await convert.enqueue(
 );
 ```
 
-`limits` accepts a static object or a synchronous per-input callback. It is resolved when
-creating the request and its chosen values are persisted. `retry` and `defer` accept static
-policies or async callbacks evaluated on the actual failure/wait. A result-level timing override
-changes scheduling, not permission or the retry budget.
+`executionLimits` accepts a static object or a synchronous per-input callback. It is resolved
+when creating the request and its chosen values are persisted. These are execution safety budgets,
+**not throughput throttles or rate limits**. `retry` and `wait` accept static policies or async
+callbacks evaluated on the actual failure/wait. A result-level timing override changes scheduling,
+not permission or the retry budget.
 
 ```ts
 const checks = work.define<{ urgent: boolean }>('provider.check', {
-  defer: async ({ input, deferrals }) => ({
+  wait: async ({ input, deferrals }) => ({
     afterMs: input.urgent && deferrals < 3 ? 1000 : 30_000,
   }),
   retry: async ({ input, reason, retries }) =>
@@ -70,12 +75,29 @@ const checks = work.define<{ urgent: boolean }>('provider.check', {
           manualRetry: true,
         },
 });
-// An actual handler may simply return run.defer('still_processing').
+// An actual handler may simply return run.wait('still_processing').
 ```
 
 Callbacks stay in application code. Only their accepted decisions and resolved per-item limits
 are stored. A retry callback may be async and fetch current policy; it must not perform side
 effects. Ownership is checked again after it returns. Static policy objects work too.
+
+## Vocabulary that says what it does
+
+- `retry(reason)` = this attempt failed temporarily; count a retry and run it again later.
+- `wait(reason)` = nothing failed; end this attempt, release the worker slot, and resume the work later.
+- `fail(reason)` = terminal automatic failure; optional manual retry may still be allowed.
+- `thenDo` = durable follow-up work created only after this terminal result is accepted.
+- `heartbeat` = prove this worker still owns the attempt and extend its lease.
+- `executionLimits` = per-work safety budgets such as lease duration, attempts, elapsed time and waits. It is **not** a throttle.
+
+The low-level record still uses the distributed-systems term **fencing token** (`fence`). Treat the
+attempt reference as opaque in normal application code. If worker A owns fence 17, its lease
+expires, and worker B reclaims the work with fence 18, a late result from A still carries 17 and
+is rejected because only 18 is current. Managed local/remote runners carry this for you.
+
+Standard queue terminology aliases such as `defer`, `renew`, `next`, and `limits` remain available
+for compatibility, but examples use the literal application-facing names above.
 
 ## Four readable outcomes
 
@@ -88,7 +110,7 @@ await convert.process({ workerId: 'worker-1', concurrency: 4 }, async (run, inpu
   const remote = await provider.inspect(input.assetId, { signal: run.signal });
 
   if (remote.state === 'pending') {
-    return run.defer('provider_pending', { afterMs: 10_000 });
+    return run.wait('provider_pending', { afterMs: 10_000 });
   }
   if (remote.state === 'busy') {
     return run.retry('provider_busy', { afterMs: remote.retryAfterMs });
@@ -105,46 +127,47 @@ worker, use `convert.run({ workerId, concurrency, signal }, handler)`. Each loca
 refilled independently. Run more worker processes against the **same durable store** without
 changing handler code. `concurrency` is per runner, not a global fleet quota.
 
-A lease loss aborts `run.signal` conservatively. Cancellation cannot forcibly stop an arbitrary
-function or unsend an HTTP request. CPU-heavy work must not block the runtime responsible for
-heartbeats. A thrown handler error is reported as an interruption; it is not silently guessed
-to be retryable. Lease recovery still consumes the total claim budget.
+A lease loss aborts `run.signal` conservatively. Pass that signal into HTTP/SDK calls when they
+support `AbortSignal`. If a dependency does **not** support cancellation, you may ignore the signal:
+WorkOnce safety does not depend on cooperative cancellation. The physical call may finish, but its
+late outcome cannot settle after ownership moved to a newer attempt. External side effects still
+need their own idempotency key or external fencing because WorkOnce cannot unsend a request.
+CPU-heavy synchronous work must not block the runtime responsible for heartbeats; move that work to
+a worker thread/process. A thrown handler error is an interruption, not a guessed retry policy.
 
-## Manual retry, cancellation and inspection
+## Manual retry, rerun, cancellation and inspection
+
+Bind a business input once with `item()` when you do not want to repeat keys/generations at every
+call site:
 
 ```ts
-const current = await convert.inspect('asset-123:source-revision-2');
+const item = convert.item({ assetId: 'asset-123', urgent: true }, 'asset-123:source-revision-2');
+const current = await item.inspect();
+
 if (current?.phase.state === 'failed' && current.phase.manualRetry) {
-  await convert.retry({
-    key: current.key,
-    generation: current.generation,
+  await item.retry({
     check: async (snapshot) => canCurrentStaffRetry(snapshot.input.assetId),
   });
 }
 
-const page = await convert.inspectMany(keys); // preserves order and missing entries
-const recentHistory = await convert.history(key); // last 128 transitions
+// Deliberately run an already-successful item again:
+if (current?.phase.state === 'succeeded') {
+  await item.rerun();
+}
+
+await item.cancel({ reason: 'source_withdrawn' });
 ```
 
-The manual retry gate is re-evaluated at action time, and its observed revision/generation is
-checked again at commit. A second click for the same failed generation cannot restart a later
-generation. A stored `manualRetry: false` is not bypassed by a callback returning true. Retry and
-rerun are also denied while the terminal generation still has undispatched durable follow-ups;
-drain that outbox first so a new generation cannot overwrite committed intent. Application
-authorization and checks involving other domain rows still need their own atomic boundary; this
-check does not lock another database.
+`retry()` is for failed work; `rerun()` is for successful work. The generic `restart()` helper is
+retained only for compatibility. Both commands are generation-checked internally, and neither may
+erase undispatched durable follow-up work from the prior generation.
 
-`cancel({ key, generation, reason })` revokes an unfinished attempt. Already succeeded, failed
-or cancelled items stay terminal; the returned snapshot says what actually happened.
-`wake({ key, generation, revision })` advances queued/deferred work after an application-owned
-prerequisite is revalidated. It is not a generic `force` override.
+For bulk/operator views, `queue.inspectMany(keys)` preserves order and missing entries and
+`queue.history(key)` returns recent durable transitions.
 
 A `running` snapshot contains the saved lease. Compare `phase.attempt.leaseUntil` with
-`observedAt` to show “lease expired; awaiting recovery” rather than an active spinner. A
-snapshot is not a permission to write: mutations always recheck current ownership.
-
-Failure `reason` keeps the application cause. `stoppedBy` separately explains policy denial,
-retry exhaustion, total-attempt exhaustion or deadline expiry.
+`observedAt` to show “lease expired; awaiting recovery” rather than an active spinner. A snapshot
+is observational only; every mutation rechecks current ownership.
 
 ## Durable follow-ups, not lossy success hooks
 
@@ -154,7 +177,7 @@ const notify = work.define<{ derivativeId: string }>('asset.notify');
 return run.succeed(
   { derivativeId },
   {
-    next: [
+    thenDo: [
       notify.request(
         { derivativeId },
         {
@@ -174,7 +197,7 @@ Follow-up planning can also be declared once as an async callback on the work de
 
 ```ts
 const convert = work.define<Input, Output>('asset.convert', {
-  next: async ({ result, attempt }) => [
+  thenDo: async ({ result, attempt }) => [
     notify.request(
       { derivativeId: result.derivativeId },
       {
@@ -185,7 +208,7 @@ const convert = work.define<Input, Output>('asset.convert', {
 });
 ```
 
-`next` returns durable request data; it is **not** an effectful `onSuccess` callback. Identical
+`thenDo` returns durable request data; it is **not** an effectful `onSuccess` callback. Identical
 accepted outcome redelivery returns the saved receipt without re-running the planner. Losing
 ownership while a planner awaits prevents the success/continuation commit.
 
@@ -194,20 +217,53 @@ Supervise `work.runDispatcher({ signal })` alongside your workers, or call
 child kind too. Delivery requires a running dispatcher and eventually available storage;
 WorkOnce does not claim the child is emitted merely because the parent succeeded. Failed children remain pending; healthy siblings are still attempted, and bounded dispatch scans rotate past failed entries rather than permanently starving other work.
 
-## Remote/Python workers
+## Remote / separate-process workers
 
-`queue.claim({ workerId, limit })` returns attempts with `.input`, `.ref`, `.attempt` and
-`.observedAt`. `JSON.stringify(run)` exposes only input, attempt and observed store time.
-Your authenticated endpoint can send that wire object without serializing adapter internals.
+The remote API is generic BYO transport. WorkOnce supplies the authoritative service façade and
+the worker runtime; your application supplies authentication plus HTTP/RPC/IPC serialization.
+No HTTP framework, Parse type, or database driver enters WorkOnce.
 
-Use `queue.renew(ref)` and `queue.settle(ref, outcome)` in the authenticated backend. Static
-outcome helpers `succeed`, `retry`, `defer`, `fail` are exported for these endpoints. Validate
-untrusted wire payloads in your transport. An attempt reference is **not** an authentication
-token, and client-supplied worker IDs do not grant authority.
+Server side:
 
-There is deliberately **no** `settle(ref, async () => writeDomainRows())`. A lease precheck
-cannot make subsequent arbitrary writes safe. Use a shared transaction/embedded commit or
-application-owned idempotency and recovery instead.
+```ts
+const service = createRemoteWorkService(
+  convert,
+  async (run) => {
+    const source = await prepareSource(run.input.assetId);
+    if (!source.ready) return run.wait('provider_pending', { afterMs: 10_000 });
+    return run.handoff({ assetId: run.input.assetId, sourceUrl: source.url });
+  },
+  (run) => run.retry('provider_busy'),
+);
+
+// Your authenticated endpoints simply forward service.ensure / claim / heartbeat / settle.
+```
+
+Remote TypeScript worker:
+
+```ts
+await runRemoteWorker(
+  {
+    claim: (request) => api.claim(request),
+    heartbeat: (attempt) => api.heartbeat(attempt),
+    settle: (attempt, outcome) => api.settle(attempt, outcome),
+  },
+  { workerId: 'relay-1', concurrency: 4, signal: shutdown.signal },
+  async (run, input) => {
+    const result = await doRemoteWork(input, { signal: run.signal });
+    return run.succeed(result);
+  },
+);
+```
+
+A Python or other-language worker implements the same tiny wire contract: `claim`, `heartbeat`,
+and `settle`. The attempt reference is opaque transport data, not an authentication credential.
+The managed runner handles polling, local concurrency, heartbeats, lease-loss aborts, and draining
+active work during shutdown.
+
+There is deliberately **no** `settle(ref, async () => writeDomainRows())`. Checking ownership
+before an unrelated write cannot make that later write fenced. Use a shared transaction where the
+storage system actually supports it, or make application/external effects idempotent and recoverable.
 
 ## What is bounded
 
@@ -215,8 +271,8 @@ All times are integer Unix **milliseconds**, all durations are milliseconds. `af
 are mutually exclusive. Result-level timing overrides do not bypass denied retries or budgets.
 
 `maxAttempts` counts every claim, including crashed workers and deferred checks. `maxRetries`
-counts accepted automatic retry decisions only. `maxDeferrals` counts accepted waits only.
-`maxElapsedMs` starts at the generation's first claim and also caps lease renewal. Manual retry
+counts accepted automatic retry decisions only. `maxDeferrals` counts accepted non-failure waits only.
+`maxElapsedMs` starts at the generation's first claim and also caps heartbeat lease extension. Manual retry
 starts a new generation; the fence never resets. Configure these bounds for long polling rather
 than expecting waits to be unlimited.
 
@@ -235,7 +291,7 @@ fence/tombstone retention contract.
 
 ## Exhaustive formal implementation mapping
 
-WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 119 callables, 13 callable policy/storage fields and 309 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 128 callables, 18 callable policy/storage fields and 329 fields, then executes 28 deterministic refinement scenarios plus 96 seeded ten-step traces before one 135,366-state TLC graph check. See [assurance](docs/assurance.md).
 
 ## One adapter per backing store, not per job
 

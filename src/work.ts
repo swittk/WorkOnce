@@ -31,7 +31,15 @@ import {
   workId,
   WorkConflict,
 } from './kernel.js';
-import { succeed, retry, defer, fail, type WorkTiming } from './outcomes.js';
+import {
+  succeed,
+  retry,
+  wait,
+  defer,
+  fail,
+  type FollowUpOptions,
+  type WorkTiming,
+} from './outcomes.js';
 /** Compact cryptographic receipt identity; the canonical outcome itself can be very large. */
 async function createSubmissionHash(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(canonical(value));
@@ -54,20 +62,32 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
   version?: string;
   /** Stable business identity derived from typed input when callers should not repeat key plumbing. */
   key?: (input: I) => string;
-  /** Persistent bounds. These include worker crashes, not only reported failures. */
+  /** Preferred readable name for per-work execution safety bounds. This is not rate throttling. */
+  executionLimits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
+  /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
   limits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
   /** A static policy or dynamic callback per failure/input. No callback goes into a row. */
   retry?: RetryDecision | ((context: RetryContext<I, R>) => RetryDecision | Promise<RetryDecision>);
-  /** Default prerequisite-check timing, optionally calculated from this input and actual wait reason. */
+  /** Preferred readable policy for non-failure waiting before this work resumes. */
+  wait?: WorkTiming | ((context: RetryContext<I, R>) => WorkTiming | Promise<WorkTiming>);
+  /** Standard queue synonym retained for compatibility; prefer `wait`. */
   defer?: WorkTiming | ((context: RetryContext<I, R>) => WorkTiming | Promise<WorkTiming>);
-  /** Plan durable follow-up requests. This callback returns data; it must not send email or write domain rows. */
-  next?: (context: {
+  /** Preferred readable planner for durable work that should run after this terminal result commits. */
+  thenDo?: (context: {
     input: I;
     result: O;
     attempt: WorkAttempt;
     /** Terminal result that created this durable continuation. */
     outcome: 'succeed' | 'fail';
     /** Present only when a typed failure result planned the continuation. */
+    reason?: R;
+  }) => WorkRequest[] | Promise<WorkRequest[]>;
+  /** Standard queue synonym retained for compatibility; prefer `thenDo`. */
+  next?: (context: {
+    input: I;
+    result: O;
+    attempt: WorkAttempt;
+    outcome: 'succeed' | 'fail';
     reason?: R;
   }) => WorkRequest[] | Promise<WorkRequest[]>;
 }
@@ -77,7 +97,9 @@ export interface EnqueueOptions {
   key?: string;
   /** Initial not-before time. Duplicate enqueue never silently reschedules it. */
   availableAt?: number;
-  /** Per-item bounds can differ from the kind's defaults. */
+  /** Preferred readable per-item execution bounds; this does not throttle worker throughput. */
+  executionLimits?: Partial<WorkLimits>;
+  /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
   limits?: Partial<WorkLimits>;
 }
 /** One prepared payload to hand to a foreign/external worker while this attempt stays leased. */
@@ -106,20 +128,65 @@ export type WorkHandoffErrorHandler<I, O, R extends string> = (
 
 /** Typed handle for one business item; it keeps key derivation out of every call site. */
 export class WorkItem<I, O, R extends string> {
+  /** Bind one typed business input and its stable key to concise item-level commands. */
   constructor(
     readonly queue: WorkQueue<I, O, R>,
     readonly input: I,
     readonly key: string,
   ) {}
+  /** Build one inert request for durable follow-up planning without enqueueing it yet. */
   request(options: Omit<EnqueueOptions, 'key'> = {}): WorkRequest<I> {
     return this.queue.request(this.input, { ...options, key: this.key });
   }
+  /** Ensure this business item exists exactly once and return its current durable snapshot. */
   enqueue(options: Omit<EnqueueOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
     return this.queue.enqueue(this.input, { ...options, key: this.key });
   }
+  /** Inspect this business item's current durable execution state. */
   inspect(): Promise<WorkSnapshot<I, O, R> | undefined> {
     return this.queue.inspect(this.key);
   }
+  /** Retry this item when its current generation failed and permits manual retry. */
+  async retry(
+    options: {
+      expectedGeneration?: number;
+      check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
+    } = {},
+  ): Promise<WorkSnapshot<I, O, R>> {
+    const current = await this.inspect();
+    if (!current) throw new WorkConflict('not_found');
+    if (
+      options.expectedGeneration !== undefined &&
+      current.generation !== options.expectedGeneration
+    )
+      throw new WorkConflict('generation_conflict');
+    return this.queue.retry({
+      key: this.key,
+      generation: current.generation,
+      ...(options.check ? { check: options.check } : {}),
+    });
+  }
+  /** Rerun this item when its current generation already succeeded. */
+  async rerun(
+    options: {
+      expectedGeneration?: number;
+      check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
+    } = {},
+  ): Promise<WorkSnapshot<I, O, R>> {
+    const current = await this.inspect();
+    if (!current) throw new WorkConflict('not_found');
+    if (
+      options.expectedGeneration !== undefined &&
+      current.generation !== options.expectedGeneration
+    )
+      throw new WorkConflict('generation_conflict');
+    return this.queue.rerun({
+      key: this.key,
+      generation: current.generation,
+      ...(options.check ? { check: options.check } : {}),
+    });
+  }
+  /** Generic terminal-state helper retained for compatibility; prefer explicit `retry` or `rerun`. */
   restart(
     options: {
       expectedGeneration?: number;
@@ -128,11 +195,13 @@ export class WorkItem<I, O, R extends string> {
   ): Promise<WorkSnapshot<I, O, R>> {
     return this.queue.restart({ key: this.key, ...options });
   }
+  /** Cancel this item's current unfinished generation. */
   cancel(
     options: { expectedGeneration?: number; reason?: string } = {},
   ): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
     return this.queue.cancelCurrent({ key: this.key, ...options });
   }
+  /** Make this waiting item eligible immediately after the caller revalidated its prerequisite. */
   wake(options: { expectedGeneration?: number } = {}): Promise<WorkSnapshot<I, O, R>> {
     return this.queue.wakeCurrent({ key: this.key, ...options });
   }
@@ -142,6 +211,7 @@ export class WorkItem<I, O, R extends string> {
 export class WorkRun<I, O, R extends string> {
   /** Fresh local cancellation signal supplied by the managed runner. */
   signal: AbortSignal = new AbortController().signal;
+  /** Create one currently leased attempt facade; applications normally receive this from a runner. */
   constructor(
     readonly queue: WorkQueue<I, O, R>,
     readonly input: I,
@@ -153,22 +223,30 @@ export class WorkRun<I, O, R extends string> {
     const { workId, generation, fence } = this.attempt;
     return { workId, generation, fence };
   }
+  /** End this attempt successfully and optionally attach durable follow-up work. */
   succeed(
     ...args: O extends null
-      ? [result?: O, options?: { next?: WorkRequest[] }]
-      : [result: O, options?: { next?: WorkRequest[] }]
+      ? [result?: O, options?: FollowUpOptions]
+      : [result: O, options?: FollowUpOptions]
   ): WorkOutcome<O, R> {
     return (args.length === 0 ? succeed() : succeed(args[0], args[1])) as WorkOutcome<O, R>;
   }
+  /** End this attempt as a temporary failure that should be tried again later. */
   retry(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return retry(reason, timing);
   }
+  /** Wait without counting a retry failure; this attempt ends and the work resumes later. */
+  wait(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
+    return wait(reason, timing);
+  }
+  /** Standard queue synonym retained for compatibility; prefer `wait`. */
   defer(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return defer(reason, timing);
   }
+  /** End this attempt as a terminal failure, optionally allowing later manual retry. */
   fail(
     reason: R,
-    options: { manualRetry?: boolean; result?: O; next?: WorkRequest[] } = {},
+    options: { manualRetry?: boolean; result?: O } & FollowUpOptions = {},
   ): WorkOutcome<O, R> {
     return fail<R, O>(reason, options);
   }
@@ -180,9 +258,15 @@ export class WorkRun<I, O, R extends string> {
   handoff<T>(input: T): WorkHandoff<T> {
     return { type: 'handoff', input: copy(input) };
   }
-  renew(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
-    return this.queue.renew(this.ref);
+  /** Send a heartbeat that extends this attempt's lease when it is still authoritative. */
+  heartbeat(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
+    return this.queue.heartbeat(this.ref);
   }
+  /** Standard lease-renewal synonym retained for compatibility; prefer `heartbeat`. */
+  renew(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
+    return this.heartbeat();
+  }
+  /** Commit one pure outcome if this attempt still owns the work. */
   settle(outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>> {
     return this.queue.settle(this.ref, outcome);
   }
@@ -195,6 +279,7 @@ const defaults: WorkLimits = {
 };
 /** One typed work kind. Instances are cheap; durable authority lives in the store, not this object. */
 export class WorkQueue<I, O = null, R extends string = string> {
+  /** Create one typed work-kind facade over the shared authoritative store. */
   constructor(
     readonly store: WorkStore,
     readonly scope: string,
@@ -211,6 +296,31 @@ export class WorkQueue<I, O = null, R extends string = string> {
   item(input: I, explicitKey?: string): WorkItem<I, O, R> {
     return new WorkItem(this, input, this.key(input, explicitKey));
   }
+  /** Resolve definition-level execution bounds while rejecting competing alias values. */
+  private resolveExecutionLimits(input: I): Partial<WorkLimits> | undefined {
+    if (this.definition.executionLimits !== undefined && this.definition.limits !== undefined)
+      throw new RangeError('Use executionLimits or limits, not both');
+    const configured = this.definition.executionLimits ?? this.definition.limits;
+    return typeof configured === 'function' ? configured(input) : configured;
+  }
+  /** Resolve per-enqueue execution bounds while rejecting competing alias values. */
+  private resolveEnqueueExecutionLimits(options: EnqueueOptions): Partial<WorkLimits> | undefined {
+    if (options.executionLimits !== undefined && options.limits !== undefined)
+      throw new RangeError('Use executionLimits or limits, not both');
+    return options.executionLimits ?? options.limits;
+  }
+  /** Resolve the preferred wait policy and legacy synonym without allowing both. */
+  private waitPolicy(): WorkDefinition<I, R, O>['wait'] {
+    if (this.definition.wait !== undefined && this.definition.defer !== undefined)
+      throw new RangeError('Use wait or defer, not both');
+    return this.definition.wait ?? this.definition.defer;
+  }
+  /** Resolve the preferred follow-up planner and legacy synonym without allowing both. */
+  private thenDoPolicy(): WorkDefinition<I, R, O>['thenDo'] {
+    if (this.definition.thenDo !== undefined && this.definition.next !== undefined)
+      throw new RangeError('Use thenDo or next, not both');
+    return this.definition.thenDo ?? this.definition.next;
+  }
   /** Create an inert follow-up description. It does not enqueue until success is durably accepted. */
   request(input: I, options: EnqueueOptions = {}): WorkRequest<I> {
     const key = this.key(input, options.key);
@@ -223,10 +333,8 @@ export class WorkQueue<I, O = null, R extends string = string> {
       input,
       limits: {
         ...defaults,
-        ...(typeof this.definition.limits === 'function'
-          ? this.definition.limits(input)
-          : this.definition.limits),
-        ...options.limits,
+        ...this.resolveExecutionLimits(input),
+        ...this.resolveEnqueueExecutionLimits(options),
       },
       availableAt: options.availableAt ?? 0,
     });
@@ -291,7 +399,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
           await run.settle(prepared);
           continue;
         }
-        const renewed = await run.renew();
+        const renewed = await run.heartbeat();
         leases.push({
           input: prepared.input,
           attempt: run.ref,
@@ -309,7 +417,11 @@ export class WorkQueue<I, O = null, R extends string = string> {
     }
     return leases;
   }
-  /** Atomic owner-bound heartbeat. An old process cannot renew a newer process's lease. */
+  /** Preferred readable heartbeat operation; extends only the current authoritative lease. */
+  heartbeat(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
+    return this.renew(ref);
+  }
+  /** Low-level lease-renewal operation retained for distributed-systems terminology compatibility. */
   async renew(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.store.atomic(ref.workId, (row, now) => {
       this.requireRow(row);
@@ -351,28 +463,25 @@ export class WorkQueue<I, O = null, R extends string = string> {
         const policy = this.definition.retry ?? { retry: false, manualRetry: true };
         decision = typeof policy === 'function' ? await policy(context) : policy;
       } else if (submitted.at === undefined && submitted.afterMs === undefined) {
-        const policy = this.definition.defer ?? { afterMs: 1000 };
+        const policy = this.waitPolicy() ?? { afterMs: 1000 };
         const timing = typeof policy === 'function' ? await policy(context) : policy;
         submitted = { ...submitted, ...timing };
       }
     }
-    if (this.definition.next && submitted.type === 'succeed') {
+    const thenDo = this.thenDoPolicy();
+    if (thenDo && submitted.type === 'succeed') {
       if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
-      const planned = await this.definition.next({
+      const planned = await thenDo({
         input: row.input as I,
         result: submitted.result,
         attempt: row.phase.attempt,
         outcome: 'succeed',
       });
       submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
-    } else if (
-      this.definition.next &&
-      submitted.type === 'fail' &&
-      submitted.result !== undefined
-    ) {
+    } else if (thenDo && submitted.type === 'fail' && submitted.result !== undefined) {
       if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
       const result = submitted.result;
-      const planned = await this.definition.next({
+      const planned = await thenDo({
         input: row.input as I,
         result,
         attempt: row.phase.attempt,

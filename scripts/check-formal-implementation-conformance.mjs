@@ -21,6 +21,7 @@ const semanticSourceFiles = [
   'src/storage.ts',
   'src/cas.ts',
   'src/remote.ts',
+  'src/retry-policy.ts',
 ];
 const modelFiles = ['formal/WorkOnce.tla', 'formal/WorkOnce.cfg'];
 const expectedEntrypoints = [
@@ -39,7 +40,11 @@ const evidenceByClassification = {
     'test/formal-bounded-refinement.test.mjs',
     'test/edge-regressions.test.mjs',
   ],
-  'policy-callback': ['test/cas.test.mjs', 'test/continuation-policy.test.mjs'],
+  'policy-callback': [
+    'test/cas.test.mjs',
+    'test/continuation-policy.test.mjs',
+    'test/readable-api.test.mjs',
+  ],
   'worker-runtime': [
     'test/worker.test.mjs',
     'test/remote.test.mjs',
@@ -209,6 +214,7 @@ CHECK_DEADLOCK FALSE
   process.exit(0);
 }
 function callableClassification(key) {
+  if (key === 'root.exponentialBackoff') return 'policy-callback';
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
     return 'storage-boundary';
   if (key.startsWith('conformance.')) return 'assurance-infrastructure';
@@ -221,7 +227,9 @@ function callableClassification(key) {
 function callableFieldClassification(typeName, fieldName) {
   if (
     typeName.startsWith('WorkDefinition') &&
-    ['limits', 'retry', 'defer', 'next', 'key'].includes(fieldName)
+    ['executionLimits', 'limits', 'retry', 'wait', 'defer', 'thenDo', 'next', 'key'].includes(
+      fieldName,
+    )
   )
     return 'policy-callback';
   if (typeName === 'WorkerOptions' && fieldName === 'onError') return 'worker-runtime';
@@ -243,7 +251,7 @@ function fieldClassification(typeName, fieldName, callable) {
   if (/^(?:onError|signal|concurrency|status|error|activeAttempt)$/u.test(fieldName))
     return 'worker-runtime';
   if (
-    /^(?:state|phase|cause|reason|manualRetry|stoppedBy|outcome|next|outbox|receipt|pendingFollowups|retry|maxRetries|type)$/u.test(
+    /^(?:state|phase|cause|reason|manualRetry|stoppedBy|outcome|thenDo|next|outbox|receipt|pendingFollowups|retry|maxRetries|type)$/u.test(
       fieldName,
     )
   )
@@ -270,9 +278,10 @@ function modelConceptsForField(typeName, fieldName, classification) {
   if (classification === 'observational') return ['observationOnly'];
   if (classification === 'policy-callback') {
     if (fieldName === 'retry') return ['retries', 'available', 'manualRetryAllowed'];
-    if (fieldName === 'defer') return ['deferrals', 'available'];
-    if (fieldName === 'limits') return ['attempts', 'Deadline', 'deferrals', 'lease'];
-    if (fieldName === 'next') return ['pendingNext', 'childCreated'];
+    if (fieldName === 'wait' || fieldName === 'defer') return ['deferrals', 'available'];
+    if (fieldName === 'executionLimits' || fieldName === 'limits')
+      return ['attempts', 'Deadline', 'deferrals', 'lease'];
+    if (fieldName === 'thenDo' || fieldName === 'next') return ['pendingNext', 'childCreated'];
     if (fieldName === 'check') return ['manualRetryAllowed', 'generation'];
     return ['identity'];
   }
@@ -290,7 +299,8 @@ function modelConceptsForField(typeName, fieldName, classification) {
   if (/^(?:deferrals|maxDeferrals)$/u.test(fieldName)) return ['deferrals'];
   if (/^(?:firstStartedAt|maxElapsedMs|elapsedMs)$/u.test(fieldName))
     return ['firstStarted', 'Deadline'];
-  if (/^(?:next|outbox|pendingFollowups)$/u.test(fieldName)) return ['pendingNext', 'childCreated'];
+  if (/^(?:thenDo|next|outbox|pendingFollowups)$/u.test(fieldName))
+    return ['pendingNext', 'childCreated'];
   if (/^(?:reason)$/u.test(fieldName)) return ['stopReason', 'waitCause'];
   if (
     /^(?:id|key|scope|kind|definition|version|workId|revision|submissionHash|number|operationId|expectedRevision)$/u.test(
@@ -308,7 +318,13 @@ function modelConceptsForField(typeName, fieldName, classification) {
 }
 function modelActionsForKey(key) {
   if (key === 'root.retry' || key === 'root.WorkRun.retry') return ['Retry'];
-  if (key === 'root.defer' || key === 'root.WorkRun.defer') return ['Defer'];
+  if (
+    key === 'root.wait' ||
+    key === 'root.defer' ||
+    key === 'root.WorkRun.wait' ||
+    key === 'root.WorkRun.defer'
+  )
+    return ['Defer'];
   if (key === 'root.succeed' || key === 'root.WorkRun.succeed') return ['Success'];
   if (key === 'root.fail' || key === 'root.WorkRun.fail') return ['Fail'];
   if (key === 'root.WorkQueue.retry' || key === 'kernel.retryRecord') return ['ManualRetry'];
@@ -316,7 +332,8 @@ function modelActionsForKey(key) {
   if (key.endsWith('.restart')) return ['ManualRetry', 'Rerun'];
   if (key.endsWith('.claim') || key === 'kernel.claimRecord')
     return ['Claim', 'ExhaustAttempts', 'ExhaustDeadline'];
-  if (key.endsWith('.renew') || key === 'kernel.renewRecord') return ['Renew'];
+  if (key.endsWith('.heartbeat') || key.endsWith('.renew') || key === 'kernel.renewRecord')
+    return ['Renew'];
   if (key.endsWith('.settle') || key === 'kernel.settleRecord')
     return ['Success', 'Fail', 'Retry', 'Defer'];
   if (key.endsWith('.cancel') || key.endsWith('.cancelCurrent') || key === 'kernel.cancelRecord')
@@ -333,14 +350,15 @@ function modelActionsForKey(key) {
   if (/^(?:root|remote)\.RemoteWorkRun\.succeed$/u.test(key)) return ['Success'];
   if (/^(?:root|remote)\.RemoteWorkRun\.fail$/u.test(key)) return ['Fail'];
   if (/^(?:root|remote)\.RemoteWorkRun\.retry$/u.test(key)) return ['Retry'];
-  if (/^(?:root|remote)\.RemoteWorkRun\.defer$/u.test(key)) return ['Defer'];
+  if (/^(?:root|remote)\.RemoteWorkRun\.(?:wait|defer)$/u.test(key)) return ['Defer'];
+  if (key === 'root.exponentialBackoff') return ['Retry'];
   return [];
 }
 function modelActionsForField(typeName, fieldName) {
   if (typeName.startsWith('WorkDefinition')) {
     if (fieldName === 'retry') return ['Retry'];
-    if (fieldName === 'defer') return ['Defer'];
-    if (fieldName === 'next') return ['CreateChild'];
+    if (fieldName === 'wait' || fieldName === 'defer') return ['Defer'];
+    if (fieldName === 'thenDo' || fieldName === 'next') return ['CreateChild'];
   }
   return [];
 }

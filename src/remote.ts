@@ -8,7 +8,7 @@ import type {
   WorkRun,
 } from './work.js';
 import type { WorkSnapshot } from './model.js';
-import { defer, fail, retry, succeed, type WorkTiming } from './outcomes.js';
+import { defer, fail, retry, succeed, wait, type WorkTiming } from './outcomes.js';
 import { integer } from './kernel.js';
 import { waitForPoll } from './worker.js';
 
@@ -21,8 +21,8 @@ export interface RemoteWorkTransport<I, O, R extends string> {
     /** Lets network transports cancel an in-flight poll during graceful shutdown. */
     signal?: AbortSignal;
   }): Promise<LeasedWork<I>[]>;
-  /** Renew only this exact authoritative attempt; stale/expired attempts must reject. */
-  renew(attempt: AttemptRef): Promise<{ leaseUntil: number; observedAt: number }>;
+  /** Heartbeat this exact attempt to extend its lease; stale or expired ownership must reject. */
+  heartbeat(attempt: AttemptRef): Promise<{ leaseUntil: number; observedAt: number }>;
   /** Submit one pure outcome. Unknown acknowledgements must reject rather than rerun the handler locally. */
   settle(attempt: AttemptRef, outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>>;
 }
@@ -51,8 +51,8 @@ export function createRemoteWorkService<I, WorkerInput, O, R extends string>(
   return {
     ensure: (input, options = {}) => queue.enqueue(input, options),
     claim: ({ workerId, limit }) => queue.handoff({ workerId, limit }, prepare, onPrepareError),
-    async renew(attempt) {
-      const renewed = await queue.renew(attempt);
+    async heartbeat(attempt) {
+      const renewed = await queue.heartbeat(attempt);
       return {
         leaseUntil: renewed.attempt.leaseUntil,
         observedAt: renewed.observedAt,
@@ -80,33 +80,45 @@ export interface RemoteWorkerOptions {
 
 /** Per-attempt facade for a foreign TypeScript worker. Outcome helpers are pure wire data. */
 export class RemoteWorkRun<O, R extends string> {
+  /** Cooperative cancellation signal aborted when ownership is lost or the worker shuts down. */
   signal: AbortSignal = new AbortController().signal;
+  /** Create the per-attempt remote facade from one authoritative leased work item. */
   constructor(
     readonly attempt: AttemptRef,
     readonly leaseUntil: number,
     readonly observedAt: number,
   ) {}
+  /** Report successful completion; the remote service still performs the authoritative settlement. */
   succeed(...args: O extends null ? [result?: O] : [result: O]): WorkOutcome<O, R> {
     return (args.length === 0 ? succeed() : succeed(args[0])) as WorkOutcome<O, R>;
   }
+  /** Report a temporary failure that should be retried later. */
   retry(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return retry(reason, timing);
   }
+  /** Wait without counting a failure retry; this remote attempt ends and the work resumes later. */
+  wait(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
+    return wait(reason, timing);
+  }
+  /** Standard queue synonym retained for compatibility; prefer `wait`. */
   defer(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return defer(reason, timing);
   }
+  /** Report a terminal failure, optionally permitting a later manual retry. */
   fail(reason: R, options: { manualRetry?: boolean; result?: O } = {}): WorkOutcome<O, R> {
     return fail<R, O>(reason, options);
   }
 }
 
+/** Handler contract for one remote leased item. */
 export type RemoteWorkHandler<I, O, R extends string> = (
   run: RemoteWorkRun<O, R>,
   input: I,
 ) => WorkOutcome<O, R> | Promise<WorkOutcome<O, R>>;
 
-export type RemoteProcessResult =
-  | { workId: string; status: 'settled'; phase: WorkPhase }
+/** Per-lease result returned by the one-shot remote worker processor. */
+export type RemoteProcessResult<O = unknown, R extends string = string> =
+  | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
 
 /** Validate process-wide knobs before claiming anything; per-lease checks only compare against that lease. */
@@ -120,7 +132,7 @@ async function processLease<I, O, R extends string>(
   lease: LeasedWork<I>,
   options: RemoteWorkerOptions,
   handler: RemoteWorkHandler<I, O, R>,
-): Promise<RemoteProcessResult> {
+): Promise<RemoteProcessResult<O, R>> {
   const controller = new AbortController();
   const run = new RemoteWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
   run.signal = controller.signal;
@@ -153,7 +165,7 @@ async function processLease<I, O, R extends string>(
     if (stopped || controller.signal.aborted) return;
     const sentAt = performance.now();
     try {
-      const renewed = await transport.renew(lease.attempt);
+      const renewed = await transport.heartbeat(lease.attempt);
       if (!stopped && !controller.signal.aborted) {
         armExpiry(sentAt + renewed.leaseUntil - renewed.observedAt);
         heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
@@ -187,7 +199,7 @@ export async function processRemoteWork<I, O, R extends string>(
   transport: RemoteWorkTransport<I, O, R>,
   options: RemoteWorkerOptions,
   handler: RemoteWorkHandler<I, O, R>,
-): Promise<RemoteProcessResult[]> {
+): Promise<RemoteProcessResult<O, R>[]> {
   const limit = validateRemoteWorkerOptions(options);
   if (options.signal.aborted) return [];
   let leases: LeasedWork<I>[];

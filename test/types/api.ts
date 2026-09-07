@@ -33,7 +33,7 @@ void queue.process({ workerId: 'w' }, (run) => {
   // @ts-expect-error A failure reason is not any string.
   run.retry('typo');
   // @ts-expect-error Relative and absolute time cannot both be supplied.
-  run.defer('busy', { afterMs: 5, at: 9 });
+  run.wait('busy', { afterMs: 5, at: 9 });
   return run.fail('invalid');
 });
 // @ts-expect-error Manual retry must identify the failed generation.
@@ -46,7 +46,7 @@ function show(snapshot: WorkSnapshot<Input, Output, Reason>) {
 void show;
 
 const dynamic = work.define<Input, Output, Reason>('dynamic', {
-  limits: (input) => ({ maxAttempts: input.urgent ? 10 : 3 }),
-  defer: async (context) => ({ afterMs: context.deferrals ? 30_000 : 1000 }),
+  executionLimits: (input) => ({ maxAttempts: input.urgent ? 10 : 3 }),
+  wait: async (context) => ({ afterMs: context.deferrals ? 30_000 : 1000 }),
 });
-void dynamic.process({ workerId: 'typed' }, (run) => run.defer('busy'));
+void dynamic.process({ workerId: 'typed' }, (run) => run.wait('busy'));

@@ -16,7 +16,7 @@ WorkOnce assurance has four separate layers. None is presented as proof of exact
 
 The extractor inventories exported functions/constructors, public class methods, exported interface methods, returned callable objects such as `createWorkOnce().dispatch`, and callable policy fields. It then recursively walks every package-owned input/output/callback type, including optional/null/undefined flags, recursive references, index values and callback arguments/results.
 
-The reviewed manifest currently maps **119 public callables**, **13 callable policy/storage fields**, **99 reachable package-owned types**, and **309 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
+The reviewed manifest currently maps **128 public callables**, **18 callable policy/storage fields**, **104 reachable package-owned types**, and **329 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
@@ -54,6 +54,8 @@ Additional tests cover expiry between read and the actual native write, unknown 
 `test/process/sqlite-process.test.mjs` barriers eight independent processes onto the same brand-new SQLite path, then separately onto one pre-definition WAL schema, proving both first initialization and startup migration converge. It then races eight claimers against one item. A final case kills an owning worker with SIGKILL, reopens storage, reclaims its lease and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of network filesystems or untested third-party stores.
 
 `npm run test:consumer` packs and installs the real clean-built distribution in an isolated consumer, runs ESM/CommonJS round trips and compiles both TypeScript module styles. `npm run check` also compiles the developer-facing typed API examples.
+
+`test/documentation.test.mjs` walks the exported TypeScript contract with the compiler AST and fails when an exported declaration or direct public member lacks purpose JSDoc; it also rejects obvious tautological filler. Inline anonymous option-object fields are intentionally excluded to avoid ceremonial comments.
 
 ## Bounded TLA+ machine
 
