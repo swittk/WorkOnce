@@ -193,6 +193,8 @@ export function validateWorkRecord(value: unknown): asserts value is WorkRecord 
   }
   if (row.receipt !== undefined) validateReceipt(row.receipt, stringValue(row.id), generation);
   if (!Array.isArray(row.outbox)) invalidPersistedRow();
+  if (row.outbox.length > 0 && phase.state !== 'succeeded' && phase.state !== 'failed')
+    invalidPersistedRow();
   for (const request of row.outbox) validateRequest(request);
   if (!Array.isArray(row.history) || row.history.length > 128) invalidPersistedRow();
   for (const event of row.history) validateEvent(event);

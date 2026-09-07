@@ -216,6 +216,45 @@ test('sqlite rejects a persisted request whose input property is missing', async
   }
 });
 
+test('sqlite rejects pending follow-ups on a nonterminal persisted parent before dispatch', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workonce-corrupt-outbox-'));
+  const databasePath = join(dir, 'test.sqlite');
+  let store = createSqliteStore(databasePath);
+  try {
+    let work = createWorkOnce({ store, scope: 'outbox-corrupt' });
+    let parent = work.define('parent');
+    let child = work.define('child');
+    const snapshot = await parent.ensure(null, { key: 'p' });
+    const childRequest = child.request({ payload: 1 }, { key: 'c' });
+    store.close();
+
+    const db = new DatabaseSync(databasePath);
+    try {
+      const raw = db.prepare('SELECT body FROM workonce WHERE id=?').get(snapshot.id);
+      const body = JSON.parse(raw.body);
+      assert.equal(body.phase.state, 'queued');
+      body.outbox = [childRequest];
+      db.prepare('UPDATE workonce SET body=?, pending_next=1 WHERE id=?').run(
+        JSON.stringify(body),
+        snapshot.id,
+      );
+    } finally {
+      db.close();
+    }
+
+    store = createSqliteStore(databasePath);
+    work = createWorkOnce({ store, scope: 'outbox-corrupt' });
+    child = work.define('child');
+    await assert.rejects(work.dispatch(), /Invalid persisted WorkOnce row/);
+    assert.equal(await child.inspect('c'), undefined);
+  } finally {
+    try {
+      store.close();
+    } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('sqlite rejects a persisted settlement receipt bound to another item or generation', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-corrupt-receipt-'));
   const databasePath = join(dir, 'test.sqlite');

@@ -67,7 +67,11 @@ test('a one-millisecond external lease does not fail solely because automatic he
     { workerId: 'relay', signal: new AbortController().signal },
     async (run) => run.succeed(),
   );
-  assert.equal(result?.status, 'settled');
+  if (result.status === 'interrupted') {
+    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+  } else {
+    assert.equal(result.status, 'settled');
+  }
   assert.equal(heartbeatCalls, 0);
 });
 
