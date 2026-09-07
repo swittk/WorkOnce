@@ -216,6 +216,40 @@ test('sqlite rejects a persisted request whose input property is missing', async
   }
 });
 
+test('sqlite rejects a persisted settlement receipt bound to another item or generation', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workonce-corrupt-receipt-'));
+  const databasePath = join(dir, 'test.sqlite');
+  let store = createSqliteStore(databasePath);
+  try {
+    const queue = createWorkOnce({ store, scope: 'receipt-corrupt' }).define('job', {
+      limits: { leaseMs: 1000 },
+    });
+    await queue.ensure(null, { key: 'x' });
+    const [run] = await queue.claim({ workerId: 'A' });
+    await run.settle(run.wait('pending'));
+    store.close();
+
+    const db = new DatabaseSync(databasePath);
+    try {
+      const raw = db.prepare('SELECT body FROM workonce WHERE id=?').get(run.ref.workId);
+      const body = JSON.parse(raw.body);
+      body.receipt.attempt.workId = 'different-work-id';
+      body.receipt.attempt.generation = run.ref.generation + 1;
+      db.prepare('UPDATE workonce SET body=? WHERE id=?').run(JSON.stringify(body), run.ref.workId);
+    } finally {
+      db.close();
+    }
+
+    store = createSqliteStore(databasePath);
+    await assert.rejects(store.getMany([run.ref.workId]), /Invalid persisted WorkOnce row/);
+  } finally {
+    try {
+      store.close();
+    } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('an impossible duration is rejected before storing an unclaimable job', async () => {
   const q = createWorkOnce({ store: createMemoryStore({ now: () => 1000 }), scope: 't' }).define(
     'job',

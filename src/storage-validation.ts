@@ -140,9 +140,15 @@ function validatePhase(value: unknown): asserts value is WorkPhase {
       invalidPersistedRow();
   }
 }
-function validateReceipt(value: unknown): asserts value is SettlementReceipt {
+function validateReceipt(
+  value: unknown,
+  workId: string,
+  generation: number,
+): asserts value is SettlementReceipt {
   const receipt = object(value);
   validateAttemptRef(receipt.attempt);
+  const attempt = receipt.attempt as AttemptRef;
+  if (attempt.workId !== workId || attempt.generation !== generation) invalidPersistedRow();
   if (!/^[a-f0-9]{64}$/u.test(stringValue(receipt.submissionHash))) invalidPersistedRow();
   if (receipt.phase !== undefined) validatePhase(receipt.phase);
 }
@@ -185,7 +191,7 @@ export function validateWorkRecord(value: unknown): asserts value is WorkRecord 
     )
       invalidPersistedRow();
   }
-  if (row.receipt !== undefined) validateReceipt(row.receipt);
+  if (row.receipt !== undefined) validateReceipt(row.receipt, stringValue(row.id), generation);
   if (!Array.isArray(row.outbox)) invalidPersistedRow();
   for (const request of row.outbox) validateRequest(request);
   if (!Array.isArray(row.history) || row.history.length > 128) invalidPersistedRow();
