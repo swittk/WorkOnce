@@ -20,9 +20,19 @@ const semanticSourceFiles = [
   'src/worker.ts',
   'src/storage.ts',
   'src/cas.ts',
+  'src/remote.ts',
 ];
 const modelFiles = ['formal/WorkOnce.tla', 'formal/WorkOnce.cfg'];
-const expectedEntrypoints = ['root', 'storage', 'memory', 'sqlite', 'kernel', 'conformance', 'cas'];
+const expectedEntrypoints = [
+  'root',
+  'storage',
+  'memory',
+  'sqlite',
+  'kernel',
+  'conformance',
+  'cas',
+  'remote',
+];
 const evidenceByClassification = {
   'abstract-semantic': ['test/formal-bounded-refinement.test.mjs', 'test/conformance.test.mjs'],
   'identity-retry-semantic': [
@@ -32,6 +42,7 @@ const evidenceByClassification = {
   'policy-callback': ['test/cas.test.mjs', 'test/continuation-policy.test.mjs'],
   'worker-runtime': [
     'test/worker.test.mjs',
+    'test/remote.test.mjs',
     'test/handoff.test.mjs',
     'test/edge-regressions.test.mjs',
   ],
@@ -150,7 +161,7 @@ function callableClassification(key) {
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
     return 'storage-boundary';
   if (key.startsWith('conformance.')) return 'assurance-infrastructure';
-  if (/\.(?:run|process|handoff)$/.test(key)) return 'worker-runtime';
+  if (/\.(?:run|process|handoff)$/.test(key) || key.startsWith('remote.')) return 'worker-runtime';
   if (/\.(?:inspect|inspectId|inspectMany|history|toJSON|key|request|item)$/.test(key))
     return 'observational';
   if (/WorkItem\./.test(key) || key === 'root.createWorkOnce') return 'ergonomic-wrapper';
@@ -266,6 +277,12 @@ function modelActionsForKey(key) {
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
   if (key === 'root.WorkQueue.handoff')
     return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
+  if (/^(?:root|remote)\.(?:processRemoteWork|runRemoteWorker)$/u.test(key))
+    return ['Claim', 'Renew', 'Success', 'Fail', 'Retry', 'Defer'];
+  if (/^(?:root|remote)\.RemoteWorkRun\.succeed$/u.test(key)) return ['Success'];
+  if (/^(?:root|remote)\.RemoteWorkRun\.fail$/u.test(key)) return ['Fail'];
+  if (/^(?:root|remote)\.RemoteWorkRun\.retry$/u.test(key)) return ['Retry'];
+  if (/^(?:root|remote)\.RemoteWorkRun\.defer$/u.test(key)) return ['Defer'];
   return [];
 }
 function modelActionsForField(typeName, fieldName) {

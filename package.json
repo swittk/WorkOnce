@@ -77,6 +77,16 @@
         "types": "./dist-cjs/cas.d.ts",
         "default": "./dist-cjs/cas.js"
       }
+    },
+    "./remote": {
+      "import": {
+        "types": "./dist/remote.d.ts",
+        "default": "./dist/remote.js"
+      },
+      "require": {
+        "types": "./dist-cjs/remote.d.ts",
+        "default": "./dist-cjs/remote.js"
+      }
     }
   },
   "typesVersions": {
@@ -98,6 +108,9 @@
       ],
       "cas": [
         "dist/cas.d.ts"
+      ],
+      "remote": [
+        "dist/remote.d.ts"
       ]
     }
   },
