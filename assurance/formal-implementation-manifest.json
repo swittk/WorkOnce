@@ -9979,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "c1eae6e4ff6362641036c8479b8364beb2c1c472759b6745437fee73316e97d5",
+    "sourceDigest": "149ec2308a658363ab7cf848f5063dbdda89b25c78c30c0f47c114de1295445d",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -9988,6 +9988,8 @@
       "src/worker.ts",
       "src/storage.ts",
       "src/storage-validation.ts",
+      "src/memory.ts",
+      "src/sqlite.ts",
       "src/cas.ts",
       "src/external.ts",
       "src/retry-policy.ts"

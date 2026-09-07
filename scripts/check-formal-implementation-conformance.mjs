@@ -20,6 +20,8 @@ const semanticSourceFiles = [
   'src/worker.ts',
   'src/storage.ts',
   'src/storage-validation.ts',
+  'src/memory.ts',
+  'src/sqlite.ts',
   'src/cas.ts',
   'src/external.ts',
   'src/retry-policy.ts',
