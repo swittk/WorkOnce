@@ -126,6 +126,37 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
   assert.equal((await q.inspect('job')).phase.state, 'running');
 });
 
+test('managed runner wakes an empty poll when an active claim becomes fatal', async () => {
+  const base = createMemoryStore();
+  let failAtomic = false;
+  const store = {
+    ...base,
+    async atomic(id, decide) {
+      if (failAtomic) throw new Error('renewal storage down');
+      return base.atomic(id, decide);
+    },
+  };
+  const q = createWorkOnce({ store, scope: 'fatal-wake' }).define('work', {
+    limits: { leaseMs: 500 },
+  });
+  await q.ensure(null, { key: 'job' });
+  const stop = new AbortController();
+  const startedAt = performance.now();
+  await assert.rejects(
+    q.run(
+      { workerId: 'worker', concurrency: 2, heartbeatMs: 20, idleMs: 2000, signal: stop.signal },
+      async (run) => {
+        failAtomic = true;
+        await sleep(80);
+        return run.succeed();
+      },
+    ),
+    /Worker ownership lost/,
+  );
+  assert.ok(performance.now() - startedAt < 500);
+  stop.abort();
+});
+
 test('invalid static heartbeat configuration fails before local work is claimed', async () => {
   const q = createWorkOnce({ store: createMemoryStore(), scope: 'heartbeat-config' }).define(
     'work',

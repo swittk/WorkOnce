@@ -140,6 +140,7 @@ export async function runWorker<I, O, R extends string>(
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
   let fatal: unknown;
+  let wakePoll: (() => void) | undefined;
   while (!options.signal.aborted && fatal === undefined) {
     const available = capacity - active.size;
     if (!available) {
@@ -176,10 +177,29 @@ export async function runWorker<I, O, R extends string>(
         })
         .finally(() => {
           active.delete(pending);
+          wakePoll?.();
         });
       active.add(pending);
     }
-    if (!claims.length) await waitForPoll(idleMs, options.signal);
+    if (!claims.length) {
+      if (!active.size) await waitForPoll(idleMs, options.signal);
+      else
+        await new Promise<void>((resolve) => {
+          let settled = false;
+          const stop = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            options.signal.removeEventListener('abort', stop);
+            if (wakePoll === stop) wakePoll = undefined;
+            resolve();
+          };
+          const timer = setTimeout(stop, Math.min(idleMs, 2_147_483_647));
+          options.signal.addEventListener('abort', stop, { once: true });
+          wakePoll = stop;
+          if (options.signal.aborted) stop();
+        });
+    }
   }
   await Promise.all(active);
   if (fatal !== undefined) throw fatal;

@@ -43,6 +43,7 @@ const coverageKeys = [
   'dynamicDefer',
   'dynamicNext',
   'workerErrorIsolation',
+  'managedRunnerFatalWake',
   'generationTwo',
   'fenceIncrease',
   'parallelClaimCompetition',
@@ -542,6 +543,38 @@ async function replayAndDynamicPolicies(coverage) {
     assert.equal(results.filter((result) => result.status === 'settled').length, 1);
     assert.equal((await f.queue.item({ id: 'good' }).inspect()).phase.state, 'succeeded');
     hit(coverage, 'workerErrorIsolation');
+  }
+  {
+    scenarios++;
+    const base = createMemoryStore();
+    let failAtomic = false;
+    const store = {
+      ...base,
+      async atomic(id, decide) {
+        if (failAtomic) throw new Error('renewal storage down');
+        return base.atomic(id, decide);
+      },
+    };
+    const queue = createWorkOnce({ store, scope: 'managed-runner-fatal-wake' }).define('job', {
+      limits: { leaseMs: 500 },
+    });
+    await queue.ensure(null, { key: 'x' });
+    const stop = new AbortController();
+    const startedAt = performance.now();
+    await assert.rejects(
+      queue.run(
+        { workerId: 'A', concurrency: 2, heartbeatMs: 20, idleMs: 2000, signal: stop.signal },
+        async (run) => {
+          failAtomic = true;
+          await new Promise((resolve) => setTimeout(resolve, 80));
+          return run.succeed();
+        },
+      ),
+      /Worker ownership lost/,
+    );
+    assert.ok(performance.now() - startedAt < 500);
+    stop.abort();
+    hit(coverage, 'managedRunnerFatalWake');
   }
   return scenarios;
 }
