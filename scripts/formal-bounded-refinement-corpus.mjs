@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
-import { createWorkOnce, runExternalAvailable, WorkConflict } from '../dist/index.js';
+import { createWorkOnce, runExternalAvailable, runExternal, WorkConflict } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 
 const coverageKeys = [
@@ -44,6 +44,7 @@ const coverageKeys = [
   'dynamicNext',
   'workerErrorIsolation',
   'managedRunnerFatalWake',
+  'managedExternalFatalWake',
   'generationTwo',
   'fenceIncrease',
   'parallelClaimCompetition',
@@ -575,6 +576,53 @@ async function replayAndDynamicPolicies(coverage) {
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
     hit(coverage, 'managedRunnerFatalWake');
+  }
+  {
+    scenarios++;
+    const work = createWorkOnce({
+      store: createMemoryStore(),
+      scope: 'managed-external-fatal-wake',
+    });
+    const queue = work.define('job', { limits: { leaseMs: 500 } });
+    const base = queue.serveExternal({
+      prepare: (run) => run.handoff(run.input),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await base.ensure(null, { key: 'x' });
+    let claims = 0;
+    const transport = {
+      ...base,
+      async claim(request) {
+        claims++;
+        if (claims === 1) return base.claim(request);
+        return [];
+      },
+      async heartbeat() {
+        throw new Error('external renewal down');
+      },
+    };
+    const stop = new AbortController();
+    const startedAt = performance.now();
+    await assert.rejects(
+      runExternal(
+        transport,
+        {
+          workerId: 'external',
+          concurrency: 2,
+          heartbeatMs: 20,
+          idleMs: 2000,
+          signal: stop.signal,
+        },
+        async (run) => {
+          await new Promise((resolve) => setTimeout(resolve, 80));
+          return run.succeed();
+        },
+      ),
+      /External ownership lost/,
+    );
+    assert.ok(performance.now() - startedAt < 500);
+    stop.abort();
+    hit(coverage, 'managedExternalFatalWake');
   }
   return scenarios;
 }

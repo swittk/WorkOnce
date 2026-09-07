@@ -4,7 +4,7 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs"
   ],
-  "evidenceDigest": "2f8d817cce3bf9339c1f1a66d08d443377924b9ca78d618441420bbb1680b2ce",
+  "evidenceDigest": "a5715962c193d872968a0c2d9e214c76758c267388682d941a1d4ac0de408bc5",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -32,6 +32,7 @@
     "identicalSettlementReplay": true,
     "invalidExternalRenewal": true,
     "leaseReclaim": true,
+    "managedExternalFatalWake": true,
     "managedRunnerFatalWake": true,
     "manualRetry": true,
     "manualRetryDenied": true,
@@ -56,7 +57,7 @@
     "workerErrorIsolation": true
   },
   "observed": {
-    "deterministicScenarios": 34,
+    "deterministicScenarios": 35,
     "fuzzTraces": 96,
     "fuzzStepsPerTrace": 10,
     "coverageCounts": {
@@ -100,6 +101,7 @@
       "dynamicNext": 1,
       "workerErrorIsolation": 1,
       "managedRunnerFatalWake": 1,
+      "managedExternalFatalWake": 1,
       "generationTwo": 69,
       "fenceIncrease": 2,
       "parallelClaimCompetition": 2,

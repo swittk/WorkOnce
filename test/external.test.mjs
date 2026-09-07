@@ -200,6 +200,38 @@ test('managed external runner refills freed slots and drains active work before 
   stop.abort();
 });
 
+test('managed external runner wakes an empty poll when an active lease becomes fatal', async () => {
+  const { transport: base } = fixture({ leaseMs: 500 });
+  await base.ensure(null, { key: 'x' });
+  let claims = 0;
+  const transport = {
+    ...base,
+    async claim(request) {
+      claims++;
+      if (claims === 1) return base.claim(request);
+      return [];
+    },
+    async heartbeat() {
+      throw new Error('external renewal down');
+    },
+  };
+  const stop = new AbortController();
+  const startedAt = performance.now();
+  await assert.rejects(
+    runExternal(
+      transport,
+      { workerId: 'relay', concurrency: 2, heartbeatMs: 20, idleMs: 2000, signal: stop.signal },
+      async (run) => {
+        await sleep(80);
+        return run.succeed();
+      },
+    ),
+    /External ownership lost/,
+  );
+  assert.ok(performance.now() - startedAt < 500);
+  stop.abort();
+});
+
 test('external worker options reject invalid heartbeat before any lease is claimed', async () => {
   const { transport: base } = fixture();
   let claims = 0;
