@@ -8,33 +8,99 @@ import {
   validateStoreWrite,
 } from './storage-validation.js';
 
+function isSqliteBusy(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /database is (?:locked|busy)/iu.test(error.message);
+}
+function sleepSync(milliseconds: number): void {
+  if (milliseconds <= 0) return;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+function retryStartupBusy<T>(action: () => T, timeoutMs: number): T {
+  const deadline = Date.now() + timeoutMs;
+  let delay = 1;
+  for (;;) {
+    try {
+      return action();
+    } catch (error) {
+      const remaining = deadline - Date.now();
+      if (!isSqliteBusy(error) || remaining <= 0) throw error;
+      sleepSync(Math.min(delay, remaining));
+      delay = Math.min(delay * 2, 25);
+    }
+  }
+}
+
 /** A real durable store. SQLite serializes short writes; unrelated database files do not share a lock. */
 export function createSqliteStore(
   path: string,
   options: { now?: () => number; busyTimeoutMs?: number } = {},
 ): WorkStore & { close(): void } {
-  const db = new DatabaseSync(path, { timeout: options.busyTimeoutMs ?? 5000 });
-  db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
-    CREATE TABLE IF NOT EXISTS workonce (
-      id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL, definition TEXT NOT NULL,
-      due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
-    );`);
+  const busyTimeoutMs = Math.min(
+    integer(options.busyTimeoutMs ?? 5000, 'busyTimeoutMs'),
+    2_147_483_647,
+  );
+  const db = new DatabaseSync(path, { timeout: busyTimeoutMs });
+  // Set the SQLite busy handler before any startup operation that may need a schema/write lock.
+  db.exec(`PRAGMA busy_timeout=${busyTimeoutMs};`);
+  // journal_mode promotion can return SQLITE_BUSY without honoring busy_timeout on some SQLite builds,
+  // so retry only this startup-only coordination path. Steady-state queue operations never sleep here.
+  retryStartupBusy(() => db.exec('PRAGMA journal_mode=WAL;'), busyTimeoutMs);
+  db.exec('PRAGMA synchronous=FULL;');
+  retryStartupBusy(
+    () =>
+      db.exec(`CREATE TABLE IF NOT EXISTS workonce (
+        id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL, definition TEXT NOT NULL,
+        due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
+      );`),
+    busyTimeoutMs,
+  );
 
-  // Pre-release databases created before definition-filtered claims stored definition only in JSON.
-  const columns = db.prepare('PRAGMA table_info(workonce)').all() as Record<string, unknown>[];
-  if (!columns.some((column) => column['name'] === 'definition')) {
-    db.exec('ALTER TABLE workonce ADD COLUMN definition TEXT');
-    db.exec(`UPDATE workonce
-      SET definition = CASE WHEN json_valid(body) THEN json_extract(body, '$.definition') END
-      WHERE definition IS NULL`);
+  const createCurrentIndexes = () =>
+    retryStartupBusy(
+      () =>
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS workonce_due_v2
+            ON workonce(scope,kind,definition,due_at,id) WHERE due_at IS NOT NULL;
+          CREATE INDEX IF NOT EXISTS workonce_outbox ON workonce(scope,id) WHERE pending_next > 0;
+          CREATE INDEX IF NOT EXISTS workonce_list_v2 ON workonce(scope,kind,definition,id);`),
+      busyTimeoutMs,
+    );
+
+  // Fast path: current schemas avoid a write transaction entirely during ordinary process startup.
+  const initialColumns = db.prepare('PRAGMA table_info(workonce)').all() as Record<
+    string,
+    unknown
+  >[];
+  const needsDefinitionUpgrade = !initialColumns.some((column) => column['name'] === 'definition');
+  if (needsDefinitionUpgrade) {
+    // Serialize the check/upgrade across independent processes, then re-check inside the lock.
+    retryStartupBusy(() => db.exec('BEGIN IMMEDIATE'), busyTimeoutMs);
+    try {
+      const lockedColumns = db.prepare('PRAGMA table_info(workonce)').all() as Record<
+        string,
+        unknown
+      >[];
+      if (!lockedColumns.some((column) => column['name'] === 'definition')) {
+        db.exec('ALTER TABLE workonce ADD COLUMN definition TEXT');
+        db.exec(`UPDATE workonce
+          SET definition = CASE WHEN json_valid(body) THEN json_extract(body, '$.definition') END
+          WHERE definition IS NULL`);
+      }
+      createCurrentIndexes();
+      db.exec('COMMIT');
+    } catch (error) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        /* Preserve the schema migration failure. */
+      }
+      throw error;
+    }
+  } else {
+    // Versioned monotone names avoid DROP/CREATE races. Old indexes are harmless until maintenance.
+    createCurrentIndexes();
   }
-  // Use versioned monotone index names so independent process startup never races DROP/CREATE.
-  // Older pre-definition indexes may remain harmlessly until an explicit maintenance migration removes them.
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS workonce_due_v2
-      ON workonce(scope,kind,definition,due_at,id) WHERE due_at IS NOT NULL;
-    CREATE INDEX IF NOT EXISTS workonce_outbox ON workonce(scope,id) WHERE pending_next > 0;
-    CREATE INDEX IF NOT EXISTS workonce_list_v2 ON workonce(scope,kind,definition,id);`);
 
   const storedColumns = 'id,scope,kind,definition,due_at,pending_next,body';
   const read = db.prepare(`SELECT ${storedColumns} FROM workonce WHERE id=?`);
@@ -66,7 +132,7 @@ export function createSqliteStore(
       id: string,
       decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,
     ): Promise<T> {
-      db.exec('BEGIN IMMEDIATE');
+      retryStartupBusy(() => db.exec('BEGIN IMMEDIATE'), busyTimeoutMs);
       try {
         const current = parseStored(read.get(id) as Record<string, unknown> | undefined);
         const change = decide(current ? copy(current) : undefined, now());

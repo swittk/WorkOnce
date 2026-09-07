@@ -51,7 +51,7 @@ The public tests run that suite against memory, real SQLite and a native-CAS tes
 
 Additional tests cover expiry between read and the actual native write, unknown CAS acknowledgements, async continuation planning, poison follow-up fairness, worker lease-loss cancellation, and reset blocking while previous durable follow-ups are pending.
 
-`test/process/sqlite-process.test.mjs` starts eight independent processes against the same SQLite file, then separately kills an owning worker with SIGKILL, reopens storage, reclaims its lease and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of network filesystems or untested third-party stores.
+`test/process/sqlite-process.test.mjs` barriers eight independent processes onto the same brand-new SQLite path, then separately onto one pre-definition WAL schema, proving both first initialization and startup migration converge. It then races eight claimers against one item. A final case kills an owning worker with SIGKILL, reopens storage, reclaims its lease and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of network filesystems or untested third-party stores.
 
 `npm run test:consumer` packs and installs the real clean-built distribution in an isolated consumer, runs ESM/CommonJS round trips and compiles both TypeScript module styles. `npm run check` also compiles the developer-facing typed API examples.
 
