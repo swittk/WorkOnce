@@ -180,6 +180,8 @@ is observational only; every mutation rechecks current ownership.
 
 ## Durable follow-ups, not lossy success hooks
 
+Inside a `perform` handler, where `run` and `derivativeId` are already in scope, the follow-up planning excerpt is:
+
 ```ts
 const notify = work.define<{ derivativeId: string }>('asset.notify');
 
