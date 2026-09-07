@@ -166,6 +166,48 @@ test('authoritative external service never returns more than the requested claim
   assert.equal(second.length, 1);
 });
 
+test('external workers reject oversized claim responses before starting handlers', async () => {
+  async function oversizedTransport() {
+    const { transport: base } = fixture({ leaseMs: 1000 });
+    await base.ensure({ id: 'a' }, { key: 'a' });
+    await base.ensure({ id: 'b' }, { key: 'b' });
+    return {
+      ...base,
+      claim(request) {
+        return base.claim({ ...request, limit: 2 });
+      },
+    };
+  }
+
+  let processStarted = 0;
+  await assert.rejects(
+    processExternal(
+      await oversizedTransport(),
+      { workerId: 'relay', concurrency: 1, signal: new AbortController().signal },
+      async (run) => {
+        processStarted++;
+        return run.succeed();
+      },
+    ),
+    /more leases than requested/,
+  );
+  assert.equal(processStarted, 0);
+
+  let runStarted = 0;
+  await assert.rejects(
+    runExternal(
+      await oversizedTransport(),
+      { workerId: 'relay', concurrency: 1, signal: new AbortController().signal },
+      async (run) => {
+        runStarted++;
+        return run.succeed();
+      },
+    ),
+    /more leases than requested/,
+  );
+  assert.equal(runStarted, 0);
+});
+
 test('managed external runner rethrows the original claim failure when no observer exists', async () => {
   const { transport: base } = fixture();
   const failure = new Error('original claim failure');

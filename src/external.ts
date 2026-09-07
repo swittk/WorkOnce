@@ -175,6 +175,8 @@ export async function processExternal<I, O, R extends string>(
       limit,
       signal: options.signal,
     });
+    if (leases.length > limit)
+      throw new RangeError('External claim returned more leases than requested');
   } catch (error) {
     if (options.signal.aborted) return [];
     throw error;
@@ -209,6 +211,8 @@ export async function runExternal<I, O, R extends string>(
         limit: available,
         signal: options.signal,
       });
+      if (leases.length > available)
+        throw new RangeError('External claim returned more leases than requested');
     } catch (error) {
       if (options.signal.aborted) break;
       if (!options.onError) {

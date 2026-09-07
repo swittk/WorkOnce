@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createWorkOnce, WorkConflict } from '../dist/index.js';
+import { createWorkOnce, processExternal, WorkConflict } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 
 const coverageKeys = [
@@ -46,6 +46,7 @@ const coverageKeys = [
   'fenceIncrease',
   'parallelClaimCompetition',
   'dualExecutorCompetition',
+  'externalClaimLimit',
 ];
 function newCoverage() {
   return Object.fromEntries(coverageKeys.map((key) => [key, 0]));
@@ -424,6 +425,38 @@ async function replayAndDynamicPolicies(coverage) {
   }
   {
     scenarios++;
+    const store = createMemoryStore();
+    const work = createWorkOnce({ store, scope: 'external-claim-limit' });
+    const queue = work.define('job', { executionLimits: { leaseMs: 1000 } });
+    const base = queue.serveExternal({
+      prepare: (run) => run.handoff(run.input),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await base.ensure({ id: 'a' }, { key: 'a' });
+    await base.ensure({ id: 'b' }, { key: 'b' });
+    const oversized = {
+      ...base,
+      claim(request) {
+        return base.claim({ ...request, limit: 2 });
+      },
+    };
+    let started = 0;
+    await assert.rejects(
+      processExternal(
+        oversized,
+        { workerId: 'external', concurrency: 1, signal: new AbortController().signal },
+        async (run) => {
+          started++;
+          return run.succeed();
+        },
+      ),
+      /more leases than requested/,
+    );
+    assert.equal(started, 0);
+    hit(coverage, 'externalClaimLimit');
+  }
+  {
+    scenarios++;
     const f = fixture({ scope: 'worker-isolation' });
     await f.queue.item({ id: 'bad', leaseMs: 1000 }).enqueue();
     await f.queue.item({ id: 'good', leaseMs: 1000 }).enqueue();
@@ -447,9 +480,11 @@ function xorshift(seed) {
     return x >>> 0;
   };
 }
+const FUZZ_STEPS_PER_TRACE = 10;
+
 async function fuzz(coverage) {
   const traces = 96;
-  const steps = 10;
+  const steps = FUZZ_STEPS_PER_TRACE;
   for (let seed = 1; seed <= traces; seed++) {
     const random = xorshift(seed * 0x9e3779b1);
     const f = fixture({ scope: `fuzz-${seed}` });
@@ -528,7 +563,7 @@ export async function runBoundedRefinementCorpus() {
     version: 1,
     deterministicScenarios: scenarios,
     fuzzTraces,
-    fuzzStepsPerTrace: 10,
+    fuzzStepsPerTrace: FUZZ_STEPS_PER_TRACE,
     coverage,
   };
 }
