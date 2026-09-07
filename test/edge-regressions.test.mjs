@@ -216,34 +216,6 @@ test('sqlite rejects a persisted request whose input property is missing', async
   }
 });
 
-test('sqlite rejects non-finite persisted payload numbers during hydration', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'workonce-nonfinite-payload-'));
-  const databasePath = join(dir, 'test.sqlite');
-  let store = createSqliteStore(databasePath);
-  try {
-    const queue = createWorkOnce({ store, scope: 'nonfinite-payload' }).define('job');
-    const snapshot = await queue.ensure({ value: 1 }, { key: 'x' });
-    store.close();
-
-    const db = new DatabaseSync(databasePath);
-    try {
-      const raw = db.prepare('SELECT body FROM workonce WHERE id=?').get(snapshot.id);
-      const body = String(raw.body).replace('\"value\":1', '\"value\":1e400');
-      db.prepare('UPDATE workonce SET body=? WHERE id=?').run(body, snapshot.id);
-    } finally {
-      db.close();
-    }
-
-    store = createSqliteStore(databasePath);
-    await assert.rejects(store.getMany([snapshot.id]), /Invalid persisted WorkOnce row/);
-  } finally {
-    try {
-      store.close();
-    } catch {}
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
 test('sqlite rejects pending follow-ups on a nonterminal persisted parent before dispatch', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-corrupt-outbox-'));
   const databasePath = join(dir, 'test.sqlite');

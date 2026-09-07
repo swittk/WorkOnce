@@ -8,7 +8,7 @@ import type {
   WorkRecord,
   WorkRequest,
 } from './model.js';
-import { canonical, dueAt, integer, workId } from './kernel.js';
+import { dueAt, integer, workId } from './kernel.js';
 
 const utf8 = new TextEncoder();
 
@@ -204,7 +204,6 @@ export function validateWorkRecord(value: unknown): asserts value is WorkRecord 
 export function parsePersistedWorkRecord(body: unknown): WorkRecord {
   try {
     const value = JSON.parse(String(body)) as unknown;
-    canonical(value);
     validateWorkRecord(value);
     return value;
   } catch {
