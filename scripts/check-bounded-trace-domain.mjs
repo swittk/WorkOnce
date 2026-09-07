@@ -50,7 +50,7 @@ if (write) {
     throw new Error(
       'Missing assurance/bounded-trace-domain.json. Run npm run assurance:update and review it.',
     );
-  const committed = fs.readFileSync(target, 'utf8');
+  const committed = fs.readFileSync(target, 'utf8').replace(/\r\n?/gu, '\n');
   if (committed !== canonicalCurrent) {
     throw new Error(
       'Bounded trace report drifted. Run npm run assurance:update and review the complete observed coverage.',
