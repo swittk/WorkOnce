@@ -1,6 +1,5 @@
 import { availableParallelism } from 'node:os';
-import { execFile, spawnSync } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { delimiter, resolve } from 'node:path';
 import {
@@ -72,46 +71,6 @@ function requireRejects(model, config, modulePath, invariant) {
     throw new Error(`Storage mutation was not rejected by ${invariant}: ${output.slice(-2500)}`);
   console.log(`TLC storage mutation guard: ${invariant} rejects its injected violation.`);
 }
-const execFileAsync = promisify(execFile);
-async function requireRejectsAsync(model, config, modulePath, invariant) {
-  const directory = resolve('.artifacts/tlc', model);
-  mkdirSync(directory, { recursive: true });
-  const args = [
-    '-Xmx160m',
-    '-XX:+UseParallelGC',
-    `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
-    '-cp',
-    jar,
-    'tlc2.TLC',
-    '-workers',
-    '1',
-    '-metadir',
-    directory,
-    '-config',
-    config,
-    modulePath,
-  ];
-  let output = '';
-  let failed = false;
-  try {
-    const result = await execFileAsync('java', args, {
-      cwd: resolve('.'),
-      timeout: timeoutMs,
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  } catch (error) {
-    if (error?.killed || error?.signal) throw error;
-    failed = true;
-    output = `${error?.stdout ?? ''}\n${error?.stderr ?? ''}`;
-  }
-  const rejectedForInvariant =
-    output.includes(`Invariant ${invariant} is violated`) ||
-    output.includes(`invariant of ${invariant} is equal to FALSE`);
-  if (!failed || !rejectedForInvariant)
-    throw new Error(`Storage mutation was not rejected by ${invariant}: ${output.slice(-2500)}`);
-  console.log(`TLC storage mutation guard: ${invariant} rejects its injected violation.`);
-}
 
 const samples = await runStorageRefinementSamples();
 assertStorageRefinementSamples(samples);
@@ -143,32 +102,79 @@ const mutants = {
   FreshReadBeforeCommit: String.raw`  /\ pc' = "done" /\ nativeRevision' = 2 /\ observedRevision' = 0 /\ callerCommits' = 1 /\ UNCHANGED <<compareMisses, unknownCommitted, deadlineReached, deadlineExpired>>`,
   BoundedCompareMisses: String.raw`  /\ pc' = "exhausted" /\ compareMisses' = MaxConflicts + 1 /\ UNCHANGED <<nativeRevision, observedRevision, callerCommits, unknownCommitted, deadlineReached, deadlineExpired>>`,
 };
-const mutationChecks = [];
 const observedSamplesLines = samples.map(tlaValue).join(',\n');
-for (const [invariant, action] of Object.entries(mutants)) {
-  const modulePath = resolve(`.artifacts/tlc/WorkOnceStorageMutant_${invariant}.tla`);
-  const configPath = resolve(`.artifacts/tlc/WorkOnceStorageMutant_${invariant}.cfg`);
-  writeFileSync(
-    modulePath,
-    embeddedStorageModule(
-      `WorkOnceStorageMutant_${invariant}`,
-      [
-        `ObservedSamples == {\n${observedSamplesLines}\n}`,
-        'Unsafe ==',
-        action,
-        String.raw`MutantNext == Next \/ Unsafe`,
-        String.raw`MutantSpec == Init /\ [][MutantNext]_vars`,
-      ].join('\n'),
-    ),
-  );
-  writeFileSync(
-    configPath,
-    `SPECIFICATION MutantSpec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT ${invariant}\nCHECK_DEADLOCK FALSE\n`,
-  );
-  mutationChecks.push(() =>
-    requireRejectsAsync(`WorkOnceStorageMutant_${invariant}`, configPath, modulePath, invariant),
-  );
+function configuredInvariants(configText) {
+  const lines = configText.replace(/\r\n?/gu, '\n').split('\n');
+  const result = [];
+  let reading = false;
+  for (const line of lines) {
+    if (line.trim() === 'INVARIANTS') {
+      reading = true;
+      continue;
+    }
+    if (!reading) continue;
+    const match = /^\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/u.exec(line);
+    if (!match) break;
+    result.push(match[1]);
+  }
+  return result;
 }
+const storageConfigured = configuredInvariants(
+  readFileSync('formal/WorkOnceStorage.cfg', 'utf8'),
+).sort();
+const storageGuarded = [...Object.keys(mutants), 'StorageSamplesConform'].sort();
+if (JSON.stringify(storageConfigured) !== JSON.stringify(storageGuarded))
+  throw new Error(
+    `Storage formal mutation coverage drifted: configured=${storageConfigured.join(',')} guarded=${storageGuarded.join(',')}`,
+  );
+
+const mutationEntries = Object.entries(mutants);
+const mutationBranches = mutationEntries
+  .map(([invariant, action], index) => {
+    const rawLines = action.replace(/^\n+|\n+$/gu, '').split('\n');
+    const nonEmpty = rawLines.filter((line) => line.trim().length > 0);
+    const commonIndent = Math.min(...nonEmpty.map((line) => /^\s*/u.exec(line)?.[0].length ?? 0));
+    const body = rawLines.map((line) => `     ${line.slice(commonIndent)}`).join('\n');
+    return `  \\/ /\\ mutantIndex = ${index}\n${body}\n     /\\ mutantIndex' = ${index + 1}`;
+  })
+  .join('\n');
+const mutationWitnessCases = mutationEntries
+  .map(([invariant], index) => `    [] mutantIndex = ${index + 1} -> ~${invariant}`)
+  .join('\n');
+const batchModule = resolve('.artifacts/tlc/WorkOnceStorageInvariantMutationBatch.tla');
+const batchConfig = resolve('.artifacts/tlc/WorkOnceStorageInvariantMutationBatch.cfg');
+writeFileSync(
+  batchModule,
+  embeddedStorageModule(
+    'WorkOnceStorageInvariantMutationBatch',
+    [
+      `ObservedSamples == {\n${observedSamplesLines}\n}`,
+      'VARIABLE mutantIndex',
+      'batchVars == <<vars, mutantIndex>>',
+      'BatchInit == /\\ Init /\\ mutantIndex = 0',
+      `BatchNext ==\n${mutationBranches}`,
+      `MutationWitnesses ==\n  /\\ mutantIndex \\in 0..${mutationEntries.length}\n  /\\ CASE mutantIndex = 0 -> TRUE\n${mutationWitnessCases}`,
+      `MutationStepEnabled == mutantIndex = ${mutationEntries.length} \\/ ENABLED BatchNext`,
+      'BatchSpec == BatchInit /\\ [][BatchNext]_batchVars',
+    ].join('\n'),
+  ),
+);
+writeFileSync(
+  batchConfig,
+  `SPECIFICATION BatchSpec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT MutationWitnesses\nINVARIANT MutationStepEnabled\nCHECK_DEADLOCK FALSE\n`,
+);
+const batchResult = tlc('WorkOnceStorageInvariantMutationBatch', batchConfig, batchModule, true);
+const batchOutput = `${batchResult.stdout ?? ''}\n${batchResult.stderr ?? ''}`;
+if (batchResult.status !== 0)
+  throw new Error(
+    `Storage invariant mutation witness batch failed; this is not a mutation kill. ${batchOutput.slice(-2500)}`,
+  );
+process.stdout.write(batchResult.stdout ?? '');
+process.stderr.write(batchResult.stderr ?? '');
+console.log(
+  `TLC storage mutation witness batch proves ${mutationEntries.length} configured state invariants are non-vacuous in sequence.`,
+);
+
 const sampleModule = resolve('.artifacts/tlc/WorkOnceStorageMutant_StorageSamplesConform.tla');
 const sampleConfig = resolve('.artifacts/tlc/WorkOnceStorageMutant_StorageSamplesConform.cfg');
 writeFileSync(
@@ -185,12 +191,9 @@ writeFileSync(
   sampleConfig,
   `SPECIFICATION Spec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- BadSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
 );
-mutationChecks.push(() =>
-  requireRejectsAsync(
-    'WorkOnceStorageMutant_StorageSamplesConform',
-    sampleConfig,
-    sampleModule,
-    'StorageSamplesConform',
-  ),
+requireRejects(
+  'WorkOnceStorageMutant_StorageSamplesConform',
+  sampleConfig,
+  sampleModule,
+  'StorageSamplesConform',
 );
-await Promise.all(mutationChecks.map((runMutation) => runMutation()));

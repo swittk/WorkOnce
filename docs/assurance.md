@@ -169,7 +169,7 @@ OS-process tests hold a real SQLite write lock and check both retry-to-success a
 external competing write, compare miss, fresh retry, caller commit, unknown committed outcome and
 decision failure. It bounds compare misses, allows at most one caller commit, forbids a compare miss
 or decision failure from committing, requires a fresh observed revision before successful commit,
-and makes the unknown-outcome state terminal for this library retry loop. The model also carries a monotonic deadline-reached state: once the storage deadline is reached, neither a known nor unknown caller commit remains legal. All ten configured storage checks, including the fresh compiled observation set, have dedicated mutants.
+and makes the unknown-outcome state terminal for this library retry loop. The model also carries a monotonic deadline-reached state: once the storage deadline is reached, neither a known nor unknown caller commit remains legal. Nine state invariants are mutation-witnessed in one deterministic tagged chain, and the fresh compiled observation-set invariant keeps a separate bad-sample mutant.
 
 The complete gate also mutates the actual compiled memory detached-read path, CAS retry bound, CAS
 unknown-ack handling and SQLite busy recognizer. A dedicated source/model digest binds storage,
@@ -195,8 +195,9 @@ unknown acknowledgement, and materially distinct direct-vs-contended histories f
 and CAS that must converge to the same durable row and the same subsequent claim/heartbeat/success
 trace. CAS also retains the explicit synthetic compare-miss-history witness. `maxConflicts` boundaries,
 SQLite busy-timeout boundaries and SQLite startup BUSY/LOCKED recognition are covered as well. Every
-configured storage invariant has a mutation witness and the compiled sample set has its own bad-sample
-guard.
+configured storage check has a mutation witness: the nine state invariants execute as a deterministic
+10-state witness chain with every next mutant step required to remain enabled, while the compiled
+sample set keeps its own bad-sample guard.
 
 One supported storage defect was exposed by the exhaustive matrix: the CAS adapter previously treated
 a `false` compare-exchange caused by write-deadline equality as ordinary revision contention. A direct
