@@ -48,6 +48,8 @@ const coverageKeys = [
   'workerErrorIsolation',
   'managedRunnerFatalWake',
   'managedExternalFatalWake',
+  'managedRunnerFatalClaimBackoffWake',
+  'managedExternalFatalClaimBackoffWake',
   'managedRunnerFatalClaimGate',
   'managedExternalFatalClaimGate',
   'generationTwo',
@@ -739,6 +741,113 @@ async function replayAndDynamicPolicies(coverage) {
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
     hit(coverage, 'managedExternalFatalWake');
+  }
+  {
+    scenarios++;
+    const base = createMemoryStore();
+    let failAtomic = false;
+    const store = {
+      ...base,
+      async atomic(id, decide) {
+        if (failAtomic) throw new Error('renewal storage down');
+        return base.atomic(id, decide);
+      },
+    };
+    const queue = createWorkOnce({
+      store,
+      scope: 'managed-runner-fatal-claim-backoff-wake',
+    }).define('job', { limits: { leaseMs: 500 } });
+    await queue.ensure(null, { key: 'x' });
+    const originalClaim = queue.claim.bind(queue);
+    let claimCalls = 0;
+    queue.claim = async (options) => {
+      claimCalls++;
+      if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
+      throw new Error('claim poll failed');
+    };
+    const stop = new AbortController();
+    const startedAt = performance.now();
+    await assert.rejects(
+      queue.run(
+        {
+          workerId: 'local',
+          concurrency: 2,
+          heartbeatMs: 20,
+          idleMs: 2000,
+          signal: stop.signal,
+          onError: async (error) => {
+            if (error instanceof Error && error.message === 'claim poll failed') {
+              await new Promise((resolve) => setTimeout(resolve, 120));
+              return;
+            }
+            throw error;
+          },
+        },
+        async (run) => {
+          failAtomic = true;
+          await new Promise((resolve) => setTimeout(resolve, 80));
+          return run.succeed();
+        },
+      ),
+      /Worker ownership lost/,
+    );
+    assert.ok(performance.now() - startedAt < 500);
+    stop.abort();
+    hit(coverage, 'managedRunnerFatalClaimBackoffWake');
+  }
+  {
+    scenarios++;
+    const work = createWorkOnce({
+      store: createMemoryStore(),
+      scope: 'managed-external-fatal-claim-backoff-wake',
+    });
+    const queue = work.define('job', { limits: { leaseMs: 500 } });
+    const base = queue.serveExternal({
+      prepare: (run) => run.handoff(run.input),
+      onPrepareError: (run) => run.fail('terminal'),
+    });
+    await base.ensure(null, { key: 'x' });
+    let claimCalls = 0;
+    const transport = {
+      ...base,
+      async claim(request) {
+        claimCalls++;
+        if (claimCalls === 1) return base.claim({ ...request, limit: 1 });
+        throw new Error('claim poll failed');
+      },
+      async heartbeat() {
+        throw new Error('external renewal down');
+      },
+    };
+    const stop = new AbortController();
+    const startedAt = performance.now();
+    await assert.rejects(
+      runExternal(
+        transport,
+        {
+          workerId: 'external',
+          concurrency: 2,
+          heartbeatMs: 20,
+          idleMs: 2000,
+          signal: stop.signal,
+          onError: async (error) => {
+            if (error instanceof Error && error.message === 'claim poll failed') {
+              await new Promise((resolve) => setTimeout(resolve, 120));
+              return;
+            }
+            throw error;
+          },
+        },
+        async (run) => {
+          await new Promise((resolve) => setTimeout(resolve, 80));
+          return run.succeed();
+        },
+      ),
+      /External ownership lost/,
+    );
+    assert.ok(performance.now() - startedAt < 500);
+    stop.abort();
+    hit(coverage, 'managedExternalFatalClaimBackoffWake');
   }
   {
     scenarios++;

@@ -4,7 +4,7 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs"
   ],
-  "evidenceDigest": "4a3ef169f115e29183533931d5aeaa969099a016c752e3b5048c376ccea7a74b",
+  "evidenceDigest": "2d5c85b7e18135bd26a192e3f30c4bf33c0371a26b886ef10b1ca77249ef1b63",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -34,8 +34,10 @@
     "invalidExternalRenewal": true,
     "itemHandleKeyBinding": true,
     "leaseReclaim": true,
+    "managedExternalFatalClaimBackoffWake": true,
     "managedExternalFatalClaimGate": true,
     "managedExternalFatalWake": true,
+    "managedRunnerFatalClaimBackoffWake": true,
     "managedRunnerFatalClaimGate": true,
     "managedRunnerFatalWake": true,
     "manualRetry": true,
@@ -63,7 +65,7 @@
     "workerErrorIsolation": true
   },
   "observed": {
-    "deterministicScenarios": 41,
+    "deterministicScenarios": 43,
     "fuzzTraces": 96,
     "fuzzStepsPerTrace": 10,
     "coverageCounts": {
@@ -111,6 +113,8 @@
       "workerErrorIsolation": 1,
       "managedRunnerFatalWake": 1,
       "managedExternalFatalWake": 1,
+      "managedRunnerFatalClaimBackoffWake": 1,
+      "managedExternalFatalClaimBackoffWake": 1,
       "managedRunnerFatalClaimGate": 1,
       "managedExternalFatalClaimGate": 1,
       "generationTwo": 69,

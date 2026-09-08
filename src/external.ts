@@ -231,6 +231,27 @@ export async function runExternal<I, O, R extends string>(
   const active = new Set<Promise<void>>();
   let fatal: unknown;
   let wakePoll: (() => void) | undefined;
+  const waitForWakeablePoll = async () => {
+    if (!active.size) {
+      await waitForPoll(idleMs, options.signal);
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const stop = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        options.signal.removeEventListener('abort', stop);
+        if (wakePoll === stop) wakePoll = undefined;
+        resolve();
+      };
+      const timer = setTimeout(stop, Math.min(idleMs, 2_147_483_647));
+      options.signal.addEventListener('abort', stop, { once: true });
+      wakePoll = stop;
+      if (options.signal.aborted) stop();
+    });
+  };
   while (!options.signal.aborted && fatal === undefined) {
     const available = capacity - active.size;
     if (!available) {
@@ -259,7 +280,8 @@ export async function runExternal<I, O, R extends string>(
         fatal = observerError;
         break;
       }
-      await waitForPoll(idleMs, options.signal);
+      if (fatal !== undefined || options.signal.aborted) break;
+      await waitForWakeablePoll();
       continue;
     }
     if (fatal !== undefined || options.signal.aborted) break;
@@ -280,25 +302,7 @@ export async function runExternal<I, O, R extends string>(
         });
       active.add(pending);
     }
-    if (!leases.length) {
-      if (!active.size) await waitForPoll(idleMs, options.signal);
-      else
-        await new Promise<void>((resolve) => {
-          let settled = false;
-          const stop = () => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            options.signal.removeEventListener('abort', stop);
-            if (wakePoll === stop) wakePoll = undefined;
-            resolve();
-          };
-          const timer = setTimeout(stop, Math.min(idleMs, 2_147_483_647));
-          options.signal.addEventListener('abort', stop, { once: true });
-          wakePoll = stop;
-          if (options.signal.aborted) stop();
-        });
-    }
+    if (!leases.length) await waitForWakeablePoll();
   }
   await Promise.all(active);
   if (fatal !== undefined) throw fatal;
