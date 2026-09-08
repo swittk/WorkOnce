@@ -362,7 +362,7 @@
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
-      "key": "anonymous@src/sqlite.ts#0|src/sqlite.ts|0|d7534a9c1004#now",
+      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#now",
       "modelActions": [],
       "modelConcepts": [
         "storageAtomicity"
@@ -371,7 +371,7 @@
       "signatureHash": "8c296f7fc47c364b97fe6f765ac4aee00ae22b78af227a41e5995a7591313c5d",
       "source": "src/sqlite.ts",
       "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
-      "typeName": "anonymous@src/sqlite.ts#0"
+      "typeName": "anonymous@src/sqlite.ts#1"
     },
     {
       "allowsNull": false,
@@ -4095,7 +4095,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4118,7 +4118,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4141,7 +4141,7 @@
         "observationOnly"
       ],
       "optional": true,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -8843,14 +8843,14 @@
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "busyTimeoutMs",
-      "key": "anonymous@src/sqlite.ts#0|src/sqlite.ts|0|d7534a9c1004#busyTimeoutMs",
+      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#busyTimeoutMs",
       "modelConcepts": [
         "storageAtomicity"
       ],
       "optional": true,
       "source": "src/sqlite.ts",
       "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/sqlite.ts#0"
+      "typeName": "anonymous@src/sqlite.ts#1"
     },
     {
       "allowsNull": false,
@@ -8867,14 +8867,14 @@
         "test/process/sqlite-process.test.mjs"
       ],
       "field": "now",
-      "key": "anonymous@src/sqlite.ts#0|src/sqlite.ts|0|d7534a9c1004#now",
+      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#now",
       "modelConcepts": [
         "storageAtomicity"
       ],
       "optional": true,
       "source": "src/sqlite.ts",
       "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
-      "typeName": "anonymous@src/sqlite.ts#0"
+      "typeName": "anonymous@src/sqlite.ts#1"
     },
     {
       "allowsNull": false,
@@ -10712,11 +10712,43 @@
       ],
       "spec": "formal/WorkOnceRuntime.tla"
     },
-    "spec": "formal/WorkOnce.tla"
+    "spec": "formal/WorkOnce.tla",
+    "storage": {
+      "config": "formal/WorkOnceStorage.cfg",
+      "configuredChecks": [
+        "AtMostOneCallerCommit",
+        "BoundedCompareMisses",
+        "DeadlineExpiryStopsRetry",
+        "DecisionFaultCannotCommit",
+        "FreshReadBeforeCommit",
+        "MissCannotCommit",
+        "ReachedDeadlineCannotCommit",
+        "StorageSamplesConform",
+        "StorageTypeOK",
+        "UnknownOutcomeStopsRetry"
+      ],
+      "modelDigest": "b0141cfe4a063bab7bca4941cf36f6eee1c1483c9c52b4bd2a4bcb275df4634d",
+      "modelFiles": [
+        "formal/WorkOnceStorage.tla",
+        "formal/WorkOnceStorage.cfg"
+      ],
+      "observationBinding": "scripts/storage-formal.mjs",
+      "observationProducer": "scripts/storage-refinement.mjs",
+      "sourceDigest": "8ecdefe527abf3afd5fb3a854f397ee32df8fccf7117443ec4f0ccc58a6bfad0",
+      "sourceFiles": [
+        "src/storage.ts",
+        "src/storage-validation.ts",
+        "src/memory.ts",
+        "src/sqlite.ts",
+        "src/cas.ts",
+        "src/conformance.ts"
+      ],
+      "spec": "formal/WorkOnceStorage.tla"
+    }
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "6d94452b27912e44380cd736da3b568603fa16972273b7aa2880d13d6df270ee",
+    "assuranceInfrastructureDigest": "a227b0a8b4984540586fc3666d824dcfabead457b17749471fb455334083da39",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10751,10 +10783,25 @@
       "scripts/policy-refinement.mjs",
       "scripts/check-policy-source-model-binding-mutation.mjs",
       "scripts/check-policy-implementation-mutations.mjs",
+      "test/process/sqlite-busy-child.mjs",
+      "test/process/sqlite-busy-startup.test.mjs",
+      "test/storage-contract-hardening.test.mjs",
+      "test/storage-refinement.test.mjs",
+      "test/process/storage-child.mjs",
+      "test/process/storage-process.test.mjs",
+      "scripts/check-storage-contract-mutation.mjs",
+      "scripts/check-storage-source-model-mutation.mjs",
+      "scripts/storage-formal.mjs",
+      "scripts/storage-refinement.mjs",
+      "formal/WorkOnceStorage.tla",
+      "formal/WorkOnceStorage.cfg",
+      "assurance/red-before/storage-conformance-baseline.json",
       "scripts/run-assurance.mjs",
+      "scripts/consumer-smoke.mjs",
+      "scripts/prepare-package.mjs",
       "package.json"
     ],
-    "modelDigest": "00a7321d494e7fa6506ba2cbb4e134ecbb8204a6a95b59ebdf049855621feaae",
+    "modelDigest": "810e99287a48788ae3ccd615ac6cd22682542e572bff00d69166ee67898d5f3e",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -10766,9 +10813,11 @@
       "formal/WorkOnceLocalRunner.tla",
       "formal/WorkOnceLocalRunner.cfg",
       "formal/WorkOnceReadHistory.tla",
-      "formal/WorkOnceReadHistory.cfg"
+      "formal/WorkOnceReadHistory.cfg",
+      "formal/WorkOnceStorage.tla",
+      "formal/WorkOnceStorage.cfg"
     ],
-    "sourceDigest": "ea413ebd90aacb9ec03ebb1c97442c603f83091605afacb4db087134936ebee2",
+    "sourceDigest": "24d00d97be7c04296944e07865e64609f017d0e6375311894dd5c0e20e9cbada",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -11559,8 +11608,8 @@
       "directions": [
         "input"
       ],
-      "identity": "anonymous@src/sqlite.ts#0|src/sqlite.ts|0|d7534a9c1004",
-      "name": "anonymous@src/sqlite.ts#0",
+      "identity": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004",
+      "name": "anonymous@src/sqlite.ts#1",
       "shapeHash": "6f836a78eea3552045d0e37742b3ce39eb05289ab536ae5d8cd22467c74680fe",
       "source": "src/sqlite.ts"
     },
@@ -11568,8 +11617,8 @@
       "directions": [
         "output"
       ],
-      "identity": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|9607cd38a22e",
-      "name": "anonymous@src/sqlite.ts#1",
+      "identity": "anonymous@src/sqlite.ts#2|src/sqlite.ts|2|9607cd38a22e",
+      "name": "anonymous@src/sqlite.ts#2",
       "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
       "source": "src/sqlite.ts"
     },

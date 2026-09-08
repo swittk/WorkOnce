@@ -39,8 +39,19 @@ const modelFiles = [
   'formal/WorkOnceLocalRunner.cfg',
   'formal/WorkOnceReadHistory.tla',
   'formal/WorkOnceReadHistory.cfg',
+  'formal/WorkOnceStorage.tla',
+  'formal/WorkOnceStorage.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
+const storageSourceFiles = [
+  'src/storage.ts',
+  'src/storage-validation.ts',
+  'src/memory.ts',
+  'src/sqlite.ts',
+  'src/cas.ts',
+  'src/conformance.ts',
+];
+const storageModelFiles = ['formal/WorkOnceStorage.tla', 'formal/WorkOnceStorage.cfg'];
 const policySourceSymbols = {
   'src/work.ts': [
     'WorkRun.retry',
@@ -148,7 +159,22 @@ const assuranceInfrastructureFiles = [
   'scripts/policy-refinement.mjs',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
+  'test/process/sqlite-busy-child.mjs',
+  'test/process/sqlite-busy-startup.test.mjs',
+  'test/storage-contract-hardening.test.mjs',
+  'test/storage-refinement.test.mjs',
+  'test/process/storage-child.mjs',
+  'test/process/storage-process.test.mjs',
+  'scripts/check-storage-contract-mutation.mjs',
+  'scripts/check-storage-source-model-mutation.mjs',
+  'scripts/storage-formal.mjs',
+  'scripts/storage-refinement.mjs',
+  'formal/WorkOnceStorage.tla',
+  'formal/WorkOnceStorage.cfg',
+  'assurance/red-before/storage-conformance-baseline.json',
   'scripts/run-assurance.mjs',
+  'scripts/consumer-smoke.mjs',
+  'scripts/prepare-package.mjs',
   'package.json',
 ];
 const expectedEntrypoints = [
@@ -788,6 +814,17 @@ function buildManifest(live) {
         sourceDigest: policySurfaceDigest(),
         modelDigest: formalDigest(policyModelFiles),
       },
+      storage: {
+        spec: 'formal/WorkOnceStorage.tla',
+        config: 'formal/WorkOnceStorage.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceStorage.cfg'),
+        observationProducer: 'scripts/storage-refinement.mjs',
+        observationBinding: 'scripts/storage-formal.mjs',
+        sourceFiles: storageSourceFiles,
+        modelFiles: storageModelFiles,
+        sourceDigest: semanticSourceDigest(storageSourceFiles),
+        modelDigest: formalDigest(storageModelFiles),
+      },
     },
     entrypoints: expectedEntrypoints,
     callables,
@@ -879,6 +916,13 @@ function renderReport(manifest) {
       .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
       .join(', ')}`,
     '',
+    '## Storage/conformance model',
+    '',
+    `- Spec: \`${manifest.model.storage.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.storage.observationProducer}\` via \`${manifest.model.storage.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.storage.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound storage source: ${manifest.model.storage.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
+    '',
     '## Assurance infrastructure binding',
     '',
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
@@ -923,6 +967,7 @@ const bindingOnly = process.argv.find((argument) =>
     '--check-read-binding-only',
     '--check-policy-binding-only',
     '--check-local-runner-binding-only',
+    '--check-storage-binding-only',
   ].includes(argument),
 );
 if (bindingOnly) {
@@ -943,7 +988,7 @@ if (bindingOnly) {
       { sourceDigest: policySurfaceDigest(), modelDigest: formalDigest(policyModelFiles) },
       'Bound retry/defer policy semantics changed without a WorkOncePolicy semantic change. Update the policy model or explicitly acknowledge the unchanged abstraction after review.',
     );
-  } else {
+  } else if (bindingOnly === '--check-local-runner-binding-only') {
     assertSourceModelPairing(
       previous.model?.localRunner,
       {
@@ -951,6 +996,15 @@ if (bindingOnly) {
         modelDigest: formalDigest(localRunnerModelFiles),
       },
       'Bound local managed-runner semantics changed without a WorkOnceLocalRunner semantic change. Update the local-runner model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  } else {
+    assertSourceModelPairing(
+      previous.model?.storage,
+      {
+        sourceDigest: semanticSourceDigest(storageSourceFiles),
+        modelDigest: formalDigest(storageModelFiles),
+      },
+      'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
     );
   }
   console.log(`Source/model binding matches for ${bindingOnly}.`);
@@ -996,6 +1050,11 @@ if (write) {
     previous?.model?.runtime,
     current.model.runtime,
     'Bound managed-runner semantics changed without a WorkOnceRuntime/contract semantic change. Update the runtime model or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.storage,
+    current.model.storage,
+    'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
   if (
     previous &&

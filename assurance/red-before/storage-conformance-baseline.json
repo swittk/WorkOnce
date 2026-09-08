@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "family": "G.storage-conformance",
+  "authoritativeBaselineSha": "f6cdaeb6d20b13ca1afe2f19abb9ada92fd9f0ac",
+  "nodeVersion": "22.22.1",
+  "oldAssuranceWasGreen": true,
+  "runtimeSemanticBug": {
+    "id": "cas-deadline-equality-misclassified-as-contention",
+    "supportedBoundary": "CompareExchangePort returned false after atomically rejecting a write at validUntil equality with unchanged expected revision.",
+    "preFixObserved": {
+      "compareExchangeCalls": 3,
+      "errorName": "Error",
+      "errorMessage": "Work store remained contended; retry the command, not the external effect",
+      "errorCode": null,
+      "durableRevision": 1
+    },
+    "required": {
+      "errorCode": "lease_expired",
+      "noDurableWrite": true
+    },
+    "formalCompletenessDefect": "The pre-fix assurance abstraction had no first-class native compare-miss/deadline state and therefore could not distinguish deadline rejection with unchanged revision from ordinary revision contention.",
+    "disposition": "SUPPORTED_RED_BEFORE"
+  },
+  "additionalHardeningProbe": {
+    "id": "sqlite-native-busy-primary-code",
+    "preFixObserved": [
+      {
+        "errcode": 5,
+        "message": "opaque native sqlite failure",
+        "startupRetried": false
+      },
+      {
+        "errcode": 6,
+        "message": "opaque native sqlite failure",
+        "startupRetried": false
+      }
+    ],
+    "classification": "PROACTIVE_NATIVE_CODE_HARDENING_NOT_COUNTED_AS_A_RUNTIME_BUG",
+    "reason": "The exact Node 22.22.1 real-lock witness used by WorkOnce currently exposes a matching SQLite busy/locked message, so the authoritative pre-fix runtime already retries that observed path. Numeric primary-code recognition is retained and mutation-proved to make the adapter depend on SQLite's native BUSY/LOCKED identity rather than English message phrasing, but is not counted as a supported red-before semantic defect."
+  },
+  "reproduction": "Exact pre-fix TypeScript was built and executed in an isolated detached worktree at the authoritative baseline SHA under Node 22.22.1. The CAS probe used the public createCompareExchangeStore WorkStore.atomic path with storage time exactly equal to validUntil and an unchanged native revision."
+}

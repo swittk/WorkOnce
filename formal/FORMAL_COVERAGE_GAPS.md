@@ -65,10 +65,17 @@
 - Checked invariants: `PolicyFailureNoWrite`, `PolicyTypeOK`, `ReceiptFenceTracksPublishedAttempt`, `ReceiptIdentityControlsReplay`, `StalePolicyCannotPublish`, `SupersededReceiptRejectsOld`
 - Bound policy source symbols: `src/kernel.ts:integer`, `src/kernel.ts:add`, `src/kernel.ts:addTimeCapped`, `src/kernel.ts:effectiveNow`, `src/kernel.ts:assertCurrent`, `src/kernel.ts:changed`, `src/kernel.ts:replayReceipt`, `src/kernel.ts:settleRecord`, `src/outcomes.ts:retry`, `src/outcomes.ts:wait`, `src/outcomes.ts:defer`, `src/retry-policy.ts:exponentialBackoff`, `src/work.ts:WorkRun.retry`, `src/work.ts:WorkRun.wait`, `src/work.ts:WorkRun.defer`, `src/work.ts:WorkRun.settle`, `src/work.ts:WorkQueue.waitPolicy`, `src/work.ts:WorkQueue.settle`, `src/work.ts:WorkQueue.wake`, `src/work.ts:WorkQueue.wakeCurrent`
 
+## Storage/conformance model
+
+- Spec: `formal/WorkOnceStorage.tla`
+- Fresh compiled observations: `scripts/storage-refinement.mjs` via `scripts/storage-formal.mjs`
+- Checked invariants: `AtMostOneCallerCommit`, `BoundedCompareMisses`, `DeadlineExpiryStopsRetry`, `DecisionFaultCannotCommit`, `FreshReadBeforeCommit`, `MissCannotCommit`, `ReachedDeadlineCannotCommit`, `StorageSamplesConform`, `StorageTypeOK`, `UnknownOutcomeStopsRetry`
+- Bound storage source: `src/storage.ts`, `src/storage-validation.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`, `src/conformance.ts`
+
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **35**
-- Content digest: `6d94452b27912e44380cd736da3b568603fa16972273b7aa2880d13d6df270ee`
+- Bound proof/checker files: **50**
+- Content digest: `a227b0a8b4984540586fc3666d824dcfabead457b17749471fb455334083da39`
 
 ## Coverage rule
 

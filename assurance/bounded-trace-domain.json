@@ -36,6 +36,20 @@
     "scripts/check-policy-source-model-binding-mutation.mjs",
     "scripts/check-policy-implementation-mutations.mjs",
     "scripts/formal.mjs",
+    "formal/WorkOnceStorage.cfg",
+    "formal/WorkOnceStorage.tla",
+    "assurance/red-before/storage-conformance-baseline.json",
+    "test/process/sqlite-busy-child.mjs",
+    "test/process/sqlite-busy-startup.test.mjs",
+    "test/storage-contract-hardening.test.mjs",
+    "test/storage-refinement.test.mjs",
+    "test/process/storage-child.mjs",
+    "test/process/storage-process.test.mjs",
+    "test/process/sqlite-process.test.mjs",
+    "scripts/check-storage-source-model-mutation.mjs",
+    "scripts/check-storage-contract-mutation.mjs",
+    "scripts/storage-formal.mjs",
+    "scripts/storage-refinement.mjs",
     "scripts/build-source-binding.mjs",
     "scripts/check-build-source-binding-mutation.mjs",
     "scripts/check-assurance-infrastructure-binding-mutation.mjs",
@@ -45,9 +59,11 @@
     "scripts/check-formal-implementation-conformance.mjs",
     "scripts/formal-implementation-surface.cjs",
     "scripts/run-assurance.mjs",
+    "scripts/consumer-smoke.mjs",
+    "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "dd20130a9c6b0cfa10da745491b636d5ac5f892166e201aa1f5babfa860652f3",
+  "evidenceDigest": "bfa2627e1d2eb001ec0de6231d8ec03f65cf993e0a39e690994e069c55f2ca79",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -170,6 +186,24 @@
       "wakeCompetition": 3
     },
     "observationDigest": "dbd1f17ada09571479f7566b4d1c4fe921857bf21b11916bc886e7849cb15fcf"
+  },
+  "storageBoundary": {
+    "samples": 22,
+    "counts": {
+      "adapterHistoryCongruence": 3,
+      "atomicContention": 3,
+      "casBoundary": 1,
+      "casContention": 1,
+      "casExhaustion": 1,
+      "casHistoryCongruence": 1,
+      "casUnknown": 1,
+      "detached": 3,
+      "invalidWrite": 3,
+      "queryBoundary": 3,
+      "sqliteBoundary": 1,
+      "sqliteBusy": 1
+    },
+    "observationDigest": "fa2779eed5b70c3eb02101a2044b5c1b5b74282c4f69f10af7d1c778aa11c248"
   },
   "observed": {
     "deterministicScenarios": 43,

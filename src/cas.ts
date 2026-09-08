@@ -1,6 +1,6 @@
 import type { StoreChange, WorkQuery, WorkStore } from './storage.js';
 import type { WorkRecord } from './model.js';
-import { copy, integer } from './kernel.js';
+import { copy, integer, WorkConflict } from './kernel.js';
 import { validateStoreWrite } from './storage-validation.js';
 /** A native compare-and-swap write. Revision and deadline are checked by storage, not JavaScript. */
 export interface CompareExchange {
@@ -59,6 +59,12 @@ export function createCompareExchangeStore(
           ...(change.validUntil === undefined ? {} : { validUntil: change.validUntil }),
         });
         if (applied) return value;
+        if (change.validUntil !== undefined) {
+          const checked = await port.getMany([id]);
+          const checkedRevision = checked.rows[0]?.revision;
+          if (checkedRevision === expectedRevision && checked.now >= change.validUntil)
+            throw new WorkConflict('lease_expired');
+        }
       }
       throw new Error('Work store remained contended; retry the command, not the external effect');
     },

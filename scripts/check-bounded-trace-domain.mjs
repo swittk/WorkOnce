@@ -19,6 +19,9 @@ const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await impo
 const { runReadHistorySamples, assertReadHistorySamples } = await import(
   './read-history-refinement.mjs'
 );
+const { runStorageRefinementSamples, assertStorageRefinementSamples } = await import(
+  './storage-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -57,6 +60,20 @@ const evidenceFiles = [
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
   'scripts/formal.mjs',
+  'formal/WorkOnceStorage.cfg',
+  'formal/WorkOnceStorage.tla',
+  'assurance/red-before/storage-conformance-baseline.json',
+  'test/process/sqlite-busy-child.mjs',
+  'test/process/sqlite-busy-startup.test.mjs',
+  'test/storage-contract-hardening.test.mjs',
+  'test/storage-refinement.test.mjs',
+  'test/process/storage-child.mjs',
+  'test/process/storage-process.test.mjs',
+  'test/process/sqlite-process.test.mjs',
+  'scripts/check-storage-source-model-mutation.mjs',
+  'scripts/check-storage-contract-mutation.mjs',
+  'scripts/storage-formal.mjs',
+  'scripts/storage-refinement.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/check-build-source-binding-mutation.mjs',
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
@@ -66,6 +83,8 @@ const evidenceFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
   'scripts/run-assurance.mjs',
+  'scripts/consumer-smoke.mjs',
+  'scripts/prepare-package.mjs',
   'package.json',
 ];
 function digestFiles(files) {
@@ -100,6 +119,8 @@ const policySamples = await runPolicyRefinementSamples();
 assertPolicyRefinementSamples(policySamples);
 const readHistorySamples = await runReadHistorySamples();
 assertReadHistorySamples(readHistorySamples);
+const storageSamples = await runStorageRefinementSamples();
+assertStorageRefinementSamples(storageSamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -161,6 +182,18 @@ const current = {
     observationDigest: crypto
       .createHash('sha256')
       .update(JSON.stringify(policySamples))
+      .digest('hex'),
+  },
+  storageBoundary: {
+    samples: storageSamples.length,
+    counts: Object.fromEntries(
+      [...new Set(storageSamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, storageSamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(storageSamples))
       .digest('hex'),
   },
   observed: {

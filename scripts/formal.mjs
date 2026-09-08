@@ -14,7 +14,7 @@ const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
   throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar. See docs/assurance.md.');
 mkdirSync('.artifacts/tlc', { recursive: true });
-const workers = String(Math.max(2, Math.min(8, availableParallelism())));
+const workers = String(Math.max(2, Math.min(16, availableParallelism())));
 const timeoutMs = 30_000;
 
 function tlcArgs(model, config, modulePath, options = {}) {
@@ -127,13 +127,36 @@ function singleInvariantConfig(configText, invariant) {
   return `${output.join('\n').trimEnd()}\n`;
 }
 
-function assertMutantSetMatchesConfig(configPath, mutants) {
+function mutationCoveragePlan(configPath, mutants, additionalGuards = []) {
   const configured = configuredInvariants(readFileSync(configPath, 'utf8')).sort();
-  const guarded = Object.keys(mutants).sort();
+  const guarded = [...Object.keys(mutants), ...additionalGuards].sort();
   if (JSON.stringify(configured) !== JSON.stringify(guarded))
     throw new Error(
       `Formal mutation coverage drifted for ${configPath}: configured=${configured.join(',')} guarded=${guarded.join(',')}`,
     );
+  return {
+    configPath,
+    mutants,
+    additionalGuards: [...additionalGuards],
+    batchWitnessed: false,
+    extraWitnessed: new Set(),
+  };
+}
+
+function markExtraMutationWitness(plan, invariant) {
+  if (!plan.additionalGuards.includes(invariant))
+    throw new Error(`Unexpected extra mutation witness ${invariant} for ${plan.configPath}`);
+  plan.extraWitnessed.add(invariant);
+}
+
+function assertMutationPlansExecuted(plans) {
+  for (const plan of plans) {
+    const missingExtra = plan.additionalGuards.filter((name) => !plan.extraWitnessed.has(name));
+    if (!plan.batchWitnessed || missingExtra.length)
+      throw new Error(
+        `Formal mutation plan was not executed for ${plan.configPath}: batch=${plan.batchWitnessed} missingExtra=${missingExtra.join(',')}`,
+      );
+  }
 }
 
 function mutationWitnessConfig(configText) {
@@ -164,7 +187,8 @@ function mutationWitnessConfig(configText) {
   return `${output.join('\n').trimEnd()}\n`;
 }
 
-function runMutationWitnessBatch({ model, baseModule, baseConfig, mutants }) {
+function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {
+  const { mutants } = plan;
   const modulePath = resolve(`.artifacts/tlc/${model}.tla`);
   const configPath = resolve(`.artifacts/tlc/${model}.cfg`);
   const branches = Object.entries(mutants)
@@ -185,6 +209,7 @@ function runMutationWitnessBatch({ model, baseModule, baseConfig, mutants }) {
   );
   writeFileSync(configPath, mutationWitnessConfig(baseConfig));
   runModel(model, configPath, modulePath);
+  plan.batchWitnessed = true;
   console.log(
     `TLC mutation witness batch proves ${Object.keys(mutants).length} configured invariants are non-vacuous for ${baseModule}.`,
   );
@@ -342,6 +367,24 @@ const policyMutants = {
   /\ submission' = "implicit" /\ reply' = "staleOld"`,
 };
 
+const lifecycleMutationPlan = mutationCoveragePlan('formal/WorkOnce.cfg', lifecycleMutants);
+const runtimeMutationPlan = mutationCoveragePlan('formal/WorkOnceRuntime.cfg', runtimeMutants, [
+  'RuntimeSamplesConform',
+]);
+const readHistoryMutationPlan = mutationCoveragePlan(
+  'formal/WorkOnceReadHistory.cfg',
+  readHistoryMutants,
+  ['ReadHistorySamplesConform'],
+);
+const localRunnerMutationPlan = mutationCoveragePlan(
+  'formal/WorkOnceLocalRunner.cfg',
+  localRunnerMutants,
+  ['LocalRunnerSamplesConform'],
+);
+const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', policyMutants, [
+  'PolicySamplesConform',
+]);
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -358,14 +401,13 @@ function tlaValue(value) {
 }
 
 const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
-assertMutantSetMatchesConfig('formal/WorkOnce.cfg', lifecycleMutants);
 if (!process.argv.includes('--runtime-only')) {
   runModel('WorkOnce', 'WorkOnce.cfg');
   runMutationWitnessBatch({
     model: 'WorkOnceInvariantMutationBatch',
     baseModule: 'WorkOnce',
     baseConfig: lifecycleConfig,
-    mutants: lifecycleMutants,
+    plan: lifecycleMutationPlan,
   });
 }
 
@@ -389,17 +431,11 @@ console.log(
 runModel('WorkOnceRuntimeObserved', config, observedModule);
 
 const runtimeConfig = readFileSync(config, 'utf8');
-const runtimeConfigured = configuredInvariants(readFileSync('formal/WorkOnceRuntime.cfg', 'utf8'));
-const runtimeGuarded = [...Object.keys(runtimeMutants), 'RuntimeSamplesConform'].sort();
-if (JSON.stringify([...runtimeConfigured].sort()) !== JSON.stringify(runtimeGuarded))
-  throw new Error(
-    `Formal mutation coverage drifted for formal/WorkOnceRuntime.cfg: configured=${runtimeConfigured.join(',')} guarded=${runtimeGuarded.join(',')}`,
-  );
 runMutationWitnessBatch({
   model: 'WorkOnceRuntimeInvariantMutationBatch',
   baseModule: 'WorkOnceRuntimeObserved',
   baseConfig: runtimeConfig,
-  mutants: runtimeMutants,
+  plan: runtimeMutationPlan,
 });
 
 const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
@@ -426,6 +462,7 @@ requireInvariantRejects(
   sampleMutant,
   'RuntimeSamplesConform',
 );
+markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
 
 const readFenceMutant = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.tla');
 const readFenceMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.cfg');
@@ -502,12 +539,11 @@ console.log(
 runModel('WorkOnceReadHistoryObserved', readHistoryConfig, readHistoryObserved);
 
 const baseReadHistoryConfig = readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8');
-assertMutantSetMatchesConfig('formal/WorkOnceReadHistory.cfg', readHistoryMutants);
 runMutationWitnessBatch({
   model: 'WorkOnceReadHistoryInvariantMutationBatch',
   baseModule: 'WorkOnceReadHistory',
   baseConfig: baseReadHistoryConfig,
-  mutants: readHistoryMutants,
+  plan: readHistoryMutationPlan,
 });
 
 const readHistorySampleMutant = resolve('.artifacts/tlc/WorkOnceReadHistorySamplesMutant.tla');
@@ -536,6 +572,7 @@ requireInvariantRejects(
   readHistorySampleMutant,
   'ReadHistorySamplesConform',
 );
+markExtraMutationWitness(readHistoryMutationPlan, 'ReadHistorySamplesConform');
 
 const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
   './local-runner-refinement.mjs'
@@ -561,12 +598,11 @@ console.log(
 runModel('WorkOnceLocalRunnerObserved', localRunnerConfig, localRunnerObserved);
 
 const baseLocalRunnerConfig = readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8');
-assertMutantSetMatchesConfig('formal/WorkOnceLocalRunner.cfg', localRunnerMutants);
 runMutationWitnessBatch({
   model: 'WorkOnceLocalRunnerInvariantMutationBatch',
   baseModule: 'WorkOnceLocalRunner',
   baseConfig: baseLocalRunnerConfig,
-  mutants: localRunnerMutants,
+  plan: localRunnerMutationPlan,
 });
 
 const localRunnerSampleMutant = resolve('.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.tla');
@@ -595,6 +631,7 @@ requireInvariantRejects(
   localRunnerSampleMutant,
   'LocalRunnerSamplesConform',
 );
+markExtraMutationWitness(localRunnerMutationPlan, 'LocalRunnerSamplesConform');
 
 if (!process.argv.includes('--runtime-only')) {
   const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
@@ -621,12 +658,11 @@ if (!process.argv.includes('--runtime-only')) {
   runModel('WorkOncePolicyObserved', policyConfig, policyObserved);
 
   const basePolicyConfig = readFileSync('formal/WorkOncePolicy.cfg', 'utf8');
-  assertMutantSetMatchesConfig('formal/WorkOncePolicy.cfg', policyMutants);
   runMutationWitnessBatch({
     model: 'WorkOncePolicyInvariantMutationBatch',
     baseModule: 'WorkOncePolicy',
     baseConfig: basePolicyConfig,
-    mutants: policyMutants,
+    plan: policyMutationPlan,
   });
 
   const policySampleMutant = resolve('.artifacts/tlc/WorkOncePolicySamplesMutant.tla');
@@ -653,4 +689,17 @@ MutantSpec == Init /\ [][Next]_vars
     policySampleMutant,
     'PolicySamplesConform',
   );
+  markExtraMutationWitness(policyMutationPlan, 'PolicySamplesConform');
 }
+
+assertMutationPlansExecuted(
+  process.argv.includes('--runtime-only')
+    ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan]
+    : [
+        lifecycleMutationPlan,
+        runtimeMutationPlan,
+        readHistoryMutationPlan,
+        localRunnerMutationPlan,
+        policyMutationPlan,
+      ],
+);

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -23,6 +24,17 @@ for (const [name, prefix] of Object.entries(requiredPrefixes)) {
     throw new Error(`Emitted-artifact entrypoint '${name}' lost its required build/binding guard.`);
 }
 
+if (scripts.prepare !== 'node scripts/prepare-package.mjs')
+  throw new Error('Package prepare must route through the source-bound build guard.');
+const prepare = fs.readFileSync(path.join(root, 'scripts/prepare-package.mjs'), 'utf8');
+const prepareReuse = prepare.indexOf("WORKONCE_REUSE_BOUND_BUILD === '1'");
+const prepareGuard = prepare.indexOf('assertBuildSourceBinding();');
+if (prepareReuse < 0 || prepareGuard < 0 || prepareGuard < prepareReuse)
+  throw new Error('prepare-package.mjs may reuse dist only after verifying the bound build.');
+const consumerSmoke = fs.readFileSync(path.join(root, 'scripts/consumer-smoke.mjs'), 'utf8');
+if (!consumerSmoke.includes("WORKONCE_REUSE_BOUND_BUILD: '1'"))
+  throw new Error('Packed consumer must explicitly request source-bound prepare reuse.');
+
 const formal = fs.readFileSync(path.join(root, 'scripts/formal.mjs'), 'utf8');
 const formalGuard = formal.indexOf('assertBuildSourceBinding();');
 const formalProducer = formal.indexOf("import('./runtime-boundary-refinement.mjs')");
@@ -37,19 +49,79 @@ if (traceGuard < 0 || traceProducer < 0 || traceGuard > traceProducer)
     'check-bounded-trace-domain.mjs must verify the bound build before importing compiled traces.',
   );
 
-const assurance = fs.readFileSync(path.join(root, 'scripts/run-assurance.mjs'), 'utf8');
-const build = assurance.indexOf("runNpm('single build'");
+const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
+const assurance = fs.readFileSync(assurancePath, 'utf8');
+const sourceFile = ts.createSourceFile(
+  assurancePath,
+  assurance,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.JS,
+);
+let build = -1;
+const consumerPositions = new Map();
+function recordConsumer(label, position) {
+  const positions = consumerPositions.get(label) ?? [];
+  positions.push(position);
+  consumerPositions.set(label, positions);
+}
+function literalText(node) {
+  return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+    ? node.text
+    : undefined;
+}
+function inspectCall(node) {
+  if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return;
+  const name = node.expression.text;
+  if (name === 'runNpm' && literalText(node.arguments[0]) === 'single build') {
+    build = node.getStart(sourceFile);
+    return;
+  }
+  if (name === 'run') {
+    const label = literalText(node.arguments[0]);
+    if (label) recordConsumer(label, node.getStart(sourceFile));
+    return;
+  }
+  if (name !== 'runParallel' || !ts.isArrayLiteralExpression(node.arguments[0])) return;
+  for (const entry of node.arguments[0].elements) {
+    if (!ts.isArrayLiteralExpression(entry)) continue;
+    const label = literalText(entry.elements[0]);
+    if (label) recordConsumer(label, entry.getStart(sourceFile));
+  }
+}
+function visit(node) {
+  inspectCall(node);
+  ts.forEachChild(node, visit);
+}
+visit(sourceFile);
+if (build < 0) throw new Error('Full assurance lost its single build step.');
 for (const consumer of [
-  "run('policy implementation mutation guards'",
-  "run('implementation traces'",
-  "run('real process faults'",
-  "run('bounded-domain audit'",
-  "run('TLC lifecycle/runtime/policy boundaries + mutation guards'",
-  "run('packed consumer'",
+  'typed-read definition-fence mutation guard',
+  'typed-read source/model mutation guard',
+  'typed-read route/order mutation guard',
+  'read-history retention/order mutation guard',
+  'policy source/model mutation guard',
+  'policy implementation mutation guards',
+  'local-runner source/model mutation guard',
+  'local-runner implementation mutation guards',
+  'storage implementation mutation guard',
+  'storage source/model mutation guard',
+  'implementation traces',
+  'real process faults',
+  'bounded-domain audit',
+  'TLC storage/conformance + mutation guards',
+  'TLC lifecycle/runtime/read/policy boundaries + mutation guards',
+  'packed consumer',
 ]) {
-  const index = assurance.indexOf(consumer);
-  if (build < 0 || index < 0 || build > index)
-    throw new Error(`Full assurance must build before emitted-artifact consumer ${consumer}.`);
+  const positions = consumerPositions.get(consumer) ?? [];
+  if (positions.length !== 1)
+    throw new Error(
+      `Full assurance must execute emitted-artifact consumer '${consumer}' exactly once; found ${positions.length}.`,
+    );
+  if (positions[0] < build)
+    throw new Error(
+      `Full assurance emitted-artifact consumer '${consumer}' runs before the single build.`,
+    );
 }
 
 console.log(

@@ -360,11 +360,21 @@ completion-before-cancel legality, claim-scan widening, exact claim limit and re
 These are library-owned durable queue semantics only; application callback side effects and external
 system exactly-once behavior remain outside this lifecycle proof.
 
+## Storage and adapter temporal refinement
+
+The shared adapter suite is supplemented by a dedicated storage state machine and fresh compiled observations from `scripts/storage-refinement.mjs`. `formal/WorkOnceStorage.tla` models the library-owned compare-exchange loop, known versus unknown commit acknowledgement, revision progression, deadline expiry and the detached/order-preserving read boundary. Its configured invariants and observation conformance are mutation-witnessed so a configured storage property cannot remain present only as a vacuous label.
+
+The executable matrix compares memory, real SQLite and the native compare-exchange wrapper. It covers detached `getMany()`/`query()` values, caller order and cursor ordering, direct and contended histories, known false writes, unknown acknowledgements, exact revision rules, and deadline classification. Real OS-process tests additionally hold SQLite write locks and exercise retry-to-success and timeout/startup failure behavior.
+
+This work exposed two supported storage defects. A false native compare-exchange at the exact write deadline could previously degrade into generic contention even when the expected revision was still current; WorkOnce now re-reads storage and reports `lease_expired` when the unchanged revision is observed at or beyond `validUntil`. SQLite startup/busy handling now also recognizes native primary result codes `SQLITE_BUSY` (5) and `SQLITE_LOCKED` (6), retaining the message fallback for runtimes that expose only text.
+
+Storage proof is independently source/model bound across storage, validation, memory, SQLite, CAS and conformance code. Source-only drift with unchanged `WorkOnceStorage` semantics fails closed. The storage proof files, process tests, packaging/source-freshness guards and mutation controls are also included in the global assurance-infrastructure digest.
+
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **51.76 seconds wall-clock** and about **353 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.
+`npm run assurance` runs the complete local gate with one source-bound build, ES2018/WebWorker compatibility, the compiler-discovered public map, compiled refinement/unit tests, real-process fault tests, bounded-domain auditing, the lifecycle/runtime/read/policy formal machines, the storage/conformance formal machine, mutation witnesses for configured invariants, and packed ESM/CommonJS/types consumer smoke. Independent checks are parallelized where their artifacts do not race; TLC families stay isolated from one another, and invariant mutations are batched rather than spawning one model-checker process per invariant.
 
-That timing is evidence for this machine/version, not a universal performance promise. The important design rule is structural: no per-trace model-checker process explosion.
+The HPSERVER gate has a hard 60-second wall-clock budget. Timing is machine/version evidence rather than a portable performance promise; the structural rule is that adding assurance must not reintroduce per-trace or per-invariant process explosion or weaken semantic coverage to recover speed.
 
 ## Explicit limits
 

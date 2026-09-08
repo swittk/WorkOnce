@@ -10,6 +10,10 @@ import {
 
 function isSqliteBusy(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
+  const errcode = (error as Error & { errcode?: unknown }).errcode;
+  // SQLite primary result codes: SQLITE_BUSY=5, SQLITE_LOCKED=6. Prefer the native code when present;
+  // retain the message fallback for runtimes that expose only an Error message.
+  if (errcode === 5 || errcode === 6) return true;
   return /database is (?:locked|busy)/iu.test(error.message);
 }
 function sleepSync(milliseconds: number): void {
