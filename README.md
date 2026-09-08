@@ -109,9 +109,10 @@ attempt reference as opaque in normal application code. If worker A owns fence 1
 expires, and worker B reclaims the work with fence 18, a late result from A still carries 17 and
 is rejected because only 18 is current. Managed local/external runners carry this for you.
 
-Conventional queue aliases remain available for compatibility: `enqueue` → `ensure`, `process` →
-`runAvailable`, `defer` → `wait`, `renew` → `heartbeat`, `next` → `thenDo`, and `limits` →
-`executionLimits`. Examples use the literal application-facing names above.
+Readable and conventional technical names are both first-class aliases: `enqueue` / `ensure`,
+`process` / `runAvailable`, `defer` / `wait`, `renew` / `heartbeat`, `next` / `thenDo`, and
+`limits` / `executionLimits`. Use whichever vocabulary fits the caller. Each pair reaches the same
+implementation and durable representation; these are not deprecated compatibility APIs.
 
 ## Define the implementation once
 
@@ -169,9 +170,9 @@ if (current?.phase.state === 'succeeded') {
 await item.cancel({ reason: 'source_withdrawn' });
 ```
 
-`retry()` is for failed work; `rerun()` is for successful work. The generic `restart()` helper is
-retained only for compatibility. Both commands are generation-checked internally, and neither may
-erase undispatched durable follow-up work from the prior generation.
+`retry()` is for failed work; `rerun()` is for successful work. The generic `restart()` helper
+selects the appropriate operation for the current terminal state. These commands use the same
+generation guards and cannot erase undispatched durable follow-up work from the prior generation.
 
 For bulk/operator views, `queue.inspectMany(keys)` preserves order and missing entries and
 `queue.history(key)` returns recent durable transitions.

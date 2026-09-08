@@ -51,7 +51,7 @@ The public tests run that suite against memory, real SQLite and a native-CAS tes
 
 Additional tests cover expiry between read and the actual native write, unknown CAS acknowledgements, async continuation planning, poison follow-up fairness, worker lease-loss cancellation, and reset blocking while previous durable follow-ups are pending.
 
-`test/process/sqlite-process.test.mjs` barriers eight independent processes onto the same brand-new SQLite path, then separately onto one pre-definition WAL schema, proving both first initialization and startup migration converge. It then races eight claimers against one item. A final case kills an owning worker with SIGKILL, reopens storage, reclaims its lease and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of network filesystems or untested third-party stores.
+`test/process/sqlite-process.test.mjs` barriers eight independent processes onto the same brand-new SQLite path, then separately reopens a populated current-schema database, proving initialization and concurrent reopen preserve existing work. SQLite has one schema and no automatic development-schema conversion. It then races eight claimers against one item. A final case kills an owning worker with SIGKILL, reopens storage, reclaims its lease and rejects the stale reference. These are local-file SQLite guarantees, not an endorsement of network filesystems or untested third-party stores.
 
 `npm run check:web` compiles the default API with only ES2018 + WebWorker libraries and no Node ambient types, then rejects Node builtins/external runtime dependencies or root-runtime size-budget regressions. The optional `/sqlite` subpath is intentionally outside that browser graph.
 
@@ -129,3 +129,11 @@ That timing is evidence for this machine/version, not a universal performance pr
 ## Explicit limits
 
 No distributed-global capacity limiter, arbitrary workflow replay, automatic database migration, ID reuse/garbage collection or exactly-once external-effect claim is made. The old per-domain embedded adapter helper was removed; supply one proven store shared by all work kinds. Production deployment additionally needs authentication, an appropriate storage clock, coordinated backup/restore, correct external idempotency and the application's own domain guards.
+
+## Aliases and storage representation
+
+Readable and conventional technical names are supported aliases to the same operations and
+configuration. They do not introduce separate queues, states, record formats or conversion paths.
+The 600-case lifecycle matrix retains its alias coverage. SQLite initializes one current schema;
+obsolete development layouts are rejected rather than adopted or migrated. Current-schema
+initialization, reopen, claim competition and crash recovery remain tested.

@@ -10498,7 +10498,7 @@
       "formal/WorkOnceRuntime.tla",
       "formal/WorkOnceRuntime.cfg"
     ],
-    "sourceDigest": "f63f468e3cb5aa777158e893fe931595e5622524077f9ede09bb92a223451e6a",
+    "sourceDigest": "248b33ec829eae035286896b7b28f076a8d9f4f004b68184c2e54e0897ba2857",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

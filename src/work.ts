@@ -76,13 +76,13 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
   perform?: WorkHandler<I, O, R>;
   /** Preferred readable name for per-work execution safety bounds. This is not rate throttling. */
   executionLimits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
-  /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
+  /** Compact execution-bound spelling; resolves to the same limits as `executionLimits`. */
   limits?: Partial<WorkLimits> | ((input: I) => Partial<WorkLimits>);
   /** A static policy or dynamic callback per failure/input. No callback goes into a row. */
   retry?: RetryDecision | ((context: RetryContext<I, R>) => RetryDecision | Promise<RetryDecision>);
   /** Preferred readable policy for non-failure waiting before this work resumes. */
   wait?: WorkTiming | ((context: RetryContext<I, R>) => WorkTiming | Promise<WorkTiming>);
-  /** Standard queue synonym retained for compatibility; prefer `wait`. */
+  /** Non-failure wait synonym for callers using conventional queue terminology. */
   defer?: WorkTiming | ((context: RetryContext<I, R>) => WorkTiming | Promise<WorkTiming>);
   /** Preferred readable planner for durable work that should run after this terminal result commits. */
   thenDo?: (context: {
@@ -94,7 +94,7 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
     /** Present only when a typed failure result planned the continuation. */
     reason?: R;
   }) => WorkRequest[] | Promise<WorkRequest[]>;
-  /** Standard queue synonym retained for compatibility; prefer `thenDo`. */
+  /** Conventional follow-up spelling for the same durable continuation planner. */
   next?: (context: {
     input: I;
     result: O;
@@ -111,10 +111,10 @@ export interface EnsureOptions {
   availableAt?: number;
   /** Preferred readable per-item execution bounds; this does not throttle worker throughput. */
   executionLimits?: Partial<WorkLimits>;
-  /** Standard internal synonym retained for compatibility; prefer `executionLimits`. */
+  /** Compact execution-bound spelling; resolves to the same limits as `executionLimits`. */
   limits?: Partial<WorkLimits>;
 }
-/** Conventional queue synonym retained for compatibility; prefer `EnsureOptions`. */
+/** Equivalent options type for callers using the `enqueue` operation name. */
 export type EnqueueOptions = EnsureOptions;
 /** One prepared payload to hand to a foreign/external worker while this attempt stays leased. */
 export interface WorkHandoff<T> {
@@ -156,7 +156,7 @@ export class WorkItem<I, O, R extends string> {
   ensure(options: Omit<EnsureOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
     return this.queue.ensure(this.input, { ...options, key: this.key });
   }
-  /** Conventional queue synonym retained for compatibility; prefer `ensure()`. */
+  /** Ensure this exact work exists once; conventional queue spelling for `ensure()`. */
   enqueue(options: Omit<EnqueueOptions, 'key'> = {}): Promise<WorkSnapshot<I, O, R>> {
     return this.ensure(options);
   }
@@ -204,7 +204,7 @@ export class WorkItem<I, O, R extends string> {
       ...(options.check ? { check: options.check } : {}),
     });
   }
-  /** Generic terminal-state helper retained for compatibility; prefer explicit `retry` or `rerun`. */
+  /** Convenience dispatcher to retry failed work or rerun successful work with the same guards. */
   restart(
     options: {
       expectedGeneration?: number;
@@ -257,7 +257,7 @@ export class WorkRun<I, O, R extends string> {
   wait(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return wait(reason, timing);
   }
-  /** Standard queue synonym retained for compatibility; prefer `wait`. */
+  /** Non-failure wait synonym for callers using conventional queue terminology. */
   defer(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return defer(reason, timing);
   }
@@ -280,7 +280,7 @@ export class WorkRun<I, O, R extends string> {
   heartbeat(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.queue.heartbeat(this.ref);
   }
-  /** Standard lease-renewal synonym retained for compatibility; prefer `heartbeat`. */
+  /** Extend the current owned lease; conventional distributed-systems spelling for `heartbeat`. */
   renew(): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.heartbeat();
   }
@@ -327,13 +327,13 @@ export class WorkQueue<I, O = null, R extends string = string> {
       throw new RangeError('Use executionLimits or limits, not both');
     return options.executionLimits ?? options.limits;
   }
-  /** Resolve the preferred wait policy and legacy synonym without allowing both. */
+  /** Resolve equivalent wait-policy spellings without accepting competing definitions. */
   private waitPolicy(): WorkDefinition<I, R, O>['wait'] {
     if (this.definition.wait !== undefined && this.definition.defer !== undefined)
       throw new RangeError('Use wait or defer, not both');
     return this.definition.wait ?? this.definition.defer;
   }
-  /** Resolve the preferred follow-up planner and legacy synonym without allowing both. */
+  /** Resolve equivalent follow-up-planner spellings without accepting competing definitions. */
   private thenDoPolicy(): WorkDefinition<I, R, O>['thenDo'] {
     if (this.definition.thenDo !== undefined && this.definition.next !== undefined)
       throw new RangeError('Use thenDo or next, not both');
@@ -369,7 +369,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       return { next, value: this.snapshot(next, now) };
     });
   }
-  /** Conventional queue synonym retained for compatibility; prefer `ensure()`. */
+  /** Ensure this exact work exists once; conventional queue spelling for `ensure()`. */
   enqueue(input: I, options: EnqueueOptions = {}): Promise<WorkSnapshot<I, O, R>> {
     return this.ensure(input, options);
   }
@@ -473,7 +473,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
   heartbeat(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.renew(ref);
   }
-  /** Low-level lease-renewal operation retained for distributed-systems terminology compatibility. */
+  /** Extend the current owned lease; conventional distributed-systems spelling for `heartbeat`. */
   async renew(ref: AttemptRef): Promise<{ attempt: WorkAttempt; observedAt: number }> {
     return this.store.atomic(ref.workId, (row, now) => {
       this.requireRow(row);
@@ -738,7 +738,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
   ): Promise<RunAvailableResult<O, R>[]> {
     return processClaims(this, options, this.performHandler(handler));
   }
-  /** Conventional worker synonym retained for compatibility; prefer `runAvailable()`. */
+  /** Run one bounded local pass; conventional worker spelling for `runAvailable()`. */
   async process(
     options: WorkerOptions,
     handler?: WorkHandler<I, O, R>,

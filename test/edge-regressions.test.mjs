@@ -77,82 +77,21 @@ for (const kind of ['memory', 'sqlite'])
     },
   );
 
-test('sqlite upgrades the pre-definition table and preserves old work', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'workonce-upgrade-'));
-  const databasePath = join(dir, 'test.sqlite');
-  const memory = createMemoryStore({ now: () => 1000 });
-  const legacyQueue = createWorkOnce({ store: memory, scope: 'legacy' }).define('job', {
-    version: 'legacy-v1',
-  });
-  const snapshot = await legacyQueue.enqueue({ value: 1 }, { key: 'x' });
-  const [row] = (await memory.getMany([snapshot.id])).rows;
-  assert.ok(row);
-  const db = new DatabaseSync(databasePath);
+test('SQLite rejects an incompatible schema instead of converting its tables', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workonce-schema-rejection-'));
+  const path = join(dir, 'queue.sqlite');
+  const db = new DatabaseSync(path);
   try {
     db.exec(`CREATE TABLE workonce (
       id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL,
       due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
-    );`);
-    db.prepare(
-      'INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) VALUES (?,?,?,?,?,?)',
-    ).run(
-      row.id,
-      row.scope,
-      row.kind,
-      row.phase.availableAt,
-      row.outbox.length,
-      JSON.stringify(row),
-    );
+    )`);
+    const before = db.prepare('PRAGMA table_info(workonce)').all();
+    assert.throws(() => createSqliteStore(path), /no such column: definition/);
+    assert.deepEqual(db.prepare('PRAGMA table_info(workonce)').all(), before);
   } finally {
     db.close();
-  }
-  const store = createSqliteStore(databasePath);
-  try {
-    const restored = (await store.getMany([snapshot.id])).rows[0];
-    assert.equal(restored?.definition, 'legacy-v1');
-    const queried = await store.query({
-      scope: 'legacy',
-      kind: 'job',
-      definition: 'legacy-v1',
-      select: 'all',
-      limit: 1,
-    });
-    assert.equal(queried.rows[0]?.id, snapshot.id);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test('sqlite rejects a legacy row whose definition cannot be restored as a string', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'workonce-legacy-corrupt-'));
-  const databasePath = join(dir, 'test.sqlite');
-  const db = new DatabaseSync(databasePath);
-  try {
-    db.exec(`CREATE TABLE workonce (
-      id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL,
-      due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
-    );`);
-    db.prepare(
-      'INSERT INTO workonce(id,scope,kind,due_at,pending_next,body) VALUES (?,?,?,?,?,?)',
-    ).run('bad', 'legacy', 'job', 0, 0, JSON.stringify({ definition: 42 }));
-  } finally {
-    db.close();
-  }
-  try {
-    assert.throws(() => createSqliteStore(databasePath), /Invalid persisted WorkOnce row/);
-    const inspect = new DatabaseSync(databasePath);
-    try {
-      const columns = inspect
-        .prepare('PRAGMA table_info(workonce)')
-        .all()
-        .map((row) => row.name);
-      assert.equal(columns.includes('definition'), false);
-    } finally {
-      inspect.close();
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true });
   }
 });
 
@@ -167,11 +106,11 @@ test('sqlite validates restored rows and keeps definition in the due/list indexe
     const db = new DatabaseSync(databasePath);
     try {
       const dueColumns = db
-        .prepare("PRAGMA index_info('workonce_due_v2')")
+        .prepare("PRAGMA index_info('workonce_due')")
         .all()
         .map((row) => row.name);
       const listColumns = db
-        .prepare("PRAGMA index_info('workonce_list_v2')")
+        .prepare("PRAGMA index_info('workonce_list')")
         .all()
         .map((row) => row.name);
       assert.ok(dueColumns.includes('definition'));

@@ -57,61 +57,15 @@ export function createSqliteStore(
       busyTimeoutMs,
     );
 
-    const createCurrentIndexes = () =>
-      retryStartupBusy(
-        () =>
-          db.exec(`
-          CREATE INDEX IF NOT EXISTS workonce_due_v2
+    retryStartupBusy(
+      () =>
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS workonce_due
             ON workonce(scope,kind,definition,due_at,id) WHERE due_at IS NOT NULL;
           CREATE INDEX IF NOT EXISTS workonce_outbox ON workonce(scope,id) WHERE pending_next > 0;
-          CREATE INDEX IF NOT EXISTS workonce_list_v2 ON workonce(scope,kind,definition,id);`),
-        busyTimeoutMs,
-      );
-
-    // Fast path: current schemas avoid a write transaction entirely during ordinary process startup.
-    const initialColumns = db.prepare('PRAGMA table_info(workonce)').all() as Record<
-      string,
-      unknown
-    >[];
-    const needsDefinitionUpgrade = !initialColumns.some(
-      (column) => column['name'] === 'definition',
+          CREATE INDEX IF NOT EXISTS workonce_list ON workonce(scope,kind,definition,id);`),
+      busyTimeoutMs,
     );
-    if (needsDefinitionUpgrade) {
-      // Serialize the check/upgrade across independent processes, then re-check inside the lock.
-      retryStartupBusy(() => db.exec('BEGIN IMMEDIATE'), busyTimeoutMs);
-      try {
-        const lockedColumns = db.prepare('PRAGMA table_info(workonce)').all() as Record<
-          string,
-          unknown
-        >[];
-        if (!lockedColumns.some((column) => column['name'] === 'definition')) {
-          db.exec('ALTER TABLE workonce ADD COLUMN definition TEXT');
-          db.exec(`UPDATE workonce
-          SET definition = CASE
-            WHEN json_valid(body) THEN
-              CASE WHEN json_type(body, '$.definition') = 'text' THEN json_extract(body, '$.definition') END
-          END
-          WHERE definition IS NULL`);
-          const invalidLegacy = db
-            .prepare('SELECT id FROM workonce WHERE definition IS NULL LIMIT 1')
-            .get() as Record<string, unknown> | undefined;
-          if (invalidLegacy)
-            throw new Error(`Invalid persisted WorkOnce row '${String(invalidLegacy['id'])}'`);
-        }
-        createCurrentIndexes();
-        db.exec('COMMIT');
-      } catch (error) {
-        try {
-          db.exec('ROLLBACK');
-        } catch {
-          /* Preserve the schema migration failure. */
-        }
-        throw error;
-      }
-    } else {
-      // Versioned monotone names avoid DROP/CREATE races. Old indexes are harmless until maintenance.
-      createCurrentIndexes();
-    }
 
     const storedColumns = 'id,scope,kind,definition,due_at,pending_next,body';
     const read = db.prepare(`SELECT ${storedColumns} FROM workonce WHERE id=?`);

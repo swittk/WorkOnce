@@ -8,11 +8,11 @@ export type WorkTiming = { afterMs: number; at?: never } | { at: number; afterMs
 export interface FollowUpOptions {
   /** Preferred readable name for durable work that should be created after this result commits. */
   thenDo?: WorkRequest[];
-  /** Standard queue/internal synonym retained for compatibility; prefer `thenDo`. */
+  /** Conventional follow-up spelling; resolves to the same durable list as `thenDo`. */
   next?: WorkRequest[];
 }
 
-/** Resolve the readable and legacy follow-up names without permitting two competing lists. */
+/** Resolve equivalent follow-up spellings without permitting two competing lists. */
 function followUps(options: FollowUpOptions): WorkRequest[] {
   if (options.thenDo !== undefined && options.next !== undefined) {
     throw new RangeError('Use thenDo or next, not both');
@@ -55,7 +55,7 @@ export function wait<R extends string>(
   return { ...timing, type: 'defer', reason };
 }
 
-/** Standard queue synonym for `wait`; prefer `wait` in application code. */
+/** Non-failure wait synonym for callers using conventional queue terminology. */
 export function defer<R extends string>(
   reason: R,
   timing?: WorkTiming,

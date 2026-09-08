@@ -114,3 +114,7 @@ does not silently add tables to an application's portable backup format or prete
 reconciliation can recover every lost receipt or retry budget.
 
 The optional `/sqlite` adapter uses `node:sqlite` and requires Node >= 22.16; the default/browser graph does not import it.
+
+SQLite initializes one current schema. WorkOnce is unreleased and supplies no upgrade or conversion
+path for superseded development schemas. An incompatible table is rejected; opening a database
+never deletes its contents or silently converts an old layout.

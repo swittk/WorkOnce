@@ -76,7 +76,7 @@ export class ExternalWorkRun<O, R extends string> {
   wait(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return wait(reason, timing);
   }
-  /** Standard queue synonym retained for compatibility; prefer `wait`. */
+  /** Non-failure wait synonym for callers using conventional queue terminology. */
   defer(reason: R, timing?: WorkTiming): WorkOutcome<O, R> {
     return defer(reason, timing);
   }
@@ -99,7 +99,7 @@ export type ExternalWorkHandler<I, O, R extends string> = (
 export type ExternalRunAvailableResult<O = unknown, R extends string = string> =
   | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
-/** Conventional worker synonym retained for compatibility; prefer `ExternalRunAvailableResult`. */
+/** Equivalent type name for the results of one bounded external worker pass. */
 export type ExternalProcessResult<
   O = unknown,
   R extends string = string,
@@ -211,7 +211,7 @@ export async function runExternalAvailable<I, O, R extends string>(
   );
 }
 
-/** Conventional worker synonym retained for compatibility; prefer `runExternalAvailable()`. */
+/** Run one bounded external pass; the same operation as `runExternalAvailable()`. */
 export function processExternal<I, O, R extends string>(
   transport: ExternalWorkTransport<I, O, R>,
   options: ExternalWorkerOptions,

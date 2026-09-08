@@ -32,7 +32,7 @@ export type WorkHandler<I, O, R extends string> = (
 export type RunAvailableResult<O = unknown, R extends string = string> =
   | { workId: string; status: 'settled'; phase: WorkPhase<O, R> }
   | { workId: string; status: 'interrupted'; error: unknown };
-/** Conventional worker synonym retained for compatibility; prefer `RunAvailableResult`. */
+/** Equivalent type name for the results of one bounded local worker pass. */
 export type ProcessResult<O = unknown, R extends string = string> = RunAvailableResult<O, R>;
 /** Validate static worker knobs before any claim; per-claim checks only compare against that lease. */
 function validateWorkerOptions(options: WorkerOptions): number {
