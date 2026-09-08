@@ -21,6 +21,14 @@ const evidenceFiles = [
   'scripts/formal.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/check-build-source-binding-mutation.mjs',
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  'scripts/check-emitted-artifact-entrypoints.mjs',
+  'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+  'scripts/check-bounded-trace-domain.mjs',
+  'scripts/check-formal-implementation-conformance.mjs',
+  'scripts/formal-implementation-surface.cjs',
+  'scripts/run-assurance.mjs',
+  'package.json',
 ];
 function digestFiles(files) {
   const hash = crypto.createHash('sha256');

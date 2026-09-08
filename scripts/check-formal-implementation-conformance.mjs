@@ -34,6 +34,21 @@ const modelFiles = [
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
 ];
+const assuranceInfrastructureFiles = [
+  'scripts/check-formal-implementation-conformance.mjs',
+  'scripts/formal-implementation-surface.cjs',
+  'scripts/check-bounded-trace-domain.mjs',
+  'scripts/formal.mjs',
+  'scripts/runtime-boundary-refinement.mjs',
+  'scripts/formal-bounded-refinement-corpus.mjs',
+  'scripts/build-source-binding.mjs',
+  'scripts/check-build-source-binding-mutation.mjs',
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  'scripts/check-emitted-artifact-entrypoints.mjs',
+  'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+  'scripts/run-assurance.mjs',
+  'package.json',
+];
 const expectedEntrypoints = [
   'root',
   'storage',
@@ -123,6 +138,16 @@ function formalDigest(files) {
       .replace(/\\\*.*$/gmu, '')
       .replace(/\s+/gu, ' ')
       .trim();
+    chunks.push(`${relativePath}\n${normalized}`);
+  }
+  return digest(chunks.join('\n---\n'));
+}
+function contentDigest(files) {
+  const chunks = [];
+  for (const relativePath of [...files].sort(compareExact)) {
+    const normalized = fs
+      .readFileSync(path.join(root, relativePath), 'utf8')
+      .replace(/\r\n?/gu, '\n');
     chunks.push(`${relativePath}\n${normalized}`);
   }
   return digest(chunks.join('\n---\n'));
@@ -552,6 +577,8 @@ function buildManifest(live) {
       modelFiles,
       sourceDigest: semanticSourceDigest(semanticSourceFiles),
       modelDigest: formalDigest(modelFiles),
+      assuranceInfrastructureFiles,
+      assuranceInfrastructureDigest: contentDigest(assuranceInfrastructureFiles),
     },
   });
 }
@@ -601,6 +628,11 @@ function renderReport(manifest) {
       );
   }
   lines.push(
+    '',
+    '## Assurance infrastructure binding',
+    '',
+    `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
+    `- Content digest: \`${manifest.stateMachineBinding.assuranceInfrastructureDigest}\``,
     '',
     '## Coverage rule',
     '',

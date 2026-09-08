@@ -10490,6 +10490,22 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
+    "assuranceInfrastructureDigest": "66e571a2487558d6a2232fc1bd543ba309232eba187b9a8284f2005a40f58a54",
+    "assuranceInfrastructureFiles": [
+      "scripts/check-formal-implementation-conformance.mjs",
+      "scripts/formal-implementation-surface.cjs",
+      "scripts/check-bounded-trace-domain.mjs",
+      "scripts/formal.mjs",
+      "scripts/runtime-boundary-refinement.mjs",
+      "scripts/formal-bounded-refinement-corpus.mjs",
+      "scripts/build-source-binding.mjs",
+      "scripts/check-build-source-binding-mutation.mjs",
+      "scripts/check-assurance-infrastructure-binding-mutation.mjs",
+      "scripts/check-emitted-artifact-entrypoints.mjs",
+      "scripts/check-emitted-artifact-entrypoint-mutation.mjs",
+      "scripts/run-assurance.mjs",
+      "package.json"
+    ],
     "modelDigest": "c7255f611f61a6cf07f746217eae5852e996a3579799dc9fd7722318095c177a",
     "modelFiles": [
       "formal/WorkOnce.tla",

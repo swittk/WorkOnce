@@ -20,7 +20,7 @@ The reviewed manifest currently maps **124 public callables**, **21 callable pol
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
-The compiled observation bridge is fail-closed too. `npm run build` writes an ignored content binding for every `src/**/*.ts` build input plus the TypeScript configs. `npm run formal`, `npm run assurance:traces` and the standalone real-process test command verify that binding before consuming `dist`-backed code, so stale emitted JavaScript cannot certify newer TypeScript. The complete assurance gate also corrupts the binding deliberately and requires that freshness guard to reject the mutant.
+The compiled observation bridge is fail-closed too. `npm run build` writes an ignored content binding for every `src/**/*.ts` build input plus the TypeScript configs **and for every emitted file under `dist/` and `dist-cjs/`**. `npm run formal`, `npm run assurance:traces` and the standalone real-process test command verify that binding before consuming emitted code, so neither stale JavaScript nor a post-build edit to ESM, CommonJS or declarations can certify newer/current TypeScript. The complete assurance gate deliberately corrupts the source stamp and separately mutates ESM JavaScript, CommonJS JavaScript and declarations; all four mutants must be rejected.
 
 The generated human summary is `formal/FORMAL_COVERAGE_GAPS.md`; despite the historical filename, a clean run currently reports no unmapped public surface.
 
@@ -126,6 +126,32 @@ runner. These are bounded executable refinements and safety checks, not instruct
 TypeScript verification. Neither model assumes fairness or proves that an application callback or
 network request must eventually resolve. Keeping the two graphs separate avoids a large artificial
 cross-product and does not launch TLC per observation.
+
+## Assurance-infrastructure non-vacuity
+
+The proof machinery is itself content-bound. The compiler/formal manifest records a raw-content
+digest over the formal surface extractor, manifest checker, bounded-trace checker, TLC runner,
+compiled observation producers, build/source-artifact binding, mutation guards, full assurance
+runner and `package.json`. The bounded-trace report independently hashes the same critical proof
+wiring. An unreviewed change to the proof runner therefore makes both committed reports drift; the
+full gate injects such a proof-runner mutation and requires both reports to go red before restoring
+the file.
+
+Every supported package-script entrypoint that consumes emitted artifacts is also audited. Commands
+such as `test`, consumer smoke, benchmark, update flows and web tests must build first; direct
+process tests must verify the existing bound build; `formal` and `assurance:traces` must perform the
+binding check before dynamically importing `dist`-backed producers. The full assurance runner must
+build before any emitted-artifact consumer. A mutation that removes the `test:process` freshness
+guard is required to fail this entrypoint audit.
+
+Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation map to
+the exact invariant names parsed from both CFG files, so adding/removing a configured invariant
+without a corresponding mutation control fails. The current gate injects one-transition violating
+states for all ten lifecycle invariants and all seven runtime invariants and requires TLC to report
+the intended invariant violation. `RuntimeSamplesConform` gets a deliberately invalid observed
+sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant.
+These controls prove that each configured invariant is active; they do not replace the real bounded
+state-space runs.
 
 ## Fast complete gate
 

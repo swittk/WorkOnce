@@ -6,22 +6,41 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stampPath = path.join(root, '.artifacts/build-source-binding.json');
 const configFiles = ['tsconfig.json', 'tsconfig.cjs.json'];
+const artifactRoots = ['dist', 'dist-cjs'];
 
-function sourceFiles() {
+function recursiveFiles(directory, accept = () => true) {
   const found = [];
-  const visit = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      const absolute = path.join(directory, entry.name);
+  const visit = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const absolute = path.join(current, entry.name);
       if (entry.isDirectory()) visit(absolute);
-      else if (entry.isFile() && entry.name.endsWith('.ts'))
+      else if (entry.isFile() && accept(entry.name, absolute))
         found.push(path.relative(root, absolute));
     }
   };
-  visit(path.join(root, 'src'));
-  return [...found, ...configFiles].sort();
+  visit(directory);
+  return found;
 }
 
-function sourceDigest(files = sourceFiles()) {
+function sourceFiles() {
+  return [
+    ...recursiveFiles(path.join(root, 'src'), (name) => name.endsWith('.ts')),
+    ...configFiles,
+  ].sort();
+}
+
+function artifactFiles() {
+  const found = [];
+  for (const relativeRoot of artifactRoots) {
+    const absoluteRoot = path.join(root, relativeRoot);
+    if (!fs.existsSync(absoluteRoot))
+      throw new Error(`Compiled WorkOnce artifact directory is missing: ${relativeRoot}`);
+    found.push(...recursiveFiles(absoluteRoot));
+  }
+  return found.sort();
+}
+
+function digestFiles(files) {
   const hash = crypto.createHash('sha256');
   for (const relative of files) {
     const content = fs.readFileSync(path.join(root, relative));
@@ -35,7 +54,14 @@ function sourceDigest(files = sourceFiles()) {
 
 export function currentBuildSourceBinding() {
   const files = sourceFiles();
-  return { version: 1, files, sourceDigest: sourceDigest(files) };
+  const artifacts = artifactFiles();
+  return {
+    version: 2,
+    files,
+    sourceDigest: digestFiles(files),
+    artifactFiles: artifacts,
+    artifactDigest: digestFiles(artifacts),
+  };
 }
 
 export function writeBuildSourceBinding() {
@@ -43,6 +69,10 @@ export function writeBuildSourceBinding() {
   fs.mkdirSync(path.dirname(stampPath), { recursive: true });
   fs.writeFileSync(stampPath, `${JSON.stringify(binding, null, 2)}\n`);
   return binding;
+}
+
+function sameList(left, right) {
+  return Array.isArray(left) && JSON.stringify(left) === JSON.stringify(right);
 }
 
 export function assertBuildSourceBinding() {
@@ -55,13 +85,21 @@ export function assertBuildSourceBinding() {
     );
   }
   const current = currentBuildSourceBinding();
-  const sameFiles =
-    stored?.version === current.version &&
-    Array.isArray(stored.files) &&
-    JSON.stringify(stored.files) === JSON.stringify(current.files);
-  if (!sameFiles || stored.sourceDigest !== current.sourceDigest) {
+  if (
+    stored?.version !== current.version ||
+    !sameList(stored.files, current.files) ||
+    stored.sourceDigest !== current.sourceDigest
+  ) {
     throw new Error(
       'Stale compiled WorkOnce build does not match current TypeScript sources; run npm run build.',
+    );
+  }
+  if (
+    !sameList(stored.artifactFiles, current.artifactFiles) ||
+    stored.artifactDigest !== current.artifactDigest
+  ) {
+    throw new Error(
+      'Compiled WorkOnce artifacts changed after the bound build; run npm run build before using emitted-artifact proofs.',
     );
   }
   return current;
@@ -71,9 +109,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (process.argv.includes('--write')) {
     const binding = writeBuildSourceBinding();
     if (process.argv.includes('--verbose'))
-      console.log(`Bound compiled WorkOnce output to ${binding.files.length} source/config files.`);
+      console.log(
+        `Bound compiled WorkOnce output to ${binding.files.length} source/config files and ${binding.artifactFiles.length} emitted files.`,
+      );
   } else {
     assertBuildSourceBinding();
-    console.log('Compiled WorkOnce output matches current TypeScript sources.');
+    console.log(
+      'Compiled WorkOnce output and emitted artifacts match the bound TypeScript sources.',
+    );
   }
 }

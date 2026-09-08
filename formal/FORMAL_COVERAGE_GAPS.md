@@ -42,6 +42,11 @@
 - `root.exponentialBackoff`: `BackoffDelay`
 - `root.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
 
+## Assurance infrastructure binding
+
+- Bound proof/checker files: **13**
+- Content digest: `66e571a2487558d6a2232fc1bd543ba309232eba187b9a8284f2005a40f58a54`
+
 ## Coverage rule
 
 The manifest is compiler-discovered. Any new public callable, reachable package-owned input/output/callback field, signature/type change, configured TLA invariant, or bound source/model semantic change fails assurance until this file and the machine-reviewed manifest are deliberately updated.

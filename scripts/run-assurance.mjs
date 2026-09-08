@@ -39,6 +39,12 @@ runNpm('single build', ['run', 'build']);
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
 ]);
+run('emitted-artifact entrypoint audit', process.execPath, [
+  'scripts/check-emitted-artifact-entrypoints.mjs',
+]);
+run('emitted-artifact entrypoint mutation guard', process.execPath, [
+  'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+]);
 runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',
@@ -52,6 +58,9 @@ run('public mapping', process.execPath, ['scripts/check-formal-implementation-co
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('real process faults', process.execPath, ['--test', ...processTests]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
+run('assurance infrastructure binding mutation guard', process.execPath, [
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+]);
 run('TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']);
 run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);
 console.log('[assurance] all gates passed');
