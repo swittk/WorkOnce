@@ -348,6 +348,19 @@ const outboxMutants = {
   /\ UNCHANGED <<aQueue, bQueue, cursor, delivered, crashes>>`,
 };
 
+const outboxBudgetMutants = {
+  BudgetTypeOK: String.raw`  /\ cursor' = "bad"
+  /\ UNCHANGED <<aQueue, bQueue, cQueue, calls, delivered>>`,
+  AllBudgetIntentAccounted: String.raw`  /\ aQueue' = <<"a1", "a2">>
+  /\ UNCHANGED <<bQueue, cQueue, cursor, calls, delivered>>`,
+  ExactBudgetPrefixes: String.raw`  /\ calls' = 1 /\ cursor' = "A"
+  /\ UNCHANGED <<aQueue, bQueue, cQueue, delivered>>`,
+  MidParentRemainsReachable: String.raw`  /\ calls' = 1 /\ aQueue' = <<"a1", "a2">>
+  /\ UNCHANGED <<bQueue, cQueue, cursor, delivered>>`,
+  AllReachedByFourth: String.raw`  /\ calls' = 4
+  /\ UNCHANGED <<aQueue, bQueue, cQueue, cursor, delivered>>`,
+};
+
 const externalMutants = {
   ExternalTypeOK: String.raw`  /\ phase' = "invalid"
   /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
@@ -430,6 +443,7 @@ const outboxMutationPlan = mutationCoveragePlan('formal/WorkOnceOutbox.cfg', out
   'AllOriginalIntentAccounted',
   'HealthyReachedByThirdPass',
 ]);
+const outboxBudgetMutationPlan = mutationCoveragePlan('formal/WorkOnceOutboxBudget.cfg', outboxBudgetMutants);
 
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
@@ -744,17 +758,18 @@ if (!process.argv.includes('--runtime-only')) {
     './outbox-refinement.mjs'
   );
   runModel('WorkOnceOutbox', 'WorkOnceOutbox.cfg');
+  runModel('WorkOnceOutboxBudget', 'WorkOnceOutboxBudget.cfg');
   const outboxSamples = await runOutboxRefinementSamples();
   assertOutboxRefinementSamples(outboxSamples);
   const outboxObserved = resolve('.artifacts/tlc/WorkOnceOutboxObserved.tla');
   const outboxConfig = resolve('.artifacts/tlc/WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
-    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConform ==\n  /\\ ObservedSamples # {}\n  /\\ {s.kind : s \\in ObservedSamples} = {"rotation", "poison", "restart", "ackLoss", "adapter"}\n  /\\ \\A s \\in ObservedSamples : OutboxSampleOK(s)\n====\n`,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConform ==\n  /\\ Samples # {}\n  /\\ {s.kind : s \\in Samples} = {"rotation", "poison", "restart", "ackLoss", "casAckLoss", "adapter", "adapterBudget", "adapterFaults", "adapterConcurrent", "budget", "grid", "multiPoison", "dynamic", "finiteArrivals", "concurrent", "limitBoundary", "staleParent", "rotationFailure", "multiError", "runDispatcher", "historyCongruence", "historySplit"}\n  /\\ \\A s \\in Samples : OutboxSampleOK(s)\n====\n`,
   );
   writeFileSync(
     outboxConfig,
-    `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nINVARIANT OutboxSamplesConform\n`,
+    `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT OutboxSamplesConform\n`,
   );
   console.log(`TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`);
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
@@ -763,6 +778,12 @@ if (!process.argv.includes('--runtime-only')) {
     baseModule: 'WorkOnceOutbox',
     baseConfig: readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'),
     plan: outboxMutationPlan,
+  });
+  runMutationWitnessBatch({
+    model: 'WorkOnceOutboxBudgetInvariantMutationBatch',
+    baseModule: 'WorkOnceOutboxBudget',
+    baseConfig: readFileSync('formal/WorkOnceOutboxBudget.cfg', 'utf8'),
+    plan: outboxBudgetMutationPlan,
   });
 
   const semanticMutants = [
@@ -893,5 +914,6 @@ assertMutationPlansExecuted(
         policyMutationPlan,
         externalMutationPlan,
         outboxMutationPlan,
+        outboxBudgetMutationPlan,
       ],
 );

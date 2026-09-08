@@ -66,9 +66,16 @@ const evidenceFiles = [
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
   'scripts/outbox-refinement.mjs',
+  'scripts/check-outbox-source-model-binding-mutation.mjs',
+  'scripts/check-outbox-implementation-mutations.mjs',
   'test/outbox-refinement.test.mjs',
+  'test/outbox-cursor-control.test.mjs',
+  'test/process/outbox-process.test.mjs',
+  'test/process/outbox-child.mjs',
   'formal/WorkOnceOutbox.tla',
   'formal/WorkOnceOutbox.cfg',
+  'formal/WorkOnceOutboxBudget.tla',
+  'formal/WorkOnceOutboxBudget.cfg',
   'scripts/external-transport-refinement.mjs',
   'test/external-transport-refinement.test.mjs',
   'test/external.test.mjs',
@@ -213,10 +220,15 @@ const current = {
       .filter((sample) => sample.kind === 'adapter')
       .map((sample) => sample.adapter)
       .sort(),
+    budgetAdapters: outboxSamples
+      .filter((sample) => sample.kind === 'adapterBudget')
+      .map((sample) => sample.adapter)
+      .sort(),
     observationDigest: crypto
       .createHash('sha256')
       .update(JSON.stringify(outboxSamples))
       .digest('hex'),
+    sqliteProcessCrashPrefixes: 5,
   },
   externalBoundary: {
     samples: externalSamples.length,

@@ -106,6 +106,8 @@ for (const consumer of [
   'local-runner implementation mutation guards',
   'external source/model mutation guard',
   'external implementation mutation guards',
+  'outbox source/model mutation guard',
+  'outbox implementation mutation guard',
   'storage implementation mutation guard',
   'storage source/model mutation guard',
   'implementation traces',

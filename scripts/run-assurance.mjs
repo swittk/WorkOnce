@@ -112,6 +112,8 @@ await runParallel([
   ['local-runner implementation mutation guards', process.execPath, ['scripts/check-local-runner-implementation-mutations.mjs']],
   ['external source/model mutation guard', process.execPath, ['scripts/check-external-source-model-mutation.mjs']],
   ['external implementation mutation guards', process.execPath, ['scripts/check-external-implementation-mutations.mjs']],
+  ['outbox source/model mutation guard', process.execPath, ['scripts/check-outbox-source-model-binding-mutation.mjs']],
+  ['outbox implementation mutation guard', process.execPath, ['scripts/check-outbox-implementation-mutations.mjs']],
   ['storage implementation mutation guard', process.execPath, ['scripts/check-storage-contract-mutation.mjs']],
   ['storage source/model mutation guard', process.execPath, ['scripts/check-storage-source-model-mutation.mjs']],
 ]);

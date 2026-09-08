@@ -364,7 +364,7 @@ system exactly-once behavior remain outside this lifecycle proof.
 
 The continuation outbox has a dedicated bounded scheduler machine and fresh compiled observations from `scripts/outbox-refinement.mjs`. The model covers poison-item rotation, cross-parent ordering, restart/ack-loss behavior and adapter parity while retaining every original continuation intent. Its configured invariants are fail-closed: simple violations share a batched TLC mutation witness, while lost-child, lost-poison and skipped-wrap mutations exercise the semantic properties that need multi-step state.
 
-Dispatch operations are mapped to an explicit `OutboxDispatch` action and outbox cursor/state fields have reviewed abstraction concepts rather than being treated as generic observations. This is bounded scheduler safety/fairness evidence; it does not turn application callbacks or external effects into exactly-once operations.
+Dispatch operations are mapped to explicit `OutboxDispatch` / budget-dispatch actions and outbox cursor/state fields have reviewed abstraction concepts rather than being treated as generic observations. A second budget model covers bounded work across three parents, exact call prefixes and mid-parent reachability. The compiled corpus also includes concurrent/faulted adapters, finite/dynamic arrivals, multiple poison rows, limit boundaries, stale parents, rotation failures, history congruence/splits and real SQLite crash-prefix restart cases. Source/model and compiled-cursor mutation guards fail closed on lost scheduler advancement. This is bounded scheduler safety/fairness evidence; it does not turn application callbacks or external effects into exactly-once operations.
 
 ## External transport fencing and effect boundary
 

@@ -77,11 +77,90 @@ OutboxSampleOK(s) ==
        /\ s.childDurableBeforeAck
        /\ s.parentIntentRetained
        /\ s.retryConverged
+    [] s.kind = "casAckLoss" ->
+       /\ s.exactChildAckLoss
+       /\ s.childCommitAmbiguityConverges
+       /\ s.exactParentAckLoss
+       /\ s.parentCommitAmbiguityConverges
     [] s.kind = "adapter" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.threePassesSent
        /\ s.laterParentReached
        /\ s.wrapped
        /\ s.firstParentDrained
+    [] s.kind = "adapterBudget" ->
+       /\ s.adapter \in {"memory", "sqlite", "cas"}
+       /\ s.exactCounts
+       /\ s.allParentsDrained
+       /\ s.allChildrenDurable
+       /\ s.maxSafeLimitWorks
+    [] s.kind = "adapterFaults" ->
+       /\ s.sixPrefixes
+       /\ s.exactErrors
+       /\ s.durablePrefixesMatch
+       /\ s.allReplayConverge
+    [] s.kind = "adapterConcurrent" ->
+       /\ s.threeAdapters
+       /\ s.allConverge
+    [] s.kind = "budget" ->
+       /\ s.exactTwoAttemptCounts
+       /\ s.midParentBudgetPreserved
+       /\ s.laterParentsReached
+       /\ s.wrapped
+       /\ s.maxSafeLimitDrains
+    [] s.kind = "grid" ->
+       /\ s.normalMatrixComplete
+       /\ s.poisonMatrixComplete
+       /\ s.allNormalConverged
+       /\ s.allPoisonHealthyReached
+    [] s.kind = "multiPoison" ->
+       /\ s.limitOneConverges
+       /\ s.limitTwoConverges
+    [] s.kind = "dynamic" ->
+       /\ s.insertedBeforeCursor
+       /\ s.laterParentReached
+       /\ s.insertedReachedAfterWrap
+       /\ s.originalPartialStillReachable
+    [] s.kind = "finiteArrivals" ->
+       /\ s.allFiniteArrivalsReached
+       /\ s.boundedAfterQuiescence
+       /\ s.noPendingAfterQuiescence
+    [] s.kind = "concurrent" ->
+       /\ s.independentCursorsConverge
+       /\ s.allChildrenDurable
+       /\ s.boundedRounds
+    [] s.kind = "limitBoundary" ->
+       /\ s.invalidLimitsRejected
+       /\ s.invalidLimitsNoQuery
+       /\ s.invalidIntervalExact
+    [] s.kind = "staleParent" ->
+       /\ s.winnerAcked
+       /\ s.rerunAdvancedGeneration
+       /\ s.exactStaleCause
+       /\ s.childPreserved
+    [] s.kind = "rotationFailure" ->
+       /\ s.originalCausePreserved
+       /\ s.helperFailureNotSurfaced
+       /\ s.durableIntentPreserved
+    [] s.kind = "multiError" ->
+       /\ s.exactContainer
+       /\ s.exactCount
+       /\ s.exactCauses
+       /\ s.bothIntentsRetained
+    [] s.kind = "runDispatcher" ->
+       /\ s.exactPoisonObserved
+       /\ s.neighborDelivered
+       /\ s.healthySiblingDelivered
+       /\ s.poisonStillRetained
+    [] s.kind = "historyCongruence" ->
+       /\ s.threeMaterialHistories
+       /\ s.sameEnrichedProjection
+       /\ s.sameNextFuture
+       /\ s.futureProjectionEqual
+    [] s.kind = "historySplit" ->
+       /\ s.sameDurableProjection
+       /\ s.differentImmediateFuture
+       /\ s.cursorRequiredInAbstraction
+       /\ s.eventualDurableConvergence
     [] OTHER -> FALSE
 =============================================================================

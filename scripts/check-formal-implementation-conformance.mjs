@@ -45,6 +45,23 @@ const modelFiles = [
   'formal/WorkOnceExternal.cfg',
   'formal/WorkOnceOutbox.tla',
   'formal/WorkOnceOutbox.cfg',
+  'formal/WorkOnceOutboxBudget.tla',
+  'formal/WorkOnceOutboxBudget.cfg',
+];
+const outboxSourceFiles = [
+  'src/work.ts',
+  'src/kernel.ts',
+  'src/storage.ts',
+  'src/memory.ts',
+  'src/sqlite.ts',
+  'src/cas.ts',
+];
+const outboxModelFiles = [
+  'formal/WorkOnceOutbox.tla',
+  'formal/WorkOnceOutbox.cfg',
+  'formal/WorkOnceOutboxBudget.tla',
+  'formal/WorkOnceOutboxBudget.cfg',
+  'formal/WorkOnceContract.tla',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
 const storageSourceFiles = [
@@ -190,6 +207,17 @@ const assuranceInfrastructureFiles = [
   'test/process/external-effect-process.test.mjs',
   'formal/WorkOnceExternal.tla',
   'formal/WorkOnceExternal.cfg',
+  'scripts/outbox-refinement.mjs',
+  'scripts/check-outbox-source-model-binding-mutation.mjs',
+  'scripts/check-outbox-implementation-mutations.mjs',
+  'test/outbox-refinement.test.mjs',
+  'test/outbox-cursor-control.test.mjs',
+  'test/process/outbox-process.test.mjs',
+  'test/process/outbox-child.mjs',
+  'formal/WorkOnceOutbox.tla',
+  'formal/WorkOnceOutbox.cfg',
+  'formal/WorkOnceOutboxBudget.tla',
+  'formal/WorkOnceOutboxBudget.cfg',
   'test/process/sqlite-busy-child.mjs',
   'test/process/sqlite-busy-startup.test.mjs',
   'test/storage-contract-hardening.test.mjs',
@@ -635,7 +663,7 @@ function modelActionsForKey(key) {
     return ['Cancel'];
   if (key.endsWith('.wake') || key.endsWith('.wakeCurrent')) return ['Wake'];
   if (key.endsWith('.dispatch') || key.endsWith('.runDispatcher'))
-    return ['CreateChild', 'AckChild', 'OutboxDispatch'];
+    return ['CreateChild', 'AckChild', 'OutboxDispatch', 'OutboxBudgetDispatch'];
   if (
     key === 'root.WorkQueue.runAvailable' ||
     key === 'root.WorkQueue.process' ||
@@ -808,6 +836,7 @@ function buildManifest(live) {
         'CreateChild',
         'AckChild',
         'OutboxDispatch',
+        'OutboxBudgetDispatch',
         'Tick',
       ],
       configuredChecks: readConfiguredChecks(),
@@ -871,6 +900,16 @@ function buildManifest(live) {
         observationProducer: 'scripts/outbox-refinement.mjs',
         observationBinding: 'scripts/formal.mjs',
         mutationInvariant: 'HealthyReachedByThirdPass',
+        sourceFiles: outboxSourceFiles,
+        modelFiles: outboxModelFiles,
+        sourceDigest: semanticSourceDigest(outboxSourceFiles),
+        modelDigest: formalDigest(outboxModelFiles),
+      },
+      outboxBudget: {
+        spec: 'formal/WorkOnceOutboxBudget.tla',
+        config: 'formal/WorkOnceOutboxBudget.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceOutboxBudget.cfg'),
+        mutationInvariant: 'AllReachedByFourth',
       },
       external: {
         spec: 'formal/WorkOnceExternal.tla',
@@ -992,6 +1031,10 @@ function renderReport(manifest) {
     `- Fresh compiled observations: \`${manifest.model.outbox.observationProducer}\` via \`${manifest.model.outbox.observationBinding}\``,
     `- Checked invariants: ${manifest.model.outbox.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
     `- Mutation guard: \`${manifest.model.outbox.mutationInvariant}\``,
+    `- Bound scheduler source: ${manifest.model.outbox.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
+    `- Budget spec: \`${manifest.model.outboxBudget.spec}\``,
+    `- Budget checked invariants: ${manifest.model.outboxBudget.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Budget mutation guard: \`${manifest.model.outboxBudget.mutationInvariant}\``,
     '',
     '## External transport boundary',
     '',
@@ -1154,6 +1197,16 @@ if (write) {
     current.model.storage,
     'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
+  if (
+    previous?.model?.outbox?.sourceDigest &&
+    previous.model.outbox.sourceDigest !== current.model.outbox.sourceDigest &&
+    previous.model.outbox.modelDigest === current.model.outbox.modelDigest &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

@@ -24,6 +24,7 @@
 - `CreateChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#next`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#thenDo`
 - `AckChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `OutboxDispatch`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
+- `OutboxBudgetDispatch`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `Tick`: **internal/time-only action**
 
 ## Runtime boundary model
@@ -72,6 +73,10 @@
 - Fresh compiled observations: `scripts/outbox-refinement.mjs` via `scripts/formal.mjs`
 - Checked invariants: `AllOriginalIntentAccounted`, `CrossParentOrder`, `FirstPassRotatesPoison`, `HealthyReachedByThirdPass`, `OutboxTypeOK`, `PoisonIntentRetained`
 - Mutation guard: `HealthyReachedByThirdPass`
+- Bound scheduler source: `src/work.ts`, `src/kernel.ts`, `src/storage.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`
+- Budget spec: `formal/WorkOnceOutboxBudget.tla`
+- Budget checked invariants: `AllBudgetIntentAccounted`, `AllReachedByFourth`, `BudgetTypeOK`, `ExactBudgetPrefixes`, `MidParentRemainsReachable`
+- Budget mutation guard: `AllReachedByFourth`
 
 ## External transport boundary
 
@@ -89,8 +94,8 @@
 
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **58**
-- Content digest: `6a241e298f073c87a082800ba835338ed06156182de39f863f193617a3a0246e`
+- Bound proof/checker files: **69**
+- Content digest: `94e3bc2d39d71aabfd4fce57a209198c0c316cb151f0097c117f5863570cf67c`
 
 ## Coverage rule
 

@@ -36,9 +36,16 @@
     "scripts/check-policy-source-model-binding-mutation.mjs",
     "scripts/check-policy-implementation-mutations.mjs",
     "scripts/outbox-refinement.mjs",
+    "scripts/check-outbox-source-model-binding-mutation.mjs",
+    "scripts/check-outbox-implementation-mutations.mjs",
     "test/outbox-refinement.test.mjs",
+    "test/outbox-cursor-control.test.mjs",
+    "test/process/outbox-process.test.mjs",
+    "test/process/outbox-child.mjs",
     "formal/WorkOnceOutbox.tla",
     "formal/WorkOnceOutbox.cfg",
+    "formal/WorkOnceOutboxBudget.tla",
+    "formal/WorkOnceOutboxBudget.cfg",
     "scripts/external-transport-refinement.mjs",
     "test/external-transport-refinement.test.mjs",
     "test/external.test.mjs",
@@ -76,7 +83,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "df478ed7682c30a2be4b27987d5e60439c741a5fd8b56700dd1dde5c058b67fb",
+  "evidenceDigest": "5b2c6d10deadf80927dcfdb20270856dcdd9208746ea6f7419677785580b57ef",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -201,13 +208,19 @@
     "observationDigest": "dbd1f17ada09571479f7566b4d1c4fe921857bf21b11916bc886e7849cb15fcf"
   },
   "outboxScheduler": {
-    "samples": 7,
+    "samples": 26,
     "adapters": [
       "cas",
       "memory",
       "sqlite"
     ],
-    "observationDigest": "57a56c6847f8fe4192d8ef741d9e4c66d2949588ec8390a77c16242b82ee742f"
+    "budgetAdapters": [
+      "cas",
+      "memory",
+      "sqlite"
+    ],
+    "observationDigest": "b57beefa0f0d4c94e8ba4184712287094159de88ea3c33f63fa22a2cef9a0584",
+    "sqliteProcessCrashPrefixes": 5
   },
   "externalBoundary": {
     "samples": 13,
