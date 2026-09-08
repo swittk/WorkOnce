@@ -72,6 +72,15 @@ try {
       ),
     /formal\.mjs must use exactly the reviewed two shards/u,
   );
+  expectFormalSchedulingFailure(
+    'external-family shard imbalance',
+    (text) =>
+      text.replace(
+        'if (runtimeOnly) {\n  const { runExternalTransportSamples, assertExternalTransportSamples } = await import(',
+        'if (nonRuntimeOnly) {\n  const { runExternalTransportSamples, assertExternalTransportSamples } = await import(',
+      ),
+    /External formal family must stay on the reviewed lighter runtime shard/u,
+  );
 } finally {
   fs.writeFileSync(target, original);
   fs.writeFileSync(formalTarget, formalOriginal);

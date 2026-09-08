@@ -910,7 +910,7 @@ BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
   }
 }
 
-if (nonRuntimeOnly) {
+if (runtimeOnly) {
   const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
     './external-transport-refinement.mjs'
   );
@@ -994,12 +994,6 @@ MutantSpec == Spec
 
 assertMutationPlansExecuted(
   runtimeOnly
-    ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan]
-    : [
-        lifecycleMutationPlan,
-        policyMutationPlan,
-        externalMutationPlan,
-        outboxMutationPlan,
-        outboxBudgetMutationPlan,
-      ],
+    ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan, externalMutationPlan]
+    : [lifecycleMutationPlan, policyMutationPlan, outboxMutationPlan, outboxBudgetMutationPlan],
 );

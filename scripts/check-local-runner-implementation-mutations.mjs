@@ -7,13 +7,21 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/worker.js');
 const original = fs.readFileSync(target, 'utf8');
-function runExpectedFailure(label, pattern) {
-  const result = spawnSync(process.execPath, ['--test', 'test/local-runner-refinement.test.mjs'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 10_000,
-  });
+function runExpectedFailure(label, witness, pattern) {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      `import { assertLocalRunnerMutationWitness } from './scripts/local-runner-refinement.mjs'; await assertLocalRunnerMutationWitness(${JSON.stringify(witness)});`,
+    ],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+      timeout: 10_000,
+    },
+  );
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
   assert.match(output, pattern, `${label} failed for an unrelated reason`);
@@ -30,7 +38,7 @@ try {
         `if (ownershipLoss !== undefined)\n                throw new Error('Worker ownership lost');`,
       ),
     );
-    runExpectedFailure('ownership-cause erasure', /stopReclaim|undefinedHeartbeat|wakePoll/u);
+    runExpectedFailure('ownership-cause erasure', 'ownershipCause', /ownershipCause/u);
     fs.writeFileSync(target, original);
   }
   {
@@ -46,14 +54,18 @@ try {
       .replace(block, `if (false)\n            break;\n        for (const claim of claims) {`)
       .replace(inner, `if (false)\n        stop();`);
     fs.writeFileSync(target, mutant);
-    runExpectedFailure('dual post-stop handler admission fences', /lateClaimStop/u);
+    runExpectedFailure(
+      'dual post-stop handler admission fences',
+      'lateClaimStop',
+      /lateClaimStop/u,
+    );
     fs.writeFileSync(target, original);
   }
   {
     const needle = 'wakePoll === null || wakePoll === void 0 ? void 0 : wakePoll();';
     assert.equal(original.includes(needle), true, 'wakePoll mutation anchor is stale');
     fs.writeFileSync(target, original.replace(needle, 'void wakePoll;'));
-    runExpectedFailure('lost active-fatal poll wakeup', /wakePoll/u);
+    runExpectedFailure('lost active-fatal poll wakeup', 'wakePoll', /wakePoll/u);
     fs.writeFileSync(target, original);
   }
 } finally {

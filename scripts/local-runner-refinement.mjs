@@ -698,6 +698,27 @@ async function wakePollSample() {
   };
 }
 
+export async function assertLocalRunnerMutationWitness(kind) {
+  if (kind === 'ownershipCause') {
+    const sample = await stopReclaimSample('memory', 'heartbeat');
+    assert.equal(sample.exactCause, true, `ownershipCause:${JSON.stringify(sample)}`);
+    return;
+  }
+  if (kind === 'lateClaimStop') {
+    const sample = await lateClaimStopSample();
+    assert.equal(sample.oneHandler, true, `lateClaimStop:${JSON.stringify(sample)}`);
+    assert.equal(sample.lateLeaseNotExecuted, true, `lateClaimStop:${JSON.stringify(sample)}`);
+    return;
+  }
+  if (kind === 'wakePoll') {
+    const sample = await wakePollSample();
+    assert.equal(sample.exactCause, true, `wakePoll:${JSON.stringify(sample)}`);
+    assert.equal(sample.promptlyWoken, true, `wakePoll:${JSON.stringify(sample)}`);
+    return;
+  }
+  assert.fail(`Unknown local-runner mutation witness: ${kind}`);
+}
+
 export async function runLocalRunnerRefinementSamples() {
   const samples = [];
   for (const adapter of ['memory', 'sqlite', 'cas']) {

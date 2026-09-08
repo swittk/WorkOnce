@@ -14,6 +14,13 @@ assert.deepEqual(
   ['--non-runtime-only', '--runtime-only'],
   `formal.mjs must use exactly the reviewed two shards; got ${shardModes.join(', ')}`,
 );
+assert.equal(
+  formalText.includes(
+    'if (runtimeOnly) {\n  const { runExternalTransportSamples, assertExternalTransportSamples } = await import(',
+  ),
+  true,
+  'External formal family must stay on the reviewed lighter runtime shard.',
+);
 
 function parallelBlocks(source) {
   const blocks = [];
