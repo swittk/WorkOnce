@@ -797,6 +797,31 @@ if (!process.argv.includes('--runtime-only')) {
   );
   console.log(`TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`);
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
+
+  const sampleMutant = resolve('.artifacts/tlc/WorkOnceOutboxSamplesMutant.tla');
+  const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceOutboxSamplesMutant.cfg');
+  writeFileSync(
+    sampleMutant,
+    String.raw`---- MODULE WorkOnceOutboxSamplesMutant ----
+EXTENDS WorkOnceOutboxObserved
+BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
+====
+`,
+  );
+  writeFileSync(
+    sampleMutantConfig,
+    readFileSync(outboxConfig, 'utf8').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceOutboxSamplesMutant',
+    sampleMutantConfig,
+    sampleMutant,
+    'OutboxSamplesConform',
+  );
+
   runMutationWitnessBatch({
     model: 'WorkOnceOutboxInvariantMutationBatch',
     baseModule: 'WorkOnceOutbox',
