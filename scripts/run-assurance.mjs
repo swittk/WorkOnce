@@ -60,6 +60,12 @@ run('policy source/model mutation guard', process.execPath, [
 run('policy implementation mutation guards', process.execPath, [
   'scripts/check-policy-implementation-mutations.mjs',
 ]);
+run('local-runner source/model mutation guard', process.execPath, [
+  'scripts/check-local-runner-source-model-mutation.mjs',
+]);
+run('local-runner implementation mutation guards', process.execPath, [
+  'scripts/check-local-runner-implementation-mutations.mjs',
+]);
 runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',

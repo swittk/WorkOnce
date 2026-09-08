@@ -14,7 +14,7 @@ try {
   fs.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(
     process.execPath,
-    ['scripts/check-formal-implementation-conformance.mjs', '--write'],
+    ['scripts/check-formal-implementation-conformance.mjs', '--check-read-binding-only'],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;

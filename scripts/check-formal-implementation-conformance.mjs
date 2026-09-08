@@ -35,6 +35,8 @@ const modelFiles = [
   'formal/WorkOnceRuntime.cfg',
   'formal/WorkOncePolicy.tla',
   'formal/WorkOncePolicy.cfg',
+  'formal/WorkOnceLocalRunner.tla',
+  'formal/WorkOnceLocalRunner.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
 const policySourceSymbols = {
@@ -63,10 +65,30 @@ const policySourceSymbols = {
 };
 const policySourceFiles = Object.keys(policySourceSymbols);
 const policyModelFiles = ['formal/WorkOncePolicy.tla', 'formal/WorkOncePolicy.cfg'];
+const localRunnerSourceSymbols = {
+  'src/worker.ts': [
+    'markLocalClaimStartedAt',
+    'validateWorkerOptions',
+    'waitForPoll',
+    'processClaim',
+    'processClaims',
+    'runWorker',
+  ],
+  'src/work.ts': [
+    'WorkQueue.claim',
+    'WorkQueue.runAvailable',
+    'WorkQueue.process',
+    'WorkQueue.run',
+  ],
+};
+const localRunnerSourceFiles = Object.keys(localRunnerSourceSymbols);
+const localRunnerModelFiles = ['formal/WorkOnceLocalRunner.tla', 'formal/WorkOnceLocalRunner.cfg'];
 const runtimeModelFiles = [
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
   'formal/WorkOnceContract.tla',
+  'formal/WorkOnceLocalRunner.tla',
+  'formal/WorkOnceLocalRunner.cfg',
 ];
 const readModelFiles = ['formal/WorkOnceContract.tla'];
 const readSourceMethods = [
@@ -97,6 +119,15 @@ const assuranceInfrastructureFiles = [
   'scripts/check-read-boundary-mutation.mjs',
   'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/check-read-contract-mutation.mjs',
+  'scripts/local-runner-refinement.mjs',
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  'scripts/check-local-runner-source-model-mutation.mjs',
+  'test/local-runner-refinement.test.mjs',
+  'test/process/local-runner-child.mjs',
+  'test/process/local-runner-process.test.mjs',
+  'formal/WorkOnceLocalRunner.tla',
+  'formal/WorkOnceLocalRunner.cfg',
+  'assurance/red-before/local-runner-heartbeat-cause.json',
   'scripts/policy-refinement.mjs',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
@@ -280,6 +311,9 @@ function readSurfaceDigest() {
 }
 function policySurfaceDigest() {
   return sourceSymbolDigest(policySourceSymbols, 'Retry/defer policy');
+}
+function localRunnerSurfaceDigest() {
+  return sourceSymbolDigest(localRunnerSourceSymbols, 'Local managed runner');
 }
 
 function surface() {
@@ -610,6 +644,11 @@ function buildManifest(live) {
       const policyRelevant = modelActions.some((action) =>
         ['Retry', 'Defer', 'Wake'].includes(action),
       );
+      const localRunnerRelevant = [
+        'root.WorkQueue.runAvailable',
+        'root.WorkQueue.process',
+        'root.WorkQueue.run',
+      ].includes(row.key);
       callables.push({
         key: row.key,
         classification,
@@ -624,6 +663,7 @@ function buildManifest(live) {
             ? ['test/read-boundary-refinement.test.mjs']
             : []),
           ...(policyRelevant ? ['test/policy-refinement.test.mjs'] : []),
+          ...(localRunnerRelevant ? ['test/local-runner-refinement.test.mjs'] : []),
         ],
       });
     }
@@ -711,6 +751,18 @@ function buildManifest(live) {
         sourceDigest: semanticSourceDigest(runtimeSourceFiles),
         modelDigest: formalDigest(runtimeModelFiles),
       },
+      localRunner: {
+        spec: 'formal/WorkOnceLocalRunner.tla',
+        config: 'formal/WorkOnceLocalRunner.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceLocalRunner.cfg'),
+        observationProducer: 'scripts/local-runner-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        sourceFiles: localRunnerSourceFiles,
+        sourceSymbols: localRunnerSourceSymbols,
+        modelFiles: localRunnerModelFiles,
+        sourceDigest: localRunnerSurfaceDigest(),
+        modelDigest: formalDigest(localRunnerModelFiles),
+      },
       reads: {
         contract: 'formal/WorkOnceContract.tla',
         observationProducer: 'scripts/read-boundary-refinement.mjs',
@@ -797,6 +849,15 @@ function renderReport(manifest) {
   }
   lines.push(
     '',
+    '## Local managed-runner boundary',
+    '',
+    `- Spec: \`${manifest.model.localRunner.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.localRunner.observationProducer}\` via \`${manifest.model.localRunner.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.localRunner.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound local-runner source symbols: ${Object.entries(manifest.model.localRunner.sourceSymbols)
+      .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
+      .join(', ')}`,
+    '',
     '## Typed-read boundary',
     '',
     `- Contract: \`${manifest.model.reads.contract}\``,
@@ -825,6 +886,55 @@ function renderReport(manifest) {
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
+function assertSourceModelPairing(previousBinding, currentBinding, message) {
+  if (
+    previousBinding &&
+    previousBinding.sourceDigest !== currentBinding.sourceDigest &&
+    previousBinding.modelDigest === currentBinding.modelDigest &&
+    !acknowledgePairing
+  )
+    throw new Error(message);
+}
+
+const bindingOnly = process.argv.find((argument) =>
+  [
+    '--check-read-binding-only',
+    '--check-policy-binding-only',
+    '--check-local-runner-binding-only',
+  ].includes(argument),
+);
+if (bindingOnly) {
+  if (!fs.existsSync(manifestPath))
+    throw new Error(
+      'Missing assurance/formal-implementation-manifest.json. Run npm run assurance:update and review it.',
+    );
+  const previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  if (bindingOnly === '--check-read-binding-only') {
+    assertSourceModelPairing(
+      previous.model?.reads,
+      { sourceDigest: readSurfaceDigest(), modelDigest: formalDigest(readModelFiles) },
+      'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  } else if (bindingOnly === '--check-policy-binding-only') {
+    assertSourceModelPairing(
+      previous.model?.policy,
+      { sourceDigest: policySurfaceDigest(), modelDigest: formalDigest(policyModelFiles) },
+      'Bound retry/defer policy semantics changed without a WorkOncePolicy semantic change. Update the policy model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  } else {
+    assertSourceModelPairing(
+      previous.model?.localRunner,
+      {
+        sourceDigest: localRunnerSurfaceDigest(),
+        modelDigest: formalDigest(localRunnerModelFiles),
+      },
+      'Bound local managed-runner semantics changed without a WorkOnceLocalRunner semantic change. Update the local-runner model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
+  console.log(`Source/model binding matches for ${bindingOnly}.`);
+  process.exit(0);
+}
+
 const live = surface();
 for (const entrypoint of expectedEntrypoints)
   if (!(entrypoint in live.entrypoints))
@@ -845,36 +955,26 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
-  if (
-    previous?.model?.policy &&
-    previous.model.policy.sourceDigest !== current.model.policy.sourceDigest &&
-    previous.model.policy.modelDigest === current.model.policy.modelDigest &&
-    !acknowledgePairing
-  ) {
-    throw new Error(
-      'Bound retry/defer policy semantics changed without a WorkOncePolicy semantic change. Update the policy model or explicitly acknowledge the unchanged abstraction after review.',
-    );
-  }
-  if (
-    previous?.model?.reads &&
-    previous.model.reads.sourceDigest !== current.model.reads.sourceDigest &&
-    previous.model.reads.modelDigest === current.model.reads.modelDigest &&
-    !acknowledgePairing
-  ) {
-    throw new Error(
-      'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
-    );
-  }
-  if (
-    previous?.model?.runtime &&
-    previous.model.runtime.sourceDigest !== current.model.runtime.sourceDigest &&
-    previous.model.runtime.modelDigest === current.model.runtime.modelDigest &&
-    !acknowledgePairing
-  ) {
-    throw new Error(
-      'Bound managed-runner semantics changed without a WorkOnceRuntime/contract semantic change. Update the runtime model or explicitly acknowledge the unchanged abstraction after review.',
-    );
-  }
+  assertSourceModelPairing(
+    previous?.model?.localRunner,
+    current.model.localRunner,
+    'Bound local managed-runner semantics changed without a WorkOnceLocalRunner semantic change. Update the local-runner model or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.policy,
+    current.model.policy,
+    'Bound retry/defer policy semantics changed without a WorkOncePolicy semantic change. Update the policy model or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.reads,
+    current.model.reads,
+    'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.runtime,
+    current.model.runtime,
+    'Bound managed-runner semantics changed without a WorkOnceRuntime/contract semantic change. Update the runtime model or explicitly acknowledge the unchanged abstraction after review.',
+  );
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

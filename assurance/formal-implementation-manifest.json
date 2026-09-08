@@ -1829,7 +1829,8 @@
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs",
-        "test/policy-refinement.test.mjs"
+        "test/policy-refinement.test.mjs",
+        "test/local-runner-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.process",
       "modelActions": [
@@ -1926,7 +1927,8 @@
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs",
-        "test/policy-refinement.test.mjs"
+        "test/policy-refinement.test.mjs",
+        "test/local-runner-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.run",
       "modelActions": [
@@ -1956,7 +1958,8 @@
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs",
-        "test/policy-refinement.test.mjs"
+        "test/policy-refinement.test.mjs",
+        "test/local-runner-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.runAvailable",
       "modelActions": [
@@ -10525,6 +10528,46 @@
       "TypeOK",
       "WaitingHasCause"
     ],
+    "localRunner": {
+      "config": "formal/WorkOnceLocalRunner.cfg",
+      "configuredChecks": [
+        "LocalDrainedBeforeReturn",
+        "LocalFatalReturnPreserves",
+        "LocalNoAdmissionAfterStop",
+        "LocalNoFatalBackoff",
+        "LocalTypeOK",
+        "LossPresenceExact"
+      ],
+      "modelDigest": "b43d36a4d6164edb7a51c2f980e06c5c2140c7634734d9d521b08c3a51e99e56",
+      "modelFiles": [
+        "formal/WorkOnceLocalRunner.tla",
+        "formal/WorkOnceLocalRunner.cfg"
+      ],
+      "observationBinding": "scripts/formal.mjs",
+      "observationProducer": "scripts/local-runner-refinement.mjs",
+      "sourceDigest": "21f46ac06d6fbbbf2011a93fbe2d6a1f8c33be62a64d5b720329a2fc9ad6530a",
+      "sourceFiles": [
+        "src/worker.ts",
+        "src/work.ts"
+      ],
+      "sourceSymbols": {
+        "src/work.ts": [
+          "WorkQueue.claim",
+          "WorkQueue.runAvailable",
+          "WorkQueue.process",
+          "WorkQueue.run"
+        ],
+        "src/worker.ts": [
+          "markLocalClaimStartedAt",
+          "validateWorkerOptions",
+          "waitForPoll",
+          "processClaim",
+          "processClaims",
+          "runWorker"
+        ]
+      },
+      "spec": "formal/WorkOnceLocalRunner.tla"
+    },
     "policy": {
       "config": "formal/WorkOncePolicy.cfg",
       "configuredChecks": [
@@ -10616,15 +10659,17 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "dc42e525d629ff9f23b4a2eb73037eb5db6a5a44189606be3ba5a2b9c54fa439",
+      "modelDigest": "e0c47a5fa80a34119d7e84732da9c55e4d922c0f48b769a8e3d5cc003d780921",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
-        "formal/WorkOnceContract.tla"
+        "formal/WorkOnceContract.tla",
+        "formal/WorkOnceLocalRunner.tla",
+        "formal/WorkOnceLocalRunner.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "c9a5f9fd5c8401f09e1a347299abe704700dcceeed1be305887cecd6768ec09a",
+      "sourceDigest": "4207bdb0927ab9ddf94030b63ac1a66d39702c3eb7444ff204b633066eace328",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -10635,7 +10680,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "80a32dc7909da2628dbaab22f71c2dd7330f23a44d6722fa5cc43cb6a11abdb5",
+    "assuranceInfrastructureDigest": "5579060ebdaf959a0243a9385edb94670725a57e772ed356ed918e7429cc5408",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10652,13 +10697,22 @@
       "scripts/check-read-boundary-mutation.mjs",
       "scripts/check-read-source-model-binding-mutation.mjs",
       "scripts/check-read-contract-mutation.mjs",
+      "scripts/local-runner-refinement.mjs",
+      "scripts/check-local-runner-implementation-mutations.mjs",
+      "scripts/check-local-runner-source-model-mutation.mjs",
+      "test/local-runner-refinement.test.mjs",
+      "test/process/local-runner-child.mjs",
+      "test/process/local-runner-process.test.mjs",
+      "formal/WorkOnceLocalRunner.tla",
+      "formal/WorkOnceLocalRunner.cfg",
+      "assurance/red-before/local-runner-heartbeat-cause.json",
       "scripts/policy-refinement.mjs",
       "scripts/check-policy-source-model-binding-mutation.mjs",
       "scripts/check-policy-implementation-mutations.mjs",
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "fa1b1979a987e444cb16ba81e0df698e30aaef95ada4d3f18c1a9fe668dcef1b",
+    "modelDigest": "425518da8e4bd8c8f3515281dbfda5613781e2888343bb7696f73b7f862e9120",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -10666,9 +10720,11 @@
       "formal/WorkOnceRuntime.tla",
       "formal/WorkOnceRuntime.cfg",
       "formal/WorkOncePolicy.tla",
-      "formal/WorkOncePolicy.cfg"
+      "formal/WorkOncePolicy.cfg",
+      "formal/WorkOnceLocalRunner.tla",
+      "formal/WorkOnceLocalRunner.cfg"
     ],
-    "sourceDigest": "248b33ec829eae035286896b7b28f076a8d9f4f004b68184c2e54e0897ba2857",
+    "sourceDigest": "ea413ebd90aacb9ec03ebb1c97442c603f83091605afacb4db087134936ebee2",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

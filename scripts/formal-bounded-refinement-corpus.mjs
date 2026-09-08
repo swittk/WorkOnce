@@ -666,11 +666,12 @@ async function replayAndDynamicPolicies(coverage) {
   {
     scenarios++;
     const base = createMemoryStore();
+    const renewalFailure = new Error('renewal storage down');
     let failAtomic = false;
     const store = {
       ...base,
       async atomic(id, decide) {
-        if (failAtomic) throw new Error('renewal storage down');
+        if (failAtomic) throw renewalFailure;
         return base.atomic(id, decide);
       },
     };
@@ -689,7 +690,7 @@ async function replayAndDynamicPolicies(coverage) {
           return run.succeed();
         },
       ),
-      /Worker ownership lost/,
+      (error) => error === renewalFailure,
     );
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
@@ -745,11 +746,12 @@ async function replayAndDynamicPolicies(coverage) {
   {
     scenarios++;
     const base = createMemoryStore();
+    const renewalFailure = new Error('renewal storage down');
     let failAtomic = false;
     const store = {
       ...base,
       async atomic(id, decide) {
-        if (failAtomic) throw new Error('renewal storage down');
+        if (failAtomic) throw renewalFailure;
         return base.atomic(id, decide);
       },
     };
@@ -789,7 +791,7 @@ async function replayAndDynamicPolicies(coverage) {
           return run.succeed();
         },
       ),
-      /Worker ownership lost/,
+      (error) => error === renewalFailure,
     );
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();

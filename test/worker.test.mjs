@@ -128,11 +128,12 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
 
 test('managed runner wakes an empty poll when an active claim becomes fatal', async () => {
   const base = createMemoryStore();
+  const renewalFailure = new Error('renewal storage down');
   let failAtomic = false;
   const store = {
     ...base,
     async atomic(id, decide) {
-      if (failAtomic) throw new Error('renewal storage down');
+      if (failAtomic) throw renewalFailure;
       return base.atomic(id, decide);
     },
   };
@@ -151,7 +152,7 @@ test('managed runner wakes an empty poll when an active claim becomes fatal', as
         return run.succeed();
       },
     ),
-    /Worker ownership lost/,
+    (error) => error === renewalFailure,
   );
   assert.ok(performance.now() - startedAt < 500);
   stop.abort();

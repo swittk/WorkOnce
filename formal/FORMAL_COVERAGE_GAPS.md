@@ -43,6 +43,13 @@
 - `root.exponentialBackoff`: `BackoffDelay`
 - `root.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
 
+## Local managed-runner boundary
+
+- Spec: `formal/WorkOnceLocalRunner.tla`
+- Fresh compiled observations: `scripts/local-runner-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `LocalDrainedBeforeReturn`, `LocalFatalReturnPreserves`, `LocalNoAdmissionAfterStop`, `LocalNoFatalBackoff`, `LocalTypeOK`, `LossPresenceExact`
+- Bound local-runner source symbols: `src/work.ts:WorkQueue.claim`, `src/work.ts:WorkQueue.runAvailable`, `src/work.ts:WorkQueue.process`, `src/work.ts:WorkQueue.run`, `src/worker.ts:markLocalClaimStartedAt`, `src/worker.ts:validateWorkerOptions`, `src/worker.ts:waitForPoll`, `src/worker.ts:processClaim`, `src/worker.ts:processClaims`, `src/worker.ts:runWorker`
+
 ## Typed-read boundary
 
 - Contract: `formal/WorkOnceContract.tla`
@@ -58,8 +65,8 @@
 
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **20**
-- Content digest: `80a32dc7909da2628dbaab22f71c2dd7330f23a44d6722fa5cc43cb6a11abdb5`
+- Bound proof/checker files: **29**
+- Content digest: `5579060ebdaf959a0243a9385edb94670725a57e772ed356ed918e7429cc5408`
 
 ## Coverage rule
 

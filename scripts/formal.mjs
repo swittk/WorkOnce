@@ -252,6 +252,27 @@ const runtimeMutants = {
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
+const localRunnerMutants = {
+  LocalTypeOK: String.raw`  /\ pc' = "invalid"
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+                 returnPresent, returnValue, stopActive>>`,
+  LossPresenceExact: String.raw`  /\ pc' = "ready" /\ active' = 0 /\ stopped' = FALSE
+  /\ fatalPresent' = TRUE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
+  LocalNoAdmissionAfterStop: String.raw`  /\ pc' = "draining" /\ active' = 1 /\ stopped' = TRUE
+  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
+  LocalDrainedBeforeReturn: String.raw`  /\ pc' = "done" /\ active' = 1 /\ stopped' = TRUE
+  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 1`,
+  LocalNoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ active' = 0 /\ stopped' = FALSE
+  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA"
+  /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
+  LocalFatalReturnPreserves: String.raw`  /\ pc' = "done" /\ active' = 0 /\ stopped' = FALSE
+  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA"
+  /\ returnPresent' = TRUE /\ returnValue' = "errorB" /\ stopActive' = 0`,
+};
+
 const policyMutants = {
   PolicyTypeOK: String.raw`  /\ pc' = "invalid"
   /\ UNCHANGED <<phase, revision, snapRevision, fence, receiptFence, receipt,
@@ -428,6 +449,65 @@ requireInvariantRejects(
   admissionMutantConfig,
   admissionMutant,
   'NoAdmissionAfterStop',
+);
+
+const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
+  './local-runner-refinement.mjs'
+);
+const localRunnerSamples = await runLocalRunnerRefinementSamples();
+assertLocalRunnerRefinementSamples(localRunnerSamples);
+const localRunnerObserved = resolve('.artifacts/tlc/WorkOnceLocalRunnerObserved.tla');
+const localRunnerConfig = resolve('.artifacts/tlc/WorkOnceLocalRunner-observed.cfg');
+writeFileSync(
+  localRunnerObserved,
+  `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+);
+writeFileSync(
+  localRunnerConfig,
+  `${readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8').replace(
+    'CONSTANT Samples = {}',
+    'CONSTANT Samples <- ObservedSamples',
+  )}\nINVARIANT LocalRunnerSamplesConform\n`,
+);
+console.log(
+  `TLC local-runner boundary receives ${localRunnerSamples.length} fresh compiled public API observations.`,
+);
+runModel('WorkOnceLocalRunnerObserved', localRunnerConfig, localRunnerObserved);
+
+const baseLocalRunnerConfig = readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8');
+assertMutantSetMatchesConfig('formal/WorkOnceLocalRunner.cfg', localRunnerMutants);
+runMutationWitnessBatch({
+  model: 'WorkOnceLocalRunnerInvariantMutationBatch',
+  baseModule: 'WorkOnceLocalRunner',
+  baseConfig: baseLocalRunnerConfig,
+  mutants: localRunnerMutants,
+});
+
+const localRunnerSampleMutant = resolve('.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.tla');
+const localRunnerSampleMutantConfig = resolve(
+  '.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.cfg',
+);
+writeFileSync(
+  localRunnerSampleMutant,
+  String.raw`---- MODULE WorkOnceLocalRunnerSamplesMutant ----
+EXTENDS WorkOnceLocalRunnerObserved
+BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+);
+writeFileSync(
+  localRunnerSampleMutantConfig,
+  singleInvariantConfig(
+    readFileSync(localRunnerConfig, 'utf8'),
+    'LocalRunnerSamplesConform',
+  ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
+);
+requireInvariantRejects(
+  'WorkOnceLocalRunnerSamplesMutant',
+  localRunnerSampleMutantConfig,
+  localRunnerSampleMutant,
+  'LocalRunnerSamplesConform',
 );
 
 if (!process.argv.includes('--runtime-only')) {

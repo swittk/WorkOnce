@@ -59,10 +59,11 @@ async function processClaim<I, O, R extends string>(
 ): Promise<RunAvailableResult<O, R>> {
   const controller = new AbortController();
   run.signal = controller.signal;
-  const stop = () => controller.abort();
+  const stop = () => controller.abort(options.signal?.reason);
   options.signal?.addEventListener('abort', stop, { once: true });
   if (options.signal?.aborted) stop();
   let stopped = false;
+  let ownershipLoss: { error: unknown } | undefined;
   let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
   const leaseMs = run.attempt.leaseUntil - run.observedAt;
@@ -73,8 +74,10 @@ async function processClaim<I, O, R extends string>(
   function armExpiry(deadline: number) {
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
-    if (remaining <= 0) controller.abort(new Error('Confirmed lease deadline passed'));
-    else expiryTimer = setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647));
+    if (remaining <= 0) {
+      ownershipLoss = { error: new Error('Confirmed lease deadline passed') };
+      controller.abort(ownershipLoss.error);
+    } else expiryTimer = setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647));
   }
   async function heartbeat() {
     if (stopped || controller.signal.aborted) return;
@@ -90,6 +93,7 @@ async function processClaim<I, O, R extends string>(
           }, heartbeatMs);
       }
     } catch (error) {
+      ownershipLoss = { error };
       controller.abort(error);
     }
   }
@@ -101,9 +105,15 @@ async function processClaim<I, O, R extends string>(
       heartbeatTimer = setTimeout(() => {
         void heartbeat();
       }, heartbeatMs);
-    if (controller.signal.aborted) throw new Error('Worker ownership lost');
+    if (controller.signal.aborted) {
+      if (ownershipLoss !== undefined) throw ownershipLoss.error;
+      throw controller.signal.reason;
+    }
     const outcome = await handler(run, run.input);
-    if (controller.signal.aborted) throw new Error('Worker ownership lost');
+    if (controller.signal.aborted) {
+      if (ownershipLoss !== undefined) throw ownershipLoss.error;
+      throw controller.signal.reason;
+    }
     // Never rerun a handler because delivering its completed outcome failed.
     const phase = await run.settle(outcome);
     return { workId: run.ref.workId, status: 'settled', phase };

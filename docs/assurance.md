@@ -149,11 +149,11 @@ build before any emitted-artifact consumer. A mutation that removes the `test:pr
 guard is required to fail this entrypoint audit.
 
 Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation maps to
-the exact invariant names parsed from the lifecycle, runtime and policy CFG files, so adding or
+the exact invariant names parsed from the lifecycle, runtime, local-runner and policy CFG files, so adding or
 removing a configured invariant without a corresponding mutation control fails. The current gate
 injects one-transition violating states for all ten lifecycle invariants, all eight runtime
-invariants and all six policy/receipt invariants and requires TLC to report the intended invariant
-violation. `RuntimeSamplesConform` and `PolicySamplesConform` each get a deliberately invalid
+invariants, all six local-runner invariants and all six policy/receipt invariants and requires TLC to report the intended invariant
+violation. `RuntimeSamplesConform`, `LocalRunnerSamplesConform` and `PolicySamplesConform` each get a deliberately invalid
 observed sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission
 mutant. Independent tiny mutation graphs are run concurrently with bounded one-worker heaps; this
 reduces wall time without dropping any mutant. These controls prove that each configured invariant
@@ -202,12 +202,48 @@ identity. Separate local observations abort while the first claim reply is in fl
 active handler is draining; neither may admit new handler work after stop, and both abandoned
 attempts are reclaimable after their durable lease expires.
 
-The compiler/formal manifest now carries a dedicated runner source/model digest over
-`src/worker.ts`, `src/work.ts` and the runtime TLA/CFG/contract, in addition to the broader package
-semantic binding. A runner source change with an unchanged runtime abstraction therefore fails
-closed unless deliberately acknowledged after review. This remains bounded safety evidence: process
-crash persistence itself belongs to the durable lifecycle/storage families, and unbounded fleet
-fairness is not claimed here.
+The local managed-runner proof is now split from the generic local/external control-state quotient as
+`formal/WorkOnceLocalRunner.tla`. Its bounded state carries capacity up to three active claims,
+claim-request/reply, handled observer backoff, caller stop, fatal ownership loss, drain-before-return,
+exact failure-presence tagging and a representative returned failure value. Six configured local
+runner invariants cover typing, exact loss presence, no admission after stop, drain-before-return,
+no fatal backoff and fatal-value preservation. Every invariant has a generated mutation witness and
+`LocalRunnerSamplesConform` has an independently bad observed-sample mutant.
+
+A red-before audit at base `b8ab8bd` found a real supported semantic defect: when a heartbeat
+failed with a specific rejection, `processClaim()` aborted the handler but replaced the final
+`RunAvailableResult.error` with a fresh generic `Error("Worker ownership lost")` if the handler
+returned afterward. An explicit `undefined` heartbeat rejection was even less representable through
+`AbortController.reason` alone. The fix tracks ownership-loss _presence_ separately from its unknown
+payload and returns the exact heartbeat/expiry cause, while graceful caller abort preserves the
+caller's `AbortSignal.reason`. The preserved counterexample lives in
+`assurance/red-before/local-runner-heartbeat-cause.json`. The older bounded refinement corpus also
+matched the generic error string; that false-green witness was tightened to exact renewal-error
+identity, making this an assurance-framework defect as well as a runtime bug.
+
+`scripts/local-runner-refinement.mjs` adds 23 fresh compiled cases: caller-stop and heartbeat-loss
+reclaim on memory/SQLite/native-CAS; explicit `undefined` heartbeat failure; settle-delivery cause
+precision; two competing managed runners per adapter; ten dynamically arriving jobs under capacity
+three; repeated handled claim failures; opposite multi-active completion orders; handled-error versus
+graceful-abort and backoff-before versus backoff-during future congruence; a held late claim reply
+across stop; heartbeat/lease/huge-idle timer boundaries; and fatal wakeup from an active claim while
+the outer runner is sleeping. Three real SQLite process tests additionally SIGKILL a runner with
+three active claims, after a durable heartbeat commit before its reply, and after a durable success
+commit before its reply. Restart proves reclaim fencing or exact receipt replay as appropriate.
+
+The implementation mutation gate erases exact ownership-loss causes, removes both intentionally
+redundant post-stop admission fences together, and disables the active-claim `wakePoll` signal; each
+must make the focused compiled suite red. Removing only one stop fence is intentionally survivable,
+which proves the two guards are redundant rather than pretending one line owns the safety property.
+The compiler/formal manifest carries a symbol-level local-runner source digest and a dedicated
+`WorkOnceLocalRunner` model digest; source-only runner drift fails closed independently of the broad
+package binding.
+
+The process-local active-promise set, fatal marker, wake callback and AbortSignal are not durable
+checkpoint state. After process death, correctness comes from durable attempt leases/fences and
+receipts, which are exercised here and owned comprehensively by lifecycle/storage families A/G.
+The local runner makes only bounded finite-schedule safety/progress claims; it does not claim
+unbounded fleet fairness or exactly-once application side effects.
 
 ## Retry/defer policy and settlement-receipt refinement
 
@@ -252,7 +288,7 @@ numeric domains are not claimed.
 
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **50.43 seconds wall-clock** and about **365 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.
+`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **51.76 seconds wall-clock** and about **353 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.
 
 That timing is evidence for this machine/version, not a universal performance promise. The important design rule is structural: no per-trace model-checker process explosion.
 

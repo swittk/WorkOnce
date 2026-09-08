@@ -10,6 +10,9 @@ const { runBoundedRefinementCorpus } = await import('./formal-bounded-refinement
 const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
   './runtime-boundary-refinement.mjs'
 );
+const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
+  './local-runner-refinement.mjs'
+);
 const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
   './policy-refinement.mjs'
 );
@@ -26,6 +29,15 @@ const evidenceFiles = [
   'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/check-read-contract-mutation.mjs',
   'test/runtime-boundary-refinement.test.mjs',
+  'scripts/local-runner-refinement.mjs',
+  'test/local-runner-refinement.test.mjs',
+  'test/process/local-runner-child.mjs',
+  'test/process/local-runner-process.test.mjs',
+  'formal/WorkOnceLocalRunner.tla',
+  'formal/WorkOnceLocalRunner.cfg',
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  'scripts/check-local-runner-source-model-mutation.mjs',
+  'assurance/red-before/local-runner-heartbeat-cause.json',
   'test/lifecycle-transition-matrix.test.mjs',
   'scripts/policy-refinement.mjs',
   'test/policy-refinement.test.mjs',
@@ -58,6 +70,8 @@ function digestFiles(files) {
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
+const localRunnerSamples = await runLocalRunnerRefinementSamples();
+assertLocalRunnerRefinementSamples(localRunnerSamples);
 const policySamples = await runPolicyRefinementSamples();
 assertPolicyRefinementSamples(policySamples);
 const current = {
@@ -81,6 +95,20 @@ const current = {
       .update(JSON.stringify(boundarySamples))
       .digest('hex'),
     lifecycleAdapterCases: 600,
+  },
+  localRunnerBoundary: {
+    samples: localRunnerSamples.length,
+    counts: Object.fromEntries(
+      [...new Set(localRunnerSamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, localRunnerSamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(localRunnerSamples))
+      .digest('hex'),
+    sqliteProcessCrashCases: 3,
+    implementationMutants: 3,
   },
   policyBoundary: {
     samples: policySamples.length,

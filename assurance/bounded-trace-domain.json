@@ -11,6 +11,15 @@
     "scripts/check-read-source-model-binding-mutation.mjs",
     "scripts/check-read-contract-mutation.mjs",
     "test/runtime-boundary-refinement.test.mjs",
+    "scripts/local-runner-refinement.mjs",
+    "test/local-runner-refinement.test.mjs",
+    "test/process/local-runner-child.mjs",
+    "test/process/local-runner-process.test.mjs",
+    "formal/WorkOnceLocalRunner.tla",
+    "formal/WorkOnceLocalRunner.cfg",
+    "scripts/check-local-runner-implementation-mutations.mjs",
+    "scripts/check-local-runner-source-model-mutation.mjs",
+    "assurance/red-before/local-runner-heartbeat-cause.json",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/policy-refinement.mjs",
     "test/policy-refinement.test.mjs",
@@ -32,7 +41,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "a1032be6086a3cf58f66679805b06d45854362b3bedf80682fe663aca4b4a4b2",
+  "evidenceDigest": "5aae982eeccaf0d3d8011783380e2fcdad44c9da5c15939e0ff435c268af07d5",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -105,6 +114,26 @@
     },
     "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d",
     "lifecycleAdapterCases": 600
+  },
+  "localRunnerBoundary": {
+    "samples": 23,
+    "counts": {
+      "backoffHistory": 1,
+      "competingRunners": 3,
+      "completionOrder": 1,
+      "dynamicArrival": 1,
+      "handledAbortHistory": 1,
+      "handledRecovery": 1,
+      "lateClaimStop": 1,
+      "settleCause": 3,
+      "stopReclaim": 6,
+      "timerBoundary": 1,
+      "undefinedHeartbeat": 3,
+      "wakePoll": 1
+    },
+    "observationDigest": "7a0be865716be211c0b5eea0cae27874e68c86e6df38314ee88563206d2f5ecc",
+    "sqliteProcessCrashCases": 3,
+    "implementationMutants": 3
   },
   "policyBoundary": {
     "samples": 45,
