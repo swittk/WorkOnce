@@ -153,10 +153,7 @@ function assertAllFormalConfigsRegistered(plans, externallyGuardedConfigs) {
     .filter((name) => name.endsWith('.cfg'))
     .map((name) => `formal/${name}`)
     .sort();
-  const registered = [
-    ...plans.map((plan) => plan.configPath),
-    ...externallyGuardedConfigs,
-  ].sort();
+  const registered = [...plans.map((plan) => plan.configPath), ...externallyGuardedConfigs].sort();
   if (JSON.stringify(discovered) !== JSON.stringify(registered))
     throw new Error(
       `Formal config mutation coverage inventory drifted: discovered=${discovered.join(',')} planned=${registered.join(',')}`,
@@ -448,7 +445,10 @@ const outboxMutationPlan = mutationCoveragePlan('formal/WorkOnceOutbox.cfg', out
   'AllOriginalIntentAccounted',
   'HealthyReachedByThirdPass',
 ]);
-const outboxBudgetMutationPlan = mutationCoveragePlan('formal/WorkOnceOutboxBudget.cfg', outboxBudgetMutants);
+const outboxBudgetMutationPlan = mutationCoveragePlan(
+  'formal/WorkOnceOutboxBudget.cfg',
+  outboxBudgetMutants,
+);
 const directMutationPlans = [
   lifecycleMutationPlan,
   runtimeMutationPlan,
@@ -776,7 +776,6 @@ MutantSpec == Init /\ [][Next]_vars
   );
 }
 
-
 if (!process.argv.includes('--runtime-only')) {
   const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
     './outbox-refinement.mjs'
@@ -795,7 +794,9 @@ if (!process.argv.includes('--runtime-only')) {
     outboxConfig,
     `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT OutboxSamplesConform\n`,
   );
-  console.log(`TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`);
+  console.log(
+    `TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`,
+  );
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
 
   const sampleMutant = resolve('.artifacts/tlc/WorkOnceOutboxSamplesMutant.tla');
@@ -863,7 +864,10 @@ BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
       modulePath,
       `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceOutbox\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
     );
-    writeFileSync(configPath, singleInvariantConfig(readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'), mutant.invariant));
+    writeFileSync(
+      configPath,
+      singleInvariantConfig(readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'), mutant.invariant),
+    );
     requireInvariantRejects(mutant.name, configPath, modulePath, mutant.invariant);
     markExtraMutationWitness(outboxMutationPlan, mutant.invariant);
   }

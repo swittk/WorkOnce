@@ -117,20 +117,76 @@ await runParallel([
   ['real process faults', process.execPath, ['--test', ...processTests]],
 ]);
 await runParallel([
-  ['typed-read definition-fence mutation guard', process.execPath, ['scripts/check-read-boundary-mutation.mjs']],
-  ['typed-read source/model mutation guard', process.execPath, ['scripts/check-read-source-model-binding-mutation.mjs']],
-  ['typed-read route/order mutation guard', process.execPath, ['scripts/check-read-contract-mutation.mjs']],
-  ['read-history retention/order mutation guard', process.execPath, ['scripts/check-read-history-mutations.mjs']],
-  ['policy source/model mutation guard', process.execPath, ['scripts/check-policy-source-model-binding-mutation.mjs']],
-  ['policy implementation mutation guards', process.execPath, ['scripts/check-policy-implementation-mutations.mjs']],
-  ['local-runner source/model mutation guard', process.execPath, ['scripts/check-local-runner-source-model-mutation.mjs']],
-  ['local-runner implementation mutation guards', process.execPath, ['scripts/check-local-runner-implementation-mutations.mjs']],
-  ['external source/model mutation guard', process.execPath, ['scripts/check-external-source-model-mutation.mjs']],
-  ['external implementation mutation guards', process.execPath, ['scripts/check-external-implementation-mutations.mjs']],
-  ['outbox source/model mutation guard', process.execPath, ['scripts/check-outbox-source-model-binding-mutation.mjs']],
-  ['outbox implementation mutation guard', process.execPath, ['scripts/check-outbox-implementation-mutations.mjs']],
-  ['storage implementation mutation guard', process.execPath, ['scripts/check-storage-contract-mutation.mjs']],
-  ['storage source/model mutation guard', process.execPath, ['scripts/check-storage-source-model-mutation.mjs']],
+  [
+    'typed-read definition-fence mutation guard',
+    process.execPath,
+    ['scripts/check-read-boundary-mutation.mjs'],
+  ],
+  [
+    'typed-read source/model mutation guard',
+    process.execPath,
+    ['scripts/check-read-source-model-binding-mutation.mjs'],
+  ],
+  [
+    'typed-read route/order mutation guard',
+    process.execPath,
+    ['scripts/check-read-contract-mutation.mjs'],
+  ],
+  [
+    'read-history retention/order mutation guard',
+    process.execPath,
+    ['scripts/check-read-history-mutations.mjs'],
+  ],
+  [
+    'policy source/model mutation guard',
+    process.execPath,
+    ['scripts/check-policy-source-model-binding-mutation.mjs'],
+  ],
+  [
+    'policy implementation mutation guards',
+    process.execPath,
+    ['scripts/check-policy-implementation-mutations.mjs'],
+  ],
+  [
+    'local-runner source/model mutation guard',
+    process.execPath,
+    ['scripts/check-local-runner-source-model-mutation.mjs'],
+  ],
+  [
+    'local-runner implementation mutation guards',
+    process.execPath,
+    ['scripts/check-local-runner-implementation-mutations.mjs'],
+  ],
+  [
+    'external source/model mutation guard',
+    process.execPath,
+    ['scripts/check-external-source-model-mutation.mjs'],
+  ],
+  [
+    'external implementation mutation guards',
+    process.execPath,
+    ['scripts/check-external-implementation-mutations.mjs'],
+  ],
+  [
+    'outbox source/model mutation guard',
+    process.execPath,
+    ['scripts/check-outbox-source-model-binding-mutation.mjs'],
+  ],
+  [
+    'outbox implementation mutation guard',
+    process.execPath,
+    ['scripts/check-outbox-implementation-mutations.mjs'],
+  ],
+  [
+    'storage implementation mutation guard',
+    process.execPath,
+    ['scripts/check-storage-contract-mutation.mjs'],
+  ],
+  [
+    'storage source/model mutation guard',
+    process.execPath,
+    ['scripts/check-storage-source-model-mutation.mjs'],
+  ],
 ]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
 run('assurance infrastructure binding mutation guard', process.execPath, [
@@ -140,5 +196,7 @@ await runParallel([
   ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
   ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
 ]);
-run('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, ['scripts/formal.mjs']);
+run('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [
+  'scripts/formal.mjs',
+]);
 console.log('[assurance] all gates passed');

@@ -10877,7 +10877,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "f1bc01a48449a8398348f2072b4fe0afb5bce0f5951de3d94fbbaa73c133bfdd",
+    "assuranceInfrastructureDigest": "7db571d6a4ef45a69592867500bdce637990ff7e76bbb644d1beca04ae9ae42d",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
