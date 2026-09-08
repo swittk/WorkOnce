@@ -119,26 +119,92 @@ function singleInvariantConfig(configText, invariant) {
   return `${output.join('\n').trimEnd()}\n`;
 }
 
-function assertMutantSetMatchesConfig(configPath, mutants) {
+function mutationCoveragePlan(configPath, mutants, additionalGuards = []) {
   const configured = configuredInvariants(readFileSync(configPath, 'utf8')).sort();
-  const guarded = Object.keys(mutants).sort();
+  const guarded = [...Object.keys(mutants), ...additionalGuards].sort();
   if (JSON.stringify(configured) !== JSON.stringify(guarded))
     throw new Error(
       `Formal mutation coverage drifted for ${configPath}: configured=${configured.join(',')} guarded=${guarded.join(',')}`,
     );
+  return {
+    configPath,
+    mutants,
+    additionalGuards: [...additionalGuards],
+    batchWitnessed: false,
+    extraWitnessed: new Set(),
+  };
 }
 
-function writeOneStepMutant({ prefix, baseModule, baseConfig, invariant, action }) {
-  const safe = invariant.replace(/[^A-Za-z0-9_]/gu, '_');
-  const model = `${prefix}${safe}`;
+function markExtraMutationWitness(plan, invariant) {
+  if (!plan.additionalGuards.includes(invariant))
+    throw new Error(`Unexpected extra mutation witness ${invariant} for ${plan.configPath}`);
+  plan.extraWitnessed.add(invariant);
+}
+
+function assertMutationPlansExecuted(plans) {
+  for (const plan of plans) {
+    const missingExtra = plan.additionalGuards.filter((name) => !plan.extraWitnessed.has(name));
+    if (!plan.batchWitnessed || missingExtra.length)
+      throw new Error(
+        `Formal mutation plan was not executed for ${plan.configPath}: batch=${plan.batchWitnessed} missingExtra=${missingExtra.join(',')}`,
+      );
+  }
+}
+
+function mutationWitnessConfig(configText) {
+  const lines = configText.replace(/\r\n?/gu, '\n').split('\n');
+  const output = [];
+  let skipping = false;
+  let inserted = false;
+  for (const line of lines) {
+    if (line.trim() === 'INVARIANTS') {
+      skipping = true;
+      continue;
+    }
+    if (skipping) {
+      if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line)) continue;
+      skipping = false;
+    }
+    if (line.trim() === 'SPECIFICATION Spec') {
+      output.push('SPECIFICATION BatchSpec');
+      continue;
+    }
+    if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
+      output.push('INVARIANT MutationWitnesses');
+      inserted = true;
+    }
+    output.push(line);
+  }
+  if (!inserted) output.push('INVARIANT MutationWitnesses');
+  return `${output.join('\n').trimEnd()}\n`;
+}
+
+function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {
+  const { mutants } = plan;
   const modulePath = resolve(`.artifacts/tlc/${model}.tla`);
   const configPath = resolve(`.artifacts/tlc/${model}.cfg`);
+  const branches = Object.entries(mutants)
+    .map(([invariant, action]) => {
+      const rawLines = action.replace(/^\n+|\n+$/gu, '').split('\n');
+      const nonEmpty = rawLines.filter((line) => line.trim().length > 0);
+      const commonIndent = Math.min(...nonEmpty.map((line) => /^\s*/u.exec(line)?.[0].length ?? 0));
+      const body = rawLines.map((line) => `     ${line.slice(commonIndent)}`).join('\n');
+      return `  \\/ /\\ mutantId = "none"\n${body}\n     /\\ mutantId' = ${JSON.stringify(invariant)}`;
+    })
+    .join('\n');
+  const witnesses = Object.keys(mutants)
+    .map((invariant) => `  \\/ /\\ mutantId = ${JSON.stringify(invariant)} /\\ ~${invariant}`)
+    .join('\n');
   writeFileSync(
     modulePath,
-    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nUnsafe ==\n${action}\nMutantSpec == Init /\\ [][Unsafe]_vars\n====\n`,
+    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
   );
-  writeFileSync(configPath, singleInvariantConfig(baseConfig, invariant));
-  requireInvariantRejects(model, configPath, modulePath, invariant);
+  writeFileSync(configPath, mutationWitnessConfig(baseConfig));
+  runModel(model, configPath, modulePath);
+  plan.batchWitnessed = true;
+  console.log(
+    `TLC mutation witness batch proves ${Object.keys(mutants).length} configured invariants are non-vacuous for ${baseModule}.`,
+  );
 }
 
 const lifecycleMutants = {
@@ -200,6 +266,11 @@ const runtimeMutants = {
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
+const lifecycleMutationPlan = mutationCoveragePlan('formal/WorkOnce.cfg', lifecycleMutants);
+const runtimeMutationPlan = mutationCoveragePlan('formal/WorkOnceRuntime.cfg', runtimeMutants, [
+  'RuntimeSamplesConform',
+]);
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -216,17 +287,14 @@ function tlaValue(value) {
 }
 
 const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
-assertMutantSetMatchesConfig('formal/WorkOnce.cfg', lifecycleMutants);
 if (!process.argv.includes('--runtime-only')) {
   runModel('WorkOnce', 'WorkOnce.cfg');
-  for (const [invariant, action] of Object.entries(lifecycleMutants))
-    writeOneStepMutant({
-      prefix: 'WorkOnceInvariantMutant_',
-      baseModule: 'WorkOnce',
-      baseConfig: lifecycleConfig,
-      invariant,
-      action,
-    });
+  runMutationWitnessBatch({
+    model: 'WorkOnceInvariantMutationBatch',
+    baseModule: 'WorkOnce',
+    baseConfig: lifecycleConfig,
+    plan: lifecycleMutationPlan,
+  });
 }
 
 // No per-trace TLC processes and no cached witness: check fresh compiled public API observations
@@ -249,20 +317,12 @@ console.log(
 runModel('WorkOnceRuntimeObserved', config, observedModule);
 
 const runtimeConfig = readFileSync(config, 'utf8');
-const runtimeConfigured = configuredInvariants(readFileSync('formal/WorkOnceRuntime.cfg', 'utf8'));
-const runtimeGuarded = [...Object.keys(runtimeMutants), 'RuntimeSamplesConform'].sort();
-if (JSON.stringify([...runtimeConfigured].sort()) !== JSON.stringify(runtimeGuarded))
-  throw new Error(
-    `Formal mutation coverage drifted for formal/WorkOnceRuntime.cfg: configured=${runtimeConfigured.join(',')} guarded=${runtimeGuarded.join(',')}`,
-  );
-for (const [invariant, action] of Object.entries(runtimeMutants))
-  writeOneStepMutant({
-    prefix: 'WorkOnceRuntimeInvariantMutant_',
-    baseModule: 'WorkOnceRuntimeObserved',
-    baseConfig: runtimeConfig,
-    invariant,
-    action,
-  });
+runMutationWitnessBatch({
+  model: 'WorkOnceRuntimeInvariantMutationBatch',
+  baseModule: 'WorkOnceRuntimeObserved',
+  baseConfig: runtimeConfig,
+  plan: runtimeMutationPlan,
+});
 
 const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
 const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.cfg');
@@ -288,6 +348,7 @@ requireInvariantRejects(
   sampleMutant,
   'RuntimeSamplesConform',
 );
+markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
 
 // Keep the realistic late-admission mutant in addition to the one-step activity check above.
 const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
@@ -311,4 +372,10 @@ requireInvariantRejects(
   admissionMutantConfig,
   admissionMutant,
   'NoAdmissionAfterStop',
+);
+
+assertMutationPlansExecuted(
+  process.argv.includes('--runtime-only')
+    ? [runtimeMutationPlan]
+    : [lifecycleMutationPlan, runtimeMutationPlan],
 );

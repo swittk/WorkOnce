@@ -146,12 +146,13 @@ guard is required to fail this entrypoint audit.
 
 Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation map to
 the exact invariant names parsed from both CFG files, so adding/removing a configured invariant
-without a corresponding mutation control fails. The current gate injects one-transition violating
-states for all ten lifecycle invariants and all seven runtime invariants and requires TLC to report
-the intended invariant violation. `RuntimeSamplesConform` gets a deliberately invalid observed
-sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant.
-These controls prove that each configured invariant is active; they do not replace the real bounded
-state-space runs.
+without a corresponding mutation control fails. One bounded witness graph contains all ten lifecycle
+one-transition violations and another contains the six runtime control-state violations. Each branch
+is tagged with its intended invariant and the batch invariant is satisfied only when that exact
+property is false on the injected branch, so a wrong/vacuous mutation makes TLC RED without spawning a
+separate JVM per invariant. `RuntimeSamplesConform` keeps its deliberately invalid observed sample set,
+while `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant. These controls
+prove that each configured invariant is active; they do not replace the real bounded state-space runs.
 
 ## Storage / adapter temporal refinement
 
