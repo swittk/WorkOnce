@@ -83,6 +83,9 @@ run('emitted-artifact entrypoint audit', process.execPath, [
 run('emitted-artifact entrypoint mutation guard', process.execPath, [
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
 ]);
+run('alias runtime/type mutation guard', process.execPath, [
+  'scripts/check-alias-contract-mutation.mjs',
+]);
 await runParallel([
   npmParallelEntry('ES2018 Web Worker', ['run', 'check:web']),
   [

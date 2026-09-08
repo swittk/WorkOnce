@@ -2,28 +2,90 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import * as root from '../dist/index.js';
+import * as memory from '../dist/memory.js';
 import * as external from '../dist/external.js';
 
-// Readable and technical names are intentional first-class aliases, not old-format compatibility.
-test('ESM and CommonJS retain the supported readable and technical alias vocabulary', () => {
-  const require = createRequire(import.meta.url);
-  for (const api of [root, require('../dist-cjs/index.js')]) {
-    for (const name of ['wait', 'defer', 'runExternalAvailable', 'processExternal'])
-      assert.equal(typeof api[name], 'function', name);
-    for (const [type, names] of [
-      [
-        api.WorkQueue,
-        ['ensure', 'enqueue', 'runAvailable', 'process', 'heartbeat', 'renew', 'restart'],
-      ],
-      [api.WorkItem, ['ensure', 'enqueue', 'retry', 'rerun', 'restart']],
-      [api.WorkRun, ['wait', 'defer', 'heartbeat', 'renew']],
-      [api.ExternalWorkRun, ['wait', 'defer']],
-    ]) {
-      for (const name of names)
-        assert.equal(typeof type.prototype[name], 'function', `${type.name}.${name}`);
-    }
-    assert.deepEqual(api.wait('pending', { afterMs: 7 }), api.defer('pending', { afterMs: 7 }));
+const require = createRequire(import.meta.url);
+
+async function exerciseRuntimeAliases(api, memoryApi, label) {
+  for (const name of ['wait', 'defer', 'runExternalAvailable', 'processExternal'])
+    assert.equal(typeof api[name], 'function', `${label}.${name}`);
+  for (const [type, names] of [
+    [
+      api.WorkQueue,
+      ['ensure', 'enqueue', 'runAvailable', 'process', 'heartbeat', 'renew', 'restart'],
+    ],
+    [api.WorkItem, ['ensure', 'enqueue', 'retry', 'rerun', 'restart']],
+    [api.WorkRun, ['wait', 'defer', 'heartbeat', 'renew']],
+    [api.ExternalWorkRun, ['wait', 'defer']],
+  ]) {
+    for (const name of names)
+      assert.equal(typeof type.prototype[name], 'function', `${label}.${type.name}.${name}`);
   }
+
+  assert.deepEqual(api.wait('pending', { afterMs: 7 }), api.defer('pending', { afterMs: 7 }));
+  const externalRun = new api.ExternalWorkRun(
+    { workId: `${label}:external`, generation: 1, fence: 1 },
+    10,
+    0,
+  );
+  assert.deepEqual(
+    externalRun.wait('pending', { afterMs: 7 }),
+    externalRun.defer('pending', { afterMs: 7 }),
+  );
+
+  let now = 1000;
+  const work = api.createWorkOnce({
+    store: memoryApi.createMemoryStore({ now: () => now }),
+    scope: `alias-${label}`,
+  });
+  const queue = work.define('job', {
+    perform: async (run) => run.succeed('done'),
+  });
+  const enqueued = await queue.enqueue(null, { key: 'same' });
+  const ensured = await queue.ensure(null, { key: 'same' });
+  assert.equal(enqueued.id, ensured.id, `${label}.enqueue/ensure identity`);
+  const processed = await queue.process({ workerId: `${label}:process` });
+  assert.equal(processed[0]?.status, 'settled', `${label}.process/runAvailable semantics`);
+  assert.equal((await queue.inspect('same')).phase.result, 'done');
+
+  await queue.enqueue(null, { key: 'lease' });
+  const [run] = await queue.claim({ workerId: `${label}:lease` });
+  assert.deepEqual(run.wait('pending', { afterMs: 3 }), run.defer('pending', { afterMs: 3 }));
+  const heartbeat = await run.heartbeat();
+  const renewed = await run.renew();
+  assert.equal(heartbeat.attempt.workId, renewed.attempt.workId);
+  assert.equal(heartbeat.attempt.generation, renewed.attempt.generation);
+  assert.equal(heartbeat.attempt.fence, renewed.attempt.fence);
+  assert.equal(heartbeat.attempt.leaseUntil, renewed.attempt.leaseUntil);
+  await run.settle(run.succeed('leased'));
+
+  const externalQueue = work.define('external');
+  const service = externalQueue.serveExternal({
+    prepare: (leased) => leased.handoff(leased.input),
+    onPrepareError: (leased) => leased.fail('prepare_failed'),
+  });
+  await service.ensure(null, { key: 'external' });
+  const externalProcessed = await api.processExternal(
+    service,
+    { workerId: `${label}:external`, signal: new AbortController().signal },
+    async (leased) => leased.succeed(),
+  );
+  assert.equal(
+    externalProcessed[0]?.status,
+    'settled',
+    `${label}.processExternal/runExternalAvailable semantics`,
+  );
+}
+
+// Readable and technical names are intentional first-class aliases, not old-format compatibility.
+test('ESM and CommonJS aliases execute the same hardened operations, not merely similarly-shaped APIs', async () => {
+  await exerciseRuntimeAliases(root, memory, 'esm');
+  await exerciseRuntimeAliases(
+    require('../dist-cjs/index.js'),
+    require('../dist-cjs/memory.js'),
+    'commonjs',
+  );
   for (const api of [external, require('../dist-cjs/external.js')])
     assert.equal(typeof api.processExternal, 'function');
 });

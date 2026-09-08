@@ -110,6 +110,7 @@ for (const consumer of [
   'outbox implementation mutation guard',
   'storage implementation mutation guard',
   'storage source/model mutation guard',
+  'alias runtime/type mutation guard',
   'implementation traces',
   'real process faults',
   'bounded-domain audit',
