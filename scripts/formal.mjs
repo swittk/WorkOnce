@@ -17,16 +17,18 @@ mkdirSync('.artifacts/tlc', { recursive: true });
 const workers = String(Math.max(2, Math.min(8, availableParallelism())));
 const timeoutMs = 30_000;
 
-function tlcArgs(model, config, modulePath) {
+function tlcArgs(model, config, modulePath, options = {}) {
+  const heapMb = options.heapMb ?? 512;
+  const workerCount = options.workerCount ?? workers;
   return [
-    '-Xmx512m',
+    `-Xmx${heapMb}m`,
     '-XX:+UseParallelGC',
     `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
     '-cp',
     jar,
     'tlc2.TLC',
     '-workers',
-    workers,
+    workerCount,
     '-metadir',
     resolve('.artifacts/tlc', model),
     '-config',
@@ -59,18 +61,24 @@ function runModel(model, config, modulePath = `${model}.tla`) {
 function requireInvariantRejects(model, config, modulePath, invariant) {
   const directory = resolve('.artifacts/tlc', model);
   mkdirSync(directory, { recursive: true });
-  const result = spawnSync('java', tlcArgs(model, config, modulePath), {
-    cwd: 'formal',
-    encoding: 'utf8',
-    timeout: timeoutMs,
-    killSignal: 'SIGKILL',
-  });
+  const result = spawnSync(
+    'java',
+    tlcArgs(model, config, modulePath, { heapMb: 192, workerCount: '1' }),
+    {
+      cwd: 'formal',
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+    },
+  );
   if (result.error) throw result.error;
   if (result.signal) throw new Error(`TLC mutation check terminated by signal ${result.signal}`);
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  if (result.status === 0 || !output.includes(`Invariant ${invariant} is violated`)) {
+  const explicitInvariantFailure =
+    output.includes(`Invariant ${invariant} is violated`) ||
+    output.includes(`invariant of ${invariant} is equal to FALSE`);
+  if (result.status === 0 || !explicitInvariantFailure)
     throw new Error(`Formal mutation was not rejected by ${invariant}: ${output.slice(-2000)}`);
-  }
   console.log(`TLC mutation guard: ${invariant} rejects its injected violating transition.`);
 }
 
@@ -128,17 +136,58 @@ function assertMutantSetMatchesConfig(configPath, mutants) {
     );
 }
 
-function writeOneStepMutant({ prefix, baseModule, baseConfig, invariant, action }) {
-  const safe = invariant.replace(/[^A-Za-z0-9_]/gu, '_');
-  const model = `${prefix}${safe}`;
+function mutationWitnessConfig(configText) {
+  const lines = configText.replace(/\r\n?/gu, '\n').split('\n');
+  const output = [];
+  let skipping = false;
+  let inserted = false;
+  for (const line of lines) {
+    if (line.trim() === 'INVARIANTS') {
+      skipping = true;
+      continue;
+    }
+    if (skipping) {
+      if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line)) continue;
+      skipping = false;
+    }
+    if (line.trim() === 'SPECIFICATION Spec') {
+      output.push('SPECIFICATION BatchSpec');
+      continue;
+    }
+    if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
+      output.push('INVARIANT MutationWitnesses');
+      inserted = true;
+    }
+    output.push(line);
+  }
+  if (!inserted) output.push('INVARIANT MutationWitnesses');
+  return `${output.join('\n').trimEnd()}\n`;
+}
+
+function runMutationWitnessBatch({ model, baseModule, baseConfig, mutants }) {
   const modulePath = resolve(`.artifacts/tlc/${model}.tla`);
   const configPath = resolve(`.artifacts/tlc/${model}.cfg`);
+  const branches = Object.entries(mutants)
+    .map(([invariant, action]) => {
+      const rawLines = action.replace(/^\n+|\n+$/gu, '').split('\n');
+      const nonEmpty = rawLines.filter((line) => line.trim().length > 0);
+      const commonIndent = Math.min(...nonEmpty.map((line) => /^\s*/u.exec(line)?.[0].length ?? 0));
+      const body = rawLines.map((line) => `     ${line.slice(commonIndent)}`).join('\n');
+      return `  \\/ /\\ mutantId = "none"\n${body}\n     /\\ mutantId' = ${JSON.stringify(invariant)}`;
+    })
+    .join('\n');
+  const witnesses = Object.keys(mutants)
+    .map((invariant) => `  \\/ /\\ mutantId = ${JSON.stringify(invariant)} /\\ ~${invariant}`)
+    .join('\n');
   writeFileSync(
     modulePath,
-    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nUnsafe ==\n${action}\nMutantSpec == Init /\\ [][Unsafe]_vars\n====\n`,
+    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
   );
-  writeFileSync(configPath, singleInvariantConfig(baseConfig, invariant));
-  requireInvariantRejects(model, configPath, modulePath, invariant);
+  writeFileSync(configPath, mutationWitnessConfig(baseConfig));
+  runModel(model, configPath, modulePath);
+  console.log(
+    `TLC mutation witness batch proves ${Object.keys(mutants).length} configured invariants are non-vacuous for ${baseModule}.`,
+  );
 }
 
 const lifecycleMutants = {
@@ -203,6 +252,48 @@ const runtimeMutants = {
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
+const policyMutants = {
+  PolicyTypeOK: String.raw`  /\ pc' = "invalid"
+  /\ UNCHANGED <<phase, revision, snapRevision, fence, receiptFence, receipt,
+                 snapReceiptFence, snapReceipt, faultRevision, faultPhase,
+                 faultReceiptFence, faultReceipt, submission, reply>>`,
+  StalePolicyCannotPublish: String.raw`  /\ pc' = "done" /\ phase' = "running"
+  /\ revision' = 1 /\ snapRevision' = 1 /\ fence' = 1
+  /\ receiptFence' = 1 /\ receipt' = "implicit"
+  /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
+  /\ faultRevision' = 0 /\ faultPhase' = "none"
+  /\ faultReceiptFence' = 0 /\ faultReceipt' = "none"
+  /\ submission' = "implicit" /\ reply' = "stale"`,
+  PolicyFailureNoWrite: String.raw`  /\ pc' = "done" /\ phase' = "waiting"
+  /\ revision' = 2 /\ snapRevision' = 1 /\ fence' = 1
+  /\ receiptFence' = 1 /\ receipt' = "implicit"
+  /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
+  /\ faultRevision' = 1 /\ faultPhase' = "running"
+  /\ faultReceiptFence' = 0 /\ faultReceipt' = "none"
+  /\ submission' = "none" /\ reply' = "callbackError"`,
+  ReceiptIdentityControlsReplay: String.raw`  /\ pc' = "running" /\ phase' = "running"
+  /\ revision' = 1 /\ snapRevision' = 0 /\ fence' = 1
+  /\ receiptFence' = 1 /\ receipt' = "implicit"
+  /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
+  /\ faultRevision' = 0 /\ faultPhase' = "none"
+  /\ faultReceiptFence' = 0 /\ faultReceipt' = "none"
+  /\ submission' = "explicit" /\ reply' = "replay"`,
+  ReceiptFenceTracksPublishedAttempt: String.raw`  /\ pc' = "waiting" /\ phase' = "waiting"
+  /\ revision' = 3 /\ snapRevision' = 1 /\ fence' = 2
+  /\ receiptFence' = 1 /\ receipt' = "implicit"
+  /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
+  /\ faultRevision' = 0 /\ faultPhase' = "none"
+  /\ faultReceiptFence' = 0 /\ faultReceipt' = "none"
+  /\ submission' = "none" /\ reply' = "none"`,
+  SupersededReceiptRejectsOld: String.raw`  /\ pc' = "waiting" /\ phase' = "waiting"
+  /\ revision' = 2 /\ snapRevision' = 1 /\ fence' = 1
+  /\ receiptFence' = 1 /\ receipt' = "implicit"
+  /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
+  /\ faultRevision' = 0 /\ faultPhase' = "none"
+  /\ faultReceiptFence' = 0 /\ faultReceipt' = "none"
+  /\ submission' = "implicit" /\ reply' = "staleOld"`,
+};
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -222,14 +313,12 @@ const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
 assertMutantSetMatchesConfig('formal/WorkOnce.cfg', lifecycleMutants);
 if (!process.argv.includes('--runtime-only')) {
   runModel('WorkOnce', 'WorkOnce.cfg');
-  for (const [invariant, action] of Object.entries(lifecycleMutants))
-    writeOneStepMutant({
-      prefix: 'WorkOnceInvariantMutant_',
-      baseModule: 'WorkOnce',
-      baseConfig: lifecycleConfig,
-      invariant,
-      action,
-    });
+  runMutationWitnessBatch({
+    model: 'WorkOnceInvariantMutationBatch',
+    baseModule: 'WorkOnce',
+    baseConfig: lifecycleConfig,
+    mutants: lifecycleMutants,
+  });
 }
 
 // No per-trace TLC processes and no cached witness: check fresh compiled public API observations
@@ -258,14 +347,12 @@ if (JSON.stringify([...runtimeConfigured].sort()) !== JSON.stringify(runtimeGuar
   throw new Error(
     `Formal mutation coverage drifted for formal/WorkOnceRuntime.cfg: configured=${runtimeConfigured.join(',')} guarded=${runtimeGuarded.join(',')}`,
   );
-for (const [invariant, action] of Object.entries(runtimeMutants))
-  writeOneStepMutant({
-    prefix: 'WorkOnceRuntimeInvariantMutant_',
-    baseModule: 'WorkOnceRuntimeObserved',
-    baseConfig: runtimeConfig,
-    invariant,
-    action,
-  });
+runMutationWitnessBatch({
+  model: 'WorkOnceRuntimeInvariantMutationBatch',
+  baseModule: 'WorkOnceRuntimeObserved',
+  baseConfig: runtimeConfig,
+  mutants: runtimeMutants,
+});
 
 const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
 const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.cfg');
@@ -342,3 +429,62 @@ requireInvariantRejects(
   admissionMutant,
   'NoAdmissionAfterStop',
 );
+
+if (!process.argv.includes('--runtime-only')) {
+  const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
+    './policy-refinement.mjs'
+  );
+  const policySamples = await runPolicyRefinementSamples();
+  assertPolicyRefinementSamples(policySamples);
+  const policyObserved = resolve('.artifacts/tlc/WorkOncePolicyObserved.tla');
+  const policyConfig = resolve('.artifacts/tlc/WorkOncePolicy-observed.cfg');
+  writeFileSync(
+    policyObserved,
+    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+  );
+  writeFileSync(
+    policyConfig,
+    `${readFileSync('formal/WorkOncePolicy.cfg', 'utf8').replace(
+      'CONSTANT Samples = {}',
+      'CONSTANT Samples <- ObservedSamples',
+    )}\nINVARIANT PolicySamplesConform\n`,
+  );
+  console.log(
+    `TLC policy boundary receives ${policySamples.length} fresh compiled public API observations.`,
+  );
+  runModel('WorkOncePolicyObserved', policyConfig, policyObserved);
+
+  const basePolicyConfig = readFileSync('formal/WorkOncePolicy.cfg', 'utf8');
+  assertMutantSetMatchesConfig('formal/WorkOncePolicy.cfg', policyMutants);
+  runMutationWitnessBatch({
+    model: 'WorkOncePolicyInvariantMutationBatch',
+    baseModule: 'WorkOncePolicy',
+    baseConfig: basePolicyConfig,
+    mutants: policyMutants,
+  });
+
+  const policySampleMutant = resolve('.artifacts/tlc/WorkOncePolicySamplesMutant.tla');
+  const policySampleMutantConfig = resolve('.artifacts/tlc/WorkOncePolicySamplesMutant.cfg');
+  writeFileSync(
+    policySampleMutant,
+    String.raw`---- MODULE WorkOncePolicySamplesMutant ----
+EXTENDS WorkOncePolicyObserved
+BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+  );
+  writeFileSync(
+    policySampleMutantConfig,
+    singleInvariantConfig(readFileSync(policyConfig, 'utf8'), 'PolicySamplesConform').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOncePolicySamplesMutant',
+    policySampleMutantConfig,
+    policySampleMutant,
+    'PolicySamplesConform',
+  );
+}

@@ -49,10 +49,17 @@
 - Cross-adapter producer: `scripts/read-boundary-refinement.mjs`
 - Bound source methods: `WorkItem.inspect`, `WorkQueue.key`, `WorkQueue.item`, `WorkQueue.inspect`, `WorkQueue.inspectId`, `WorkQueue.inspectMany`, `WorkQueue.history`, `WorkQueue.requireRow`, `WorkQueue.assertDefinition`, `WorkQueue.snapshot`
 
+## Retry/defer policy boundary
+
+- Spec: `formal/WorkOncePolicy.tla`
+- Fresh compiled observations: `scripts/policy-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `PolicyFailureNoWrite`, `PolicyTypeOK`, `ReceiptFenceTracksPublishedAttempt`, `ReceiptIdentityControlsReplay`, `StalePolicyCannotPublish`, `SupersededReceiptRejectsOld`
+- Bound policy source symbols: `src/kernel.ts:integer`, `src/kernel.ts:add`, `src/kernel.ts:addTimeCapped`, `src/kernel.ts:effectiveNow`, `src/kernel.ts:assertCurrent`, `src/kernel.ts:changed`, `src/kernel.ts:replayReceipt`, `src/kernel.ts:settleRecord`, `src/outcomes.ts:retry`, `src/outcomes.ts:wait`, `src/outcomes.ts:defer`, `src/retry-policy.ts:exponentialBackoff`, `src/work.ts:WorkRun.retry`, `src/work.ts:WorkRun.wait`, `src/work.ts:WorkRun.defer`, `src/work.ts:WorkRun.settle`, `src/work.ts:WorkQueue.waitPolicy`, `src/work.ts:WorkQueue.settle`, `src/work.ts:WorkQueue.wake`, `src/work.ts:WorkQueue.wakeCurrent`
+
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **17**
-- Content digest: `d2641a9ba8b367182854d799314262639588da839b882329f4df7cf7eef9ccdc`
+- Bound proof/checker files: **20**
+- Content digest: `80a32dc7909da2628dbaab22f71c2dd7330f23a44d6722fa5cc43cb6a11abdb5`
 
 ## Coverage rule
 

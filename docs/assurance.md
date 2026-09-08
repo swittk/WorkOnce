@@ -148,14 +148,16 @@ binding check before dynamically importing `dist`-backed producers. The full ass
 build before any emitted-artifact consumer. A mutation that removes the `test:process` freshness
 guard is required to fail this entrypoint audit.
 
-Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation map to
-the exact invariant names parsed from both CFG files, so adding/removing a configured invariant
-without a corresponding mutation control fails. The current gate injects one-transition violating
-states for all ten lifecycle invariants and all seven runtime invariants and requires TLC to report
-the intended invariant violation. `RuntimeSamplesConform` gets a deliberately invalid observed
-sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant.
-These controls prove that each configured invariant is active; they do not replace the real bounded
-state-space runs.
+Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation maps to
+the exact invariant names parsed from the lifecycle, runtime and policy CFG files, so adding or
+removing a configured invariant without a corresponding mutation control fails. The current gate
+injects one-transition violating states for all ten lifecycle invariants, all eight runtime
+invariants and all six policy/receipt invariants and requires TLC to report the intended invariant
+violation. `RuntimeSamplesConform` and `PolicySamplesConform` each get a deliberately invalid
+observed sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission
+mutant. Independent tiny mutation graphs are run concurrently with bounded one-worker heaps; this
+reduces wall time without dropping any mutant. These controls prove that each configured invariant
+is active; they do not replace the real bounded state-space runs.
 
 ## Typed-read / definition-fence refinement
 
@@ -206,6 +208,47 @@ semantic binding. A runner source change with an unchanged runtime abstraction t
 closed unless deliberately acknowledged after review. This remains bounded safety evidence: process
 crash persistence itself belongs to the durable lifecycle/storage families, and unbounded fleet
 fairness is not claimed here.
+
+## Retry/defer policy and settlement-receipt refinement
+
+`formal/WorkOncePolicy.tla` makes the retry/defer policy seam first-class instead of treating every
+settlement as one atomic `Retry`/`Defer` edge. The bounded machine records policy-in-flight state,
+the revision captured before the callback, one competing cancel/reclaim, attempt fence, durable
+settlement-receipt identity and the fence that published that receipt. It checks exact retry stop
+precedence (denied, retry budget, attempt budget, deadline), defer stop precedence (attempt,
+deadline, deferral), stale policy publication, callback-failure no-write behavior, replay identity,
+receipt-to-attempt fencing and supersession of an older receipt by a newer attempt.
+
+The hidden receipt state matters. Two legal defer histories can produce byte-identical public
+waiting snapshots while one submitted explicit `{afterMs: 5}` and the other obtained the same
+timing from the definition callback. Their durable receipt hashes differ, so replaying the original
+submission succeeds while replaying the other form rejects `settlement_conflict`. The policy
+abstraction therefore keeps receipt identity instead of claiming those public snapshots have the
+same future. A second bounded history proves a waiting receipt from attempt 1 remains replayable
+while attempt 2 is running, then becomes `stale_attempt` after attempt 2 publishes its own receipt.
+
+`scripts/policy-refinement.mjs` currently contributes **45 fresh compiled observations**. They cover
+all bounded retry/defer stop-precedence combinations, zero-delay and finite arithmetic saturation,
+async cancel/reclaim races, exact callback failures with no write, duplicate settlement replay,
+static-versus-async equivalent-policy histories, concurrent wake revision fencing, retry and defer
+projection equality across memory/SQLite/native-CAS, native-CAS commit-with-lost-ACK recovery and
+exact timing errors. `test/process/policy-process.test.mjs` adds real SQLite SIGKILL prefixes for
+both retry and defer: death while the async policy is unresolved leaves no policy write and later
+reclaim fences the old attempt; death after the waiting row commits but before the ACK returns
+replays the exact receipt after restart without rerunning policy or double-incrementing counters.
+
+The dedicated policy source/model binding hashes the exact retry/defer symbols listed in the
+assurance manifest: outcome constructors, `exponentialBackoff`, settlement/replay/timing kernel
+helpers, and the `WorkRun`/`WorkQueue` policy and wake methods. Unrelated methods in the same source
+files therefore cannot mask another family's intended drift failure; the global lifecycle binding
+still covers the remaining package semantic source. Separate executable mutants reintroduce the old
+zero-delay overflow behavior, swap retry/defer stop precedence, and remove the wake revision guard;
+the focused compiled policy suite must go red for the intended witness. Policy/receipt TLA
+invariants and `PolicySamplesConform` each have their own mutation control. This family owns no
+internal pagination or bounded multi-record scanner, so scheduler/cursor fairness is N/A here rather
+than being fabricated. The numeric claim remains finite: JavaScript safe-integer durations, exact
+deadline boundaries and the sampled multiplier/overflow classes are proved; arbitrary infinite
+numeric domains are not claimed.
 
 ## Fast complete gate
 

@@ -54,6 +54,12 @@ run('typed-read source/model mutation guard', process.execPath, [
 run('typed-read route/order mutation guard', process.execPath, [
   'scripts/check-read-contract-mutation.mjs',
 ]);
+run('policy source/model mutation guard', process.execPath, [
+  'scripts/check-policy-source-model-binding-mutation.mjs',
+]);
+run('policy implementation mutation guards', process.execPath, [
+  'scripts/check-policy-implementation-mutations.mjs',
+]);
 runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',
@@ -70,6 +76,8 @@ run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-doma
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
 ]);
-run('TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']);
+run('TLC lifecycle/runtime/policy boundaries + mutation guards', process.execPath, [
+  'scripts/formal.mjs',
+]);
 run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);
 console.log('[assurance] all gates passed');

@@ -10,6 +10,9 @@ const { runBoundedRefinementCorpus } = await import('./formal-bounded-refinement
 const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
   './runtime-boundary-refinement.mjs'
 );
+const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
+  './policy-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -24,6 +27,14 @@ const evidenceFiles = [
   'scripts/check-read-contract-mutation.mjs',
   'test/runtime-boundary-refinement.test.mjs',
   'test/lifecycle-transition-matrix.test.mjs',
+  'scripts/policy-refinement.mjs',
+  'test/policy-refinement.test.mjs',
+  'test/process/policy-child.mjs',
+  'test/process/policy-process.test.mjs',
+  'formal/WorkOncePolicy.tla',
+  'formal/WorkOncePolicy.cfg',
+  'scripts/check-policy-source-model-binding-mutation.mjs',
+  'scripts/check-policy-implementation-mutations.mjs',
   'scripts/formal.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/check-build-source-binding-mutation.mjs',
@@ -47,6 +58,8 @@ function digestFiles(files) {
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
+const policySamples = await runPolicyRefinementSamples();
+assertPolicyRefinementSamples(policySamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -68,6 +81,18 @@ const current = {
       .update(JSON.stringify(boundarySamples))
       .digest('hex'),
     lifecycleAdapterCases: 600,
+  },
+  policyBoundary: {
+    samples: policySamples.length,
+    counts: Object.fromEntries(
+      [...new Set(policySamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, policySamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(policySamples))
+      .digest('hex'),
   },
   observed: {
     deterministicScenarios: report.deterministicScenarios,

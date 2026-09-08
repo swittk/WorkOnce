@@ -12,6 +12,14 @@
     "scripts/check-read-contract-mutation.mjs",
     "test/runtime-boundary-refinement.test.mjs",
     "test/lifecycle-transition-matrix.test.mjs",
+    "scripts/policy-refinement.mjs",
+    "test/policy-refinement.test.mjs",
+    "test/process/policy-child.mjs",
+    "test/process/policy-process.test.mjs",
+    "formal/WorkOncePolicy.tla",
+    "formal/WorkOncePolicy.cfg",
+    "scripts/check-policy-source-model-binding-mutation.mjs",
+    "scripts/check-policy-implementation-mutations.mjs",
     "scripts/formal.mjs",
     "scripts/build-source-binding.mjs",
     "scripts/check-build-source-binding-mutation.mjs",
@@ -24,7 +32,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "9e4d0426118d847c4e22c989ee7eef2150e4449430f2a32680ee562c36ed7b66",
+  "evidenceDigest": "a1032be6086a3cf58f66679805b06d45854362b3bedf80682fe663aca4b4a4b2",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -97,6 +105,25 @@
     },
     "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d",
     "lifecycleAdapterCases": 600
+  },
+  "policyBoundary": {
+    "samples": 45,
+    "counts": {
+      "adapterEquivalence": 2,
+      "backoffFinite": 5,
+      "casAckLoss": 2,
+      "deferBoundary": 8,
+      "historyCongruence": 1,
+      "policyFailure": 2,
+      "policyRace": 4,
+      "policyReplay": 2,
+      "receiptAcrossAttempts": 2,
+      "receiptSplit": 1,
+      "retryBoundary": 12,
+      "timingBoundary": 1,
+      "wakeCompetition": 3
+    },
+    "observationDigest": "dbd1f17ada09571479f7566b4d1c4fe921857bf21b11916bc886e7849cb15fcf"
   },
   "observed": {
     "deterministicScenarios": 43,

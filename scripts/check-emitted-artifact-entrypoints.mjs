@@ -40,10 +40,11 @@ if (traceGuard < 0 || traceProducer < 0 || traceGuard > traceProducer)
 const assurance = fs.readFileSync(path.join(root, 'scripts/run-assurance.mjs'), 'utf8');
 const build = assurance.indexOf("runNpm('single build'");
 for (const consumer of [
+  "run('policy implementation mutation guards'",
   "run('implementation traces'",
   "run('real process faults'",
   "run('bounded-domain audit'",
-  "run('TLC lifecycle/runtime boundaries + mutation guard'",
+  "run('TLC lifecycle/runtime/policy boundaries + mutation guards'",
   "run('packed consumer'",
 ]) {
   const index = assurance.indexOf(consumer);

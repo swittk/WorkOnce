@@ -33,8 +33,36 @@ const modelFiles = [
   'formal/WorkOnceContract.tla',
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
+  'formal/WorkOncePolicy.tla',
+  'formal/WorkOncePolicy.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
+const policySourceSymbols = {
+  'src/work.ts': [
+    'WorkRun.retry',
+    'WorkRun.wait',
+    'WorkRun.defer',
+    'WorkRun.settle',
+    'WorkQueue.waitPolicy',
+    'WorkQueue.settle',
+    'WorkQueue.wake',
+    'WorkQueue.wakeCurrent',
+  ],
+  'src/kernel.ts': [
+    'integer',
+    'add',
+    'addTimeCapped',
+    'effectiveNow',
+    'assertCurrent',
+    'changed',
+    'replayReceipt',
+    'settleRecord',
+  ],
+  'src/retry-policy.ts': ['exponentialBackoff'],
+  'src/outcomes.ts': ['retry', 'wait', 'defer'],
+};
+const policySourceFiles = Object.keys(policySourceSymbols);
+const policyModelFiles = ['formal/WorkOncePolicy.tla', 'formal/WorkOncePolicy.cfg'];
 const runtimeModelFiles = [
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
@@ -69,6 +97,9 @@ const assuranceInfrastructureFiles = [
   'scripts/check-read-boundary-mutation.mjs',
   'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/check-read-contract-mutation.mjs',
+  'scripts/policy-refinement.mjs',
+  'scripts/check-policy-source-model-binding-mutation.mjs',
+  'scripts/check-policy-implementation-mutations.mjs',
   'scripts/run-assurance.mjs',
   'package.json',
 ];
@@ -191,6 +222,39 @@ function semanticTokenString(text) {
   }
   return tokens.join('\n');
 }
+function sourceSymbolDigest(bindings, label) {
+  const found = [];
+  const expected = [];
+  for (const [relativePath, names] of Object.entries(bindings)) {
+    const file = path.join(root, relativePath);
+    const text = fs.readFileSync(file, 'utf8');
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const wanted = new Set(names);
+    for (const name of names) expected.push(`${relativePath}:${name}`);
+    for (const node of source.statements) {
+      if (ts.isFunctionDeclaration(node) && node.name && wanted.has(node.name.text)) {
+        const key = `${relativePath}:${node.name.text}`;
+        found.push(`${key}\n${semanticTokenString(node.getText(source))}`);
+      }
+      if (!ts.isClassDeclaration(node) || !node.name) continue;
+      const className = node.name.text;
+      for (const member of node.members) {
+        if (!ts.isMethodDeclaration(member) || !member.name) continue;
+        const symbol = `${className}.${member.name.getText(source)}`;
+        if (!wanted.has(symbol)) continue;
+        const key = `${relativePath}:${symbol}`;
+        found.push(`${key}\n${semanticTokenString(member.getText(source))}`);
+      }
+    }
+  }
+  const keys = found.map((entry) => entry.slice(0, entry.indexOf('\n'))).sort(compareExact);
+  expected.sort(compareExact);
+  if (JSON.stringify(keys) !== JSON.stringify(expected))
+    throw new Error(
+      `${label} source binding drifted: expected=${expected.join(',')} found=${keys.join(',')}`,
+    );
+  return digest(found.sort(compareExact).join('\n---\n'));
+}
 function readSurfaceDigest() {
   const file = path.join(root, 'src/work.ts');
   const text = fs.readFileSync(file, 'utf8');
@@ -213,6 +277,9 @@ function readSurfaceDigest() {
       `Typed-read source binding drifted: expected=${expected.join(',')} found=${keys.join(',')}`,
     );
   return digest(found.sort(compareExact).join('\n---\n'));
+}
+function policySurfaceDigest() {
+  return sourceSymbolDigest(policySourceSymbols, 'Retry/defer policy');
 }
 
 function surface() {
@@ -389,6 +456,9 @@ function fieldClassification(typeName, fieldName, callable) {
   return 'observational';
 }
 function modelConceptsForField(typeName, fieldName, classification) {
+  if (fieldName === 'submissionHash' || fieldName === 'receipt')
+    return ['policyReceiptIdentity', 'settlementReplay'];
+  if (fieldName === 'afterMs' || fieldName === 'at') return ['available', 'now', 'policyTiming'];
   if (classification === 'opaque-payload') return ['opaquePayload'];
   if (classification === 'storage-boundary') return ['storageAtomicity'];
   if (classification === 'worker-runtime') return ['pc', 'active', 'fatalPresent', 'aborted'];
@@ -536,11 +606,15 @@ function buildManifest(live) {
     for (const row of live.entrypoints[entrypoint]) {
       const classification = callableClassification(row.key);
       const runtimeContracts = runtimeContractsForKey(row.key);
+      const modelActions = modelActionsForKey(row.key);
+      const policyRelevant = modelActions.some((action) =>
+        ['Retry', 'Defer', 'Wake'].includes(action),
+      );
       callables.push({
         key: row.key,
         classification,
         signatureHash: signatureHash(row),
-        modelActions: modelActionsForKey(row.key),
+        modelActions,
         runtimeContracts,
         evidence: [
           ...evidenceByClassification[classification],
@@ -549,6 +623,7 @@ function buildManifest(live) {
           ...(runtimeContracts.includes('ReadAllowed')
             ? ['test/read-boundary-refinement.test.mjs']
             : []),
+          ...(policyRelevant ? ['test/policy-refinement.test.mjs'] : []),
         ],
       });
     }
@@ -645,6 +720,18 @@ function buildManifest(live) {
         modelFiles: readModelFiles,
         modelDigest: formalDigest(readModelFiles),
       },
+      policy: {
+        spec: 'formal/WorkOncePolicy.tla',
+        config: 'formal/WorkOncePolicy.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOncePolicy.cfg'),
+        observationProducer: 'scripts/policy-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        sourceFiles: policySourceFiles,
+        sourceSymbols: policySourceSymbols,
+        modelFiles: policyModelFiles,
+        sourceDigest: policySurfaceDigest(),
+        modelDigest: formalDigest(policyModelFiles),
+      },
     },
     entrypoints: expectedEntrypoints,
     callables,
@@ -716,6 +803,15 @@ function renderReport(manifest) {
     `- Cross-adapter producer: \`${manifest.model.reads.observationProducer}\``,
     `- Bound source methods: ${manifest.model.reads.sourceMethods.map((name) => `\`${name}\``).join(', ')}`,
     '',
+    '## Retry/defer policy boundary',
+    '',
+    `- Spec: \`${manifest.model.policy.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.policy.observationProducer}\` via \`${manifest.model.policy.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.policy.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound policy source symbols: ${Object.entries(manifest.model.policy.sourceSymbols)
+      .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
+      .join(', ')}`,
+    '',
     '## Assurance infrastructure binding',
     '',
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
@@ -749,6 +845,16 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
+  if (
+    previous?.model?.policy &&
+    previous.model.policy.sourceDigest !== current.model.policy.sourceDigest &&
+    previous.model.policy.modelDigest === current.model.policy.modelDigest &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound retry/defer policy semantics changed without a WorkOncePolicy semantic change. Update the policy model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
   if (
     previous?.model?.reads &&
     previous.model.reads.sourceDigest !== current.model.reads.sourceDigest &&

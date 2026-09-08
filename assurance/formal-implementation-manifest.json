@@ -745,7 +745,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.ExternalWorkRun.defer",
       "modelActions": [
@@ -779,7 +780,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.ExternalWorkRun.retry",
       "modelActions": [
@@ -813,7 +815,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.ExternalWorkRun.wait",
       "modelActions": [
@@ -881,7 +884,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.ExternalWorkService.settle",
       "modelActions": [
@@ -937,7 +941,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.ExternalWorkTransport.settle",
       "modelActions": [
@@ -972,7 +977,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.processExternal",
       "modelActions": [
@@ -994,7 +1000,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.runExternal",
       "modelActions": [
@@ -1023,7 +1030,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "external.runExternalAvailable",
       "modelActions": [
@@ -1263,7 +1271,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "kernel.settleRecord",
       "modelActions": [
@@ -1367,7 +1376,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.ExternalWorkRun.defer",
       "modelActions": [
@@ -1397,7 +1407,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.ExternalWorkRun.retry",
       "modelActions": [
@@ -1427,7 +1438,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.ExternalWorkRun.wait",
       "modelActions": [
@@ -1584,7 +1596,8 @@
         "test/item.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkItem.wake",
       "modelActions": [
@@ -1687,7 +1700,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.handoff",
       "modelActions": [
@@ -1814,7 +1828,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.process",
       "modelActions": [
@@ -1910,7 +1925,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.run",
       "modelActions": [
@@ -1939,7 +1955,8 @@
         "test/handoff.test.mjs",
         "test/edge-regressions.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.runAvailable",
       "modelActions": [
@@ -1959,7 +1976,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.serveExternal",
       "modelActions": [
@@ -1979,7 +1997,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.settle",
       "modelActions": [
@@ -1997,7 +2016,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.wake",
       "modelActions": [
@@ -2012,7 +2032,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.wakeCurrent",
       "modelActions": [
@@ -2040,7 +2061,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkRun.defer",
       "modelActions": [
@@ -2115,7 +2137,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkRun.retry",
       "modelActions": [
@@ -2130,7 +2153,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkRun.settle",
       "modelActions": [
@@ -2176,7 +2200,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.WorkRun.wait",
       "modelActions": [
@@ -2249,7 +2274,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.defer",
       "modelActions": [
@@ -2265,7 +2291,8 @@
         "test/continuation-policy.test.mjs",
         "test/readable-api.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.exponentialBackoff",
       "modelActions": [
@@ -2297,7 +2324,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.processExternal",
       "modelActions": [
@@ -2317,7 +2345,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.retry",
       "modelActions": [
@@ -2332,7 +2361,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.runExternal",
       "modelActions": [
@@ -2359,7 +2389,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.runExternalAvailable",
       "modelActions": [
@@ -2394,7 +2425,8 @@
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
       ],
       "key": "root.wait",
       "modelActions": [
@@ -3789,7 +3821,8 @@
       "field": "submissionHash",
       "key": "SettlementReceipt|src/model.ts|0|09b34a540d92#submissionHash",
       "modelConcepts": [
-        "identity"
+        "policyReceiptIdentity",
+        "settlementReplay"
       ],
       "optional": false,
       "source": "src/model.ts",
@@ -4059,7 +4092,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4082,7 +4115,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4105,7 +4138,7 @@
         "observationOnly"
       ],
       "optional": true,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4406,7 +4439,8 @@
       "key": "WorkEvent|src/model.ts|0|8fe5ed0835ab#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": false,
       "source": "src/model.ts",
@@ -5504,7 +5538,8 @@
       "field": "receipt",
       "key": "WorkRecord|src/model.ts|0|1a45186ecac8#receipt",
       "modelConcepts": [
-        "observationOnly"
+        "policyReceiptIdentity",
+        "settlementReplay"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -6399,7 +6434,8 @@
       "key": "WorkTiming|src/outcomes.ts|0|9b90216763bc#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
@@ -6422,7 +6458,8 @@
       "key": "WorkTiming|src/outcomes.ts|0|9b90216763bc#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
@@ -6949,7 +6986,8 @@
       "key": "anonymous@src/model.ts#11|src/model.ts|11|d849d28d0b52#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": false,
       "source": "src/model.ts",
@@ -8033,7 +8071,8 @@
       "key": "anonymous@src/model.ts#7|src/model.ts|7|9fdcea2d9baa#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8056,7 +8095,8 @@
       "key": "anonymous@src/model.ts#7|src/model.ts|7|9fdcea2d9baa#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8126,7 +8166,8 @@
       "key": "anonymous@src/model.ts#7|src/model.ts|7|d91e4274f94a#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8151,7 +8192,8 @@
       "key": "anonymous@src/model.ts#7|src/model.ts|7|d91e4274f94a#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8223,7 +8265,8 @@
       "key": "anonymous@src/model.ts#8|src/model.ts|8|43c957497756#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8246,7 +8289,8 @@
       "key": "anonymous@src/model.ts#8|src/model.ts|8|43c957497756#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8316,7 +8360,8 @@
       "key": "anonymous@src/model.ts#8|src/model.ts|8|5099df1058cd#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8341,7 +8386,8 @@
       "key": "anonymous@src/model.ts#8|src/model.ts|8|5099df1058cd#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/model.ts",
@@ -8649,7 +8695,8 @@
       "key": "anonymous@src/outcomes.ts#0|src/outcomes.ts|0|f22fce40d7a1#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": false,
       "source": "src/outcomes.ts",
@@ -8674,7 +8721,8 @@
       "key": "anonymous@src/outcomes.ts#0|src/outcomes.ts|0|f22fce40d7a1#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
@@ -8699,7 +8747,8 @@
       "key": "anonymous@src/outcomes.ts#1|src/outcomes.ts|1|05cc98604a2e#afterMs",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
@@ -8724,7 +8773,8 @@
       "key": "anonymous@src/outcomes.ts#1|src/outcomes.ts|1|05cc98604a2e#at",
       "modelConcepts": [
         "available",
-        "now"
+        "now",
+        "policyTiming"
       ],
       "optional": false,
       "source": "src/outcomes.ts",
@@ -10475,6 +10525,62 @@
       "TypeOK",
       "WaitingHasCause"
     ],
+    "policy": {
+      "config": "formal/WorkOncePolicy.cfg",
+      "configuredChecks": [
+        "PolicyFailureNoWrite",
+        "PolicyTypeOK",
+        "ReceiptFenceTracksPublishedAttempt",
+        "ReceiptIdentityControlsReplay",
+        "StalePolicyCannotPublish",
+        "SupersededReceiptRejectsOld"
+      ],
+      "modelDigest": "3776759997cc4ddc4dd109eddc81e152b3880a739603871aff236bf66b03b2f2",
+      "modelFiles": [
+        "formal/WorkOncePolicy.tla",
+        "formal/WorkOncePolicy.cfg"
+      ],
+      "observationBinding": "scripts/formal.mjs",
+      "observationProducer": "scripts/policy-refinement.mjs",
+      "sourceDigest": "435cf95c28c393274ee9449981e7e9b78cfb22b4038009f62e2084b446cce351",
+      "sourceFiles": [
+        "src/work.ts",
+        "src/kernel.ts",
+        "src/retry-policy.ts",
+        "src/outcomes.ts"
+      ],
+      "sourceSymbols": {
+        "src/kernel.ts": [
+          "integer",
+          "add",
+          "addTimeCapped",
+          "effectiveNow",
+          "assertCurrent",
+          "changed",
+          "replayReceipt",
+          "settleRecord"
+        ],
+        "src/outcomes.ts": [
+          "retry",
+          "wait",
+          "defer"
+        ],
+        "src/retry-policy.ts": [
+          "exponentialBackoff"
+        ],
+        "src/work.ts": [
+          "WorkRun.retry",
+          "WorkRun.wait",
+          "WorkRun.defer",
+          "WorkRun.settle",
+          "WorkQueue.waitPolicy",
+          "WorkQueue.settle",
+          "WorkQueue.wake",
+          "WorkQueue.wakeCurrent"
+        ]
+      },
+      "spec": "formal/WorkOncePolicy.tla"
+    },
     "reads": {
       "contract": "formal/WorkOnceContract.tla",
       "modelDigest": "c345a784cc1c98c722845094630ee6984015f1e5fb39662584ebfd2f30871bed",
@@ -10529,7 +10635,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "d2641a9ba8b367182854d799314262639588da839b882329f4df7cf7eef9ccdc",
+    "assuranceInfrastructureDigest": "80a32dc7909da2628dbaab22f71c2dd7330f23a44d6722fa5cc43cb6a11abdb5",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10546,16 +10652,21 @@
       "scripts/check-read-boundary-mutation.mjs",
       "scripts/check-read-source-model-binding-mutation.mjs",
       "scripts/check-read-contract-mutation.mjs",
+      "scripts/policy-refinement.mjs",
+      "scripts/check-policy-source-model-binding-mutation.mjs",
+      "scripts/check-policy-implementation-mutations.mjs",
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "0901e2beadb7f1f6fca4eeca367ca7bcc5d8ccc163844818a3caa60892f7e440",
+    "modelDigest": "fa1b1979a987e444cb16ba81e0df698e30aaef95ada4d3f18c1a9fe668dcef1b",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
       "formal/WorkOnceContract.tla",
       "formal/WorkOnceRuntime.tla",
-      "formal/WorkOnceRuntime.cfg"
+      "formal/WorkOnceRuntime.cfg",
+      "formal/WorkOncePolicy.tla",
+      "formal/WorkOncePolicy.cfg"
     ],
     "sourceDigest": "248b33ec829eae035286896b7b28f076a8d9f4f004b68184c2e54e0897ba2857",
     "sourceFiles": [
