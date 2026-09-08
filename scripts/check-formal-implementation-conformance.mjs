@@ -8,6 +8,12 @@ import { createRequire } from 'node:module';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
+const sourceDigestSchema = 'typescript-ast-printer-v2';
+const formalDigestSchema = 'tla-lexical-string-safe-v2';
+const semanticPrinter = ts.createPrinter({
+  removeComments: true,
+  newLine: ts.NewLineKind.LineFeed,
+});
 const manifestPath = path.join(root, 'assurance/formal-implementation-manifest.json');
 const reportPath = path.join(root, 'formal/FORMAL_COVERAGE_GAPS.md');
 const write = process.argv.includes('--write');
@@ -167,6 +173,7 @@ const readSourceSymbols = {
 const readSourceFiles = Object.keys(readSourceSymbols);
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
+  'test/source-semantic-hash.test.mjs',
   'scripts/formal-implementation-surface.cjs',
   'scripts/check-bounded-trace-domain.mjs',
   'scripts/formal.mjs',
@@ -206,6 +213,8 @@ const assuranceInfrastructureFiles = [
   'assurance/red-before/tlc-infrastructure-classification.json',
   'assurance/red-before/internal-mutable-property-topology.json',
   'assurance/red-before/internal-mutable-container-updates.json',
+  'assurance/red-before/source-semantic-hash-collision.json',
+  'assurance/red-before/formal-semantic-hash-collision.json',
   'scripts/policy-refinement.mjs',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
@@ -304,41 +313,180 @@ function canonical(value) {
 function canonicalText(value) {
   return `${JSON.stringify(canonical(value), null, 2)}\n`;
 }
+function parseSemanticSource(file, text, scriptKind = ts.ScriptKind.TS) {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, scriptKind);
+  if (source.parseDiagnostics.length) {
+    const detail = source.parseDiagnostics
+      .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '))
+      .join('; ');
+    throw new Error(`Cannot bind syntactically invalid semantic source ${file}: ${detail}`);
+  }
+  return source;
+}
+function semanticSyntaxText(file, text, scriptKind = ts.ScriptKind.TS) {
+  return semanticPrinter
+    .printFile(parseSemanticSource(file, text, scriptKind))
+    .replace(/\r\n?/gu, '\n')
+    .trimEnd();
+}
+function semanticNodeText(node, source) {
+  return semanticPrinter
+    .printNode(ts.EmitHint.Unspecified, node, source)
+    .replace(/\r\n?/gu, '\n')
+    .trim();
+}
 function semanticSourceDigest(files) {
   const chunks = [];
   for (const relativePath of [...files].sort(compareExact)) {
     const text = fs.readFileSync(path.join(root, relativePath), 'utf8');
-    const scanner = ts.createScanner(
-      ts.ScriptTarget.Latest,
-      false,
-      ts.LanguageVariant.Standard,
-      text,
-    );
-    const tokens = [];
-    for (;;) {
-      const token = scanner.scan();
-      if (token === ts.SyntaxKind.EndOfFileToken) break;
-      if (token >= ts.SyntaxKind.FirstTriviaToken && token <= ts.SyntaxKind.LastTriviaToken)
-        continue;
-      tokens.push(`${token}:${scanner.getTokenText()}`);
-    }
-    chunks.push(`${relativePath}\n${tokens.join('\n')}`);
+    chunks.push(`${relativePath}\n${semanticSyntaxText(relativePath, text)}`);
   }
   return digest(chunks.join('\n---\n'));
+}
+const tlaMultiCharacterSymbols = [
+  '<=>',
+  '|->',
+  '=>',
+  '==',
+  '<=',
+  '>=',
+  '/=',
+  '->',
+  '~>',
+  '..',
+  '<<',
+  '>>',
+  '[]',
+  '<>',
+  ':>',
+  '@@',
+  '/\\',
+  '\\/',
+].sort((a, b) => b.length - a.length || compareExact(a, b));
+function tlaSemanticTokens(text) {
+  const normalized = text.replace(/\r\n?/gu, '\n');
+  const tokens = [];
+  let index = 0;
+  let separated = true;
+  let previousKind;
+  const push = (kind, value) => {
+    const adjacency =
+      !separated && previousKind === 'symbol' && kind === 'symbol' ? 'adjacent:' : '';
+    tokens.push(`${adjacency}${kind}:${value}`);
+    previousKind = kind;
+    separated = false;
+  };
+  while (index < normalized.length) {
+    const char = normalized[index];
+    if (/\s/u.test(char)) {
+      separated = true;
+      index++;
+      continue;
+    }
+    if (normalized.startsWith('\\*', index)) {
+      separated = true;
+      index += 2;
+      while (index < normalized.length && normalized[index] !== '\n') index++;
+      continue;
+    }
+    if (normalized.startsWith('(*', index)) {
+      separated = true;
+      index += 2;
+      let depth = 1;
+      while (index < normalized.length && depth > 0) {
+        if (normalized.startsWith('(*', index)) {
+          depth++;
+          index += 2;
+        } else if (normalized.startsWith('*)', index)) {
+          depth--;
+          index += 2;
+        } else {
+          index++;
+        }
+      }
+      if (depth !== 0) throw new Error('Unterminated TLA block comment in semantic digest input.');
+      continue;
+    }
+    if (char === '"') {
+      const start = index++;
+      let closed = false;
+      while (index < normalized.length) {
+        const current = normalized[index++];
+        if (current === '\\') {
+          if (index >= normalized.length)
+            throw new Error('Unterminated TLA string escape in semantic digest input.');
+          index++;
+          continue;
+        }
+        if (current === '"') {
+          closed = true;
+          break;
+        }
+      }
+      if (!closed) throw new Error('Unterminated TLA string in semantic digest input.');
+      push('string', normalized.slice(start, index));
+      continue;
+    }
+    if (/[A-Za-z_$]/u.test(char)) {
+      const start = index++;
+      while (index < normalized.length && /[A-Za-z0-9_$]/u.test(normalized[index])) index++;
+      push('word', normalized.slice(start, index));
+      continue;
+    }
+    if (/[0-9]/u.test(char)) {
+      const start = index++;
+      while (index < normalized.length && /[0-9]/u.test(normalized[index])) index++;
+      if (
+        normalized[index] === '.' &&
+        index + 1 < normalized.length &&
+        /[0-9]/u.test(normalized[index + 1])
+      ) {
+        index++;
+        while (index < normalized.length && /[0-9]/u.test(normalized[index])) index++;
+      }
+      push('number', normalized.slice(start, index));
+      continue;
+    }
+    if (char === '\\') {
+      const start = index++;
+      if (index < normalized.length && /[A-Za-z]/u.test(normalized[index])) {
+        while (index < normalized.length && /[A-Za-z]/u.test(normalized[index])) index++;
+      } else if (index < normalized.length) {
+        index++;
+      }
+      push('symbol', normalized.slice(start, index));
+      continue;
+    }
+    const multi = tlaMultiCharacterSymbols.find((symbol) => normalized.startsWith(symbol, index));
+    if (multi) {
+      push('symbol', multi);
+      index += multi.length;
+      continue;
+    }
+    push('symbol', char);
+    index++;
+  }
+  return tokens.join('\n');
+}
+function legacyFormalText(text) {
+  return text
+    .replace(/\(\*[\s\S]*?\*\)/gu, '')
+    .replace(/\\\*.*$/gmu, '')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+function formalSemanticText(text) {
+  return tlaSemanticTokens(text);
 }
 function formalDigest(files) {
   const chunks = [];
   for (const relativePath of [...files].sort(compareExact)) {
-    const normalized = fs
-      .readFileSync(path.join(root, relativePath), 'utf8')
-      .replace(/\(\*[\s\S]*?\*\)/gu, '')
-      .replace(/\\\*.*$/gmu, '')
-      .replace(/\s+/gu, ' ')
-      .trim();
-    chunks.push(`${relativePath}\n${normalized}`);
+    const text = fs.readFileSync(path.join(root, relativePath), 'utf8');
+    chunks.push(`${relativePath}\n${formalSemanticText(text)}`);
   }
   return digest(chunks.join('\n---\n'));
 }
+
 function contentDigest(files) {
   const chunks = [];
   for (const relativePath of [...files].sort(compareExact)) {
@@ -350,6 +498,19 @@ function contentDigest(files) {
   return digest(chunks.join('\n---\n'));
 }
 function semanticTokenString(text) {
+  return semanticSyntaxText('semantic-hash-canary.ts', text);
+}
+function semanticMethodString(text) {
+  const source = parseSemanticSource(
+    'semantic-method-hash-canary.ts',
+    `class SemanticHashCanary { ${text} }`,
+  );
+  const declaration = source.statements.find((node) => ts.isClassDeclaration(node));
+  const member = declaration?.members[0];
+  if (!member) throw new Error('Semantic method hash canary did not parse one class member.');
+  return semanticNodeText(member, source);
+}
+function legacyTriviaStrippedTokens(text) {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
     false,
@@ -365,19 +526,159 @@ function semanticTokenString(text) {
   }
   return tokens.join('\n');
 }
+function assertSemanticHashFidelity() {
+  const behaviorPairs = [
+    [
+      'return-linebreak',
+      'function f():number|undefined { return 7; }',
+      'function f():number|undefined { return\n7; }',
+    ],
+    [
+      'postfix-linebreak',
+      'function f(){let a=1,b=2; a\n++b; return [a,b];}',
+      'function f(){let a=1,b=2; a++\nb; return [a,b];}',
+    ],
+    [
+      'regexp-significant-whitespace',
+      "function f(){return /a b/.test('a b');}",
+      "function f(){return /a  b/.test('a b');}",
+    ],
+    [
+      'template-tail-whitespace',
+      'function f(){return `${1} a b`;}',
+      'function f(){return `${1} a  b`; }',
+    ],
+  ];
+  for (const [name, before, after] of behaviorPairs) {
+    if (semanticTokenString(before) === semanticTokenString(after))
+      throw new Error(`Semantic source hash collapsed behavior-changing ${name} canary.`);
+  }
+  const commentBefore = 'function f(){return 7;}';
+  const commentAfter = 'function f(){/* harmless */return 7;}';
+  if (semanticTokenString(commentBefore) !== semanticTokenString(commentAfter))
+    throw new Error('Semantic source hash treats comment-only trivia as a semantic change.');
+
+  const methodPairs = [
+    [
+      'method-return-linebreak',
+      'f():number|undefined { return 7; }',
+      'f():number|undefined { return\n7; }',
+    ],
+    [
+      'method-postfix-linebreak',
+      'f(){let a=1,b=2; a\n++b; return [a,b];}',
+      'f(){let a=1,b=2; a++\nb; return [a,b];}',
+    ],
+  ];
+  for (const [name, before, after] of methodPairs) {
+    if (semanticMethodString(before) === semanticMethodString(after))
+      throw new Error(`Semantic symbol hash collapsed behavior-changing ${name} canary.`);
+  }
+
+  const legacyCollisions = behaviorPairs.filter(
+    ([, before, after]) => legacyTriviaStrippedTokens(before) === legacyTriviaStrippedTokens(after),
+  );
+  if (!legacyCollisions.some(([name]) => name === 'return-linebreak'))
+    throw new Error(
+      'Semantic hash mutation control no longer reproduces the legacy return-ASI collision.',
+    );
+  if (!legacyCollisions.some(([name]) => name === 'postfix-linebreak'))
+    throw new Error(
+      'Semantic hash mutation control no longer reproduces the legacy postfix-ASI collision.',
+    );
+  if (!legacyCollisions.some(([name]) => name === 'regexp-significant-whitespace'))
+    throw new Error(
+      'Semantic hash mutation control no longer reproduces the legacy regexp collision.',
+    );
+
+  const formalPass = `---- MODULE HashCanary ----
+VARIABLE x
+Init == x = "a  b"
+Next == UNCHANGED x
+Inv == x = "a  b"
+====`;
+  const formalFail = `---- MODULE HashCanary ----
+VARIABLE x
+Init == x = "a b"
+Next == UNCHANGED x
+Inv == x = "a  b"
+====`;
+  if (formalSemanticText(formalPass) === formalSemanticText(formalFail))
+    throw new Error('Formal model hash collapsed significant whitespace inside a TLA string.');
+  if (legacyFormalText(formalPass) !== legacyFormalText(formalFail))
+    throw new Error(
+      'Formal hash mutation control no longer reproduces the legacy string collision.',
+    );
+
+  const formalCompact = `---- MODULE C ----
+VARIABLE x,y
+Init==x=1/\\y=2
+Next==UNCHANGED <<x,y>>
+====`;
+  const formalFormatted = `---- MODULE C ----
+VARIABLE x, y
+Init == x = 1 /\\ y = 2
+Next == UNCHANGED << x, y >>
+====`;
+  if (formalSemanticText(formalCompact) !== formalSemanticText(formalFormatted))
+    throw new Error('Formal model hash treats ordinary token-separating whitespace as semantic.');
+
+  const formalCommentFree = `---- MODULE C ----
+VARIABLE x
+Init == x = 1
+====`;
+  const formalComments = `---- MODULE C ----
+(* outer (* nested *) comment *)
+VARIABLE x \\* line comment
+Init == x = 1
+====`;
+  if (formalSemanticText(formalCommentFree) !== formalSemanticText(formalComments))
+    throw new Error('Formal model hash treats comment-only TLA trivia as semantic.');
+
+  const markerString = `---- MODULE C ----
+VARIABLE x
+Init == x = "(* not a comment *) \\* still string"
+====`;
+  const changedMarkerString = `---- MODULE C ----
+VARIABLE x
+Init == x = "(* not a comment *)  \\* still string"
+====`;
+  if (formalSemanticText(markerString) === formalSemanticText(changedMarkerString))
+    throw new Error('Formal model hash erased string bytes that resemble TLA comments.');
+}
+assertSemanticHashFidelity();
+if (process.argv.includes('--self-test-source-hash')) {
+  let schemaReviewRejected = false;
+  try {
+    assertDigestSchemaReview(
+      { model: { sourceDigestSchema: 'legacy-source-v1', formalDigestSchema } },
+      { model: { sourceDigestSchema, formalDigestSchema } },
+    );
+  } catch (error) {
+    schemaReviewRejected = /Semantic digest schema changed/u.test(String(error));
+  }
+  if (!schemaReviewRejected)
+    throw new Error(
+      'Semantic digest schema review fence accepted an unacknowledged schema change.',
+    );
+  console.log(
+    'Semantic source/model hashes preserve TypeScript ASI/regexp/template and TLA string/operator structure, ignore real comments/trivia, and reject both legacy digest mutants.',
+  );
+  process.exit(0);
+}
 function sourceSymbolDigest(bindings, label) {
   const found = [];
   const expected = [];
   for (const [relativePath, names] of Object.entries(bindings)) {
     const file = path.join(root, relativePath);
     const text = fs.readFileSync(file, 'utf8');
-    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const source = parseSemanticSource(file, text);
     const wanted = new Set(names);
     for (const name of names) expected.push(`${relativePath}:${name}`);
     for (const node of source.statements) {
       if (ts.isFunctionDeclaration(node) && node.name && wanted.has(node.name.text)) {
         const key = `${relativePath}:${node.name.text}`;
-        found.push(`${key}\n${semanticTokenString(node.getText(source))}`);
+        found.push(`${key}\n${semanticNodeText(node, source)}`);
       }
       if (!ts.isClassDeclaration(node) || !node.name) continue;
       const className = node.name.text;
@@ -386,7 +687,7 @@ function sourceSymbolDigest(bindings, label) {
         const symbol = `${className}.${member.name.getText(source)}`;
         if (!wanted.has(symbol)) continue;
         const key = `${relativePath}:${symbol}`;
-        found.push(`${key}\n${semanticTokenString(member.getText(source))}`);
+        found.push(`${key}\n${semanticNodeText(member, source)}`);
       }
     }
   }
@@ -828,6 +1129,8 @@ function buildManifest(live) {
   return canonical({
     schemaVersion: 1,
     model: {
+      sourceDigestSchema,
+      formalDigestSchema,
       spec: 'formal/WorkOnce.tla',
       config: 'formal/WorkOnce.cfg',
       actions: [
@@ -952,6 +1255,8 @@ function buildManifest(live) {
     fields,
     diagnostics: live.diagnostics,
     stateMachineBinding: {
+      sourceDigestSchema,
+      formalDigestSchema,
       sourceFiles: semanticSourceFiles,
       modelFiles,
       sourceDigest: semanticSourceDigest(semanticSourceFiles),
@@ -1064,6 +1369,8 @@ function renderReport(manifest) {
     '',
     '## Assurance infrastructure binding',
     '',
+    `- Source semantic digest schema: \`${manifest.model.sourceDigestSchema}\``,
+    `- TLA semantic digest schema: \`${manifest.model.formalDigestSchema}\``,
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
     `- Content digest: \`${manifest.stateMachineBinding.assuranceInfrastructureDigest}\``,
     '',
@@ -1073,6 +1380,17 @@ function renderReport(manifest) {
     '',
   );
   return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function assertDigestSchemaReview(previousManifest, currentManifest) {
+  if (!previousManifest || acknowledgePairing) return;
+  const previousSourceSchema = previousManifest.model?.sourceDigestSchema;
+  const previousFormalSchema = previousManifest.model?.formalDigestSchema;
+  if (
+    previousSourceSchema !== currentManifest.model.sourceDigestSchema ||
+    previousFormalSchema !== currentManifest.model.formalDigestSchema
+  )
+    throw new Error('Semantic digest schema changed without explicit source/model review.');
 }
 
 function assertSourceModelPairing(previousBinding, currentBinding, message) {
@@ -1108,6 +1426,7 @@ const bindingOnly = process.argv.find((argument) =>
     '--check-local-runner-binding-only',
     '--check-storage-binding-only',
     '--check-external-binding-only',
+    '--check-outbox-binding-only',
   ].includes(argument),
 );
 if (bindingOnly) {
@@ -1143,6 +1462,15 @@ if (bindingOnly) {
       { sourceDigest: externalSurfaceDigest(), modelDigest: formalDigest(externalModelFiles) },
       'Bound external transport semantics changed without a WorkOnceExternal semantic change. Update the external model or explicitly acknowledge the unchanged abstraction after review.',
     );
+  } else if (bindingOnly === '--check-outbox-binding-only') {
+    assertSourceModelPairing(
+      previous.model?.outbox,
+      {
+        sourceDigest: semanticSourceDigest(outboxSourceFiles),
+        modelDigest: formalDigest(outboxModelFiles),
+      },
+      'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
   } else {
     assertSourceModelPairing(
       previous.model?.storage,
@@ -1177,6 +1505,7 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
+  assertDigestSchemaReview(previous, current);
   assertSourceModelPairing(
     previous?.model?.localRunner,
     current.model.localRunner,

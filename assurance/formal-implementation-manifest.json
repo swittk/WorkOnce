@@ -4124,7 +4124,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4147,7 +4147,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4170,7 +4170,7 @@
         "observationOnly"
       ],
       "optional": true,
-      "source": "node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -10571,14 +10571,14 @@
         "SuccessReceiptCurrent",
         "UnknownAckIsDurable"
       ],
-      "modelDigest": "cc745bf2241567bf955ae58767819b9b238a31cb2fb11811bbfea01c8f0764dd",
+      "modelDigest": "0bd3a6224959d5fe66f8a0c2e9e14e844d0ea259e9b1818b5c6a4ca2451f8958",
       "modelFiles": [
         "formal/WorkOnceExternal.tla",
         "formal/WorkOnceExternal.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/external-transport-refinement.mjs",
-      "sourceDigest": "b62f270d4d0133ed4f64746a7d368017aeb2cdef10113f78df73b35219ea90d8",
+      "sourceDigest": "b69316d82784505689bf9a37b4b2a0efb7ba6d4604f37add01f2b89c3e41bed1",
       "sourceFiles": [
         "src/external.ts",
         "src/work.ts",
@@ -10612,6 +10612,7 @@
       },
       "spec": "formal/WorkOnceExternal.tla"
     },
+    "formalDigestSchema": "tla-lexical-string-safe-v2",
     "localRunner": {
       "config": "formal/WorkOnceLocalRunner.cfg",
       "configuredChecks": [
@@ -10622,14 +10623,14 @@
         "LocalTypeOK",
         "LossPresenceExact"
       ],
-      "modelDigest": "b43d36a4d6164edb7a51c2f980e06c5c2140c7634734d9d521b08c3a51e99e56",
+      "modelDigest": "2959fab39694a06793482abc91e6b6b7043ba4ec32dfd8282e21496f2f5cc017",
       "modelFiles": [
         "formal/WorkOnceLocalRunner.tla",
         "formal/WorkOnceLocalRunner.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/local-runner-refinement.mjs",
-      "sourceDigest": "21f46ac06d6fbbbf2011a93fbe2d6a1f8c33be62a64d5b720329a2fc9ad6530a",
+      "sourceDigest": "7bd5abaf24942401f629c47b1df27f0573d5259b0c6265aa8b7bf76e0fe97024",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -10663,7 +10664,7 @@
         "PoisonIntentRetained"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "e9e010c3fd06df3a0593eb655b166ee2082ce13483cd2a2b30ca7ae122c9309f",
+      "modelDigest": "b1575fa18a6b4bbe897e254d7910861b04768344b090467372c3064ca357cf20",
       "modelFiles": [
         "formal/WorkOnceOutbox.tla",
         "formal/WorkOnceOutbox.cfg",
@@ -10674,7 +10675,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "10320b9b3bfecaa9616db454ade85c2f3e6977facf2610322efc51cfd4ef6765",
+      "sourceDigest": "4e6e4bdd564650f4c43046da38591704b37733cebd5b63cfa717a9e1364307fc",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -10707,14 +10708,14 @@
         "StalePolicyCannotPublish",
         "SupersededReceiptRejectsOld"
       ],
-      "modelDigest": "3776759997cc4ddc4dd109eddc81e152b3880a739603871aff236bf66b03b2f2",
+      "modelDigest": "8791b1b1ce11cde8d54756a2171683ac0042751a05e1e51c310c8243c37e3e18",
       "modelFiles": [
         "formal/WorkOncePolicy.tla",
         "formal/WorkOncePolicy.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/policy-refinement.mjs",
-      "sourceDigest": "435cf95c28c393274ee9449981e7e9b78cfb22b4038009f62e2084b446cce351",
+      "sourceDigest": "341f203bd1719a094d6ef4afffa5d4c6a29e01f89a68ee5f1d9b6146fc52550a",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -10767,7 +10768,7 @@
       ],
       "historyObservationProducer": "scripts/read-history-refinement.mjs",
       "historySpec": "formal/WorkOnceReadHistory.tla",
-      "modelDigest": "ee4a5866f02dc8301d411c69bf2b324ca06845cd366a4a83d1d72ff3aaa8819a",
+      "modelDigest": "4c4b39f1b2898cd6e8878578506db8b741067d869e9dc3fd3b673b7f1b5de69b",
       "modelFiles": [
         "formal/WorkOnceContract.tla",
         "formal/WorkOnceReadHistory.tla",
@@ -10776,7 +10777,7 @@
       "observationBinding": "scripts/formal.mjs",
       "observationBridge": "scripts/runtime-boundary-refinement.mjs",
       "observationProducer": "scripts/read-boundary-refinement.mjs",
-      "sourceDigest": "451f86e0f8158519fdf9e5bc29db97ef720601a109d733cfb1a36aec50000f34",
+      "sourceDigest": "a4f552d441de89a1d104748b81f8924a20baeca721315161628d1f47e33faf8b",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts"
@@ -10824,7 +10825,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "ac4a7f71b436a8cccc69b9d57d9b1c4020093e222f4b7271233b2f30b63c0c98",
+      "modelDigest": "bc733642590f25429db6a58fd0a30d6a8ca366688a3342f7d6e992eb9f460ab1",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -10834,13 +10835,14 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "4207bdb0927ab9ddf94030b63ac1a66d39702c3eb7444ff204b633066eace328",
+      "sourceDigest": "03bd8dfa0c1f28e87ae40f7df770a79b9541a6182939ff3cfe4e568d3a94b9e1",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
       ],
       "spec": "formal/WorkOnceRuntime.tla"
     },
+    "sourceDigestSchema": "typescript-ast-printer-v2",
     "spec": "formal/WorkOnce.tla",
     "storage": {
       "config": "formal/WorkOnceStorage.cfg",
@@ -10856,14 +10858,14 @@
         "StorageTypeOK",
         "UnknownOutcomeStopsRetry"
       ],
-      "modelDigest": "b0141cfe4a063bab7bca4941cf36f6eee1c1483c9c52b4bd2a4bcb275df4634d",
+      "modelDigest": "fc2977b662adbb57ca3225141607b5d1e88d331f3f27c42fe7b8b0cc3af81459",
       "modelFiles": [
         "formal/WorkOnceStorage.tla",
         "formal/WorkOnceStorage.cfg"
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "8ecdefe527abf3afd5fb3a854f397ee32df8fccf7117443ec4f0ccc58a6bfad0",
+      "sourceDigest": "23db866a0e002442f6fa56f00efb34e98a2dbff1185568826a7678bc064b32a7",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -10877,9 +10879,10 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "31b6b196ef65ae29a9b38b56a82c47cf080e9b8c165d26e6a794c9f2055ea4e2",
+    "assuranceInfrastructureDigest": "5976778581a25f24e57a907a1a3bddf9591991a5cd27b9209f71bd2ea516f80d",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
+      "test/source-semantic-hash.test.mjs",
       "scripts/formal-implementation-surface.cjs",
       "scripts/check-bounded-trace-domain.mjs",
       "scripts/formal.mjs",
@@ -10919,6 +10922,8 @@
       "assurance/red-before/tlc-infrastructure-classification.json",
       "assurance/red-before/internal-mutable-property-topology.json",
       "assurance/red-before/internal-mutable-container-updates.json",
+      "assurance/red-before/source-semantic-hash-collision.json",
+      "assurance/red-before/formal-semantic-hash-collision.json",
       "scripts/policy-refinement.mjs",
       "scripts/check-policy-source-model-binding-mutation.mjs",
       "scripts/check-policy-implementation-mutations.mjs",
@@ -10959,7 +10964,8 @@
       "scripts/prepare-package.mjs",
       "package.json"
     ],
-    "modelDigest": "a86c65e79d864c365e85866eb4775fa5f31ee582d0563192098050b81e197795",
+    "formalDigestSchema": "tla-lexical-string-safe-v2",
+    "modelDigest": "8434356fdd04cb2fec04469d010fc4b35c5e3c16fa195cc3f3c249843365b64e",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -10981,7 +10987,8 @@
       "formal/WorkOnceOutboxBudget.tla",
       "formal/WorkOnceOutboxBudget.cfg"
     ],
-    "sourceDigest": "910b72a489fb3299cd625f93e4e9dc0934bdd4d29b3bcc38a47d2b808179d615",
+    "sourceDigest": "8c429a4ff4e77bf5d9ee9f9b6bd24877482959c51379cd9295a27c5b05ffd006",
+    "sourceDigestSchema": "typescript-ast-printer-v2",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

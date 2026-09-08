@@ -94,8 +94,10 @@
 
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **79**
-- Content digest: `31b6b196ef65ae29a9b38b56a82c47cf080e9b8c165d26e6a794c9f2055ea4e2`
+- Source semantic digest schema: `typescript-ast-printer-v2`
+- TLA semantic digest schema: `tla-lexical-string-safe-v2`
+- Bound proof/checker files: **82**
+- Content digest: `5976778581a25f24e57a907a1a3bddf9591991a5cd27b9209f71bd2ea516f80d`
 
 ## Coverage rule
 

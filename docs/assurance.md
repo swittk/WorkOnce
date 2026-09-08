@@ -159,6 +159,24 @@ mutant. Independent tiny mutation graphs are run concurrently with bounded one-w
 reduces wall time without dropping any mutant. These controls prove that each configured invariant
 is active; they do not replace the real bounded state-space runs.
 
+Source/model semantic digests use the pinned `typescript-ast-printer-v2` schema. WorkOnce parses
+current TypeScript, prints the actual AST with comments removed, and hashes that structural form;
+symbol-level bindings print the already-parsed function or method node directly. This keeps
+comment-only edits neutral without erasing automatic-semicolon-insertion structure or significant
+regular-expression/template whitespace. The exact pre-fix false-green controls are preserved in
+`assurance/red-before/source-semantic-hash-collision.json`; the normal manifest checker and
+`test/source-semantic-hash.test.mjs` require return-ASI, postfix-ASI, regexp and template canaries to
+remain distinct and require the old trivia-stripping scanner mutant to be rejected.
+
+Formal model digests independently use the pinned `tla-lexical-string-safe-v2` schema. The lexical normalizer
+removes real nested block/line comments and irrelevant token-separating whitespace while preserving
+exact TLA string-literal bytes and operator token boundaries. The pre-fix normalizer globally
+collapsed whitespace, including inside string literals: `assurance/red-before/formal-semantic-hash-collision.json`
+preserves two digest-identical models where one passes TLC and the other violates its configured
+invariant. The checker requires those models to remain distinguishable, keeps comment-only TLA edits
+neutral, preserves comment-looking bytes inside strings, and reproduces the legacy collision as a
+mutation control.
+
 ## Typed-read / definition-fence refinement
 
 Typed inspection is now bound as its own semantic family rather than only an accept/reject helper.

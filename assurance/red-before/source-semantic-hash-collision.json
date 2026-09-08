@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "family": "I",
+  "kind": "source_model_semantic_hash_false_green",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "checker": "scripts/check-formal-implementation-conformance.mjs",
+  "checkerSha256": "2cd649e009c8336b5a602f67ffd2ec8c4f3d091fad7570da5d8a62f8c9881586",
+  "routine": "semanticTokenString",
+  "routineSha256": "d48116e4639ba1f2395591de95b34458ebc6becde990e12fdceddc876a1734d7",
+  "oldAssuranceFalseGreen": true,
+  "summary": "Trivia-stripping scanner digest can collapse behavior-changing TypeScript source histories; exact source/model binding is therefore incomplete until structural syntax is retained.",
+  "controls": [
+    {
+      "name": "return-linebreak",
+      "beforeResult": "7",
+      "afterResult": "undefined",
+      "behaviorChanged": true,
+      "observedHashEqual": true
+    },
+    {
+      "name": "postfix-linebreak",
+      "beforeResult": "[1,3]",
+      "afterResult": "[2,2]",
+      "behaviorChanged": true,
+      "observedHashEqual": true
+    },
+    {
+      "name": "regexp-significant-whitespace",
+      "beforeResult": "true",
+      "afterResult": "false",
+      "behaviorChanged": true,
+      "observedHashEqual": true
+    },
+    {
+      "name": "template-tail-whitespace",
+      "beforeResult": "\"1 a b\"",
+      "afterResult": "\"1 a  b\"",
+      "behaviorChanged": true,
+      "observedHashEqual": false
+    },
+    {
+      "name": "comment-only",
+      "beforeResult": "7",
+      "afterResult": "7",
+      "behaviorChanged": false,
+      "observedHashEqual": true
+    }
+  ]
+}

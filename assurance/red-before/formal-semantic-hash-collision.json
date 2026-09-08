@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "family": "I",
+  "kind": "formal_model_semantic_hash_false_green",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "checker": "scripts/check-formal-implementation-conformance.mjs",
+  "oldAssuranceFalseGreen": true,
+  "summary": "formalDigest removes comments and globally collapses whitespace, including whitespace inside TLA string literals. Two semantically different models therefore have the same modelDigest although TLC outcomes differ.",
+  "controls": {
+    "sameRelativePath": "HashCanary.tla",
+    "normalizedDigestSha256": "0e20d6985ba41aca06b5aae395794a41f68f9fd6956b448175df6e9f514b8bb5",
+    "normalizedText": "---- MODULE HashCanary ---- VARIABLE x Init == x = \"a b\" Next == UNCHANGED x Inv == x = \"a b\" ====",
+    "passModel": {
+      "init": "x = \"a  b\"",
+      "invariant": "x = \"a  b\"",
+      "tlcStatus": 0,
+      "tlcOutcome": "Model checking completed. No error has been found."
+    },
+    "failModel": {
+      "init": "x = \"a b\"",
+      "invariant": "x = \"a  b\"",
+      "tlcStatus": 12,
+      "tlcOutcome": "Invariant Inv is violated by the initial state."
+    },
+    "digestEqual": true,
+    "semanticOutcomeEqual": false
+  },
+  "artifactLogs": [
+    ".artifacts/formal-hash-canary/pass.log",
+    ".artifacts/formal-hash-canary/fail.log"
+  ]
+}
