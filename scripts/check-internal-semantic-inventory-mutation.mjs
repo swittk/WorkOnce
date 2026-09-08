@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sourcePath = path.join(root, 'src/worker.ts');
+const workSourcePath = path.join(root, 'src/work.ts');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
 const source = fs.readFileSync(sourcePath, 'utf8');
+const workSource = fs.readFileSync(workSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
 function run() {
@@ -41,6 +43,24 @@ try {
 }
 
 try {
+  const classAnchor = 'export class WorkRun<I, O, R extends string> {';
+  assert.ok(workSource.includes(classAnchor), 'WorkRun class anchor is missing');
+  fs.writeFileSync(
+    workSourcePath,
+    workSource.replace(classAnchor, `${classAnchor}\n  internalSemanticMutablePropertyMutant = 0;`),
+  );
+  const propertyMutant = run();
+  assert.notEqual(
+    propertyMutant.status,
+    0,
+    'new mutable class property unexpectedly passed inventory',
+  );
+  assert.match(output(propertyMutant), /Internal semantic inventory drifted/u);
+} finally {
+  fs.writeFileSync(workSourcePath, workSource);
+}
+
+try {
   const inventory = JSON.parse(inventoryText);
   inventory.entries[0].families = [];
   fs.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
@@ -55,4 +75,6 @@ try {
   fs.writeFileSync(inventoryPath, inventoryText);
 }
 
-console.log('Internal semantic inventory rejects new hidden mutable state and unclassified cells.');
+console.log(
+  'Internal semantic inventory rejects new mutable locals/properties and unclassified cells.',
+);

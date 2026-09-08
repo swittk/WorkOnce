@@ -38,6 +38,11 @@ function newName(node) {
   return normalize(node.expression.getText());
 }
 function constructKind(node) {
+  if (
+    ts.isPropertyDeclaration(node) &&
+    !node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword)
+  )
+    return 'mutable_property';
   if (ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Let) !== 0)
     return 'mutable_let';
   if (ts.isWhileStatement(node)) return 'while_loop';
