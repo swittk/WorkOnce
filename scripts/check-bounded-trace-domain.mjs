@@ -16,6 +16,10 @@ const evidenceFiles = [
   'scripts/formal-bounded-refinement-corpus.mjs',
   'test/formal-bounded-refinement.test.mjs',
   'scripts/runtime-boundary-refinement.mjs',
+  'scripts/read-boundary-refinement.mjs',
+  'test/read-boundary-refinement.test.mjs',
+  'scripts/check-read-boundary-mutation.mjs',
+  'scripts/check-read-source-model-binding-mutation.mjs',
   'test/runtime-boundary-refinement.test.mjs',
   'test/lifecycle-transition-matrix.test.mjs',
   'scripts/formal.mjs',
@@ -53,10 +57,9 @@ const current = {
   runtimeBoundary: {
     samples: boundarySamples.length,
     counts: Object.fromEntries(
-      ['runner', 'runnerHistory', 'read', 'backoff', 'budget', 'cancel'].map((kind) => [
-        kind,
-        boundarySamples.filter((sample) => sample.kind === kind).length,
-      ]),
+      ['runner', 'runnerHistory', 'read', 'readAdapter', 'backoff', 'budget', 'cancel'].map(
+        (kind) => [kind, boundarySamples.filter((sample) => sample.kind === kind).length],
+      ),
     ),
     observationDigest: crypto
       .createHash('sha256')

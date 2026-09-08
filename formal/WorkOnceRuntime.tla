@@ -83,6 +83,6 @@ DrainedBeforeReturn == pc = "done" => active = 0
 FatalReturnRejects == pc = "done" => (result = "rejected") = RunnerRejects(fatalPresent)
 FatalValuePreserved == pc = "done" => returnValue = failureValue
 RuntimeSamplesConform == /\ Samples # {}
-                        /\ {s.kind : s \in Samples} = {"runner", "runnerHistory", "read", "backoff", "budget", "cancel"}
+                        /\ {s.kind : s \in Samples} = {"runner", "runnerHistory", "read", "readAdapter", "backoff", "budget", "cancel"}
                         /\ \A s \in Samples : BoundarySampleOK(s)
 =============================================================================

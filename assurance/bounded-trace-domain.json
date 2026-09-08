@@ -4,6 +4,10 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs",
     "scripts/runtime-boundary-refinement.mjs",
+    "scripts/read-boundary-refinement.mjs",
+    "test/read-boundary-refinement.test.mjs",
+    "scripts/check-read-boundary-mutation.mjs",
+    "scripts/check-read-source-model-binding-mutation.mjs",
     "test/runtime-boundary-refinement.test.mjs",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/formal.mjs",
@@ -18,7 +22,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "638abda11d5ee55a0671576fa8a0263a2555327abf21879c7fa91d5aca314772",
+  "evidenceDigest": "98f4b3cedd109183214ae49095ef29126a1443331d48adb624f3036e9b0b8b9c",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -79,16 +83,17 @@
     "workerErrorIsolation": true
   },
   "runtimeBoundary": {
-    "samples": 230,
+    "samples": 233,
     "counts": {
       "runner": 86,
       "runnerHistory": 2,
       "read": 80,
+      "readAdapter": 3,
       "backoff": 36,
       "budget": 24,
       "cancel": 2
     },
-    "observationDigest": "b311a5f64d78508ea75155d1e5225b06ff32c14906067e780ad6d6207c48d4bd",
+    "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d",
     "lifecycleAdapterCases": 600
   },
   "observed": {

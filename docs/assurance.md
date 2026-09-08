@@ -101,9 +101,10 @@ identity, fatal backoff, admission after stop, draining, rejection and agreement
 implementation observations. The bounded graph has 949 generated / 126 distinct states, complete
 depth 9, with local capacity at most two.
 
-`scripts/runtime-boundary-refinement.mjs` collects **230 observations from the real compiled public
+`scripts/runtime-boundary-refinement.mjs` collects **233 observations from the real compiled public
 APIs**: 86 runner/error/race cases, two local alternate-history congruence comparisons, 80
-definition-bound reads, 36 backoff inputs, 24 overlapping budget cases and both cancel/completion
+definition-bound reads plus three cross-adapter typed-read bundles, 36 backoff inputs, 24 overlapping
+budget cases and both cancel/completion
 orders. The runner observations include exact representative rejection identities (`undefined`,
 `null`, `0`, empty string and two distinct Error identities), stop while a claim reply is in flight,
 stop while a handler is active, drain-before-return, and reclaim after the abandoned lease expires. `scripts/formal.mjs` puts these fresh observations
@@ -155,6 +156,31 @@ the intended invariant violation. `RuntimeSamplesConform` gets a deliberately in
 sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant.
 These controls prove that each configured invariant is active; they do not replace the real bounded
 state-space runs.
+
+## Typed-read / definition-fence refinement
+
+Typed inspection is now bound as its own semantic family rather than only an accept/reject helper.
+The existing 80 phase/method observations require exact snapshots (and exact durable history for
+`history()`), exact `definition_changed` rejection on mismatched definition versions, and no error
+on matched reads. Three additional compiled cross-adapter bundles exercise memory, real SQLite and
+the native compare-exchange test port with mixed-version batches, missing keys/ids, wrong
+scope/kind ids, duplicate-key ordering, item-level inspection and current opaque-id reads. Missing
+`inspect`/`inspectId` returns `undefined`, missing `history` rejects `not_found`, while a present row
+under the wrong definition rejects `definition_changed`.
+
+The compiler/formal manifest carries a method-level semantic digest over the exact read and
+definition-fence methods (`WorkItem.inspect`, queue key/item/read helpers, `requireRow`,
+`assertDefinition` and snapshot construction) plus the read contract digest. A change to those
+methods with an unchanged read abstraction therefore fails closed unless deliberately reviewed.
+The bounded-domain digest also binds the cross-adapter producer/test. A TLA sample mutant that
+accepts a mismatched definition must violate `RuntimeSamplesConform`, and the complete assurance
+gate additionally disables the compiled `assertDefinition()` method and requires the real
+cross-adapter producer to go red.
+
+These reads do not own durable partial-progress, cursor scheduling or restart state; those matrix
+classes are N/A for this family rather than being fabricated as read-local claims. Concurrent
+snapshot behavior and storage transaction semantics remain adapter/storage obligations where they
+are not established directly by the read contract.
 
 ## Local managed-runner internal-state refinement
 

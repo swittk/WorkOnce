@@ -45,6 +45,12 @@ run('emitted-artifact entrypoint audit', process.execPath, [
 run('emitted-artifact entrypoint mutation guard', process.execPath, [
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
 ]);
+run('typed-read definition-fence mutation guard', process.execPath, [
+  'scripts/check-read-boundary-mutation.mjs',
+]);
+run('typed-read source/model mutation guard', process.execPath, [
+  'scripts/check-read-source-model-binding-mutation.mjs',
+]);
 runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',

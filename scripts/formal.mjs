@@ -292,6 +292,33 @@ requireInvariantRejects(
   'RuntimeSamplesConform',
 );
 
+const readFenceMutant = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.tla');
+const readFenceMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.cfg');
+writeFileSync(
+  readFenceMutant,
+  String.raw`---- MODULE WorkOnceRuntimeReadFenceMutant ----
+EXTENDS WorkOnceRuntimeObserved
+BadRead == [kind |-> "read", matched |-> FALSE, accepted |-> TRUE,
+            definitionError |-> FALSE, snapshotExact |-> FALSE, errorCause |-> "none"]
+BadSamples == ObservedSamples \cup {BadRead}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+);
+writeFileSync(
+  readFenceMutantConfig,
+  singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
+    'CONSTANT Samples <- ObservedSamples',
+    'CONSTANT Samples <- BadSamples',
+  ),
+);
+requireInvariantRejects(
+  'WorkOnceRuntimeReadFenceMutant',
+  readFenceMutantConfig,
+  readFenceMutant,
+  'RuntimeSamplesConform',
+);
+
 // Keep the realistic late-admission mutant in addition to the one-step activity check above.
 const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
 const admissionMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.cfg');

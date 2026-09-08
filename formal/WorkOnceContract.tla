@@ -34,7 +34,13 @@ BoundarySampleOK(s) ==
        /\ s.sameTerminalProjection /\ s.sameReturnedValue
     [] s.kind = "read" ->
        /\ s.accepted = ReadAllowed(s.matched)
-       /\ (~s.matched => s.definitionError)
+       /\ (s.matched => /\ s.snapshotExact /\ s.errorCause = "none")
+       /\ (~s.matched => /\ s.definitionError /\ s.errorCause = "definition_changed")
+    [] s.kind = "readAdapter" ->
+       /\ s.adapter \in {"memory", "sqlite", "cas"}
+       /\ s.definitionFenceExact /\ s.batchOrderExact /\ s.missingReadsExact
+       /\ s.missingHistoryNotFound /\ s.wrongKindNotFound /\ s.wrongScopeNotFound
+       /\ s.currentIdExact
     [] s.kind = "backoff" -> s.delay = BackoffDelay(s.initial, s.factor, s.steps, 64)
     [] s.kind = "budget" ->
        /\ s.stop = DeferralStopReason(s.attemptsExhausted, s.deadlineExhausted, s.deferralsExhausted)

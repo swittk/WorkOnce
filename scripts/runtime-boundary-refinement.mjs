@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 import { createWorkOnce, runExternal, exponentialBackoff } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
+import {
+  assertTypedReadBoundarySamples,
+  runTypedReadBoundarySamples,
+} from './read-boundary-refinement.mjs';
 
 export const auditPhases = [
   'queued',
@@ -476,11 +480,21 @@ export async function runRuntimeBoundarySamples() {
                 ? reader.inspectId(snapshot.id)
                 : reader[method]('job'),
         );
+        let snapshotExact = false;
         if (matched) {
           assert.equal(result.rejected, false);
-          if (method === 'inspectMany')
+          if (method === 'inspectMany') {
             assert.deepEqual(result.value, [undefined, snapshot, snapshot]);
-          else if (method !== 'history') assert.deepEqual(result.value, snapshot);
+            snapshotExact = true;
+          } else if (method === 'history') {
+            const stored = await store.getMany([snapshot.id]);
+            const expectedHistory = stored.rows[0]?.history;
+            assert.deepEqual(result.value, expectedHistory);
+            snapshotExact = true;
+          } else {
+            assert.deepEqual(result.value, snapshot);
+            snapshotExact = true;
+          }
         }
         samples.push({
           kind: 'read',
@@ -488,11 +502,16 @@ export async function runRuntimeBoundarySamples() {
           method,
           matched,
           accepted: !result.rejected,
+          snapshotExact,
+          errorCause: result.rejected ? (result.error?.code ?? 'other') : 'none',
           definitionError: result.error?.code === 'definition_changed',
         });
       }
     }
   }
+  const readAdapterSamples = await runTypedReadBoundarySamples();
+  assertTypedReadBoundarySamples(readAdapterSamples);
+  samples.push(...readAdapterSamples);
   for (const initial of [0, 1, 8])
     for (const factor of [1, 2])
       for (const retries of [0, 1, 4, 1023, 1024, Number.MAX_SAFE_INTEGER]) {
@@ -593,7 +612,16 @@ export function assertRuntimeBoundarySamples(samples) {
       );
     } else if (s.kind === 'read') {
       assert.equal(s.accepted, s.matched, name);
-      if (!s.matched) assert.ok(s.definitionError, name);
+      if (s.matched) {
+        assert.equal(s.snapshotExact, true, name);
+        assert.equal(s.errorCause, 'none', name);
+      } else {
+        assert.equal(s.definitionError, true, name);
+        assert.equal(s.errorCause, 'definition_changed', name);
+      }
+    } else if (s.kind === 'readAdapter') {
+      for (const [field, value] of Object.entries(s))
+        if (field !== 'kind' && field !== 'adapter') assert.equal(value, true, name);
     } else if (s.kind === 'backoff') {
       assert.equal(s.delay, Math.min(64, s.initial * s.factor ** s.steps), name);
     } else if (s.kind === 'budget') {
@@ -618,6 +646,7 @@ export function assertRuntimeBoundarySamples(samples) {
     'budget',
     'cancel',
     'read',
+    'readAdapter',
     'runner',
     'runnerHistory',
   ]);

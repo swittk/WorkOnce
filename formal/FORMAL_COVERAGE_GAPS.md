@@ -43,10 +43,16 @@
 - `root.exponentialBackoff`: `BackoffDelay`
 - `root.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
 
+## Typed-read boundary
+
+- Contract: `formal/WorkOnceContract.tla`
+- Cross-adapter producer: `scripts/read-boundary-refinement.mjs`
+- Bound source methods: `WorkItem.inspect`, `WorkQueue.key`, `WorkQueue.item`, `WorkQueue.inspect`, `WorkQueue.inspectId`, `WorkQueue.inspectMany`, `WorkQueue.history`, `WorkQueue.requireRow`, `WorkQueue.assertDefinition`, `WorkQueue.snapshot`
+
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **13**
-- Content digest: `5cdcf33dd519563cc56c3ffe0efc448d120141729e93dcba7172c814ccd2c9c0`
+- Bound proof/checker files: **16**
+- Content digest: `290d9a6433e2b509807d720b6074a4e84d92ee2147ca9041cef93d5157d60b24`
 
 ## Coverage rule
 

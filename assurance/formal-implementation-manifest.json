@@ -1509,7 +1509,8 @@
         "test/inspection.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/read-boundary-refinement.test.mjs"
       ],
       "key": "root.WorkItem.inspect",
       "modelActions": [],
@@ -1721,7 +1722,8 @@
         "test/inspection.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/read-boundary-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.history",
       "modelActions": [],
@@ -1736,7 +1738,8 @@
         "test/inspection.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/read-boundary-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.inspect",
       "modelActions": [],
@@ -1751,7 +1754,8 @@
         "test/inspection.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/read-boundary-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.inspectId",
       "modelActions": [],
@@ -1766,7 +1770,8 @@
         "test/inspection.test.mjs",
         "test/types/api.ts",
         "test/runtime-boundary-refinement.test.mjs",
-        "test/lifecycle-transition-matrix.test.mjs"
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/read-boundary-refinement.test.mjs"
       ],
       "key": "root.WorkQueue.inspectMany",
       "modelActions": [],
@@ -10470,6 +10475,28 @@
       "TypeOK",
       "WaitingHasCause"
     ],
+    "reads": {
+      "contract": "formal/WorkOnceContract.tla",
+      "modelDigest": "c345a784cc1c98c722845094630ee6984015f1e5fb39662584ebfd2f30871bed",
+      "modelFiles": [
+        "formal/WorkOnceContract.tla"
+      ],
+      "observationBridge": "scripts/runtime-boundary-refinement.mjs",
+      "observationProducer": "scripts/read-boundary-refinement.mjs",
+      "sourceDigest": "58fcd323a419d3c5de72fe82a026d5e6ce7e1205d9bc81416d58dfa7a5354e82",
+      "sourceMethods": [
+        "WorkItem.inspect",
+        "WorkQueue.key",
+        "WorkQueue.item",
+        "WorkQueue.inspect",
+        "WorkQueue.inspectId",
+        "WorkQueue.inspectMany",
+        "WorkQueue.history",
+        "WorkQueue.requireRow",
+        "WorkQueue.assertDefinition",
+        "WorkQueue.snapshot"
+      ]
+    },
     "runtime": {
       "config": "formal/WorkOnceRuntime.cfg",
       "configuredChecks": [
@@ -10483,7 +10510,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "2a6bff094a1430de9549babcdde89d80c08a0fc1b7d998fd58880354cb37a922",
+      "modelDigest": "dc42e525d629ff9f23b4a2eb73037eb5db6a5a44189606be3ba5a2b9c54fa439",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -10502,7 +10529,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "5cdcf33dd519563cc56c3ffe0efc448d120141729e93dcba7172c814ccd2c9c0",
+    "assuranceInfrastructureDigest": "290d9a6433e2b509807d720b6074a4e84d92ee2147ca9041cef93d5157d60b24",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10515,10 +10542,13 @@
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
       "scripts/check-emitted-artifact-entrypoints.mjs",
       "scripts/check-emitted-artifact-entrypoint-mutation.mjs",
+      "scripts/read-boundary-refinement.mjs",
+      "scripts/check-read-boundary-mutation.mjs",
+      "scripts/check-read-source-model-binding-mutation.mjs",
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "9e433161d0c30a78f9d1bdea3944aaca1e5d091d903803c75823525e36b21a54",
+    "modelDigest": "0901e2beadb7f1f6fca4eeca367ca7bcc5d8ccc163844818a3caa60892f7e440",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

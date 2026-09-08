@@ -40,6 +40,19 @@ const runtimeModelFiles = [
   'formal/WorkOnceRuntime.cfg',
   'formal/WorkOnceContract.tla',
 ];
+const readModelFiles = ['formal/WorkOnceContract.tla'];
+const readSourceMethods = [
+  'WorkItem.inspect',
+  'WorkQueue.key',
+  'WorkQueue.item',
+  'WorkQueue.inspect',
+  'WorkQueue.inspectId',
+  'WorkQueue.inspectMany',
+  'WorkQueue.history',
+  'WorkQueue.requireRow',
+  'WorkQueue.assertDefinition',
+  'WorkQueue.snapshot',
+];
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
@@ -52,6 +65,9 @@ const assuranceInfrastructureFiles = [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
   'scripts/check-emitted-artifact-entrypoints.mjs',
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+  'scripts/read-boundary-refinement.mjs',
+  'scripts/check-read-boundary-mutation.mjs',
+  'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/run-assurance.mjs',
   'package.json',
 ];
@@ -158,6 +174,46 @@ function contentDigest(files) {
   }
   return digest(chunks.join('\n---\n'));
 }
+function semanticTokenString(text) {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    text,
+  );
+  const tokens = [];
+  for (;;) {
+    const token = scanner.scan();
+    if (token === ts.SyntaxKind.EndOfFileToken) break;
+    if (token >= ts.SyntaxKind.FirstTriviaToken && token <= ts.SyntaxKind.LastTriviaToken) continue;
+    tokens.push(`${token}:${scanner.getTokenText()}`);
+  }
+  return tokens.join('\n');
+}
+function readSurfaceDigest() {
+  const file = path.join(root, 'src/work.ts');
+  const text = fs.readFileSync(file, 'utf8');
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const wanted = new Set(readSourceMethods);
+  const found = [];
+  for (const node of source.statements) {
+    if (!ts.isClassDeclaration(node) || !node.name) continue;
+    const className = node.name.text;
+    for (const member of node.members) {
+      if (!ts.isMethodDeclaration(member) || !member.name) continue;
+      const key = `${className}.${member.name.getText(source)}`;
+      if (wanted.has(key)) found.push(`${key}\n${semanticTokenString(member.getText(source))}`);
+    }
+  }
+  const keys = found.map((entry) => entry.slice(0, entry.indexOf('\n'))).sort(compareExact);
+  const expected = [...wanted].sort(compareExact);
+  if (JSON.stringify(keys) !== JSON.stringify(expected))
+    throw new Error(
+      `Typed-read source binding drifted: expected=${expected.join(',')} found=${keys.join(',')}`,
+    );
+  return digest(found.sort(compareExact).join('\n---\n'));
+}
+
 function surface() {
   const result = spawnSync(process.execPath, ['scripts/formal-implementation-surface.cjs'], {
     cwd: root,
@@ -478,16 +534,20 @@ function buildManifest(live) {
   for (const entrypoint of Object.keys(live.entrypoints).sort(compareExact)) {
     for (const row of live.entrypoints[entrypoint]) {
       const classification = callableClassification(row.key);
+      const runtimeContracts = runtimeContractsForKey(row.key);
       callables.push({
         key: row.key,
         classification,
         signatureHash: signatureHash(row),
         modelActions: modelActionsForKey(row.key),
-        runtimeContracts: runtimeContractsForKey(row.key),
+        runtimeContracts,
         evidence: [
           ...evidenceByClassification[classification],
           'test/runtime-boundary-refinement.test.mjs',
           'test/lifecycle-transition-matrix.test.mjs',
+          ...(runtimeContracts.includes('ReadAllowed')
+            ? ['test/read-boundary-refinement.test.mjs']
+            : []),
         ],
       });
     }
@@ -575,6 +635,15 @@ function buildManifest(live) {
         sourceDigest: semanticSourceDigest(runtimeSourceFiles),
         modelDigest: formalDigest(runtimeModelFiles),
       },
+      reads: {
+        contract: 'formal/WorkOnceContract.tla',
+        observationProducer: 'scripts/read-boundary-refinement.mjs',
+        observationBridge: 'scripts/runtime-boundary-refinement.mjs',
+        sourceMethods: readSourceMethods,
+        sourceDigest: readSurfaceDigest(),
+        modelFiles: readModelFiles,
+        modelDigest: formalDigest(readModelFiles),
+      },
     },
     entrypoints: expectedEntrypoints,
     callables,
@@ -640,6 +709,12 @@ function renderReport(manifest) {
   }
   lines.push(
     '',
+    '## Typed-read boundary',
+    '',
+    `- Contract: \`${manifest.model.reads.contract}\``,
+    `- Cross-adapter producer: \`${manifest.model.reads.observationProducer}\``,
+    `- Bound source methods: ${manifest.model.reads.sourceMethods.map((name) => `\`${name}\``).join(', ')}`,
+    '',
     '## Assurance infrastructure binding',
     '',
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
@@ -673,6 +748,16 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
+  if (
+    previous?.model?.reads &&
+    previous.model.reads.sourceDigest !== current.model.reads.sourceDigest &&
+    previous.model.reads.modelDigest === current.model.reads.modelDigest &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
   if (
     previous?.model?.runtime &&
     previous.model.runtime.sourceDigest !== current.model.runtime.sourceDigest &&
