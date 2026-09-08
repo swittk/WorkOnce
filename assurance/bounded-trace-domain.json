@@ -32,7 +32,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "9340f225ae92ff550315419a5efbca62392f289f8c42d607c1846865a7ae9c4b",
+  "evidenceDigest": "4d841e605124dc2958315971d666fa18831a181a7fe6117aa070bace60ec895a",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -105,8 +105,9 @@
     "lifecycleAdapterCases": 600
   },
   "storageBoundary": {
-    "samples": 19,
+    "samples": 22,
     "counts": {
+      "adapterHistoryCongruence": 3,
       "atomicContention": 3,
       "casBoundary": 1,
       "casContention": 1,
@@ -119,7 +120,7 @@
       "sqliteBoundary": 1,
       "sqliteBusy": 1
     },
-    "observationDigest": "3c0ba6c71604c8f8f89b3244fc8c2b52679f844739e760f81354f80063f38d72"
+    "observationDigest": "fa2779eed5b70c3eb02101a2044b5c1b5b74282c4f69f10af7d1c778aa11c248"
   },
   "observed": {
     "deterministicScenarios": 43,

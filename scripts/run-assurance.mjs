@@ -108,10 +108,12 @@ await runParallel([
   ],
 ]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
-run('TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']);
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
 ]);
-run('TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']);
-run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);
+await runParallel([
+  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
+  ['TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']],
+  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
+]);
 console.log('[assurance] all gates passed');

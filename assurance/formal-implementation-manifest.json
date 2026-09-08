@@ -10501,7 +10501,7 @@
         "StorageTypeOK",
         "UnknownOutcomeStopsRetry"
       ],
-      "modelDigest": "b9ecf739f1750a2068f04e96877ed6027ab64597941005d9f1450044f3ac1dc2",
+      "modelDigest": "b0141cfe4a063bab7bca4941cf36f6eee1c1483c9c52b4bd2a4bcb275df4634d",
       "modelFiles": [
         "formal/WorkOnceStorage.tla",
         "formal/WorkOnceStorage.cfg"
@@ -10522,7 +10522,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "376166014757720cb0f71d3a6e6c490a77443599c4a456f5d01c1056558e429c",
+    "assuranceInfrastructureDigest": "7d16150a650f728622b1440b3463a6c452b53f89b2a09f53c6ba0d336254c063",
     "assuranceInfrastructureFiles": [
       "test/process/sqlite-busy-child.mjs",
       "test/process/sqlite-busy-startup.test.mjs",
@@ -10544,7 +10544,7 @@
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "c56c44720b10699fda152d3748bfc4eea0d38afe6a321d9c92c6b5c081353874",
+    "modelDigest": "41d1b68d42f1a0a35ccbc1e5eb4b1829129ae102d74ecec5001a6f424077cb61",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

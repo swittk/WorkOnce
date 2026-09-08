@@ -52,7 +52,7 @@
 ## Assurance infrastructure binding
 
 - Bound proof/checker files: **19**
-- Content digest: `376166014757720cb0f71d3a6e6c490a77443599c4a456f5d01c1056558e429c`
+- Content digest: `7d16150a650f728622b1440b3463a6c452b53f89b2a09f53c6ba0d336254c063`
 
 ## Coverage rule
 

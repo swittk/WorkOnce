@@ -100,6 +100,9 @@ StorageSampleOK(s) ==
   CASE s.kind = "detached" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.getManyDetached /\ s.queryDetached /\ s.orderExact /\ s.cursorExact
+    [] s.kind = "adapterHistoryCongruence" ->
+       /\ s.adapter \in {"memory", "sqlite", "cas"}
+       /\ s.materiallyDifferentHistory /\ s.sameDurableProjection /\ s.sameFuture
     [] s.kind = "atomicContention" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.allSameSnapshot /\ s.oneInsertRevision /\ s.oneStoredRow
@@ -125,7 +128,7 @@ StorageSampleOK(s) ==
 StorageSamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
-       "detached", "atomicContention", "queryBoundary", "invalidWrite",
+       "detached", "adapterHistoryCongruence", "atomicContention", "queryBoundary", "invalidWrite",
        "casContention", "casExhaustion", "casUnknown", "casHistoryCongruence",
        "casBoundary", "sqliteBoundary", "sqliteBusy"
      }

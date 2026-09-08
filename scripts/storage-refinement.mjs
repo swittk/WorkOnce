@@ -95,6 +95,38 @@ async function detachedSample(adapter) {
   }
 }
 
+async function adapterHistoryCongruenceSample(adapter) {
+  async function lane(contended) {
+    const fixture = adapterFixture(adapter);
+    try {
+      const scope = `storage-history-${adapter}`;
+      const queue = createWorkOnce({ store: fixture.store, scope }).define('job');
+      const requests = contended ? 12 : 1;
+      const snapshots = await Promise.all(
+        Array.from({ length: requests }, () => queue.ensure({ value: 1 }, { key: 'same' })),
+      );
+      const before = (await fixture.store.getMany([snapshots[0].id])).rows[0];
+      const [run] = await queue.claim({ workerId: 'future', limit: 1 });
+      const heartbeat = await run.heartbeat();
+      const settled = await run.settle(run.succeed({ value: 2 }));
+      const after = await queue.inspect('same');
+      const history = await queue.history('same');
+      return { requests, before, future: { heartbeat, settled, after, history } };
+    } finally {
+      fixture.close();
+    }
+  }
+  const direct = await lane(false);
+  const contended = await lane(true);
+  return {
+    kind: 'adapterHistoryCongruence',
+    adapter,
+    materiallyDifferentHistory: direct.requests === 1 && contended.requests === 12,
+    sameDurableProjection: JSON.stringify(direct.before) === JSON.stringify(contended.before),
+    sameFuture: JSON.stringify(direct.future) === JSON.stringify(contended.future),
+  };
+}
+
 async function atomicContentionSample(adapter) {
   const fixture = adapterFixture(adapter);
   try {
@@ -435,6 +467,7 @@ export async function runStorageRefinementSamples() {
   const samples = [];
   for (const adapter of ['memory', 'sqlite', 'cas']) {
     samples.push(await detachedSample(adapter));
+    samples.push(await adapterHistoryCongruenceSample(adapter));
     samples.push(await atomicContentionSample(adapter));
     samples.push(await queryBoundarySample(adapter));
     samples.push(await invalidWriteSample(adapter));
@@ -453,6 +486,7 @@ export function assertStorageRefinementSamples(samples) {
   const kinds = new Set(samples.map((sample) => sample.kind));
   for (const required of [
     'detached',
+    'adapterHistoryCongruence',
     'atomicContention',
     'queryBoundary',
     'invalidWrite',
