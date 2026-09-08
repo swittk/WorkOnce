@@ -32,6 +32,7 @@ const coverageKeys = [
   'cancelWaiting',
   'attemptBudgetExhausted',
   'deadlineExceeded',
+  'timestampRange',
   'successFollowup',
   'failureFollowup',
   'followupDispatch',
@@ -324,6 +325,28 @@ async function fencingAndBudgets(coverage) {
     assert.equal(s.phase.state, 'failed');
     assert.equal(s.phase.stoppedBy, 'deadline_exceeded');
     hit(coverage, 'deadlineExceeded');
+  }
+  {
+    scenarios++;
+    let now = 1000;
+    const work = createWorkOnce({
+      store: createMemoryStore({ now: () => now }),
+      scope: 'timestamp-range',
+    });
+    const queue = work.define('job', {
+      executionLimits: { leaseMs: 1000, maxElapsedMs: 400, maxAttempts: 3 },
+      retry: { retry: true, afterMs: 1000, maxRetries: 2, manualRetry: true },
+    });
+    await queue.ensure(null, { key: 'x' });
+    now = Number.MAX_SAFE_INTEGER - 500;
+    const [run] = await queue.claim({ workerId: 'late' });
+    assert.equal(run.attempt.leaseUntil, Number.MAX_SAFE_INTEGER - 100);
+    now = Number.MAX_SAFE_INTEGER - 200;
+    assert.equal((await run.heartbeat()).attempt.leaseUntil, Number.MAX_SAFE_INTEGER - 100);
+    const phase = await run.settle(run.retry('busy', { afterMs: 1000 }));
+    assert.equal(phase.state, 'failed');
+    assert.equal(phase.stoppedBy, 'deadline_exceeded');
+    hit(coverage, 'timestampRange', 'deadlineExceeded');
   }
   return scenarios;
 }

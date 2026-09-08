@@ -9979,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "6b27960119ae7d3fefbbb06bdd326068df61e8068165e50ade5bb41a083ec8c9",
+    "sourceDigest": "839238ce2bc7700f76a8d6347410e971c42156a6d7a3d5534362f8110a1f3049",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

@@ -290,6 +290,40 @@ test('sqlite rejects a persisted settlement receipt bound to another item or gen
   }
 });
 
+test('late storage time cannot overflow claim, renewal, or retry timestamp arithmetic', async () => {
+  let now = 1000;
+  const work = createWorkOnce({ store: createMemoryStore({ now: () => now }), scope: 'late-time' });
+  const queue = work.define('job', {
+    executionLimits: { leaseMs: 1000, maxElapsedMs: 400, maxAttempts: 3 },
+    retry: { retry: true, afterMs: 1000, maxRetries: 2, manualRetry: true },
+  });
+  await queue.ensure(null, { key: 'x' });
+
+  now = Number.MAX_SAFE_INTEGER - 500;
+  const [run] = await queue.claim({ workerId: 'late' });
+  assert.ok(run);
+  assert.equal(run.attempt.leaseUntil, Number.MAX_SAFE_INTEGER - 100);
+
+  now = Number.MAX_SAFE_INTEGER - 200;
+  const renewed = await run.heartbeat();
+  assert.equal(renewed.attempt.leaseUntil, Number.MAX_SAFE_INTEGER - 100);
+  const phase = await run.settle(run.retry('busy', { afterMs: 1000 }));
+  assert.equal(phase.state, 'failed');
+  assert.equal(phase.stoppedBy, 'deadline_exceeded');
+
+  now = 1000;
+  await queue.ensure(null, { key: 'too-late' });
+  now = Number.MAX_SAFE_INTEGER - 100;
+  const claimed = await queue.claim({ workerId: 'too-late', limit: 2 });
+  assert.equal(
+    claimed.some((candidate) => candidate.ref.workId.includes('too-late')),
+    false,
+  );
+  const tooLate = await queue.inspect('too-late');
+  assert.equal(tooLate.phase.state, 'failed');
+  assert.equal(tooLate.phase.stoppedBy, 'deadline_exceeded');
+});
+
 test('an impossible duration is rejected before storing an unclaimable job', async () => {
   const q = createWorkOnce({ store: createMemoryStore({ now: () => 1000 }), scope: 't' }).define(
     'job',

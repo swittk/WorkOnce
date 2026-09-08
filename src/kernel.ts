@@ -32,9 +32,22 @@ export function integer(value: number, name: string, minimum = 0): number {
     throw new RangeError(`${name} must be a safe integer >= ${minimum}`);
   return value;
 }
-/** Add durations without silently overflowing the timestamp/fence range. */
+/** Add counters or already-proven timestamps without silently overflowing the safe-integer range. */
 function add(a: number, b: number): number {
   return integer(a + b, 'sum');
+}
+/** Return a representable timestamp sum, or undefined when a later clock made the horizon impossible. */
+function tryAddTime(a: number, b: number): number | undefined {
+  const sum = a + b;
+  return Number.isSafeInteger(sum) && sum >= 0 ? sum : undefined;
+}
+/** Add a duration only up to an already-representable deadline, avoiding irrelevant overflow past it. */
+function addTimeCapped(now: number, duration: number, deadline: number): number {
+  integer(now, 'now');
+  integer(duration, 'duration');
+  integer(deadline, 'deadline');
+  if (now >= deadline || duration >= deadline - now) return deadline;
+  return add(now, duration);
 }
 /** Stable JSON encoding rejects values that would silently change at the persistence boundary. */
 export function canonical(value: unknown): string {
@@ -182,7 +195,9 @@ export function claimRecord(
       now,
       'exhaust',
     );
-  if (row.firstStartedAt !== undefined && now >= add(row.firstStartedAt, row.limits.maxElapsedMs))
+  const firstStartedAt = row.firstStartedAt ?? now;
+  const deadline = tryAddTime(firstStartedAt, row.limits.maxElapsedMs);
+  if (deadline === undefined || now >= deadline)
     return changed(
       row,
       {
@@ -198,7 +213,7 @@ export function claimRecord(
   const fence = add(row.fence, 1);
   const attempts = add(row.attempts, 1);
   return changed(
-    { ...row, fence, attempts, firstStartedAt: row.firstStartedAt ?? now },
+    { ...row, fence, attempts, firstStartedAt },
     {
       state: 'running',
       startedAt: now,
@@ -208,10 +223,7 @@ export function claimRecord(
         fence,
         workerId,
         number: attempts,
-        leaseUntil: Math.min(
-          add(now, row.limits.leaseMs),
-          add(row.firstStartedAt ?? now, row.limits.maxElapsedMs),
-        ),
+        leaseUntil: addTimeCapped(now, row.limits.leaseMs, deadline),
       },
     },
     now,
@@ -229,8 +241,9 @@ export function renewRecord(row: WorkRecord, ref: AttemptRef, clock: number): Wo
       ...row.phase,
       attempt: {
         ...row.phase.attempt,
-        leaseUntil: Math.min(
-          add(now, row.limits.leaseMs),
+        leaseUntil: addTimeCapped(
+          now,
+          row.limits.leaseMs,
           add(row.firstStartedAt ?? now, row.limits.maxElapsedMs),
         ),
       },
@@ -319,7 +332,7 @@ export function settleRecord(
         throw new RangeError('Use at or afterMs, not both');
       const availableAt = Math.max(
         now,
-        outcome.at === undefined ? add(now, delay) : integer(outcome.at, 'at'),
+        outcome.at === undefined ? addTimeCapped(now, delay, deadline) : integer(outcome.at, 'at'),
       );
       const denied =
         isRetry && (!decision?.retry || row.retries >= integer(decision.maxRetries, 'maxRetries'));

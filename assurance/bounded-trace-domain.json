@@ -4,7 +4,7 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs"
   ],
-  "evidenceDigest": "e832965c207a6a528b73dd4c372c4de599947f13498dee59c30446d381bf109d",
+  "evidenceDigest": "4a3ef169f115e29183533931d5aeaa969099a016c752e3b5048c376ccea7a74b",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -56,13 +56,14 @@
     "staleSettle": true,
     "succeeded": true,
     "successFollowup": true,
+    "timestampRange": true,
     "waitingDefer": true,
     "waitingRetry": true,
     "wake": true,
     "workerErrorIsolation": true
   },
   "observed": {
-    "deterministicScenarios": 40,
+    "deterministicScenarios": 41,
     "fuzzTraces": 96,
     "fuzzStepsPerTrace": 10,
     "coverageCounts": {
@@ -93,7 +94,8 @@
       "cancelRunning": 1,
       "cancelWaiting": 1,
       "attemptBudgetExhausted": 1,
-      "deadlineExceeded": 1,
+      "deadlineExceeded": 2,
+      "timestampRange": 1,
       "successFollowup": 3,
       "failureFollowup": 4,
       "followupDispatch": 8,
