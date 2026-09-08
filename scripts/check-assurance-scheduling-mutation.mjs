@@ -55,6 +55,15 @@ try {
     /storage-formal and formal\.mjs must never be co-scheduled/u,
   );
   expectSchedulingFailure(
+    'parallel process-fault suite',
+    (text) =>
+      text.replace(
+        "  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],\n]);\nrun('real process faults', process.execPath, ['--test', ...processTests]);",
+        "  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],\n  ['real process faults', process.execPath, ['--test', ...processTests]],\n]);",
+      ),
+    /Real process faults must run outside runParallel/u,
+  );
+  expectSchedulingFailure(
     'parallel source-mutating guards',
     (text) =>
       text.replace(

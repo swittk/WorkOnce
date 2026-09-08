@@ -107,11 +107,11 @@ assert.equal(
 );
 for (const block of blocks) {
   assert.equal(
-    block.text.includes('implementation traces') && block.text.includes('real process faults'),
+    block.text.includes('real process faults'),
     false,
-    'Implementation traces and real process faults must not be co-scheduled; expanded process tests can cancel under that contention.',
+    'Real process faults must run outside runParallel; constrained runners can starve crash-fixture IPC under compiler contention.',
   );
 }
 console.log(
-  'Assurance scheduling serializes mutating guards/process-fault contention and caps TLC overlap at the reviewed two-shard formal runner.',
+  'Assurance scheduling serializes mutating guards and process-fault suites, and caps TLC overlap at the reviewed two-shard formal runner.',
 );

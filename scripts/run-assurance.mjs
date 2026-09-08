@@ -127,8 +127,8 @@ await runParallel([
     ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
-  ['real process faults', process.execPath, ['--test', ...processTests]],
 ]);
+run('real process faults', process.execPath, ['--test', ...processTests]);
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('typed-read definition-fence mutation guard', process.execPath, [
   'scripts/check-read-boundary-mutation.mjs',
