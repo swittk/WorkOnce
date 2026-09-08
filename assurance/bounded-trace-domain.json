@@ -92,12 +92,14 @@
     "scripts/check-formal-implementation-conformance.mjs",
     "test/source-semantic-hash.test.mjs",
     "scripts/formal-implementation-surface.cjs",
+    "scripts/check-source-path-portability-mutation.mjs",
+    "assurance/red-before/manifest-worktree-source-path-portability.json",
     "scripts/run-assurance.mjs",
     "scripts/consumer-smoke.mjs",
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "30f0bb3358268b7fca742a640587e4e503d5ffa5dbc268c2cb0a5406ea6445bc",
+  "evidenceDigest": "64e6e4c24cf3bf0f0abb60545e894c132e5dc66c720ddf9673d1d3b7aa70d2e0",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

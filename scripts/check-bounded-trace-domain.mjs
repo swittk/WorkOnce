@@ -122,6 +122,8 @@ const evidenceFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'test/source-semantic-hash.test.mjs',
   'scripts/formal-implementation-surface.cjs',
+  'scripts/check-source-path-portability-mutation.mjs',
+  'assurance/red-before/manifest-worktree-source-path-portability.json',
   'scripts/run-assurance.mjs',
   'scripts/consumer-smoke.mjs',
   'scripts/prepare-package.mjs',

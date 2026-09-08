@@ -44,6 +44,19 @@ const entrypointSources = {
 function compareExact(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
+function portableSourcePath(fileName) {
+  const absolute = path.normalize(path.resolve(fileName));
+  const typescriptLibMarker = `${path.sep}node_modules${path.sep}typescript${path.sep}lib${path.sep}`;
+  const markerIndex = absolute.lastIndexOf(typescriptLibMarker);
+  if (markerIndex >= 0) {
+    const tail = absolute
+      .slice(markerIndex + typescriptLibMarker.length)
+      .split(path.sep)
+      .join('/');
+    return `node_modules/typescript/lib/${tail}`;
+  }
+  return path.relative(root, absolute).split(path.sep).join('/');
+}
 function sourceFile(relativePath) {
   const file = program.getSourceFile(path.join(root, relativePath));
   if (!file) throw new Error(`Missing source '${relativePath}'.`);
@@ -113,7 +126,7 @@ function callableProperties(type, prefix, declaration) {
     rows.push({
       key: `${prefix}.${property.name}`,
       kind: 'callable-property',
-      declaration: path.relative(root, propertyDeclaration.getSourceFile().fileName),
+      declaration: portableSourcePath(propertyDeclaration.getSourceFile().fileName),
       signatures,
     });
   }
@@ -131,7 +144,7 @@ function interfaceMethods(exported, declaration, entrypoint) {
     rows.push({
       key: `${entrypoint}.${exported.name}.${member.name}`,
       kind: 'interface-method',
-      declaration: path.relative(root, memberDeclaration.getSourceFile().fileName),
+      declaration: portableSourcePath(memberDeclaration.getSourceFile().fileName),
       signatures,
     });
   }
@@ -165,7 +178,7 @@ function moduleSurface(relativePath, entrypoint) {
       callables.push({
         key: `${entrypoint}.${exported.name}`,
         kind: constructors.length ? 'constructor-or-function' : 'function',
-        declaration: path.relative(root, declaration.getSourceFile().fileName),
+        declaration: portableSourcePath(declaration.getSourceFile().fileName),
         callSignatures: calls,
         constructSignatures: constructors,
       });
@@ -183,7 +196,7 @@ function moduleSurface(relativePath, entrypoint) {
       callables.push({
         key: `${entrypoint}.${exported.name}.${member.name}`,
         kind: 'method',
-        declaration: path.relative(root, memberDeclaration.getSourceFile().fileName),
+        declaration: portableSourcePath(memberDeclaration.getSourceFile().fileName),
         signatures,
       });
     }
@@ -229,6 +242,31 @@ function declarationOrdinal(declaration) {
   if (ordinal === undefined) throw new Error('Could not assign package-owned declaration ordinal.');
   return ordinal;
 }
+if (process.argv.includes('--self-test-source-paths')) {
+  const canonical = portableSourcePath(path.join(root, 'node_modules/typescript/lib/lib.es5.d.ts'));
+  const sibling = portableSourcePath(
+    path.join(
+      path.dirname(root),
+      'workonce-proof-worktree/node_modules/typescript/lib/lib.es5.d.ts',
+    ),
+  );
+  const sharedInstall = portableSourcePath(
+    path.join(path.dirname(root), 'WorkOnces/node_modules/typescript/lib/lib.es5.d.ts'),
+  );
+  if (canonical !== 'node_modules/typescript/lib/lib.es5.d.ts')
+    throw new Error(`Unexpected canonical TypeScript lib source path: ${canonical}`);
+  if (sibling !== canonical || sharedInstall !== canonical)
+    throw new Error(
+      `TypeScript lib source identity depends on worktree/install topology: ${JSON.stringify({ canonical, sibling, sharedInstall })}`,
+    );
+  if (portableSourcePath(path.join(root, 'src/work.ts')) !== 'src/work.ts')
+    throw new Error('Package-owned source identity no longer stays repository-relative.');
+  console.log(
+    'Compiler source paths are stable across authoritative, sibling-worktree, and shared-install layouts.',
+  );
+  process.exit(0);
+}
+
 if (process.argv.includes('--self-test-trivia-ordinals')) {
   const fingerprint = (text) => {
     const source = ts.createSourceFile('synthetic.ts', text, ts.ScriptTarget.Latest, true);
@@ -279,7 +317,7 @@ function packageTypeIdentity(type) {
   );
   if (!declarations.length) return undefined;
   const declaration = declarations[0];
-  const file = path.relative(root, declaration.getSourceFile().fileName);
+  const file = portableSourcePath(declaration.getSourceFile().fileName);
   const rendered = typeText(type, declaration);
   const ordinal = declarationOrdinal(declaration);
   const name =
@@ -366,7 +404,7 @@ function visitType(type, direction, lineage = new Set(), depth = 0) {
     record = {
       name: owned.name,
       identity: owned.identity,
-      source: path.relative(root, owned.declaration.getSourceFile().fileName),
+      source: portableSourcePath(owned.declaration.getSourceFile().fileName),
       directions: [],
       fields: [],
     };
@@ -390,7 +428,7 @@ function visitType(type, direction, lineage = new Set(), depth = 0) {
         allowsNull: includesFlag(propertyType, ts.TypeFlags.Null),
         callable: callableSignatures(propertyType, declaration).length > 0,
         callSignatures: callableSignatures(propertyType, declaration),
-        source: path.relative(root, declaration.getSourceFile().fileName),
+        source: portableSourcePath(declaration.getSourceFile().fileName),
         directions: [],
       };
       record.fields.push(field);

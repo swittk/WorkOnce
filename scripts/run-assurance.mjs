@@ -106,6 +106,9 @@ run('emitted-artifact entrypoint mutation guard', process.execPath, [
 run('alias runtime/type mutation guard', process.execPath, [
   'scripts/check-alias-contract-mutation.mjs',
 ]);
+run('compiler source-path portability mutation guard', process.execPath, [
+  'scripts/check-source-path-portability-mutation.mjs',
+]);
 await runParallel([
   npmParallelEntry('ES2018 Web Worker', ['run', 'check:web']),
   [
@@ -117,6 +120,11 @@ await runParallel([
     'type identity trivia',
     process.execPath,
     ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
+  ],
+  [
+    'compiler source-path portability',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
   ['real process faults', process.execPath, ['--test', ...processTests]],

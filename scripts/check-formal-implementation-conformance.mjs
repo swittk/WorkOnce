@@ -192,6 +192,8 @@ const assuranceInfrastructureFiles = [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
   'scripts/check-assurance-scheduling.mjs',
   'scripts/check-alias-contract-mutation.mjs',
+  'scripts/check-source-path-portability-mutation.mjs',
+  'assurance/red-before/manifest-worktree-source-path-portability.json',
   'scripts/check-assurance-scheduling-mutation.mjs',
   'assurance/red-before/formal-shard-cross-family-tlc-concurrency.json',
   'assurance/red-before/mutation-guard-cross-contamination.json',

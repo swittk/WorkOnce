@@ -4124,7 +4124,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4147,7 +4147,7 @@
         "observationOnly"
       ],
       "optional": false,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -4170,7 +4170,7 @@
         "observationOnly"
       ],
       "optional": true,
-      "source": "../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts",
+      "source": "node_modules/typescript/lib/lib.es5.d.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "WorkConflict"
     },
@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "7b432f08fb4a53a6c5c3511d40ebcf9100a1626dc18727c838ad2a88d133e10f",
+    "assuranceInfrastructureDigest": "e38587b6b17e32d092c80caa94a811e7507a5770fddfaa39909171fa9cc76468",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10893,6 +10893,8 @@
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
       "scripts/check-assurance-scheduling.mjs",
       "scripts/check-alias-contract-mutation.mjs",
+      "scripts/check-source-path-portability-mutation.mjs",
+      "assurance/red-before/manifest-worktree-source-path-portability.json",
       "scripts/check-assurance-scheduling-mutation.mjs",
       "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
       "assurance/red-before/mutation-guard-cross-contamination.json",
