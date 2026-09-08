@@ -239,10 +239,11 @@ storage proof red for its intended witness.
 `npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility
 check, one compiler-map pass, one batched implementation test process, one real-process fault pass,
 one bounded-domain audit, the durable-lifecycle/runtime TLC checks, the storage/conformance TLC checks
-and the packed consumer smoke test. After the assurance-infrastructure self-mutation guard restores its
-proof runner, the independent lifecycle/runtime, storage and packed-consumer gates execute in parallel;
-this changes only orchestration and preserves every constituent check. The HPSERVER completion budget
-is **under 60 seconds wall-clock** on Node 22.22.1.
+and the packed consumer smoke test. Read-only compiler/compatibility checks and the independent unit
+vs real-process test groups execute in parallel, while storage TLC and lifecycle/runtime TLC remain
+isolated from each other so one model checker cannot perturb another model checker's proof artifacts or
+infrastructure outcome. The HPSERVER completion budget is **under 60 seconds wall-clock** on Node
+22.22.1.
 
 That budget is a local gate requirement, not a universal performance promise. The important design rule
 is structural: no per-trace model-checker process explosion and no coverage reduction to meet the gate.

@@ -83,16 +83,20 @@ run('emitted-artifact entrypoint audit', process.execPath, [
 run('emitted-artifact entrypoint mutation guard', process.execPath, [
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
 ]);
-runNpm('ES2018 Web Worker', ['run', 'check:web']);
-run('formal config parser', process.execPath, [
-  'scripts/check-formal-implementation-conformance.mjs',
-  '--self-test-config-checks',
+await runParallel([
+  npmParallelEntry('ES2018 Web Worker', ['run', 'check:web']),
+  [
+    'formal config parser',
+    process.execPath,
+    ['scripts/check-formal-implementation-conformance.mjs', '--self-test-config-checks'],
+  ],
+  [
+    'type identity trivia',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
+  ],
+  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
 ]);
-run('type identity trivia', process.execPath, [
-  'scripts/formal-implementation-surface.cjs',
-  '--self-test-trivia-ordinals',
-]);
-run('public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']);
 await runParallel([
   ['implementation traces', process.execPath, ['--test', ...unitTests]],
   ['real process faults', process.execPath, ['--test', ...processTests]],
@@ -113,9 +117,7 @@ run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-doma
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
 ]);
-await runParallel([
-  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
-  ['TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']],
-  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
-]);
+run('TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']);
+run('TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']);
+run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);
 console.log('[assurance] all gates passed');
