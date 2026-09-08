@@ -35,6 +35,10 @@
     "formal/WorkOncePolicy.cfg",
     "scripts/check-policy-source-model-binding-mutation.mjs",
     "scripts/check-policy-implementation-mutations.mjs",
+    "scripts/outbox-refinement.mjs",
+    "test/outbox-refinement.test.mjs",
+    "formal/WorkOnceOutbox.tla",
+    "formal/WorkOnceOutbox.cfg",
     "scripts/external-transport-refinement.mjs",
     "test/external-transport-refinement.test.mjs",
     "test/external.test.mjs",
@@ -72,7 +76,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "8349baae69aabe5137a35dd351afd4b53e85d1e1acc4690491f15f74714e2864",
+  "evidenceDigest": "df478ed7682c30a2be4b27987d5e60439c741a5fd8b56700dd1dde5c058b67fb",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -195,6 +199,15 @@
       "wakeCompetition": 3
     },
     "observationDigest": "dbd1f17ada09571479f7566b4d1c4fe921857bf21b11916bc886e7849cb15fcf"
+  },
+  "outboxScheduler": {
+    "samples": 7,
+    "adapters": [
+      "cas",
+      "memory",
+      "sqlite"
+    ],
+    "observationDigest": "57a56c6847f8fe4192d8ef741d9e4c66d2949588ec8390a77c16242b82ee742f"
   },
   "externalBoundary": {
     "samples": 13,

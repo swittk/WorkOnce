@@ -87,14 +87,21 @@ function configuredInvariants(configText) {
   const result = [];
   let reading = false;
   for (const line of lines) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    const single = /^INVARIANT\s+([A-Za-z_][A-Za-z0-9_]*)$/u.exec(trimmed);
+    if (single) {
+      result.push(single[1]);
+      reading = false;
+      continue;
+    }
+    if (trimmed === 'INVARIANTS') {
       reading = true;
       continue;
     }
     if (!reading) continue;
     const match = /^\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/u.exec(line);
-    if (!match) break;
-    result.push(match[1]);
+    if (match) result.push(match[1]);
+    else if (trimmed) reading = false;
   }
   return result;
 }
@@ -105,7 +112,9 @@ function singleInvariantConfig(configText, invariant) {
   let skipping = false;
   let inserted = false;
   for (const line of lines) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    if (/^INVARIANT\s+[A-Za-z_][A-Za-z0-9_]*$/u.test(trimmed)) continue;
+    if (trimmed === 'INVARIANTS') {
       skipping = true;
       continue;
     }
@@ -113,11 +122,11 @@ function singleInvariantConfig(configText, invariant) {
       if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line)) continue;
       skipping = false;
     }
-    if (line.trim() === 'SPECIFICATION Spec') {
+    if (trimmed === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION MutantSpec');
       continue;
     }
-    if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
+    if (trimmed === 'CHECK_DEADLOCK FALSE' && !inserted) {
       output.push(`INVARIANT ${invariant}`);
       inserted = true;
     }
@@ -165,7 +174,9 @@ function mutationWitnessConfig(configText) {
   let skipping = false;
   let inserted = false;
   for (const line of lines) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    if (/^INVARIANT\s+[A-Za-z_][A-Za-z0-9_]*$/u.test(trimmed)) continue;
+    if (trimmed === 'INVARIANTS') {
       skipping = true;
       continue;
     }
@@ -173,11 +184,11 @@ function mutationWitnessConfig(configText) {
       if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line)) continue;
       skipping = false;
     }
-    if (line.trim() === 'SPECIFICATION Spec') {
+    if (trimmed === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION BatchSpec');
       continue;
     }
-    if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
+    if (trimmed === 'CHECK_DEADLOCK FALSE' && !inserted) {
       output.push('INVARIANT MutationWitnesses');
       inserted = true;
     }
@@ -325,6 +336,18 @@ const localRunnerMutants = {
   /\ returnPresent' = TRUE /\ returnValue' = "errorB" /\ stopActive' = 0`,
 };
 
+const outboxMutants = {
+  OutboxTypeOK: String.raw`  /\ cursor' = "invalid"
+  /\ UNCHANGED <<aQueue, bQueue, attempts, delivered, passCount, crashes>>`,
+  FirstPassRotatesPoison: String.raw`  /\ passCount' = 1
+  /\ cursor' = "A"
+  /\ attempts' = <<"a1">>
+  /\ UNCHANGED <<aQueue, bQueue, delivered, crashes>>`,
+  CrossParentOrder: String.raw`  /\ passCount' = 3
+  /\ attempts' = <<"a1", "a2", "b1">>
+  /\ UNCHANGED <<aQueue, bQueue, cursor, delivered, crashes>>`,
+};
+
 const externalMutants = {
   ExternalTypeOK: String.raw`  /\ phase' = "invalid"
   /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
@@ -401,6 +424,11 @@ const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', pol
 ]);
 const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants, [
   'ExternalSamplesConform',
+]);
+const outboxMutationPlan = mutationCoveragePlan('formal/WorkOnceOutbox.cfg', outboxMutants, [
+  'PoisonIntentRetained',
+  'AllOriginalIntentAccounted',
+  'HealthyReachedByThirdPass',
 ]);
 
 function tlaValue(value) {
@@ -712,6 +740,66 @@ MutantSpec == Init /\ [][Next]_vars
 
 
 if (!process.argv.includes('--runtime-only')) {
+  const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
+    './outbox-refinement.mjs'
+  );
+  runModel('WorkOnceOutbox', 'WorkOnceOutbox.cfg');
+  const outboxSamples = await runOutboxRefinementSamples();
+  assertOutboxRefinementSamples(outboxSamples);
+  const outboxObserved = resolve('.artifacts/tlc/WorkOnceOutboxObserved.tla');
+  const outboxConfig = resolve('.artifacts/tlc/WorkOnceOutbox-observed.cfg');
+  writeFileSync(
+    outboxObserved,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConform ==\n  /\\ ObservedSamples # {}\n  /\\ {s.kind : s \\in ObservedSamples} = {"rotation", "poison", "restart", "ackLoss", "adapter"}\n  /\\ \\A s \\in ObservedSamples : OutboxSampleOK(s)\n====\n`,
+  );
+  writeFileSync(
+    outboxConfig,
+    `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nINVARIANT OutboxSamplesConform\n`,
+  );
+  console.log(`TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`);
+  runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
+  runMutationWitnessBatch({
+    model: 'WorkOnceOutboxInvariantMutationBatch',
+    baseModule: 'WorkOnceOutbox',
+    baseConfig: readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'),
+    plan: outboxMutationPlan,
+  });
+
+  const semanticMutants = [
+    {
+      name: 'WorkOnceOutboxNoWrapMutant',
+      invariant: 'HealthyReachedByThirdPass',
+      action: String.raw`  /\ passCount = 2 /\ cursor = "B" /\ Len(aQueue) > 0 /\ Len(bQueue) = 0
+  /\ passCount' = passCount + 1
+  /\ UNCHANGED <<aQueue, bQueue, cursor, attempts, delivered, crashes>>`,
+    },
+    {
+      name: 'WorkOnceOutboxSkippedChildMutant',
+      invariant: 'AllOriginalIntentAccounted',
+      action: String.raw`  /\ passCount = 0 /\ aQueue = <<"a1", "a2">> /\ aQueue' = <<"a1">>
+  /\ UNCHANGED <<bQueue, cursor, attempts, delivered, passCount, crashes>>`,
+    },
+    {
+      name: 'WorkOnceOutboxLostPoisonMutant',
+      invariant: 'PoisonIntentRetained',
+      action: String.raw`  /\ passCount = 1 /\ aQueue = <<"a2", "a1">> /\ aQueue' = <<"a2">>
+  /\ UNCHANGED <<bQueue, cursor, attempts, delivered, passCount, crashes>>`,
+    },
+  ];
+  for (const mutant of semanticMutants) {
+    const modulePath = resolve(`.artifacts/tlc/${mutant.name}.tla`);
+    const configPath = resolve(`.artifacts/tlc/${mutant.name}.cfg`);
+    writeFileSync(
+      modulePath,
+      `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceOutbox\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
+    );
+    writeFileSync(configPath, singleInvariantConfig(readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'), mutant.invariant));
+    requireInvariantRejects(mutant.name, configPath, modulePath, mutant.invariant);
+    markExtraMutationWitness(outboxMutationPlan, mutant.invariant);
+  }
+}
+
+if (!process.argv.includes('--runtime-only')) {
   const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
     './external-transport-refinement.mjs'
   );
@@ -804,5 +892,6 @@ assertMutationPlansExecuted(
         localRunnerMutationPlan,
         policyMutationPlan,
         externalMutationPlan,
+        outboxMutationPlan,
       ],
 );

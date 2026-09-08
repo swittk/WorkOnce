@@ -43,6 +43,8 @@ const modelFiles = [
   'formal/WorkOnceStorage.cfg',
   'formal/WorkOnceExternal.tla',
   'formal/WorkOnceExternal.cfg',
+  'formal/WorkOnceOutbox.tla',
+  'formal/WorkOnceOutbox.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
 const storageSourceFiles = [
@@ -545,6 +547,8 @@ function fieldClassification(typeName, fieldName, callable) {
   return 'observational';
 }
 function modelConceptsForField(typeName, fieldName, classification) {
+  if (fieldName === 'afterId') return ['outboxCursor', 'storageOrdering'];
+  if (fieldName === 'outbox') return ['pendingNext', 'childCreated', 'outboxQueue'];
   if (fieldName === 'submissionHash' || fieldName === 'receipt')
     return ['policyReceiptIdentity', 'settlementReplay'];
   if (fieldName === 'afterMs' || fieldName === 'at') return ['available', 'now', 'policyTiming'];
@@ -631,7 +635,7 @@ function modelActionsForKey(key) {
     return ['Cancel'];
   if (key.endsWith('.wake') || key.endsWith('.wakeCurrent')) return ['Wake'];
   if (key.endsWith('.dispatch') || key.endsWith('.runDispatcher'))
-    return ['CreateChild', 'AckChild'];
+    return ['CreateChild', 'AckChild', 'OutboxDispatch'];
   if (
     key === 'root.WorkQueue.runAvailable' ||
     key === 'root.WorkQueue.process' ||
@@ -730,6 +734,7 @@ function buildManifest(live) {
           ...(policyRelevant ? ['test/policy-refinement.test.mjs'] : []),
           ...(localRunnerRelevant ? ['test/local-runner-refinement.test.mjs'] : []),
           ...(externalRelevant ? ['test/external-transport-refinement.test.mjs'] : []),
+          ...(modelActions.includes('OutboxDispatch') ? ['test/outbox-refinement.test.mjs'] : []),
         ],
       });
     }
@@ -802,6 +807,7 @@ function buildManifest(live) {
         'ExhaustDeadline',
         'CreateChild',
         'AckChild',
+        'OutboxDispatch',
         'Tick',
       ],
       configuredChecks: readConfiguredChecks(),
@@ -856,6 +862,15 @@ function buildManifest(live) {
         modelFiles: policyModelFiles,
         sourceDigest: policySurfaceDigest(),
         modelDigest: formalDigest(policyModelFiles),
+      },
+      outbox: {
+        spec: 'formal/WorkOnceOutbox.tla',
+        config: 'formal/WorkOnceOutbox.cfg',
+        contract: 'formal/WorkOnceContract.tla',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceOutbox.cfg'),
+        observationProducer: 'scripts/outbox-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        mutationInvariant: 'HealthyReachedByThirdPass',
       },
       external: {
         spec: 'formal/WorkOnceExternal.tla',
@@ -970,6 +985,13 @@ function renderReport(manifest) {
     `- Bound policy source symbols: ${Object.entries(manifest.model.policy.sourceSymbols)
       .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
       .join(', ')}`,
+    '',
+    '## Outbox scheduler model',
+    '',
+    `- Spec: \`${manifest.model.outbox.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.outbox.observationProducer}\` via \`${manifest.model.outbox.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.outbox.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Mutation guard: \`${manifest.model.outbox.mutationInvariant}\``,
     '',
     '## External transport boundary',
     '',

@@ -13,6 +13,9 @@ const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import
 const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
   './external-transport-refinement.mjs'
 );
+const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
+  './outbox-refinement.mjs'
+);
 const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
   './local-runner-refinement.mjs'
 );
@@ -62,6 +65,10 @@ const evidenceFiles = [
   'formal/WorkOncePolicy.cfg',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
+  'scripts/outbox-refinement.mjs',
+  'test/outbox-refinement.test.mjs',
+  'formal/WorkOnceOutbox.tla',
+  'formal/WorkOnceOutbox.cfg',
   'scripts/external-transport-refinement.mjs',
   'test/external-transport-refinement.test.mjs',
   'test/external.test.mjs',
@@ -127,6 +134,8 @@ const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
 const externalSamples = await runExternalTransportSamples();
 assertExternalTransportSamples(externalSamples);
+const outboxSamples = await runOutboxRefinementSamples();
+assertOutboxRefinementSamples(outboxSamples);
 const localRunnerSamples = await runLocalRunnerRefinementSamples();
 assertLocalRunnerRefinementSamples(localRunnerSamples);
 const policySamples = await runPolicyRefinementSamples();
@@ -196,6 +205,17 @@ const current = {
     observationDigest: crypto
       .createHash('sha256')
       .update(JSON.stringify(policySamples))
+      .digest('hex'),
+  },
+  outboxScheduler: {
+    samples: outboxSamples.length,
+    adapters: outboxSamples
+      .filter((sample) => sample.kind === 'adapter')
+      .map((sample) => sample.adapter)
+      .sort(),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(outboxSamples))
       .digest('hex'),
   },
   externalBoundary: {

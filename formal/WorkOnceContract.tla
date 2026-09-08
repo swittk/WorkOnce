@@ -51,4 +51,37 @@ BoundarySampleOK(s) ==
        /\ s.state = (IF s.first = "cancel" THEN "cancelled" ELSE "succeeded")
        /\ s.cancelState = s.state
     [] OTHER -> FALSE
+
+\* Fresh compiled outbox observations bind the hidden cursor/parent/child scheduler.
+OutboxSampleOK(s) ==
+  CASE s.kind = "rotation" ->
+       /\ s.firstPassSent
+       /\ s.firstParentPartiallyDrained
+       /\ s.secondPassSent
+       /\ s.laterParentReached
+       /\ s.firstParentStillReachable
+       /\ s.wrapped
+       /\ s.thirdPassSent
+       /\ s.firstParentDrained
+    [] s.kind = "poison" ->
+       /\ s.exactConflict
+       /\ s.laterParentReached
+       /\ s.healthySiblingReached
+       /\ s.poisonRetained
+    [] s.kind = "restart" ->
+       /\ s.pendingPreserved
+       /\ s.restartedFromBeginning
+       /\ s.remainingChildDelivered
+    [] s.kind = "ackLoss" ->
+       /\ s.exactFailure
+       /\ s.childDurableBeforeAck
+       /\ s.parentIntentRetained
+       /\ s.retryConverged
+    [] s.kind = "adapter" ->
+       /\ s.adapter \in {"memory", "sqlite", "cas"}
+       /\ s.threePassesSent
+       /\ s.laterParentReached
+       /\ s.wrapped
+       /\ s.firstParentDrained
+    [] OTHER -> FALSE
 =============================================================================

@@ -360,6 +360,12 @@ completion-before-cancel legality, claim-scan widening, exact claim limit and re
 These are library-owned durable queue semantics only; application callback side effects and external
 system exactly-once behavior remain outside this lifecycle proof.
 
+## Outbox scheduler and continuation fairness
+
+The continuation outbox has a dedicated bounded scheduler machine and fresh compiled observations from `scripts/outbox-refinement.mjs`. The model covers poison-item rotation, cross-parent ordering, restart/ack-loss behavior and adapter parity while retaining every original continuation intent. Its configured invariants are fail-closed: simple violations share a batched TLC mutation witness, while lost-child, lost-poison and skipped-wrap mutations exercise the semantic properties that need multi-step state.
+
+Dispatch operations are mapped to an explicit `OutboxDispatch` action and outbox cursor/state fields have reviewed abstraction concepts rather than being treated as generic observations. This is bounded scheduler safety/fairness evidence; it does not turn application callbacks or external effects into exactly-once operations.
+
 ## External transport fencing and effect boundary
 
 External execution now has a dedicated `WorkOnceExternal` machine plus compiled transport observations. The proof binds exported lease/fence identity, successful receipt identity, stale-fence rejection and durable unknown-ack handling to the public handoff/external-runner implementation. Source/model mutation controls cover the external runner, queue handoff/serve paths and shared poll wake behavior.

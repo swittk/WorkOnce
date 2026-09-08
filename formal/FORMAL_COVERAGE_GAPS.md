@@ -23,6 +23,7 @@
 - `ExhaustDeadline`: `external.ExternalWorkService.claim`, `external.ExternalWorkTransport.claim`, `kernel.claimRecord`, `root.WorkQueue.claim`
 - `CreateChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#next`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#thenDo`
 - `AckChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
+- `OutboxDispatch`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `Tick`: **internal/time-only action**
 
 ## Runtime boundary model
@@ -65,6 +66,13 @@
 - Checked invariants: `PolicyFailureNoWrite`, `PolicyTypeOK`, `ReceiptFenceTracksPublishedAttempt`, `ReceiptIdentityControlsReplay`, `StalePolicyCannotPublish`, `SupersededReceiptRejectsOld`
 - Bound policy source symbols: `src/kernel.ts:integer`, `src/kernel.ts:add`, `src/kernel.ts:addTimeCapped`, `src/kernel.ts:effectiveNow`, `src/kernel.ts:assertCurrent`, `src/kernel.ts:changed`, `src/kernel.ts:replayReceipt`, `src/kernel.ts:settleRecord`, `src/outcomes.ts:retry`, `src/outcomes.ts:wait`, `src/outcomes.ts:defer`, `src/retry-policy.ts:exponentialBackoff`, `src/work.ts:WorkRun.retry`, `src/work.ts:WorkRun.wait`, `src/work.ts:WorkRun.defer`, `src/work.ts:WorkRun.settle`, `src/work.ts:WorkQueue.waitPolicy`, `src/work.ts:WorkQueue.settle`, `src/work.ts:WorkQueue.wake`, `src/work.ts:WorkQueue.wakeCurrent`
 
+## Outbox scheduler model
+
+- Spec: `formal/WorkOnceOutbox.tla`
+- Fresh compiled observations: `scripts/outbox-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `AllOriginalIntentAccounted`, `CrossParentOrder`, `FirstPassRotatesPoison`, `HealthyReachedByThirdPass`, `OutboxTypeOK`, `PoisonIntentRetained`
+- Mutation guard: `HealthyReachedByThirdPass`
+
 ## External transport boundary
 
 - Spec: `formal/WorkOnceExternal.tla`
@@ -82,7 +90,7 @@
 ## Assurance infrastructure binding
 
 - Bound proof/checker files: **58**
-- Content digest: `bca22d66cca5a2ccebb99ad03378443ce75e52285a2d2aeebbcadee3b285fc13`
+- Content digest: `6a241e298f073c87a082800ba835338ed06156182de39f863f193617a3a0246e`
 
 ## Coverage rule
 
