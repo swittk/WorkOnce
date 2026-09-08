@@ -2,13 +2,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runBoundedRefinementCorpus } from './formal-bounded-refinement-corpus.mjs';
-import {
-  runRuntimeBoundarySamples,
-  assertRuntimeBoundarySamples,
-} from './runtime-boundary-refinement.mjs';
+import { assertBuildSourceBinding } from './build-source-binding.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+assertBuildSourceBinding();
+const { runBoundedRefinementCorpus } = await import('./formal-bounded-refinement-corpus.mjs');
+const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
+  './runtime-boundary-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -18,6 +19,8 @@ const evidenceFiles = [
   'test/runtime-boundary-refinement.test.mjs',
   'test/lifecycle-transition-matrix.test.mjs',
   'scripts/formal.mjs',
+  'scripts/build-source-binding.mjs',
+  'scripts/check-build-source-binding-mutation.mjs',
 ];
 function digestFiles(files) {
   const hash = crypto.createHash('sha256');

@@ -2,7 +2,13 @@ import { availableParallelism } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { delimiter, resolve } from 'node:path';
-import { runRuntimeBoundarySamples } from './runtime-boundary-refinement.mjs';
+import { assertBuildSourceBinding } from './build-source-binding.mjs';
+
+assertBuildSourceBinding();
+if (process.argv.includes('--binding-check-only')) {
+  console.log('Compiled WorkOnce output matches current TypeScript sources.');
+  process.exit(0);
+}
 
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
@@ -90,6 +96,7 @@ function tlaValue(value) {
 if (!process.argv.includes('--runtime-only')) runModel('WorkOnce', 'WorkOnce.cfg');
 // No per-trace TLC processes and no cached witness: check fresh compiled public API observations
 // in one separate, small control-state graph. The durable graph is not cross-product inflated.
+const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');
 const samples = await runRuntimeBoundarySamples();
 const config = resolve('.artifacts/tlc/WorkOnceRuntime-observed.cfg');
 const observedModule = resolve('.artifacts/tlc/WorkOnceRuntimeObserved.tla');

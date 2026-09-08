@@ -6,9 +6,11 @@
     "scripts/runtime-boundary-refinement.mjs",
     "test/runtime-boundary-refinement.test.mjs",
     "test/lifecycle-transition-matrix.test.mjs",
-    "scripts/formal.mjs"
+    "scripts/formal.mjs",
+    "scripts/build-source-binding.mjs",
+    "scripts/check-build-source-binding-mutation.mjs"
   ],
-  "evidenceDigest": "d6f971a24a9ab3bbd99c2ce00b6caa50fa5bb03193cef1171eb5c2aca738719e",
+  "evidenceDigest": "5489d619fc266181600a6e3f7f2e4bfd0d17bc4ae06c2a65da5f2c228e65f4af",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

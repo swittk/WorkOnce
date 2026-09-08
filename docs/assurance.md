@@ -20,6 +20,8 @@ The reviewed manifest currently maps **124 public callables**, **21 callable pol
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
+The compiled observation bridge is fail-closed too. `npm run build` writes an ignored content binding for every `src/**/*.ts` build input plus the TypeScript configs. `npm run formal`, `npm run assurance:traces` and the standalone real-process test command verify that binding before consuming `dist`-backed code, so stale emitted JavaScript cannot certify newer TypeScript. The complete assurance gate also corrupts the binding deliberately and requires that freshness guard to reject the mutant.
+
 The generated human summary is `formal/FORMAL_COVERAGE_GAPS.md`; despite the historical filename, a clean run currently reports no unmapped public surface.
 
 ## Batched executable refinement and fuzz corpus
