@@ -51,6 +51,9 @@ run('typed-read definition-fence mutation guard', process.execPath, [
 run('typed-read source/model mutation guard', process.execPath, [
   'scripts/check-read-source-model-binding-mutation.mjs',
 ]);
+run('typed-read route/order mutation guard', process.execPath, [
+  'scripts/check-read-contract-mutation.mjs',
+]);
 runNpm('ES2018 Web Worker', ['run', 'check:web']);
 run('formal config parser', process.execPath, [
   'scripts/check-formal-implementation-conformance.mjs',

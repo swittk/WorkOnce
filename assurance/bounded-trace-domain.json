@@ -6,8 +6,10 @@
     "scripts/runtime-boundary-refinement.mjs",
     "scripts/read-boundary-refinement.mjs",
     "test/read-boundary-refinement.test.mjs",
+    "test/read-contract.test.mjs",
     "scripts/check-read-boundary-mutation.mjs",
     "scripts/check-read-source-model-binding-mutation.mjs",
+    "scripts/check-read-contract-mutation.mjs",
     "test/runtime-boundary-refinement.test.mjs",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/formal.mjs",
@@ -22,7 +24,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "98f4b3cedd109183214ae49095ef29126a1443331d48adb624f3036e9b0b8b9c",
+  "evidenceDigest": "9e4d0426118d847c4e22c989ee7eef2150e4449430f2a32680ee562c36ed7b66",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

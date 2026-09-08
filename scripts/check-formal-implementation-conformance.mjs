@@ -68,6 +68,7 @@ const assuranceInfrastructureFiles = [
   'scripts/read-boundary-refinement.mjs',
   'scripts/check-read-boundary-mutation.mjs',
   'scripts/check-read-source-model-binding-mutation.mjs',
+  'scripts/check-read-contract-mutation.mjs',
   'scripts/run-assurance.mjs',
   'package.json',
 ];

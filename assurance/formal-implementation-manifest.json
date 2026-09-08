@@ -10529,7 +10529,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "290d9a6433e2b509807d720b6074a4e84d92ee2147ca9041cef93d5157d60b24",
+    "assuranceInfrastructureDigest": "d2641a9ba8b367182854d799314262639588da839b882329f4df7cf7eef9ccdc",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10545,6 +10545,7 @@
       "scripts/read-boundary-refinement.mjs",
       "scripts/check-read-boundary-mutation.mjs",
       "scripts/check-read-source-model-binding-mutation.mjs",
+      "scripts/check-read-contract-mutation.mjs",
       "scripts/run-assurance.mjs",
       "package.json"
     ],

@@ -175,7 +175,9 @@ methods with an unchanged read abstraction therefore fails closed unless deliber
 The bounded-domain digest also binds the cross-adapter producer/test. A TLA sample mutant that
 accepts a mismatched definition must violate `RuntimeSamplesConform`, and the complete assurance
 gate additionally disables the compiled `assertDefinition()` method and requires the real
-cross-adapter producer to go red.
+cross-adapter producer to go red. Additional route-specific compiled mutants remove the
+`inspectId` fence, the `inspectMany` fence, the `history`/`requireRow` fence and reverse
+`inspectMany` result order; each must fail the direct read contract for the intended reason.
 
 These reads do not own durable partial-progress, cursor scheduling or restart state; those matrix
 classes are N/A for this family rather than being fabricated as read-local claims. Concurrent
