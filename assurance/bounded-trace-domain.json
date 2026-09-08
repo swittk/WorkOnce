@@ -73,6 +73,12 @@
     "scripts/build-source-binding.mjs",
     "scripts/check-build-source-binding-mutation.mjs",
     "scripts/check-assurance-infrastructure-binding-mutation.mjs",
+    "scripts/tlc-outcome.mjs",
+    "scripts/check-tlc-outcome-classification.mjs",
+    "scripts/internal-semantic-surface.mjs",
+    "scripts/check-internal-semantic-inventory.mjs",
+    "scripts/check-internal-semantic-inventory-mutation.mjs",
+    "assurance/internal-semantic-inventory.json",
     "scripts/check-emitted-artifact-entrypoints.mjs",
     "scripts/check-emitted-artifact-entrypoint-mutation.mjs",
     "scripts/check-bounded-trace-domain.mjs",
@@ -83,7 +89,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "5b2c6d10deadf80927dcfdb20270856dcdd9208746ea6f7419677785580b57ef",
+  "evidenceDigest": "1cbc3f82914ecb0035943fe376a0301cb0b5e5162e7857e1c8de7bd9879d4832",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

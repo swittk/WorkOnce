@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { delimiter, resolve } from 'node:path';
 import { assertBuildSourceBinding } from './build-source-binding.mjs';
+import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
 
 assertBuildSourceBinding();
 if (process.argv.includes('--binding-check-only')) {
@@ -42,20 +43,21 @@ function runModel(model, config, modulePath = `${model}.tla`) {
   mkdirSync(directory, { recursive: true });
   const result = spawnSync('java', tlcArgs(model, config, modulePath), {
     cwd: 'formal',
-    stdio: 'inherit',
+    encoding: 'utf8',
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
+    maxBuffer: 16 * 1024 * 1024,
   });
-  if (result.error) {
-    const prefix =
-      result.error.code === 'ETIMEDOUT'
-        ? `TLC infrastructure timeout after ${timeoutMs} ms`
-        : 'TLC infrastructure spawn failure';
-    throw new Error(`${prefix}: ${result.error.message}`, { cause: result.error });
-  }
-  if (result.signal) throw new Error(`TLC infrastructure terminated by signal ${result.signal}`);
-  if (result.status === null) throw new Error('TLC infrastructure returned no exit status');
-  if (result.status !== 0) process.exit(result.status);
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  const outcome = classifyTlcOutcome(result);
+  if (outcome.kind === 'success') return;
+  if (outcome.kind === 'semantic_counterexample')
+    throw new Error(`TLC semantic counterexample (${outcome.reason}) in ${model}.`);
+  throw new Error(
+    `TLC infrastructure failure (${outcome.reason}) in ${model}.\n${outcome.output.slice(-2000)}`,
+    result.error ? { cause: result.error } : undefined,
+  );
 }
 
 function requireInvariantRejects(model, config, modulePath, invariant) {
@@ -69,16 +71,10 @@ function requireInvariantRejects(model, config, modulePath, invariant) {
       encoding: 'utf8',
       timeout: timeoutMs,
       killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
     },
   );
-  if (result.error) throw result.error;
-  if (result.signal) throw new Error(`TLC mutation check terminated by signal ${result.signal}`);
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  const explicitInvariantFailure =
-    output.includes(`Invariant ${invariant} is violated`) ||
-    output.includes(`invariant of ${invariant} is equal to FALSE`);
-  if (result.status === 0 || !explicitInvariantFailure)
-    throw new Error(`Formal mutation was not rejected by ${invariant}: ${output.slice(-2000)}`);
+  requireExpectedInvariantViolation(result, invariant);
   console.log(`TLC mutation guard: ${invariant} rejects its injected violating transition.`);
 }
 

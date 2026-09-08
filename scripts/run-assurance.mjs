@@ -74,6 +74,15 @@ await runParallel([
   npmParallelEntry('type surface', ['run', 'check']),
 ]);
 runNpm('single build', ['run', 'build']);
+run('internal semantic topology audit', process.execPath, [
+  'scripts/check-internal-semantic-inventory.mjs',
+]);
+run('internal semantic topology mutation guard', process.execPath, [
+  'scripts/check-internal-semantic-inventory-mutation.mjs',
+]);
+run('TLC outcome classification live probe', process.execPath, [
+  'scripts/check-tlc-outcome-classification.mjs',
+]);
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
 ]);

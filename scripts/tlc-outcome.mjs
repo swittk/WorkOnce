@@ -91,13 +91,13 @@ export function requireExpectedInvariantViolation(result, expectedInvariant) {
   }
   if (outcome.kind === 'infrastructure_failure') {
     throw new Error(
-      `TLC infrastructure failure while expecting invariant ${expectedInvariant}: ${outcome.reason}`,
+      `TLC infrastructure failure while expecting invariant ${expectedInvariant}: ${outcome.reason}\n${outcome.output.slice(-2000)}`,
     );
   }
   if (outcome.kind === 'success') {
     throw new Error(`TLC mutation did not violate expected invariant ${expectedInvariant}.`);
   }
   throw new Error(
-    `TLC mutation violated the wrong semantic property while expecting ${expectedInvariant}: ${outcome.invariants.join(',') || outcome.reason}`,
+    `TLC mutation violated the wrong semantic property while expecting ${expectedInvariant}: ${outcome.invariants.join(',') || outcome.reason}\n${outcome.output.slice(-2000)}`,
   );
 }

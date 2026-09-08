@@ -10877,7 +10877,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "94e3bc2d39d71aabfd4fce57a209198c0c316cb151f0097c117f5863570cf67c",
+    "assuranceInfrastructureDigest": "bff84e6ae3be35c3641fdcb541e8296074ca8ffdd938be832784e5cff7d43253",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10888,6 +10888,12 @@
       "scripts/build-source-binding.mjs",
       "scripts/check-build-source-binding-mutation.mjs",
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
+      "scripts/tlc-outcome.mjs",
+      "scripts/check-tlc-outcome-classification.mjs",
+      "scripts/internal-semantic-surface.mjs",
+      "scripts/check-internal-semantic-inventory.mjs",
+      "scripts/check-internal-semantic-inventory-mutation.mjs",
+      "assurance/internal-semantic-inventory.json",
       "scripts/check-emitted-artifact-entrypoints.mjs",
       "scripts/check-emitted-artifact-entrypoint-mutation.mjs",
       "scripts/read-boundary-refinement.mjs",
