@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
-const sourceDigestSchema = 'typescript-ast-printer-v2';
+const sourceDigestSchema = 'typescript-ast-printer-directives-v3';
 const formalDigestSchema = 'tla-lexical-string-safe-v2';
 const semanticPrinter = ts.createPrinter({
   removeComments: true,
@@ -215,6 +215,7 @@ const assuranceInfrastructureFiles = [
   'assurance/red-before/internal-mutable-container-updates.json',
   'assurance/red-before/source-semantic-hash-collision.json',
   'assurance/red-before/formal-semantic-hash-collision.json',
+  'assurance/red-before/compiler-directive-semantic-hash.json',
   'scripts/policy-refinement.mjs',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
@@ -323,17 +324,71 @@ function parseSemanticSource(file, text, scriptKind = ts.ScriptKind.TS) {
   }
   return source;
 }
-function semanticSyntaxText(file, text, scriptKind = ts.ScriptKind.TS) {
+function normalizedCompilerMetadataValue(value) {
+  if (Array.isArray(value)) return value.map(normalizedCompilerMetadataValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !['pos', 'end', 'range', 'kind', 'hasTrailingNewLine'].includes(key))
+      .sort(([a], [b]) => compareExact(a, b))
+      .map(([key, child]) => [key, normalizedCompilerMetadataValue(child)]),
+  );
+}
+function directiveTargetTokenOrdinal(source, end) {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    source.text,
+  );
+  let ordinal = 0;
+  for (;;) {
+    const token = scanner.scan();
+    if (token === ts.SyntaxKind.EndOfFileToken) return 'eof';
+    if (token >= ts.SyntaxKind.FirstTriviaToken && token <= ts.SyntaxKind.LastTriviaToken) continue;
+    if (scanner.getTokenPos() >= end) return ordinal;
+    ordinal++;
+  }
+}
+function compilerSemanticMetadata(source) {
+  const commentDirectives = (source.commentDirectives ?? []).map((directive) => ({
+    type: directive.type,
+    targetTokenOrdinal: directiveTargetTokenOrdinal(source, directive.range.end),
+  }));
+  const pragmas = [...source.pragmas.entries()]
+    .sort(([a], [b]) => compareExact(a, b))
+    .map(([name, value]) => [name, normalizedCompilerMetadataValue(value)]);
+  return canonicalText({
+    commentDirectives,
+    pragmas,
+    referencedFiles: source.referencedFiles.map((value) => normalizedCompilerMetadataValue(value)),
+    typeReferenceDirectives: source.typeReferenceDirectives.map((value) =>
+      normalizedCompilerMetadataValue(value),
+    ),
+    libReferenceDirectives: source.libReferenceDirectives.map((value) =>
+      normalizedCompilerMetadataValue(value),
+    ),
+    amdDependencies: source.amdDependencies.map((value) => normalizedCompilerMetadataValue(value)),
+    hasNoDefaultLib: source.hasNoDefaultLib,
+  }).trimEnd();
+}
+function legacyAstPrinterText(file, text, scriptKind = ts.ScriptKind.TS) {
   return semanticPrinter
     .printFile(parseSemanticSource(file, text, scriptKind))
     .replace(/\r\n?/gu, '\n')
     .trimEnd();
 }
+function semanticSyntaxText(file, text, scriptKind = ts.ScriptKind.TS) {
+  const source = parseSemanticSource(file, text, scriptKind);
+  const printed = semanticPrinter.printFile(source).replace(/\r\n?/gu, '\n').trimEnd();
+  return `${printed}\n/* compiler-semantic-metadata */\n${compilerSemanticMetadata(source)}`;
+}
 function semanticNodeText(node, source) {
-  return semanticPrinter
+  const printed = semanticPrinter
     .printNode(ts.EmitHint.Unspecified, node, source)
     .replace(/\r\n?/gu, '\n')
     .trim();
+  return `${printed}\n/* compiler-semantic-metadata */\n${compilerSemanticMetadata(source)}`;
 }
 function semanticSourceDigest(files) {
   const chunks = [];
@@ -558,6 +613,40 @@ function assertSemanticHashFidelity() {
   if (semanticTokenString(commentBefore) !== semanticTokenString(commentAfter))
     throw new Error('Semantic source hash treats comment-only trivia as a semantic change.');
 
+  const directivePlain = 'const value: number = "wrong";';
+  const directiveVariants = [
+    ['ts-ignore', '// @ts-ignore\nconst value: number = "wrong";'],
+    ['ts-expect-error', '// @ts-expect-error\nconst value: number = "wrong";'],
+    ['ts-nocheck', '// @ts-nocheck\nconst value: number = "wrong";'],
+    ['reference-lib', '/// <reference lib="es2022" />\nconst value: number = "wrong";'],
+  ];
+  for (const [name, variant] of directiveVariants) {
+    if (semanticTokenString(directivePlain) === semanticTokenString(variant))
+      throw new Error(
+        `Semantic source hash collapsed compiler-semantic ${name} directive metadata.`,
+      );
+    if (
+      legacyAstPrinterText('directive-plain.ts', directivePlain) !==
+      legacyAstPrinterText(`directive-${name}.ts`, variant)
+    )
+      throw new Error(
+        `Compiler-directive mutation control no longer reproduces ${name} AST-printer collision.`,
+      );
+  }
+  const directiveFirst = '// @ts-ignore\nconst a: number = "wrong";\nconst b: number = "wrong";';
+  const directiveSecond = 'const a: number = "wrong";\n// @ts-ignore\nconst b: number = "wrong";';
+  if (semanticTokenString(directiveFirst) === semanticTokenString(directiveSecond))
+    throw new Error(
+      'Semantic source hash collapsed a compiler directive moved to a different target.',
+    );
+  if (
+    legacyAstPrinterText('directive-first.ts', directiveFirst) !==
+    legacyAstPrinterText('directive-second.ts', directiveSecond)
+  )
+    throw new Error(
+      'Compiler-directive target mutation control no longer reproduces AST-printer collision.',
+    );
+
   const methodPairs = [
     [
       'method-return-linebreak',
@@ -662,7 +751,7 @@ if (process.argv.includes('--self-test-source-hash')) {
       'Semantic digest schema review fence accepted an unacknowledged schema change.',
     );
   console.log(
-    'Semantic source/model hashes preserve TypeScript ASI/regexp/template and TLA string/operator structure, ignore real comments/trivia, and reject both legacy digest mutants.',
+    'Semantic source/model hashes preserve TypeScript ASI/regexp/template/compiler directives and TLA string/operator structure, ignore ordinary comments/trivia, reject both legacy digest mutants, and reject the AST-printer-only compiler-directive mutant.',
   );
   process.exit(0);
 }

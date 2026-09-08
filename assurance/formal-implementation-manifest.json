@@ -10578,7 +10578,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/external-transport-refinement.mjs",
-      "sourceDigest": "b69316d82784505689bf9a37b4b2a0efb7ba6d4604f37add01f2b89c3e41bed1",
+      "sourceDigest": "328ff2caaad1728071e43bf20616206a505627cf7d7cb30ec04b40959476c53f",
       "sourceFiles": [
         "src/external.ts",
         "src/work.ts",
@@ -10630,7 +10630,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/local-runner-refinement.mjs",
-      "sourceDigest": "7bd5abaf24942401f629c47b1df27f0573d5259b0c6265aa8b7bf76e0fe97024",
+      "sourceDigest": "7ab1317da4f6b2405ae7f6dc5af5d7e044be453302b0d6c5f4c07a908abe75c3",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -10675,7 +10675,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "4e6e4bdd564650f4c43046da38591704b37733cebd5b63cfa717a9e1364307fc",
+      "sourceDigest": "e981aa5c9c73f66ae2ea975875c603a1cfa14d7d70dc74e984b0328272d948a7",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -10715,7 +10715,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/policy-refinement.mjs",
-      "sourceDigest": "341f203bd1719a094d6ef4afffa5d4c6a29e01f89a68ee5f1d9b6146fc52550a",
+      "sourceDigest": "4fa123cef2cf25a4414578494fd127abcf9ba3bf8a9b64f346ca574a76c7ba17",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -10777,7 +10777,7 @@
       "observationBinding": "scripts/formal.mjs",
       "observationBridge": "scripts/runtime-boundary-refinement.mjs",
       "observationProducer": "scripts/read-boundary-refinement.mjs",
-      "sourceDigest": "a4f552d441de89a1d104748b81f8924a20baeca721315161628d1f47e33faf8b",
+      "sourceDigest": "0825254a847c5f1bfba2e35710cba5da59b3791654f102b7f798bbc30286d785",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts"
@@ -10835,14 +10835,14 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "03bd8dfa0c1f28e87ae40f7df770a79b9541a6182939ff3cfe4e568d3a94b9e1",
+      "sourceDigest": "2dff848738a41676f4ec114e56d2b6e1221587cceb4e6288bfa03c43085d78c0",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
       ],
       "spec": "formal/WorkOnceRuntime.tla"
     },
-    "sourceDigestSchema": "typescript-ast-printer-v2",
+    "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "spec": "formal/WorkOnce.tla",
     "storage": {
       "config": "formal/WorkOnceStorage.cfg",
@@ -10865,7 +10865,7 @@
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "23db866a0e002442f6fa56f00efb34e98a2dbff1185568826a7678bc064b32a7",
+      "sourceDigest": "ab3bbef57c82868fdd397f96cb8ca738d802633253ec3dc70f81b5859c8aac5f",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "5976778581a25f24e57a907a1a3bddf9591991a5cd27b9209f71bd2ea516f80d",
+    "assuranceInfrastructureDigest": "44d3aba55a1fc5d3f525949d9589e6b2928ab12e82124be6033bb86c3ec78982",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10924,6 +10924,7 @@
       "assurance/red-before/internal-mutable-container-updates.json",
       "assurance/red-before/source-semantic-hash-collision.json",
       "assurance/red-before/formal-semantic-hash-collision.json",
+      "assurance/red-before/compiler-directive-semantic-hash.json",
       "scripts/policy-refinement.mjs",
       "scripts/check-policy-source-model-binding-mutation.mjs",
       "scripts/check-policy-implementation-mutations.mjs",
@@ -10987,8 +10988,8 @@
       "formal/WorkOnceOutboxBudget.tla",
       "formal/WorkOnceOutboxBudget.cfg"
     ],
-    "sourceDigest": "8c429a4ff4e77bf5d9ee9f9b6bd24877482959c51379cd9295a27c5b05ffd006",
-    "sourceDigestSchema": "typescript-ast-printer-v2",
+    "sourceDigest": "928a4c8c5ff467761a2812b64d362d87668cdee3e89895a04c06d968ac6a3544",
+    "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

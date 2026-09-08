@@ -61,6 +61,7 @@ const evidenceFiles = [
   'assurance/red-before/internal-mutable-container-updates.json',
   'assurance/red-before/source-semantic-hash-collision.json',
   'assurance/red-before/formal-semantic-hash-collision.json',
+  'assurance/red-before/compiler-directive-semantic-hash.json',
   'test/lifecycle-transition-matrix.test.mjs',
   'scripts/policy-refinement.mjs',
   'test/policy-refinement.test.mjs',

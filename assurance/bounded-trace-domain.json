@@ -31,6 +31,7 @@
     "assurance/red-before/internal-mutable-container-updates.json",
     "assurance/red-before/source-semantic-hash-collision.json",
     "assurance/red-before/formal-semantic-hash-collision.json",
+    "assurance/red-before/compiler-directive-semantic-hash.json",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/policy-refinement.mjs",
     "test/policy-refinement.test.mjs",
@@ -96,7 +97,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "570b0b354233274c0ab6ce152ed2f4bfd3ff8aa1f74b2dcdc09bd6fe244c299c",
+  "evidenceDigest": "4cb71918b4e78c069417538d6b15275c2fad2523441a60cc389b3f0bb7e9a3e5",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

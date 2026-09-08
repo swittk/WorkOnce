@@ -13,7 +13,8 @@ ${result.stderr ?? ''}`;
   assert.equal(result.status, 0, output.slice(-4000));
   assert.match(
     output,
-    /preserve TypeScript ASI\/regexp\/template and TLA string\/operator structure/u,
+    /preserve TypeScript ASI\/regexp\/template\/compiler directives and TLA string\/operator structure/u,
   );
   assert.match(output, /reject both legacy digest mutants/u);
+  assert.match(output, /AST-printer-only compiler-directive mutant/u);
 });

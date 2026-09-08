@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "recordedAgainstCommit": "8913bc1",
+  "family": "I.assurance-infrastructure.sourceModelSemanticDrift",
+  "defect": "AST-printer-only semantic source hashing erased compiler-semantic directives and therefore could keep source/model bindings unchanged when TypeScript compiler behavior changed.",
+  "oldSourceDigestSchema": "typescript-ast-printer-v2",
+  "canary": {
+    "printerSha256": "baa01a6131826e987129fc35a792ae68a426c72f399c2cb2a468bcbc6886930f",
+    "plain": {
+      "tscExit": 2,
+      "diagnostic": "TS2322 string is not assignable to number"
+    },
+    "tsIgnore": {
+      "tscExit": 0,
+      "commentDirectiveType": 1
+    },
+    "tsExpectError": {
+      "tscExit": 0,
+      "commentDirectiveType": 0
+    },
+    "tsNoCheck": {
+      "tscExit": 0,
+      "pragma": "ts-nocheck"
+    },
+    "allAstPrinterOnlyDigestsEqual": true
+  },
+  "requiredFix": "Bind compiler-derived directive/pragma/reference metadata without making ordinary comment or whitespace locations semantic; mutation-kill regression to AST-printer-only hashing and moved-directive target collapse.",
+  "oldAssuranceWasGreen": true,
+  "runtimeSemanticBugFound": false,
+  "assuranceFrameworkDefect": true
+}

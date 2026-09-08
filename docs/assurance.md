@@ -159,14 +159,20 @@ mutant. Independent tiny mutation graphs are run concurrently with bounded one-w
 reduces wall time without dropping any mutant. These controls prove that each configured invariant
 is active; they do not replace the real bounded state-space runs.
 
-Source/model semantic digests use the pinned `typescript-ast-printer-v2` schema. WorkOnce parses
-current TypeScript, prints the actual AST with comments removed, and hashes that structural form;
-symbol-level bindings print the already-parsed function or method node directly. This keeps
-comment-only edits neutral without erasing automatic-semicolon-insertion structure or significant
-regular-expression/template whitespace. The exact pre-fix false-green controls are preserved in
-`assurance/red-before/source-semantic-hash-collision.json`; the normal manifest checker and
-`test/source-semantic-hash.test.mjs` require return-ASI, postfix-ASI, regexp and template canaries to
-remain distinct and require the old trivia-stripping scanner mutant to be rejected.
+Source/model semantic digests use the pinned `typescript-ast-printer-directives-v3` schema. WorkOnce parses
+current TypeScript, prints the actual AST with ordinary comments removed, and appends canonical compiler-semantic
+directive metadata before hashing. `@ts-ignore` / `@ts-expect-error` retain their target-token ordinal, while
+file pragmas, triple-slash references, AMD dependencies and no-default-lib metadata are preserved without raw
+source positions so comment/whitespace-only edits remain neutral. Symbol-level bindings print the
+already-parsed function or method node plus that compiler-semantic file metadata. This is conservative:
+a directive change invalidates every bound symbol in its file rather than risking an unsound narrow reuse.
+The exact pre-fix false-green controls are preserved in
+`assurance/red-before/source-semantic-hash-collision.json` and
+`assurance/red-before/compiler-directive-semantic-hash.json`; the normal manifest checker and
+`test/source-semantic-hash.test.mjs` require return-ASI, postfix-ASI, regexp, template and compiler-directive
+canaries to remain distinct while ordinary comments remain neutral. Mutation controls require both the old
+trivia-stripping scanner and the AST-printer-only compiler-directive hash to be rejected, including a directive
+moved from one target statement to another.
 
 Formal model digests independently use the pinned `tla-lexical-string-safe-v2` schema. The lexical normalizer
 removes real nested block/line comments and irrelevant token-separating whitespace while preserving
