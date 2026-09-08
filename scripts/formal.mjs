@@ -1,6 +1,6 @@
 import { availableParallelism } from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { delimiter, resolve } from 'node:path';
 import { assertBuildSourceBinding } from './build-source-binding.mjs';
 import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
@@ -146,6 +146,21 @@ function mutationCoveragePlan(configPath, mutants, additionalGuards = []) {
     batchWitnessed: false,
     extraWitnessed: new Set(),
   };
+}
+
+function assertAllFormalConfigsRegistered(plans, externallyGuardedConfigs) {
+  const discovered = readdirSync('formal')
+    .filter((name) => name.endsWith('.cfg'))
+    .map((name) => `formal/${name}`)
+    .sort();
+  const registered = [
+    ...plans.map((plan) => plan.configPath),
+    ...externallyGuardedConfigs,
+  ].sort();
+  if (JSON.stringify(discovered) !== JSON.stringify(registered))
+    throw new Error(
+      `Formal config mutation coverage inventory drifted: discovered=${discovered.join(',')} planned=${registered.join(',')}`,
+    );
 }
 
 function markExtraMutationWitness(plan, invariant) {
@@ -421,25 +436,41 @@ const runtimeMutationPlan = mutationCoveragePlan('formal/WorkOnceRuntime.cfg', r
 const readHistoryMutationPlan = mutationCoveragePlan(
   'formal/WorkOnceReadHistory.cfg',
   readHistoryMutants,
-  ['ReadHistorySamplesConform'],
 );
 const localRunnerMutationPlan = mutationCoveragePlan(
   'formal/WorkOnceLocalRunner.cfg',
   localRunnerMutants,
-  ['LocalRunnerSamplesConform'],
 );
-const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', policyMutants, [
-  'PolicySamplesConform',
-]);
-const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants, [
-  'ExternalSamplesConform',
-]);
+const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', policyMutants);
+const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants);
 const outboxMutationPlan = mutationCoveragePlan('formal/WorkOnceOutbox.cfg', outboxMutants, [
   'PoisonIntentRetained',
   'AllOriginalIntentAccounted',
   'HealthyReachedByThirdPass',
 ]);
 const outboxBudgetMutationPlan = mutationCoveragePlan('formal/WorkOnceOutboxBudget.cfg', outboxBudgetMutants);
+const directMutationPlans = [
+  lifecycleMutationPlan,
+  runtimeMutationPlan,
+  readHistoryMutationPlan,
+  localRunnerMutationPlan,
+  policyMutationPlan,
+  externalMutationPlan,
+  outboxMutationPlan,
+  outboxBudgetMutationPlan,
+];
+const externallyGuardedFormalConfigs = [
+  'formal/WorkOnceLifecycleTemporal.cfg',
+  'formal/WorkOnceClaimScan.cfg',
+  'formal/WorkOnceStorage.cfg',
+];
+assertAllFormalConfigsRegistered(directMutationPlans, externallyGuardedFormalConfigs);
+if (process.argv.includes('--config-coverage-only')) {
+  console.log(
+    `Formal config mutation coverage registers ${directMutationPlans.length + externallyGuardedFormalConfigs.length} current configs fail closed across the formal, lifecycle, and storage proof runners.`,
+  );
+  process.exit(0);
+}
 
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
@@ -628,7 +659,6 @@ requireInvariantRejects(
   readHistorySampleMutant,
   'ReadHistorySamplesConform',
 );
-markExtraMutationWitness(readHistoryMutationPlan, 'ReadHistorySamplesConform');
 
 const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
   './local-runner-refinement.mjs'
@@ -687,7 +717,6 @@ requireInvariantRejects(
   localRunnerSampleMutant,
   'LocalRunnerSamplesConform',
 );
-markExtraMutationWitness(localRunnerMutationPlan, 'LocalRunnerSamplesConform');
 
 if (!process.argv.includes('--runtime-only')) {
   const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
@@ -745,7 +774,6 @@ MutantSpec == Init /\ [][Next]_vars
     policySampleMutant,
     'PolicySamplesConform',
   );
-  markExtraMutationWitness(policyMutationPlan, 'PolicySamplesConform');
 }
 
 
@@ -872,7 +900,6 @@ MutantSpec == Init /\ [][Next]_vars
     externalSampleMutant,
     'ExternalSamplesConform',
   );
-  markExtraMutationWitness(externalMutationPlan, 'ExternalSamplesConform');
 
   const duplicateBoundaryModule = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.tla');
   const duplicateBoundaryConfig = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.cfg');

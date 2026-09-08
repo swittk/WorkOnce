@@ -83,6 +83,9 @@ run('internal semantic topology mutation guard', process.execPath, [
 run('TLC outcome classification live probe', process.execPath, [
   'scripts/check-tlc-outcome-classification.mjs',
 ]);
+run('formal config mutation coverage inventory guard', process.execPath, [
+  'scripts/check-formal-config-coverage-mutation.mjs',
+]);
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
 ]);

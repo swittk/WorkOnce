@@ -10877,7 +10877,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "2394eb9e777eaac63fbe3f693d7e1a1bbc664921fb77a458f6729ce1888c860e",
+    "assuranceInfrastructureDigest": "e5505eaa6de436fd366e7c4038f62580e31e2de9d4adb4b70900e55bc6f0a4ce",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10890,6 +10890,7 @@
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
       "scripts/tlc-outcome.mjs",
       "scripts/check-tlc-outcome-classification.mjs",
+      "scripts/check-formal-config-coverage-mutation.mjs",
       "scripts/internal-semantic-surface.mjs",
       "scripts/check-internal-semantic-inventory.mjs",
       "scripts/check-internal-semantic-inventory-mutation.mjs",
