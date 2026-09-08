@@ -35,6 +35,15 @@
     "formal/WorkOncePolicy.cfg",
     "scripts/check-policy-source-model-binding-mutation.mjs",
     "scripts/check-policy-implementation-mutations.mjs",
+    "scripts/external-transport-refinement.mjs",
+    "test/external-transport-refinement.test.mjs",
+    "test/external.test.mjs",
+    "test/process/external-effect-child.mjs",
+    "test/process/external-effect-process.test.mjs",
+    "formal/WorkOnceExternal.tla",
+    "formal/WorkOnceExternal.cfg",
+    "scripts/check-external-source-model-mutation.mjs",
+    "scripts/check-external-implementation-mutations.mjs",
     "scripts/formal.mjs",
     "formal/WorkOnceStorage.cfg",
     "formal/WorkOnceStorage.tla",
@@ -63,7 +72,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "bfa2627e1d2eb001ec0de6231d8ec03f65cf993e0a39e690994e069c55f2ca79",
+  "evidenceDigest": "8349baae69aabe5137a35dd351afd4b53e85d1e1acc4690491f15f74714e2864",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -186,6 +195,24 @@
       "wakeCompetition": 3
     },
     "observationDigest": "dbd1f17ada09571479f7566b4d1c4fe921857bf21b11916bc886e7849cb15fcf"
+  },
+  "externalBoundary": {
+    "samples": 13,
+    "counts": {
+      "capacityFairness": 1,
+      "externalAdapterEquivalence": 1,
+      "handoffHistory": 1,
+      "heartbeatFailure": 1,
+      "leaseBoundary": 1,
+      "oversizedClaim": 1,
+      "prepareDisposition": 1,
+      "prepareRace": 2,
+      "staleForeignAttempt": 1,
+      "stopSignal": 1,
+      "unknownAckHistory": 1,
+      "unknownSettleAck": 1
+    },
+    "observationDigest": "864b0b7e41d01ba40f1dae047e2c43e77ba1a712d6b4d4da6c230fa81e110911"
   },
   "storageBoundary": {
     "samples": 22,

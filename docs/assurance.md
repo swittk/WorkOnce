@@ -360,6 +360,12 @@ completion-before-cancel legality, claim-scan widening, exact claim limit and re
 These are library-owned durable queue semantics only; application callback side effects and external
 system exactly-once behavior remain outside this lifecycle proof.
 
+## External transport fencing and effect boundary
+
+External execution now has a dedicated `WorkOnceExternal` machine plus compiled transport observations. The proof binds exported lease/fence identity, successful receipt identity, stale-fence rejection and durable unknown-ack handling to the public handoff/external-runner implementation. Source/model mutation controls cover the external runner, queue handoff/serve paths and shared poll wake behavior.
+
+The managed external runner also preserves the actual abort or heartbeat failure as the interrupted result instead of replacing it with a generic ownership-loss error. Process-level fault tests exercise the effect boundary across real child-process death/reclaim. A deliberate TLC witness demonstrates that duplicate external effects remain reachable across crash/reclaim when the external system does not participate in idempotency/fencing; WorkOnce therefore continues to make no exactly-once external-effect claim.
+
 ## Storage and adapter temporal refinement
 
 The shared adapter suite is supplemented by a dedicated storage state machine and fresh compiled observations from `scripts/storage-refinement.mjs`. `formal/WorkOnceStorage.tla` models the library-owned compare-exchange loop, known versus unknown commit acknowledgement, revision progression, deadline expiry and the detached/order-preserving read boundary. Its configured invariants and observation conformance are mutation-witnessed so a configured storage property cannot remain present only as a vacuous label.

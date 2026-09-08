@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const target = path.join(root, 'src/external.ts');
+const original = fs.readFileSync(target, 'utf8');
+const needle = '    if (leases.length > limit)';
+const replacement = '    if (leases.length >= limit)';
+assert.equal(original.includes(needle), true, 'external source/model mutation anchor is stale');
+try {
+  fs.writeFileSync(target, original.replace(needle, replacement));
+  const result = spawnSync(
+    process.execPath,
+    ['scripts/check-formal-implementation-conformance.mjs', '--write'],
+    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+  );
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  assert.notEqual(result.status, 0, 'external source/model drift mutant unexpectedly passed');
+  assert.match(output, /Bound external transport semantics changed/u);
+  console.log(
+    'External source/model mutation guard rejects changed transport semantics with unchanged external model.',
+  );
+} finally {
+  fs.writeFileSync(target, original);
+}

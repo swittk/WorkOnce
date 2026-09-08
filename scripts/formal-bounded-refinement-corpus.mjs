@@ -737,7 +737,7 @@ async function replayAndDynamicPolicies(coverage) {
           return run.succeed();
         },
       ),
-      /External ownership lost/,
+      /external renewal down/,
     );
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
@@ -845,7 +845,7 @@ async function replayAndDynamicPolicies(coverage) {
           return run.succeed();
         },
       ),
-      /External ownership lost/,
+      /external renewal down/,
     );
     assert.ok(performance.now() - startedAt < 500);
     stop.abort();
@@ -939,7 +939,7 @@ async function replayAndDynamicPolicies(coverage) {
     while (claimCalls < 2) await new Promise((resolve) => setTimeout(resolve, 1));
     await new Promise((resolve) => setTimeout(resolve, 120));
     releaseSecondClaim();
-    await assert.rejects(running, /External ownership lost/);
+    await assert.rejects(running, /external renewal down/);
     assert.deepEqual(started, ['a']);
     stop.abort();
     hit(coverage, 'managedExternalFatalClaimGate');

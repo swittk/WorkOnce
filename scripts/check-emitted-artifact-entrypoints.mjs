@@ -104,6 +104,8 @@ for (const consumer of [
   'policy implementation mutation guards',
   'local-runner source/model mutation guard',
   'local-runner implementation mutation guards',
+  'external source/model mutation guard',
+  'external implementation mutation guards',
   'storage implementation mutation guard',
   'storage source/model mutation guard',
   'implementation traces',

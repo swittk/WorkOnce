@@ -161,11 +161,12 @@ test('external heartbeat failure aborts the handler before it can report success
   const { queue, transport: base } = fixture({ leaseMs: 250 });
   await queue.ensure(null, { key: 'x' });
   let heartbeatCalls = 0;
+  const heartbeatFailure = new Error('network unavailable');
   const transport = {
     ...base,
     async heartbeat(attempt) {
       heartbeatCalls++;
-      if (heartbeatCalls === 1) throw new Error('network unavailable');
+      if (heartbeatCalls === 1) throw heartbeatFailure;
       return base.heartbeat(attempt);
     },
   };
@@ -181,6 +182,7 @@ test('external heartbeat failure aborts the handler before it can report success
   );
   assert.equal(sawAbort, true);
   assert.equal(result.status, 'interrupted');
+  if (result.status === 'interrupted') assert.equal(result.error, heartbeatFailure);
   assert.equal((await queue.inspect('x')).phase.state, 'running');
 });
 
@@ -287,7 +289,7 @@ test('managed external runner wakes an empty poll when an active lease becomes f
         return run.succeed();
       },
     ),
-    /External ownership lost/,
+    /external renewal down/,
   );
   assert.ok(performance.now() - startedAt < 500);
   stop.abort();
@@ -328,7 +330,7 @@ test('managed external runner does not start leases returned after an active lea
   while (claimCalls < 2) await sleep(1);
   await sleep(120);
   releaseSecondClaim();
-  await assert.rejects(running, /External ownership lost/);
+  await assert.rejects(running, /external renewal down/);
   assert.deepEqual(started, ['a']);
   stop.abort();
 });

@@ -41,6 +41,8 @@ const modelFiles = [
   'formal/WorkOnceReadHistory.cfg',
   'formal/WorkOnceStorage.tla',
   'formal/WorkOnceStorage.cfg',
+  'formal/WorkOnceExternal.tla',
+  'formal/WorkOnceExternal.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
 const storageSourceFiles = [
@@ -78,6 +80,25 @@ const policySourceSymbols = {
 };
 const policySourceFiles = Object.keys(policySourceSymbols);
 const policyModelFiles = ['formal/WorkOncePolicy.tla', 'formal/WorkOncePolicy.cfg'];
+const externalSourceSymbols = {
+  'src/external.ts': [
+    'ExternalWorkRun.succeed',
+    'ExternalWorkRun.retry',
+    'ExternalWorkRun.wait',
+    'ExternalWorkRun.defer',
+    'ExternalWorkRun.fail',
+    'validateExternalWorkerOptions',
+    'processLease',
+    'runExternalAvailable',
+    'processExternal',
+    'runExternal',
+  ],
+  'src/work.ts': ['WorkRun.handoff', 'WorkQueue.handoff', 'WorkQueue.serveExternal'],
+  'src/worker.ts': ['waitForPoll'],
+  'src/kernel.ts': ['integer'],
+};
+const externalSourceFiles = Object.keys(externalSourceSymbols);
+const externalModelFiles = ['formal/WorkOnceExternal.tla', 'formal/WorkOnceExternal.cfg'];
 const localRunnerSourceSymbols = {
   'src/worker.ts': [
     'markLocalClaimStartedAt',
@@ -159,6 +180,14 @@ const assuranceInfrastructureFiles = [
   'scripts/policy-refinement.mjs',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
+  'scripts/external-transport-refinement.mjs',
+  'scripts/check-external-source-model-mutation.mjs',
+  'scripts/check-external-implementation-mutations.mjs',
+  'test/external-transport-refinement.test.mjs',
+  'test/process/external-effect-child.mjs',
+  'test/process/external-effect-process.test.mjs',
+  'formal/WorkOnceExternal.tla',
+  'formal/WorkOnceExternal.cfg',
   'test/process/sqlite-busy-child.mjs',
   'test/process/sqlite-busy-startup.test.mjs',
   'test/storage-contract-hardening.test.mjs',
@@ -334,6 +363,9 @@ function readSurfaceDigest() {
 }
 function policySurfaceDigest() {
   return sourceSymbolDigest(policySourceSymbols, 'Retry/defer policy');
+}
+function externalSurfaceDigest() {
+  return sourceSymbolDigest(externalSourceSymbols, 'External transport');
 }
 function localRunnerSurfaceDigest() {
   return sourceSymbolDigest(localRunnerSourceSymbols, 'Local managed runner');
@@ -672,6 +704,16 @@ function buildManifest(live) {
         'root.WorkQueue.process',
         'root.WorkQueue.run',
       ].includes(row.key);
+      const externalRelevant =
+        row.key.startsWith('external.') ||
+        [
+          'root.runExternalAvailable',
+          'root.processExternal',
+          'root.runExternal',
+          'root.WorkQueue.handoff',
+          'root.WorkQueue.serveExternal',
+          'root.WorkRun.handoff',
+        ].includes(row.key);
       callables.push({
         key: row.key,
         classification,
@@ -687,6 +729,7 @@ function buildManifest(live) {
             : []),
           ...(policyRelevant ? ['test/policy-refinement.test.mjs'] : []),
           ...(localRunnerRelevant ? ['test/local-runner-refinement.test.mjs'] : []),
+          ...(externalRelevant ? ['test/external-transport-refinement.test.mjs'] : []),
         ],
       });
     }
@@ -814,6 +857,18 @@ function buildManifest(live) {
         sourceDigest: policySurfaceDigest(),
         modelDigest: formalDigest(policyModelFiles),
       },
+      external: {
+        spec: 'formal/WorkOnceExternal.tla',
+        config: 'formal/WorkOnceExternal.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceExternal.cfg'),
+        observationProducer: 'scripts/external-transport-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        sourceFiles: externalSourceFiles,
+        sourceSymbols: externalSourceSymbols,
+        modelFiles: externalModelFiles,
+        sourceDigest: externalSurfaceDigest(),
+        modelDigest: formalDigest(externalModelFiles),
+      },
       storage: {
         spec: 'formal/WorkOnceStorage.tla',
         config: 'formal/WorkOnceStorage.cfg',
@@ -916,6 +971,15 @@ function renderReport(manifest) {
       .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
       .join(', ')}`,
     '',
+    '## External transport boundary',
+    '',
+    `- Spec: \`${manifest.model.external.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.external.observationProducer}\` via \`${manifest.model.external.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.external.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound external source symbols: ${Object.entries(manifest.model.external.sourceSymbols)
+      .flatMap(([file, names]) => names.map((name) => `\`${file}:${name}\``))
+      .join(', ')}`,
+    '',
     '## Storage/conformance model',
     '',
     `- Spec: \`${manifest.model.storage.spec}\``,
@@ -968,6 +1032,7 @@ const bindingOnly = process.argv.find((argument) =>
     '--check-policy-binding-only',
     '--check-local-runner-binding-only',
     '--check-storage-binding-only',
+    '--check-external-binding-only',
   ].includes(argument),
 );
 if (bindingOnly) {
@@ -996,6 +1061,12 @@ if (bindingOnly) {
         modelDigest: formalDigest(localRunnerModelFiles),
       },
       'Bound local managed-runner semantics changed without a WorkOnceLocalRunner semantic change. Update the local-runner model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  } else if (bindingOnly === '--check-external-binding-only') {
+    assertSourceModelPairing(
+      previous.model?.external,
+      { sourceDigest: externalSurfaceDigest(), modelDigest: formalDigest(externalModelFiles) },
+      'Bound external transport semantics changed without a WorkOnceExternal semantic change. Update the external model or explicitly acknowledge the unchanged abstraction after review.',
     );
   } else {
     assertSourceModelPairing(
@@ -1050,6 +1121,11 @@ if (write) {
     previous?.model?.runtime,
     current.model.runtime,
     'Bound managed-runner semantics changed without a WorkOnceRuntime/contract semantic change. Update the runtime model or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.external,
+    current.model.external,
+    'Bound external transport semantics changed without a WorkOnceExternal semantic change. Update the external model or explicitly acknowledge the unchanged abstraction after review.',
   );
   assertSourceModelPairing(
     previous?.model?.storage,

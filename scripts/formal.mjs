@@ -325,6 +325,21 @@ const localRunnerMutants = {
   /\ returnPresent' = TRUE /\ returnValue' = "errorB" /\ stopActive' = 0`,
 };
 
+const externalMutants = {
+  ExternalTypeOK: String.raw`  /\ phase' = "invalid"
+  /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
+  CurrentRunningExported: String.raw`  /\ phase' = "running" /\ fence' = 1 /\ exports' = {}
+  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "lease"`,
+  SuccessReceiptCurrent: String.raw`  /\ phase' = "succeeded" /\ fence' = 1 /\ exports' = {1}
+  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "settled"`,
+  EffectsRequireExport: String.raw`  /\ phase' = "available" /\ fence' = 0 /\ exports' = {}
+  /\ effects' = {1} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "effect"`,
+  RejectedFenceIsStale: String.raw`  /\ phase' = "available" /\ fence' = 1 /\ exports' = {1}
+  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 1 /\ reply' = "stale"`,
+  UnknownAckIsDurable: String.raw`  /\ phase' = "available" /\ fence' = 1 /\ exports' = {1}
+  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "unknown"`,
+};
+
 const policyMutants = {
   PolicyTypeOK: String.raw`  /\ pc' = "invalid"
   /\ UNCHANGED <<phase, revision, snapRevision, fence, receiptFence, receipt,
@@ -383,6 +398,9 @@ const localRunnerMutationPlan = mutationCoveragePlan(
 );
 const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', policyMutants, [
   'PolicySamplesConform',
+]);
+const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants, [
+  'ExternalSamplesConform',
 ]);
 
 function tlaValue(value) {
@@ -692,6 +710,90 @@ MutantSpec == Init /\ [][Next]_vars
   markExtraMutationWitness(policyMutationPlan, 'PolicySamplesConform');
 }
 
+
+if (!process.argv.includes('--runtime-only')) {
+  const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
+    './external-transport-refinement.mjs'
+  );
+  const externalSamples = await runExternalTransportSamples();
+  assertExternalTransportSamples(externalSamples);
+  const externalObserved = resolve('.artifacts/tlc/WorkOnceExternalObserved.tla');
+  const externalConfig = resolve('.artifacts/tlc/WorkOnceExternal-observed.cfg');
+  writeFileSync(
+    externalObserved,
+    `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+  );
+  writeFileSync(
+    externalConfig,
+    `${readFileSync('formal/WorkOnceExternal.cfg', 'utf8').replace(
+      'CONSTANT Samples = {}',
+      'CONSTANT Samples <- ObservedSamples',
+    )}\nINVARIANT ExternalSamplesConform\n`,
+  );
+  console.log(
+    `TLC external transport boundary receives ${externalSamples.length} fresh compiled public API observations.`,
+  );
+  runModel('WorkOnceExternalObserved', externalConfig, externalObserved);
+
+  const baseExternalConfig = readFileSync('formal/WorkOnceExternal.cfg', 'utf8');
+  runMutationWitnessBatch({
+    model: 'WorkOnceExternalInvariantMutationBatch',
+    baseModule: 'WorkOnceExternal',
+    baseConfig: baseExternalConfig,
+    plan: externalMutationPlan,
+  });
+
+  const externalSampleMutant = resolve('.artifacts/tlc/WorkOnceExternalSamplesMutant.tla');
+  const externalSampleMutantConfig = resolve('.artifacts/tlc/WorkOnceExternalSamplesMutant.cfg');
+  writeFileSync(
+    externalSampleMutant,
+    String.raw`---- MODULE WorkOnceExternalSamplesMutant ----
+EXTENDS WorkOnceExternalObserved
+BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+  );
+  writeFileSync(
+    externalSampleMutantConfig,
+    singleInvariantConfig(readFileSync(externalConfig, 'utf8'), 'ExternalSamplesConform').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceExternalSamplesMutant',
+    externalSampleMutantConfig,
+    externalSampleMutant,
+    'ExternalSamplesConform',
+  );
+  markExtraMutationWitness(externalMutationPlan, 'ExternalSamplesConform');
+
+  const duplicateBoundaryModule = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.tla');
+  const duplicateBoundaryConfig = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.cfg');
+  writeFileSync(
+    duplicateBoundaryModule,
+    String.raw`---- MODULE WorkOnceExternalDuplicateBoundary ----
+EXTENDS WorkOnceExternalObserved
+MutantSpec == Spec
+====
+`,
+  );
+  writeFileSync(
+    duplicateBoundaryConfig,
+    singleInvariantConfig(readFileSync(externalConfig, 'utf8'), 'NoDuplicateExternalEffects'),
+  );
+  requireInvariantRejects(
+    'WorkOnceExternalDuplicateBoundary',
+    duplicateBoundaryConfig,
+    duplicateBoundaryModule,
+    'NoDuplicateExternalEffects',
+  );
+  console.log(
+    'TLC external boundary witness confirms duplicate external effects are reachable across crash/reclaim; exactly-once is not claimed.',
+  );
+}
+
 assertMutationPlansExecuted(
   process.argv.includes('--runtime-only')
     ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan]
@@ -701,5 +803,6 @@ assertMutationPlansExecuted(
         readHistoryMutationPlan,
         localRunnerMutationPlan,
         policyMutationPlan,
+        externalMutationPlan,
       ],
 );

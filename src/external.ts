@@ -121,7 +121,8 @@ async function processLease<I, O, R extends string>(
   const controller = new AbortController();
   const run = new ExternalWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
   run.signal = controller.signal;
-  const stop = () => controller.abort();
+  const stop = () =>
+    controller.abort(options.signal.reason ?? new Error('External ownership lost'));
   options.signal.addEventListener('abort', stop, { once: true });
   if (options.signal.aborted) stop();
   let stopped = false;
@@ -168,9 +169,9 @@ async function processLease<I, O, R extends string>(
       throw new RangeError('heartbeatMs must be shorter than the lease');
     armExpiry(claimStartedAt + firstLeaseMs);
     if (heartbeatMs !== undefined) heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs);
-    if (controller.signal.aborted) throw new Error('External ownership lost');
+    if (controller.signal.aborted) throw controller.signal.reason;
     const outcome = await handler(run, lease.input);
-    if (controller.signal.aborted) throw new Error('External ownership lost');
+    if (controller.signal.aborted) throw controller.signal.reason;
     const phase = await transport.settle(lease.attempt, outcome);
     return { workId: lease.attempt.workId, status: 'settled', phase };
   } catch (error) {

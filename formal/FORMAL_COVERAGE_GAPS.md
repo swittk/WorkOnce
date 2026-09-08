@@ -65,6 +65,13 @@
 - Checked invariants: `PolicyFailureNoWrite`, `PolicyTypeOK`, `ReceiptFenceTracksPublishedAttempt`, `ReceiptIdentityControlsReplay`, `StalePolicyCannotPublish`, `SupersededReceiptRejectsOld`
 - Bound policy source symbols: `src/kernel.ts:integer`, `src/kernel.ts:add`, `src/kernel.ts:addTimeCapped`, `src/kernel.ts:effectiveNow`, `src/kernel.ts:assertCurrent`, `src/kernel.ts:changed`, `src/kernel.ts:replayReceipt`, `src/kernel.ts:settleRecord`, `src/outcomes.ts:retry`, `src/outcomes.ts:wait`, `src/outcomes.ts:defer`, `src/retry-policy.ts:exponentialBackoff`, `src/work.ts:WorkRun.retry`, `src/work.ts:WorkRun.wait`, `src/work.ts:WorkRun.defer`, `src/work.ts:WorkRun.settle`, `src/work.ts:WorkQueue.waitPolicy`, `src/work.ts:WorkQueue.settle`, `src/work.ts:WorkQueue.wake`, `src/work.ts:WorkQueue.wakeCurrent`
 
+## External transport boundary
+
+- Spec: `formal/WorkOnceExternal.tla`
+- Fresh compiled observations: `scripts/external-transport-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `CurrentRunningExported`, `EffectsRequireExport`, `ExternalTypeOK`, `RejectedFenceIsStale`, `SuccessReceiptCurrent`, `UnknownAckIsDurable`
+- Bound external source symbols: `src/external.ts:ExternalWorkRun.succeed`, `src/external.ts:ExternalWorkRun.retry`, `src/external.ts:ExternalWorkRun.wait`, `src/external.ts:ExternalWorkRun.defer`, `src/external.ts:ExternalWorkRun.fail`, `src/external.ts:validateExternalWorkerOptions`, `src/external.ts:processLease`, `src/external.ts:runExternalAvailable`, `src/external.ts:processExternal`, `src/external.ts:runExternal`, `src/kernel.ts:integer`, `src/work.ts:WorkRun.handoff`, `src/work.ts:WorkQueue.handoff`, `src/work.ts:WorkQueue.serveExternal`, `src/worker.ts:waitForPoll`
+
 ## Storage/conformance model
 
 - Spec: `formal/WorkOnceStorage.tla`
@@ -74,8 +81,8 @@
 
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **50**
-- Content digest: `a227b0a8b4984540586fc3666d824dcfabead457b17749471fb455334083da39`
+- Bound proof/checker files: **58**
+- Content digest: `bca22d66cca5a2ccebb99ad03378443ce75e52285a2d2aeebbcadee3b285fc13`
 
 ## Coverage rule
 

@@ -10,6 +10,9 @@ const { runBoundedRefinementCorpus } = await import('./formal-bounded-refinement
 const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
   './runtime-boundary-refinement.mjs'
 );
+const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
+  './external-transport-refinement.mjs'
+);
 const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
   './local-runner-refinement.mjs'
 );
@@ -59,6 +62,15 @@ const evidenceFiles = [
   'formal/WorkOncePolicy.cfg',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
+  'scripts/external-transport-refinement.mjs',
+  'test/external-transport-refinement.test.mjs',
+  'test/external.test.mjs',
+  'test/process/external-effect-child.mjs',
+  'test/process/external-effect-process.test.mjs',
+  'formal/WorkOnceExternal.tla',
+  'formal/WorkOnceExternal.cfg',
+  'scripts/check-external-source-model-mutation.mjs',
+  'scripts/check-external-implementation-mutations.mjs',
   'scripts/formal.mjs',
   'formal/WorkOnceStorage.cfg',
   'formal/WorkOnceStorage.tla',
@@ -113,6 +125,8 @@ if (process.argv.includes('--check-evidence-binding-only')) {
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
+const externalSamples = await runExternalTransportSamples();
+assertExternalTransportSamples(externalSamples);
 const localRunnerSamples = await runLocalRunnerRefinementSamples();
 assertLocalRunnerRefinementSamples(localRunnerSamples);
 const policySamples = await runPolicyRefinementSamples();
@@ -182,6 +196,18 @@ const current = {
     observationDigest: crypto
       .createHash('sha256')
       .update(JSON.stringify(policySamples))
+      .digest('hex'),
+  },
+  externalBoundary: {
+    samples: externalSamples.length,
+    counts: Object.fromEntries(
+      [...new Set(externalSamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, externalSamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(externalSamples))
       .digest('hex'),
   },
   storageBoundary: {
