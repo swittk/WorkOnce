@@ -10,8 +10,14 @@ import type {
 } from '../../src/index.js';
 import type { ExternalProcessResult as ExternalSubpathResult } from '../../src/external.js';
 
-type Equal<A, B> = [A, B] extends [B, A] ? true : false;
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+      ? true
+      : false
+    : false;
 type Assert<T extends true> = T;
+type AnyMustNotEqualEnsureOptions = Assert<Equal<any, EnsureOptions> extends false ? true : false>;
 type OptionAliases = Assert<Equal<EnsureOptions, EnqueueOptions>>;
 type LocalResultAliases = Assert<Equal<RunAvailableResult<number>, ProcessResult<number>>>;
 type ExternalResultAliases = Assert<

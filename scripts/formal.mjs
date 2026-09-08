@@ -1,7 +1,7 @@
 import { availableParallelism } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { delimiter, resolve } from 'node:path';
 import { runRuntimeBoundarySamples } from './runtime-boundary-refinement.mjs';
 
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
@@ -18,7 +18,7 @@ function runModel(model, config, modulePath = `${model}.tla`) {
     [
       '-Xmx512m',
       '-XX:+UseParallelGC',
-      `-DTLA-Library=${resolve('formal')}`,
+      `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
       '-cp',
       jar,
       'tlc2.TLC',
@@ -42,6 +42,36 @@ function runModel(model, config, modulePath = `${model}.tla`) {
   if (result.signal) throw new Error(`TLC infrastructure terminated by signal ${result.signal}`);
   if (result.status === null) throw new Error('TLC infrastructure returned no exit status');
   if (result.status !== 0) process.exit(result.status);
+}
+function requireInvariantRejects(model, config, modulePath, invariant) {
+  const directory = resolve('.artifacts/tlc', model);
+  mkdirSync(directory, { recursive: true });
+  const result = spawnSync(
+    'java',
+    [
+      '-Xmx512m',
+      '-XX:+UseParallelGC',
+      `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
+      '-cp',
+      jar,
+      'tlc2.TLC',
+      '-workers',
+      workers,
+      '-metadir',
+      directory,
+      '-config',
+      config,
+      modulePath,
+    ],
+    { cwd: 'formal', encoding: 'utf8', timeout: timeoutMs, killSignal: 'SIGKILL' },
+  );
+  if (result.error) throw result.error;
+  if (result.signal) throw new Error(`TLC mutation check terminated by signal ${result.signal}`);
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  if (result.status === 0 || !output.includes(`Invariant ${invariant} is violated`)) {
+    throw new Error(`Formal mutation was not rejected by ${invariant}: ${output.slice(-2000)}`);
+  }
+  console.log(`TLC mutation guard: ${invariant} rejects late admission after stop.`);
 }
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
@@ -75,3 +105,29 @@ console.log(
   `TLC runtime boundary receives ${samples.length} fresh compiled public API observations.`,
 );
 runModel('WorkOnceRuntimeObserved', config, observedModule);
+
+const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
+const admissionMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.cfg');
+writeFileSync(
+  admissionMutant,
+  String.raw`---- MODULE WorkOnceRuntimeAdmissionMutant ----
+EXTENDS WorkOnceRuntimeObserved
+UnsafeLateAdmission ==
+  /\ pc = "claim" /\ Stopped /\ active < 2
+  /\ pc' = "draining" /\ active' = active + 1
+  /\ UNCHANGED <<fatalPresent, failureKind, aborted, result, stopActive>>
+MutantNext == Next \/ UnsafeLateAdmission
+MutantSpec == Init /\ [][MutantNext]_vars
+====
+`,
+);
+writeFileSync(
+  admissionMutantConfig,
+  readFileSync(config, 'utf8').replace('SPECIFICATION Spec', 'SPECIFICATION MutantSpec'),
+);
+requireInvariantRejects(
+  'WorkOnceRuntimeAdmissionMutant',
+  admissionMutantConfig,
+  admissionMutant,
+  'NoAdmissionAfterStop',
+);

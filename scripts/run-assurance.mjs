@@ -49,6 +49,6 @@ run('public mapping', process.execPath, ['scripts/check-formal-implementation-co
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('real process faults', process.execPath, ['--test', ...processTests]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
-run('TLC lifecycle and runtime boundaries', process.execPath, ['scripts/formal.mjs']);
+run('TLC lifecycle/runtime boundaries + mutation guard', process.execPath, ['scripts/formal.mjs']);
 run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);
 console.log('[assurance] all gates passed');

@@ -91,10 +91,13 @@ delay choices, not removal of supported transitions.
 
 `formal/WorkOnceRuntime.tla` separately models bounded local/external runner control: claim replies,
 error observers, active completion, interruptible backoff, shutdown, draining and final rejection.
-Failure presence is independent of the rejection payload, including JavaScript `undefined`.
-Its seven invariants cover control-state typing, failure presence, fatal backoff, admission after
-stop, draining, rejection and agreement with fresh implementation observations. The bounded graph
-has 203 generated / 41 distinct states, complete depth 7, with local capacity at most two.
+Failure presence is independent of the rejection payload, including JavaScript `undefined`. When
+execution first stops, the model records the number of already-active handlers; that count may
+fall while draining but can never increase, so a claim response arriving after abort/fatal stop
+cannot be admitted. Its seven invariants cover control-state typing, failure presence, fatal
+backoff, admission after stop, draining, rejection and agreement with fresh implementation
+observations. The bounded graph has 229 generated / 58 distinct states, complete depth 9, with
+local capacity at most two.
 
 `scripts/runtime-boundary-refinement.mjs` collects **206 observations from the real compiled public
 APIs**: 64 runner/error/race cases, 80 definition-bound reads, 36 backoff inputs, 24 overlapping
@@ -103,7 +106,9 @@ into one generated TLA module and checks `BoundarySampleOK` from `WorkOnceContra
 expanded durable `Defer` action uses that contract's stop-reason operator too. The observations are
 not replaced by a simulated implementation or cached verdict. The larger retry indices have an
 explicit saturation abstraction only for the sampled zero/one/eight initial delays, one/two
-multipliers and a 64 ms cap; this is not an unbounded arithmetic proof.
+multipliers and a 64 ms cap; this is not an unbounded arithmetic proof. The formal runner also
+injects one explicit unsafe late-admission transition and requires `NoAdmissionAfterStop` to reject
+that mutant. This keeps the admission invariant from becoming a permanently-true bookkeeping flag.
 
 `test/lifecycle-transition-matrix.test.mjs` adds **600 command/phase/adapter cases**, including
 rejected-operation no-write assertions, across memory, SQLite and native CAS. An additional
@@ -122,7 +127,7 @@ cross-product and does not launch TLC per observation.
 
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph and one small runtime-boundary TLC graph, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **20 seconds wall-clock**; the durable-lifecycle TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.
+`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **27 seconds wall-clock**; the durable-lifecycle TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.
 
 That timing is evidence for this machine/version, not a universal performance promise. The important design rule is structural: no per-trace model-checker process explosion.
 

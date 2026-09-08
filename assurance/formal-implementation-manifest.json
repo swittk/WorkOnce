@@ -10490,7 +10490,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "modelDigest": "afbbf666558e0cab294166335c6d10a381c677d2ca8942b2f17c13269ca6e546",
+    "modelDigest": "c7255f611f61a6cf07f746217eae5852e996a3579799dc9fd7722318095c177a",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
