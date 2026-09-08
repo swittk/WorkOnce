@@ -1,0 +1,17 @@
+{
+  "kind": "assurance_infrastructure_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "defect": "Running storage-formal.mjs concurrently with the internally runtime/non-runtime sharded formal.mjs can make a valid TLC mutation witness fail as parser/classpath infrastructure rather than semantics.",
+  "reproduction": {
+    "storageFormalExit": 0,
+    "formalExit": 1,
+    "failedShard": "--non-runtime-only",
+    "expectedWitness": "PolicySamplesConform",
+    "classification": "tool_exception",
+    "diagnostic": "TLC/SANY could not resolve standard module Sequences imported by FiniteSets during the overlapping third TLC family."
+  },
+  "control": "The same internally two-sharded formal runner passed 6/6 focused rounds when storage-formal was not concurrent, each in approximately 15.4-16.8 seconds.",
+  "requiredFix": "Never co-schedule storage-formal with the internally sharded formal runner; storage may overlap only non-TLC packed-consumer work, and formal starts after that batch completes."
+}

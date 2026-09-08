@@ -1,0 +1,13 @@
+{
+  "kind": "assurance_infrastructure_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "defect": "Parallel source-mutating assurance guards can contaminate one another and make a named mutation witness fail for an unrelated mutation.",
+  "reproduction": {
+    "expectedWitness": "wake revision-fence mutation",
+    "unrelatedObservedFailure": "casAckLoss exactAckError=false",
+    "classification": "assurance harness cross-contamination"
+  },
+  "requiredFix": "Run source/dist-mutating mutation guards serially unless an explicit disjoint-resource proof exists; named witnesses must fail for their intended reason."
+}

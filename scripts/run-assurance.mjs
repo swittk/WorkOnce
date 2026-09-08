@@ -74,23 +74,31 @@ await runParallel([
   npmParallelEntry('type surface', ['run', 'check']),
 ]);
 runNpm('single build', ['run', 'build']);
-run('internal semantic topology audit', process.execPath, [
-  'scripts/check-internal-semantic-inventory.mjs',
+await runParallel([
+  [
+    'internal semantic topology audit',
+    process.execPath,
+    ['scripts/check-internal-semantic-inventory.mjs'],
+  ],
+  [
+    'TLC outcome classification live probe',
+    process.execPath,
+    ['scripts/check-tlc-outcome-classification.mjs'],
+  ],
+  [
+    'emitted-artifact entrypoint audit',
+    process.execPath,
+    ['scripts/check-emitted-artifact-entrypoints.mjs'],
+  ],
 ]);
 run('internal semantic topology mutation guard', process.execPath, [
   'scripts/check-internal-semantic-inventory-mutation.mjs',
-]);
-run('TLC outcome classification live probe', process.execPath, [
-  'scripts/check-tlc-outcome-classification.mjs',
 ]);
 run('formal config mutation coverage inventory guard', process.execPath, [
   'scripts/check-formal-config-coverage-mutation.mjs',
 ]);
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
-]);
-run('emitted-artifact entrypoint audit', process.execPath, [
-  'scripts/check-emitted-artifact-entrypoints.mjs',
 ]);
 run('emitted-artifact entrypoint mutation guard', process.execPath, [
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
@@ -111,87 +119,61 @@ await runParallel([
     ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
+  ['real process faults', process.execPath, ['--test', ...processTests]],
 ]);
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
-run('real process faults', process.execPath, ['--test', ...processTests]);
-await runParallel([
-  [
-    'typed-read definition-fence mutation guard',
-    process.execPath,
-    ['scripts/check-read-boundary-mutation.mjs'],
-  ],
-  [
-    'typed-read source/model mutation guard',
-    process.execPath,
-    ['scripts/check-read-source-model-binding-mutation.mjs'],
-  ],
-  [
-    'typed-read route/order mutation guard',
-    process.execPath,
-    ['scripts/check-read-contract-mutation.mjs'],
-  ],
-  [
-    'read-history retention/order mutation guard',
-    process.execPath,
-    ['scripts/check-read-history-mutations.mjs'],
-  ],
-  [
-    'policy source/model mutation guard',
-    process.execPath,
-    ['scripts/check-policy-source-model-binding-mutation.mjs'],
-  ],
-  [
-    'policy implementation mutation guards',
-    process.execPath,
-    ['scripts/check-policy-implementation-mutations.mjs'],
-  ],
-  [
-    'local-runner source/model mutation guard',
-    process.execPath,
-    ['scripts/check-local-runner-source-model-mutation.mjs'],
-  ],
-  [
-    'local-runner implementation mutation guards',
-    process.execPath,
-    ['scripts/check-local-runner-implementation-mutations.mjs'],
-  ],
-  [
-    'external source/model mutation guard',
-    process.execPath,
-    ['scripts/check-external-source-model-mutation.mjs'],
-  ],
-  [
-    'external implementation mutation guards',
-    process.execPath,
-    ['scripts/check-external-implementation-mutations.mjs'],
-  ],
-  [
-    'outbox source/model mutation guard',
-    process.execPath,
-    ['scripts/check-outbox-source-model-binding-mutation.mjs'],
-  ],
-  [
-    'outbox implementation mutation guard',
-    process.execPath,
-    ['scripts/check-outbox-implementation-mutations.mjs'],
-  ],
-  [
-    'storage implementation mutation guard',
-    process.execPath,
-    ['scripts/check-storage-contract-mutation.mjs'],
-  ],
-  [
-    'storage source/model mutation guard',
-    process.execPath,
-    ['scripts/check-storage-source-model-mutation.mjs'],
-  ],
+run('typed-read definition-fence mutation guard', process.execPath, [
+  'scripts/check-read-boundary-mutation.mjs',
 ]);
-run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
+run('typed-read source/model mutation guard', process.execPath, [
+  'scripts/check-read-source-model-binding-mutation.mjs',
+]);
+run('typed-read route/order mutation guard', process.execPath, [
+  'scripts/check-read-contract-mutation.mjs',
+]);
+run('read-history retention/order mutation guard', process.execPath, [
+  'scripts/check-read-history-mutations.mjs',
+]);
+run('policy source/model mutation guard', process.execPath, [
+  'scripts/check-policy-source-model-binding-mutation.mjs',
+]);
+run('policy implementation mutation guards', process.execPath, [
+  'scripts/check-policy-implementation-mutations.mjs',
+]);
+run('local-runner source/model mutation guard', process.execPath, [
+  'scripts/check-local-runner-source-model-mutation.mjs',
+]);
+run('local-runner implementation mutation guards', process.execPath, [
+  'scripts/check-local-runner-implementation-mutations.mjs',
+]);
+run('external source/model mutation guard', process.execPath, [
+  'scripts/check-external-source-model-mutation.mjs',
+]);
+run('external implementation mutation guards', process.execPath, [
+  'scripts/check-external-implementation-mutations.mjs',
+]);
+run('outbox source/model mutation guard', process.execPath, [
+  'scripts/check-outbox-source-model-binding-mutation.mjs',
+]);
+run('outbox implementation mutation guard', process.execPath, [
+  'scripts/check-outbox-implementation-mutations.mjs',
+]);
+run('storage implementation mutation guard', process.execPath, [
+  'scripts/check-storage-contract-mutation.mjs',
+]);
+run('storage source/model mutation guard', process.execPath, [
+  'scripts/check-storage-source-model-mutation.mjs',
+]);
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
 ]);
+run('assurance scheduling audit', process.execPath, ['scripts/check-assurance-scheduling.mjs']);
+run('assurance scheduling mutation guard', process.execPath, [
+  'scripts/check-assurance-scheduling-mutation.mjs',
+]);
 await runParallel([
   ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
+  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],
   ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
 ]);
 run('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [

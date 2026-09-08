@@ -1,7 +1,8 @@
 import { availableParallelism } from 'node:os';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { delimiter, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { assertBuildSourceBinding } from './build-source-binding.mjs';
 import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
 
@@ -15,7 +16,10 @@ const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
   throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar. See docs/assurance.md.');
 mkdirSync('.artifacts/tlc', { recursive: true });
-const workers = String(Math.max(2, Math.min(16, availableParallelism())));
+const shardMode = ['--runtime-only', '--non-runtime-only', '--external-only'].some((flag) =>
+  process.argv.includes(flag),
+);
+const workers = String(Math.max(2, Math.min(shardMode ? 8 : 16, availableParallelism())));
 const timeoutMs = 30_000;
 
 function tlcArgs(model, config, modulePath, options = {}) {
@@ -472,6 +476,34 @@ if (process.argv.includes('--config-coverage-only')) {
   process.exit(0);
 }
 
+const runtimeOnly = process.argv.includes('--runtime-only');
+const nonRuntimeOnly = process.argv.includes('--non-runtime-only');
+if (runtimeOnly && nonRuntimeOnly) throw new Error('Formal shard modes are mutually exclusive.');
+if (!runtimeOnly && !nonRuntimeOnly) {
+  const script = fileURLToPath(import.meta.url);
+  const runShard = (mode) =>
+    new Promise((resolveShard, rejectShard) => {
+      const child = spawn(process.execPath, [script, mode], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: 'inherit',
+      });
+      child.once('error', rejectShard);
+      child.once('exit', (code, signal) => {
+        if (code === 0) resolveShard();
+        else
+          rejectShard(new Error(`Formal shard ${mode} failed with ${signal ?? `exit ${code}`}.`));
+      });
+    });
+  const results = await Promise.allSettled([
+    runShard('--runtime-only'),
+    runShard('--non-runtime-only'),
+  ]);
+  const failure = results.find((result) => result.status === 'rejected');
+  if (failure) throw failure.reason;
+  process.exit(0);
+}
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -488,7 +520,7 @@ function tlaValue(value) {
 }
 
 const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
-if (!process.argv.includes('--runtime-only')) {
+if (nonRuntimeOnly) {
   runModel('WorkOnce', 'WorkOnce.cfg');
   runMutationWitnessBatch({
     model: 'WorkOnceInvariantMutationBatch',
@@ -498,64 +530,65 @@ if (!process.argv.includes('--runtime-only')) {
   });
 }
 
-// No per-trace TLC processes and no cached witness: check fresh compiled public API observations
-// in one separate, small control-state graph. The durable graph is not cross-product inflated.
-const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');
-const samples = await runRuntimeBoundarySamples();
-const config = resolve('.artifacts/tlc/WorkOnceRuntime-observed.cfg');
-const observedModule = resolve('.artifacts/tlc/WorkOnceRuntimeObserved.tla');
-writeFileSync(
-  observedModule,
-  `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\n====\n`,
-);
-writeFileSync(
-  config,
-  `${readFileSync('formal/WorkOnceRuntime.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\n`,
-);
-console.log(
-  `TLC runtime boundary receives ${samples.length} fresh compiled public API observations.`,
-);
-runModel('WorkOnceRuntimeObserved', config, observedModule);
+if (runtimeOnly) {
+  // No per-trace TLC processes and no cached witness: check fresh compiled public API observations
+  // in one separate, small control-state graph. The durable graph is not cross-product inflated.
+  const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');
+  const samples = await runRuntimeBoundarySamples();
+  const config = resolve('.artifacts/tlc/WorkOnceRuntime-observed.cfg');
+  const observedModule = resolve('.artifacts/tlc/WorkOnceRuntimeObserved.tla');
+  writeFileSync(
+    observedModule,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\n====\n`,
+  );
+  writeFileSync(
+    config,
+    `${readFileSync('formal/WorkOnceRuntime.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\n`,
+  );
+  console.log(
+    `TLC runtime boundary receives ${samples.length} fresh compiled public API observations.`,
+  );
+  runModel('WorkOnceRuntimeObserved', config, observedModule);
 
-const runtimeConfig = readFileSync(config, 'utf8');
-runMutationWitnessBatch({
-  model: 'WorkOnceRuntimeInvariantMutationBatch',
-  baseModule: 'WorkOnceRuntimeObserved',
-  baseConfig: runtimeConfig,
-  plan: runtimeMutationPlan,
-});
+  const runtimeConfig = readFileSync(config, 'utf8');
+  runMutationWitnessBatch({
+    model: 'WorkOnceRuntimeInvariantMutationBatch',
+    baseModule: 'WorkOnceRuntimeObserved',
+    baseConfig: runtimeConfig,
+    plan: runtimeMutationPlan,
+  });
 
-const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
-const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.cfg');
-writeFileSync(
-  sampleMutant,
-  String.raw`---- MODULE WorkOnceRuntimeSamplesMutant ----
+  const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
+  const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.cfg');
+  writeFileSync(
+    sampleMutant,
+    String.raw`---- MODULE WorkOnceRuntimeSamplesMutant ----
 EXTENDS WorkOnceRuntimeObserved
 BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
 MutantSpec == Init /\ [][Next]_vars
 ====
 `,
-);
-writeFileSync(
-  sampleMutantConfig,
-  singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
-    'CONSTANT Samples <- ObservedSamples',
-    'CONSTANT Samples <- BadSamples',
-  ),
-);
-requireInvariantRejects(
-  'WorkOnceRuntimeSamplesMutant',
-  sampleMutantConfig,
-  sampleMutant,
-  'RuntimeSamplesConform',
-);
-markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
+  );
+  writeFileSync(
+    sampleMutantConfig,
+    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceRuntimeSamplesMutant',
+    sampleMutantConfig,
+    sampleMutant,
+    'RuntimeSamplesConform',
+  );
+  markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
 
-const readFenceMutant = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.tla');
-const readFenceMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.cfg');
-writeFileSync(
-  readFenceMutant,
-  String.raw`---- MODULE WorkOnceRuntimeReadFenceMutant ----
+  const readFenceMutant = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.tla');
+  const readFenceMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.cfg');
+  writeFileSync(
+    readFenceMutant,
+    String.raw`---- MODULE WorkOnceRuntimeReadFenceMutant ----
 EXTENDS WorkOnceRuntimeObserved
 BadRead == [kind |-> "read", matched |-> FALSE, accepted |-> TRUE,
             definitionError |-> FALSE, snapshotExact |-> FALSE, errorCause |-> "none"]
@@ -563,27 +596,27 @@ BadSamples == ObservedSamples \cup {BadRead}
 MutantSpec == Init /\ [][Next]_vars
 ====
 `,
-);
-writeFileSync(
-  readFenceMutantConfig,
-  singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
-    'CONSTANT Samples <- ObservedSamples',
-    'CONSTANT Samples <- BadSamples',
-  ),
-);
-requireInvariantRejects(
-  'WorkOnceRuntimeReadFenceMutant',
-  readFenceMutantConfig,
-  readFenceMutant,
-  'RuntimeSamplesConform',
-);
+  );
+  writeFileSync(
+    readFenceMutantConfig,
+    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceRuntimeReadFenceMutant',
+    readFenceMutantConfig,
+    readFenceMutant,
+    'RuntimeSamplesConform',
+  );
 
-// Keep the realistic late-admission mutant in addition to the one-step activity check above.
-const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
-const admissionMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.cfg');
-writeFileSync(
-  admissionMutant,
-  String.raw`---- MODULE WorkOnceRuntimeAdmissionMutant ----
+  // Keep the realistic late-admission mutant in addition to the one-step activity check above.
+  const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
+  const admissionMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.cfg');
+  writeFileSync(
+    admissionMutant,
+    String.raw`---- MODULE WorkOnceRuntimeAdmissionMutant ----
 EXTENDS WorkOnceRuntimeObserved
 UnsafeLateAdmission ==
   /\ pc = "claim" /\ Stopped /\ active < 2
@@ -593,132 +626,136 @@ MutantNext == Next \/ UnsafeLateAdmission
 MutantSpec == Init /\ [][MutantNext]_vars
 ====
 `,
-);
-writeFileSync(admissionMutantConfig, singleInvariantConfig(runtimeConfig, 'NoAdmissionAfterStop'));
-requireInvariantRejects(
-  'WorkOnceRuntimeAdmissionMutant',
-  admissionMutantConfig,
-  admissionMutant,
-  'NoAdmissionAfterStop',
-);
+  );
+  writeFileSync(
+    admissionMutantConfig,
+    singleInvariantConfig(runtimeConfig, 'NoAdmissionAfterStop'),
+  );
+  requireInvariantRejects(
+    'WorkOnceRuntimeAdmissionMutant',
+    admissionMutantConfig,
+    admissionMutant,
+    'NoAdmissionAfterStop',
+  );
 
-const { runReadHistorySamples, assertReadHistorySamples } = await import(
-  './read-history-refinement.mjs'
-);
-const readHistorySamples = await runReadHistorySamples();
-assertReadHistorySamples(readHistorySamples);
-const readHistoryObserved = resolve('.artifacts/tlc/WorkOnceReadHistoryObserved.tla');
-const readHistoryConfig = resolve('.artifacts/tlc/WorkOnceReadHistory-observed.cfg');
-writeFileSync(
-  readHistoryObserved,
-  `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
-);
-writeFileSync(
-  readHistoryConfig,
-  `${readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8').replace(
-    'CONSTANT Samples = {}',
-    'CONSTANT Samples <- ObservedSamples',
-  )}\nINVARIANT ReadHistorySamplesConform\n`,
-);
-console.log(
-  `TLC read-history boundary receives ${readHistorySamples.length} fresh compiled observations.`,
-);
-runModel('WorkOnceReadHistoryObserved', readHistoryConfig, readHistoryObserved);
+  const { runReadHistorySamples, assertReadHistorySamples } = await import(
+    './read-history-refinement.mjs'
+  );
+  const readHistorySamples = await runReadHistorySamples();
+  assertReadHistorySamples(readHistorySamples);
+  const readHistoryObserved = resolve('.artifacts/tlc/WorkOnceReadHistoryObserved.tla');
+  const readHistoryConfig = resolve('.artifacts/tlc/WorkOnceReadHistory-observed.cfg');
+  writeFileSync(
+    readHistoryObserved,
+    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+  );
+  writeFileSync(
+    readHistoryConfig,
+    `${readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8').replace(
+      'CONSTANT Samples = {}',
+      'CONSTANT Samples <- ObservedSamples',
+    )}\nINVARIANT ReadHistorySamplesConform\n`,
+  );
+  console.log(
+    `TLC read-history boundary receives ${readHistorySamples.length} fresh compiled observations.`,
+  );
+  runModel('WorkOnceReadHistoryObserved', readHistoryConfig, readHistoryObserved);
 
-const baseReadHistoryConfig = readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8');
-runMutationWitnessBatch({
-  model: 'WorkOnceReadHistoryInvariantMutationBatch',
-  baseModule: 'WorkOnceReadHistory',
-  baseConfig: baseReadHistoryConfig,
-  plan: readHistoryMutationPlan,
-});
+  const baseReadHistoryConfig = readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8');
+  runMutationWitnessBatch({
+    model: 'WorkOnceReadHistoryInvariantMutationBatch',
+    baseModule: 'WorkOnceReadHistory',
+    baseConfig: baseReadHistoryConfig,
+    plan: readHistoryMutationPlan,
+  });
 
-const readHistorySampleMutant = resolve('.artifacts/tlc/WorkOnceReadHistorySamplesMutant.tla');
-const readHistorySampleMutantConfig = resolve(
-  '.artifacts/tlc/WorkOnceReadHistorySamplesMutant.cfg',
-);
-writeFileSync(
-  readHistorySampleMutant,
-  String.raw`---- MODULE WorkOnceReadHistorySamplesMutant ----
+  const readHistorySampleMutant = resolve('.artifacts/tlc/WorkOnceReadHistorySamplesMutant.tla');
+  const readHistorySampleMutantConfig = resolve(
+    '.artifacts/tlc/WorkOnceReadHistorySamplesMutant.cfg',
+  );
+  writeFileSync(
+    readHistorySampleMutant,
+    String.raw`---- MODULE WorkOnceReadHistorySamplesMutant ----
 EXTENDS WorkOnceReadHistoryObserved
 BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
 MutantSpec == Init /\ [][Next]_vars
 ====
 `,
-);
-writeFileSync(
-  readHistorySampleMutantConfig,
-  singleInvariantConfig(
-    readFileSync(readHistoryConfig, 'utf8'),
+  );
+  writeFileSync(
+    readHistorySampleMutantConfig,
+    singleInvariantConfig(
+      readFileSync(readHistoryConfig, 'utf8'),
+      'ReadHistorySamplesConform',
+    ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
+  );
+  requireInvariantRejects(
+    'WorkOnceReadHistorySamplesMutant',
+    readHistorySampleMutantConfig,
+    readHistorySampleMutant,
     'ReadHistorySamplesConform',
-  ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
-);
-requireInvariantRejects(
-  'WorkOnceReadHistorySamplesMutant',
-  readHistorySampleMutantConfig,
-  readHistorySampleMutant,
-  'ReadHistorySamplesConform',
-);
+  );
 
-const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
-  './local-runner-refinement.mjs'
-);
-const localRunnerSamples = await runLocalRunnerRefinementSamples();
-assertLocalRunnerRefinementSamples(localRunnerSamples);
-const localRunnerObserved = resolve('.artifacts/tlc/WorkOnceLocalRunnerObserved.tla');
-const localRunnerConfig = resolve('.artifacts/tlc/WorkOnceLocalRunner-observed.cfg');
-writeFileSync(
-  localRunnerObserved,
-  `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
-);
-writeFileSync(
-  localRunnerConfig,
-  `${readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8').replace(
-    'CONSTANT Samples = {}',
-    'CONSTANT Samples <- ObservedSamples',
-  )}\nINVARIANT LocalRunnerSamplesConform\n`,
-);
-console.log(
-  `TLC local-runner boundary receives ${localRunnerSamples.length} fresh compiled public API observations.`,
-);
-runModel('WorkOnceLocalRunnerObserved', localRunnerConfig, localRunnerObserved);
+  const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
+    './local-runner-refinement.mjs'
+  );
+  const localRunnerSamples = await runLocalRunnerRefinementSamples();
+  assertLocalRunnerRefinementSamples(localRunnerSamples);
+  const localRunnerObserved = resolve('.artifacts/tlc/WorkOnceLocalRunnerObserved.tla');
+  const localRunnerConfig = resolve('.artifacts/tlc/WorkOnceLocalRunner-observed.cfg');
+  writeFileSync(
+    localRunnerObserved,
+    `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+  );
+  writeFileSync(
+    localRunnerConfig,
+    `${readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8').replace(
+      'CONSTANT Samples = {}',
+      'CONSTANT Samples <- ObservedSamples',
+    )}\nINVARIANT LocalRunnerSamplesConform\n`,
+  );
+  console.log(
+    `TLC local-runner boundary receives ${localRunnerSamples.length} fresh compiled public API observations.`,
+  );
+  runModel('WorkOnceLocalRunnerObserved', localRunnerConfig, localRunnerObserved);
 
-const baseLocalRunnerConfig = readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8');
-runMutationWitnessBatch({
-  model: 'WorkOnceLocalRunnerInvariantMutationBatch',
-  baseModule: 'WorkOnceLocalRunner',
-  baseConfig: baseLocalRunnerConfig,
-  plan: localRunnerMutationPlan,
-});
+  const baseLocalRunnerConfig = readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8');
+  runMutationWitnessBatch({
+    model: 'WorkOnceLocalRunnerInvariantMutationBatch',
+    baseModule: 'WorkOnceLocalRunner',
+    baseConfig: baseLocalRunnerConfig,
+    plan: localRunnerMutationPlan,
+  });
 
-const localRunnerSampleMutant = resolve('.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.tla');
-const localRunnerSampleMutantConfig = resolve(
-  '.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.cfg',
-);
-writeFileSync(
-  localRunnerSampleMutant,
-  String.raw`---- MODULE WorkOnceLocalRunnerSamplesMutant ----
+  const localRunnerSampleMutant = resolve('.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.tla');
+  const localRunnerSampleMutantConfig = resolve(
+    '.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.cfg',
+  );
+  writeFileSync(
+    localRunnerSampleMutant,
+    String.raw`---- MODULE WorkOnceLocalRunnerSamplesMutant ----
 EXTENDS WorkOnceLocalRunnerObserved
 BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
 MutantSpec == Init /\ [][Next]_vars
 ====
 `,
-);
-writeFileSync(
-  localRunnerSampleMutantConfig,
-  singleInvariantConfig(
-    readFileSync(localRunnerConfig, 'utf8'),
+  );
+  writeFileSync(
+    localRunnerSampleMutantConfig,
+    singleInvariantConfig(
+      readFileSync(localRunnerConfig, 'utf8'),
+      'LocalRunnerSamplesConform',
+    ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
+  );
+  requireInvariantRejects(
+    'WorkOnceLocalRunnerSamplesMutant',
+    localRunnerSampleMutantConfig,
+    localRunnerSampleMutant,
     'LocalRunnerSamplesConform',
-  ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
-);
-requireInvariantRejects(
-  'WorkOnceLocalRunnerSamplesMutant',
-  localRunnerSampleMutantConfig,
-  localRunnerSampleMutant,
-  'LocalRunnerSamplesConform',
-);
+  );
+}
 
-if (!process.argv.includes('--runtime-only')) {
+if (nonRuntimeOnly) {
   const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
     './policy-refinement.mjs'
   );
@@ -776,7 +813,7 @@ MutantSpec == Init /\ [][Next]_vars
   );
 }
 
-if (!process.argv.includes('--runtime-only')) {
+if (nonRuntimeOnly) {
   const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
     './outbox-refinement.mjs'
   );
@@ -873,7 +910,7 @@ BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
   }
 }
 
-if (!process.argv.includes('--runtime-only')) {
+if (nonRuntimeOnly) {
   const { runExternalTransportSamples, assertExternalTransportSamples } = await import(
     './external-transport-refinement.mjs'
   );
@@ -956,13 +993,10 @@ MutantSpec == Spec
 }
 
 assertMutationPlansExecuted(
-  process.argv.includes('--runtime-only')
+  runtimeOnly
     ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan]
     : [
         lifecycleMutationPlan,
-        runtimeMutationPlan,
-        readHistoryMutationPlan,
-        localRunnerMutationPlan,
         policyMutationPlan,
         externalMutationPlan,
         outboxMutationPlan,

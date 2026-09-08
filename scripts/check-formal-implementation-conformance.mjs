@@ -182,6 +182,13 @@ const assuranceInfrastructureFiles = [
   'scripts/build-source-binding.mjs',
   'scripts/check-build-source-binding-mutation.mjs',
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  'scripts/check-assurance-scheduling.mjs',
+  'scripts/check-alias-contract-mutation.mjs',
+  'scripts/check-assurance-scheduling-mutation.mjs',
+  'assurance/red-before/formal-shard-cross-family-tlc-concurrency.json',
+  'assurance/red-before/mutation-guard-cross-contamination.json',
+  'assurance/red-before/process-fault-test-concurrency.json',
+  'assurance/red-before/unbound-assurance-runner.json',
   'scripts/tlc-outcome.mjs',
   'scripts/check-tlc-outcome-classification.mjs',
   'scripts/check-formal-config-coverage-mutation.mjs',
@@ -256,6 +263,32 @@ const assuranceInfrastructureFiles = [
   'scripts/prepare-package.mjs',
   'package.json',
 ];
+
+function assertAssuranceRunnerScriptsBound() {
+  const runnerPath = path.join(root, 'scripts/run-assurance.mjs');
+  const runnerText = fs.readFileSync(runnerPath, 'utf8');
+  const source = ts.createSourceFile(
+    runnerPath,
+    runnerText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
+  );
+  const invoked = new Set();
+  function visit(node) {
+    if (ts.isStringLiteralLike(node) && /^scripts\/[A-Za-z0-9._/-]+\.(?:mjs|cjs)$/u.test(node.text))
+      invoked.add(node.text);
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  const unbound = [...invoked]
+    .filter((file) => !assuranceInfrastructureFiles.includes(file))
+    .sort();
+  if (unbound.length)
+    throw new Error(`Full assurance invokes unbound proof/checker scripts: ${unbound.join(', ')}`);
+}
+assertAssuranceRunnerScriptsBound();
+
 const expectedEntrypoints = [
   'root',
   'storage',

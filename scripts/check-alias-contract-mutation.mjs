@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const typeBuildInfo = path.join(root, '.artifacts/alias-mutation.tsbuildinfo');
 
 function runNode(args) {
   return spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', env: process.env });
@@ -113,20 +114,28 @@ const typeMutants = [
     'ExternalProcessResult',
   ],
 ];
-for (const [relative, anchor, replacement, label] of typeMutants) {
-  mutateFile(
-    relative,
-    (text) => text.replace(anchor, replacement),
-    () => {
-      const result = runNode([
-        'node_modules/typescript/bin/tsc',
-        '--noEmit',
-        '-p',
-        'tsconfig.tests.json',
-      ]);
-      requireRed(label, result, /test\/types\/aliases\.ts/u);
-    },
-  );
+fs.rmSync(typeBuildInfo, { force: true });
+try {
+  for (const [relative, anchor, replacement, label] of typeMutants) {
+    mutateFile(
+      relative,
+      (text) => text.replace(anchor, replacement),
+      () => {
+        const result = runNode([
+          'node_modules/typescript/bin/tsc',
+          '--noEmit',
+          '-p',
+          'tsconfig.tests.json',
+          '--incremental',
+          '--tsBuildInfoFile',
+          typeBuildInfo,
+        ]);
+        requireRed(label, result, /test\/types\/aliases\.ts/u);
+      },
+    );
+  }
+} finally {
+  fs.rmSync(typeBuildInfo, { force: true });
 }
 
 console.log(
