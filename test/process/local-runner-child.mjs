@@ -3,7 +3,11 @@ import { createSqliteStore } from '../../dist/sqlite.js';
 
 const [path, mode] = process.argv.slice(2);
 const base = createSqliteStore(path);
-const forever = new Promise(() => {});
+const forever = new Promise(() => {
+  // The crash fixture must remain alive until its parent delivers SIGKILL.
+  // A pending Promise alone does not keep Node's event loop referenced.
+  setInterval(() => {}, 60_000);
+});
 const store =
   mode === 'heartbeat-ack' || mode === 'settle-ack'
     ? {
