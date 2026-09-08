@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packagePath = path.join(root, 'package.json');
 const original = fs.readFileSync(packagePath, 'utf8');
+const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
+const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');
 try {
   const pkg = JSON.parse(original);
   pkg.scripts['test:process'] = 'node --test test/process/*.test.mjs';
@@ -22,6 +24,34 @@ try {
   console.log(
     'Emitted-artifact entrypoint mutation guard rejects removal of test:process freshness.',
   );
+
+  fs.writeFileSync(packagePath, original);
+  const buildAnchor = "runNpm('single build'";
+  assert.equal(assuranceOriginal.includes(buildAnchor), true, 'single-build anchor is stale');
+  fs.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(
+      buildAnchor,
+      "run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);\n" + buildAnchor,
+    ),
+  );
+  const earlyConsumer = spawnSync(
+    process.execPath,
+    ['scripts/check-emitted-artifact-entrypoints.mjs'],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+    },
+  );
+  const earlyOutput = `${earlyConsumer.stdout ?? ''}\n${earlyConsumer.stderr ?? ''}`;
+  assert.notEqual(earlyConsumer.status, 0, 'pre-build assurance consumer unexpectedly passed');
+  assert.match(
+    earlyOutput,
+    /packed consumer.*exactly once|packed consumer.*before the single build/u,
+  );
+  console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
 } finally {
   fs.writeFileSync(packagePath, original);
+  fs.writeFileSync(assurancePath, assuranceOriginal);
 }

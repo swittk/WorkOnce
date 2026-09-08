@@ -93,8 +93,10 @@ run('type identity trivia', process.execPath, [
   '--self-test-trivia-ordinals',
 ]);
 run('public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']);
-run('implementation traces', process.execPath, ['--test', ...unitTests]);
-run('real process faults', process.execPath, ['--test', ...processTests]);
+await runParallel([
+  ['implementation traces', process.execPath, ['--test', ...unitTests]],
+  ['real process faults', process.execPath, ['--test', ...processTests]],
+]);
 await runParallel([
   [
     'storage implementation mutation guard',
