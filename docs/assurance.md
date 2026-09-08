@@ -153,6 +153,82 @@ sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-a
 These controls prove that each configured invariant is active; they do not replace the real bounded
 state-space runs.
 
+## Storage / adapter temporal refinement
+
+The shared adapter suite is supplemented by storage-native internal-state proof.
+`scripts/storage-refinement.mjs` observes detached `getMany`/`query` rows and exact UTF-8 cursor
+ordering across memory, real SQLite and the native compare-exchange wrapper. The CAS lane separately
+proves fresh reads after proven compare misses, exact bounded contention exhaustion with no caller
+write, and unknown acknowledgements that propagate immediately rather than entering the safe
+compare-miss retry loop; replay observes already-committed durable truth. A one-shot injected native
+`database is busy` error proves the SQLite startup retry helper is active, while independent
+OS-process tests hold a real SQLite write lock and check both retry-to-success and timeout failure.
+
+`formal/WorkOnceStorage.tla` models the library-owned compare-exchange loop explicitly: read,
+external competing write, compare miss, fresh retry, caller commit, unknown committed outcome and
+decision failure. It bounds compare misses, allows at most one caller commit, forbids a compare miss
+or decision failure from committing, requires a fresh observed revision before successful commit,
+and makes the unknown-outcome state terminal for this library retry loop. The model also carries a monotonic deadline-reached state: once the storage deadline is reached, neither a known nor unknown caller commit remains legal. All ten configured storage checks, including the fresh compiled observation set, have dedicated mutants.
+
+The complete gate also mutates the actual compiled memory detached-read path, CAS retry bound, CAS
+unknown-ack handling and SQLite busy recognizer. A dedicated source/model digest binds storage,
+validation, memory, SQLite, CAS and conformance source to the storage TLA/CFG, and a source mutation
+with unchanged storage formal semantics must fail closed. Out-of-band hand-corrupted database rows
+remain outside the supported boundary; this proof covers supported writes, current-schema startup,
+concurrency and crash/recovery behavior rather than adversarial file tampering.
+
+## Storage and adapter conformance refinement
+
+`formal/WorkOnceStorage.tla` models the public `WorkStore`/native compare-and-exchange boundary
+separately from lifecycle semantics. The model distinguishes a proven revision compare miss from an
+unknown write outcome and from a write-deadline rejection. Ordinary compare misses may perform a
+bounded fresh-read retry; an unknown outcome stops immediately, and an expired `validUntil` stops as
+`lease_expired` rather than being misclassified as generic contention. Nineteen fresh compiled
+storage observations bind this model to memory, real SQLite and the native CAS adapter.
+
+The observation matrix covers detached `getMany()`/`query()` rows, exact caller order, UTF-8/SQLite
+BINARY ordering, exclusive `afterId` continuation, due ordering by `(dueAt,id)`, bounded query limits,
+same-row concurrent idempotent insertion, invalid identity/revision/deadline writes, serialization
+failure before commit, exact deadline equality, bounded CAS compare-miss retries/exhaustion, CAS
+unknown acknowledgement, CAS alternate-history future congruence, `maxConflicts` boundaries,
+SQLite busy-timeout boundaries, and SQLite startup BUSY/LOCKED recognition. Every configured storage
+invariant has a mutation witness and the compiled sample set has its own bad-sample guard.
+
+Two storage-specific defects were exposed by the exhaustive matrix. First, SQLite startup busy
+classification relied only on English error text even though Node 22 `node:sqlite` exposes native
+SQLite primary result codes (`SQLITE_BUSY=5`, `SQLITE_LOCKED=6`). Startup now recognizes those native
+codes first and retains the message fallback for runtimes that expose only an Error message. Second,
+the CAS adapter previously treated a `false` compare-exchange caused by write-deadline equality as
+ordinary revision contention; a direct `WorkStore.atomic()` call could therefore exhaust conflicts
+and return the generic contention error while memory/SQLite returned `lease_expired`. After a false
+CAS write with `validUntil`, WorkOnce now performs a fresh storage read: an unchanged expected
+revision at/after the deadline is classified as exact `lease_expired`; a changed revision remains
+ordinary compare contention.
+
+`test/process/storage-process.test.mjs` proves the direct SQLite durability boundary. A committed
+atomic insert survives SIGKILL before the caller receives the Promise result, reopens as one revision,
+and identical retry is idempotent; a decision exception performs no durable write across process
+death/reopen. Existing process tests cover competing initialization, current-schema reopen and owner
+SIGKILL/reclaim. Startup lock tests prove a real write lock can be retried, while timeout propagates
+the native busy/locked error without partial schema claims. A deliberately old development table
+shape is rejected and remains unchanged: WorkOnce has one current schema and no automatic
+unreleased-schema adoption/migration path.
+
+Memory is the reference transition store and intentionally has no crash durability. The native CAS
+port inherits durability/availability from the application-supplied backing store; WorkOnce proves
+its compare/retry/deadline/unknown-outcome wrapper semantics but does not claim persistence properties
+that the port does not provide. Out-of-band hand-corrupted database rows remain outside supported
+operation; when encountered, first-party parsing/metadata validation fails closed with
+`Invalid persisted WorkOnce row` rather than interpreting corrupt control state.
+
+The storage proof is source/model bound across `src/storage.ts`, `src/storage-validation.ts`,
+`src/memory.ts`, `src/sqlite.ts`, `src/cas.ts` and shared conformance. The bounded evidence digest
+includes the storage model/producer, focused refinement and contract tests, SQLite startup/atomic
+process tests and mutation controls. Compiled mutants remove row detachment, widen compare retries,
+swallow unknown CAS acknowledgement, erase CAS deadline classification, make `afterId` inclusive,
+weaken exact +1 revision validation and disable SQLite busy recognition; each must make the focused
+storage proof red for its intended witness.
+
 ## Fast complete gate
 
 `npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **27 seconds wall-clock**; the durable-lifecycle TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.

@@ -57,7 +57,14 @@ run('type identity trivia', process.execPath, [
 run('public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']);
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('real process faults', process.execPath, ['--test', ...processTests]);
+run('storage implementation mutation guard', process.execPath, [
+  'scripts/check-storage-contract-mutation.mjs',
+]);
+run('storage source/model mutation guard', process.execPath, [
+  'scripts/check-storage-source-model-mutation.mjs',
+]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
+run('TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']);
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
 ]);

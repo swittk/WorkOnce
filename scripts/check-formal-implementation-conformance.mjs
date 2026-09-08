@@ -33,8 +33,32 @@ const modelFiles = [
   'formal/WorkOnceContract.tla',
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
+  'formal/WorkOnceStorage.tla',
+  'formal/WorkOnceStorage.cfg',
 ];
+const storageSourceFiles = [
+  'src/storage.ts',
+  'src/storage-validation.ts',
+  'src/memory.ts',
+  'src/sqlite.ts',
+  'src/cas.ts',
+  'src/conformance.ts',
+];
+const storageModelFiles = ['formal/WorkOnceStorage.tla', 'formal/WorkOnceStorage.cfg'];
+
 const assuranceInfrastructureFiles = [
+  'test/process/sqlite-busy-child.mjs',
+
+  'test/process/sqlite-busy-startup.test.mjs',
+
+  'test/storage-contract-hardening.test.mjs',
+
+  'scripts/check-storage-contract-mutation.mjs',
+
+  'scripts/storage-formal.mjs',
+
+  'scripts/storage-refinement.mjs',
+
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
   'scripts/check-bounded-trace-domain.mjs',
@@ -565,6 +589,17 @@ function buildManifest(live) {
         observationProducer: 'scripts/runtime-boundary-refinement.mjs',
         observationBinding: 'scripts/formal.mjs',
       },
+      storage: {
+        spec: 'formal/WorkOnceStorage.tla',
+        config: 'formal/WorkOnceStorage.cfg',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceStorage.cfg'),
+        observationProducer: 'scripts/storage-refinement.mjs',
+        observationBinding: 'scripts/storage-formal.mjs',
+        sourceFiles: storageSourceFiles,
+        modelFiles: storageModelFiles,
+        sourceDigest: semanticSourceDigest(storageSourceFiles),
+        modelDigest: formalDigest(storageModelFiles),
+      },
     },
     entrypoints: expectedEntrypoints,
     callables,
@@ -629,6 +664,13 @@ function renderReport(manifest) {
   }
   lines.push(
     '',
+    '## Storage/conformance model',
+    '',
+    `- Spec: \`${manifest.model.storage.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.storage.observationProducer}\` via \`${manifest.model.storage.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.storage.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound storage source: ${manifest.model.storage.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
+    '',
     '## Assurance infrastructure binding',
     '',
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
@@ -662,6 +704,16 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
+  if (
+    previous?.model?.storage &&
+    previous.model.storage.sourceDigest !== current.model.storage.sourceDigest &&
+    previous.model.storage.modelDigest === current.model.storage.modelDigest &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

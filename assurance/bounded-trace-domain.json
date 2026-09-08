@@ -7,6 +7,20 @@
     "test/runtime-boundary-refinement.test.mjs",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/formal.mjs",
+    "formal/WorkOnceStorage.cfg",
+    "formal/WorkOnceStorage.tla",
+    "assurance/red-before/storage-conformance-baseline.json",
+    "test/process/sqlite-busy-child.mjs",
+    "test/process/sqlite-busy-startup.test.mjs",
+    "test/storage-contract-hardening.test.mjs",
+    "test/storage-refinement.test.mjs",
+    "test/process/storage-child.mjs",
+    "test/process/storage-process.test.mjs",
+    "test/process/sqlite-process.test.mjs",
+    "scripts/check-storage-source-model-mutation.mjs",
+    "scripts/check-storage-contract-mutation.mjs",
+    "scripts/storage-formal.mjs",
+    "scripts/storage-refinement.mjs",
     "scripts/build-source-binding.mjs",
     "scripts/check-build-source-binding-mutation.mjs",
     "scripts/check-assurance-infrastructure-binding-mutation.mjs",
@@ -18,7 +32,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "51eda17158cb6ea703b036aece6b9152c019a45256c723d46a2d162002da6b48",
+  "evidenceDigest": "327ac8f6be98beb6b4b01e71bfb23c34199423607810d861f72a0d419c9c49da",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -89,6 +103,23 @@
     },
     "observationDigest": "85ddb7daf591b60a7db0488032c4fa83163b13c551b6b14030384c5ab6f50d13",
     "lifecycleAdapterCases": 600
+  },
+  "storageBoundary": {
+    "samples": 19,
+    "counts": {
+      "atomicContention": 3,
+      "casBoundary": 1,
+      "casContention": 1,
+      "casExhaustion": 1,
+      "casHistoryCongruence": 1,
+      "casUnknown": 1,
+      "detached": 3,
+      "invalidWrite": 3,
+      "queryBoundary": 3,
+      "sqliteBoundary": 1,
+      "sqliteBusy": 1
+    },
+    "observationDigest": "3c0ba6c71604c8f8f89b3244fc8c2b52679f844739e760f81354f80063f38d72"
   },
   "observed": {
     "deterministicScenarios": 43,

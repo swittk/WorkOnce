@@ -42,10 +42,17 @@
 - `root.exponentialBackoff`: `BackoffDelay`
 - `root.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
 
+## Storage/conformance model
+
+- Spec: `formal/WorkOnceStorage.tla`
+- Fresh compiled observations: `scripts/storage-refinement.mjs` via `scripts/storage-formal.mjs`
+- Checked invariants: `AtMostOneCallerCommit`, `BoundedCompareMisses`, `DeadlineExpiryStopsRetry`, `DecisionFaultCannotCommit`, `FreshReadBeforeCommit`, `MissCannotCommit`, `ReachedDeadlineCannotCommit`, `StorageSamplesConform`, `StorageTypeOK`, `UnknownOutcomeStopsRetry`
+- Bound storage source: `src/storage.ts`, `src/storage-validation.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`, `src/conformance.ts`
+
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **13**
-- Content digest: `66e571a2487558d6a2232fc1bd543ba309232eba187b9a8284f2005a40f58a54`
+- Bound proof/checker files: **19**
+- Content digest: `3b50cbbe598d7a8c7d278fccb46f114cdb8228e6a02d0ce04ee6adcd189c038b`
 
 ## Coverage rule
 

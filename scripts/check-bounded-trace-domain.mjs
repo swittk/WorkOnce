@@ -10,6 +10,9 @@ const { runBoundedRefinementCorpus } = await import('./formal-bounded-refinement
 const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
   './runtime-boundary-refinement.mjs'
 );
+const { runStorageRefinementSamples, assertStorageRefinementSamples } = await import(
+  './storage-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -19,6 +22,20 @@ const evidenceFiles = [
   'test/runtime-boundary-refinement.test.mjs',
   'test/lifecycle-transition-matrix.test.mjs',
   'scripts/formal.mjs',
+  'formal/WorkOnceStorage.cfg',
+  'formal/WorkOnceStorage.tla',
+  'assurance/red-before/storage-conformance-baseline.json',
+  'test/process/sqlite-busy-child.mjs',
+  'test/process/sqlite-busy-startup.test.mjs',
+  'test/storage-contract-hardening.test.mjs',
+  'test/storage-refinement.test.mjs',
+  'test/process/storage-child.mjs',
+  'test/process/storage-process.test.mjs',
+  'test/process/sqlite-process.test.mjs',
+  'scripts/check-storage-source-model-mutation.mjs',
+  'scripts/check-storage-contract-mutation.mjs',
+  'scripts/storage-formal.mjs',
+  'scripts/storage-refinement.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/check-build-source-binding-mutation.mjs',
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
@@ -41,6 +58,8 @@ function digestFiles(files) {
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
+const storageSamples = await runStorageRefinementSamples();
+assertStorageRefinementSamples(storageSamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -63,6 +82,18 @@ const current = {
       .update(JSON.stringify(boundarySamples))
       .digest('hex'),
     lifecycleAdapterCases: 600,
+  },
+  storageBoundary: {
+    samples: storageSamples.length,
+    counts: Object.fromEntries(
+      [...new Set(storageSamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, storageSamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(storageSamples))
+      .digest('hex'),
   },
   observed: {
     deterministicScenarios: report.deterministicScenarios,
