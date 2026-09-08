@@ -572,7 +572,11 @@ export class WorkQueue<I, O = null, R extends string = string> {
   /** One batched read, preserving the caller's order and missing entries. */
   async inspectMany(keys: readonly string[]): Promise<(WorkSnapshot<I, O, R> | undefined)[]> {
     const result = await this.store.getMany(keys.map((key) => workId(this.scope, this.kind, key)));
-    return result.rows.map((row) => (row ? this.snapshot(row, result.now) : undefined));
+    return result.rows.map((row) => {
+      if (row === undefined) return undefined;
+      this.assertDefinition(row);
+      return this.snapshot(row, result.now);
+    });
   }
   /** Latest 128 durable transitions, including reason and worker labels; heartbeats are not events. */
   async history(key: string): Promise<WorkEvent[]> {

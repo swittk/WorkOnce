@@ -24,7 +24,7 @@ The generated human summary is `formal/FORMAL_COVERAGE_GAPS.md`; despite the his
 
 ## Batched executable refinement and fuzz corpus
 
-`test/formal-bounded-refinement.test.mjs` drives the **real public WorkOnce API** through one in-process bounded corpus. It currently contains 31 deliberate lifecycle scenarios plus **96 deterministic seeded traces × 10 steps**. It checks the state after every step and covers 45 reviewed dimensions, including:
+`test/formal-bounded-refinement.test.mjs` drives the **real public WorkOnce API** through one in-process bounded corpus. It currently contains 43 deliberate lifecycle scenarios plus **96 deterministic seeded traces × 10 steps**. It checks the state after every step and covers 57 reviewed dimensions, including:
 
 - queued/running/retry-wait/defer-wait/succeeded/failed/cancelled states;
 - both worker identities, lease reclaim, increasing fences and stale renew/settle rejection;
@@ -75,15 +75,54 @@ Additional tests cover expiry between read and the actual native write, unknown 
 
 The model retains **every issued attempt token**, including older attempts from the same worker. Claims append tokens; success/failure/retry/defer/renew select an individual token and must match the current generation/fence and unexpired lease.
 
-The checked bounds are two workers, five time ticks, four fences, two generations, two claims per generation, one automatic retry, one deferral and a three-tick elapsed budget. The current graph is **203,641 generated / 135,366 distinct states**, complete depth **19**, with no invariant violation. The 10 configured invariants cover state/counter typing, uniqueness of the issued current fence, proof that a running owner token was actually issued, accepted-fence currentness, current-fence success, wait-cause consistency, terminal-only pending follow-ups, no reset state retaining prior pending intent, and no lost continuation obligation. Generation restart explicitly clears generation-local child evidence so an old child cannot satisfy a later continuation.
+The checked bounds are two workers, five time ticks, four fences, two generations, two claims per generation, one automatic retry, one deferral and a three-tick elapsed budget. The current graph is **228,573 generated / 133,714 distinct states**, complete depth **17**, with no invariant violation. The 10 configured invariants cover state/counter typing, uniqueness of the issued current fence, proof that a running owner token was actually issued, accepted-fence currentness, current-fence success, wait-cause consistency, terminal-only pending follow-ups, no reset state retaining prior pending intent, and no lost continuation obligation. Generation restart explicitly clears generation-local child evidence so an old child cannot satisfy a later continuation.
 
 This is bounded abstract safety evidence, **not a complete machine-checked refinement proof from every TypeScript instruction to TLA+**. `Renew` is bounded by the modeled per-generation deadline, but `Spec` intentionally declares no fairness or liveness property; eventual scheduling/delivery is therefore not a TLC-proven claim. The compiler map plus executable refinement/fuzz corpus is the implementation bridge; native adapter/fault tests cover storage behavior outside the abstract machine. External side effects remain at-least-once unless their own system participates in idempotency/fencing.
 
 The pinned official TLC release is `v1.7.4`, SHA-256 `936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88`. CI verifies that digest. Set `TLA2TOOLS_JAR` or use ignored `.artifacts/tla2tools.jar` locally.
 
+## Runtime boundaries and full transition matrix
+
+The durable machine now considers retry/wait delays of zero, one and two ticks. Its deferral
+stop reason uses the same ordered predicate checked against real settlements: attempt budget,
+then elapsed deadline, then deferral budget. Existing worker/time/fence/generation/counter bounds
+are unchanged. Different graph counts reflect the corrected stop-reason branches and expanded
+delay choices, not removal of supported transitions.
+
+`formal/WorkOnceRuntime.tla` separately models bounded local/external runner control: claim replies,
+error observers, active completion, interruptible backoff, shutdown, draining and final rejection.
+Failure presence is independent of the rejection payload, including JavaScript `undefined`.
+Its seven invariants cover control-state typing, failure presence, fatal backoff, admission after
+stop, draining, rejection and agreement with fresh implementation observations. The bounded graph
+has 203 generated / 41 distinct states, complete depth 7, with local capacity at most two.
+
+`scripts/runtime-boundary-refinement.mjs` collects **206 observations from the real compiled public
+APIs**: 64 runner/error/race cases, 80 definition-bound reads, 36 backoff inputs, 24 overlapping
+budget cases and both cancel/completion orders. `scripts/formal.mjs` puts these fresh observations
+into one generated TLA module and checks `BoundarySampleOK` from `WorkOnceContract.tla`. The
+expanded durable `Defer` action uses that contract's stop-reason operator too. The observations are
+not replaced by a simulated implementation or cached verdict. The larger retry indices have an
+explicit saturation abstraction only for the sampled zero/one/eight initial delays, one/two
+multipliers and a 64 ms cap; this is not an unbounded arithmetic proof.
+
+`test/lifecycle-transition-matrix.test.mjs` adds **600 command/phase/adapter cases**, including
+rejected-operation no-write assertions, across memory, SQLite and native CAS. An additional
+public-API regression performs 1,025 real zero-delay retries and proves immediate eligibility
+survives exponent overflow. Shared conformance also runs unchanged against a conforming adapter
+that reorders atomic invocation arrival, so a legitimate completion-before-cancel result is not
+misclassified as an adapter defect.
+
+The manifest now binds conformance implementation source as well as runtime source. It maps
+explicit item retry/rerun wrappers and relevant timer/backoff fields to their actual semantics.
+The bounded-domain evidence digest includes the new producer, matrices and observation-to-TLA
+runner. These are bounded executable refinements and safety checks, not instruction-by-instruction
+TypeScript verification. Neither model assumes fairness or proves that an application callback or
+network request must eventually resolve. Keeping the two graphs separate avoids a large artificial
+cross-product and does not launch TLC per observation.
+
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, one TLC run, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **20 seconds wall-clock**; the 135k-state TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.
+`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph and one small runtime-boundary TLC graph, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **20 seconds wall-clock**; the durable-lifecycle TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.
 
 That timing is evidence for this machine/version, not a universal performance promise. The important design rule is structural: no per-trace model-checker process explosion.
 

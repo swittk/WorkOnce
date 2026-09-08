@@ -3,6 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runBoundedRefinementCorpus } from './formal-bounded-refinement-corpus.mjs';
+import {
+  runRuntimeBoundarySamples,
+  assertRuntimeBoundarySamples,
+} from './runtime-boundary-refinement.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
@@ -10,6 +14,10 @@ const write = process.argv.includes('--write');
 const evidenceFiles = [
   'scripts/formal-bounded-refinement-corpus.mjs',
   'test/formal-bounded-refinement.test.mjs',
+  'scripts/runtime-boundary-refinement.mjs',
+  'test/runtime-boundary-refinement.test.mjs',
+  'test/lifecycle-transition-matrix.test.mjs',
+  'scripts/formal.mjs',
 ];
 function digestFiles(files) {
   const hash = crypto.createHash('sha256');
@@ -20,6 +28,8 @@ function digestFiles(files) {
   return hash.digest('hex');
 }
 const report = await runBoundedRefinementCorpus();
+const boundarySamples = await runRuntimeBoundarySamples();
+assertRuntimeBoundarySamples(boundarySamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -29,6 +39,20 @@ const current = {
       .sort()
       .map((key) => [key, report.coverage[key] > 0]),
   ),
+  runtimeBoundary: {
+    samples: boundarySamples.length,
+    counts: Object.fromEntries(
+      ['runner', 'read', 'backoff', 'budget', 'cancel'].map((kind) => [
+        kind,
+        boundarySamples.filter((sample) => sample.kind === kind).length,
+      ]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(boundarySamples))
+      .digest('hex'),
+    lifecycleAdapterCases: 600,
+  },
   observed: {
     deterministicScenarios: report.deterministicScenarios,
     fuzzTraces: report.fuzzTraces,

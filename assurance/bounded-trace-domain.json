@@ -2,9 +2,13 @@
   "version": 1,
   "evidenceFiles": [
     "scripts/formal-bounded-refinement-corpus.mjs",
-    "test/formal-bounded-refinement.test.mjs"
+    "test/formal-bounded-refinement.test.mjs",
+    "scripts/runtime-boundary-refinement.mjs",
+    "test/runtime-boundary-refinement.test.mjs",
+    "test/lifecycle-transition-matrix.test.mjs",
+    "scripts/formal.mjs"
   ],
-  "evidenceDigest": "2d5c85b7e18135bd26a192e3f30c4bf33c0371a26b886ef10b1ca77249ef1b63",
+  "evidenceDigest": "ad6347dcb119c7b60e458beb0593a3fc9600f7ed3d26fd0257560724ff4da9a5",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -63,6 +67,18 @@
     "waitingRetry": true,
     "wake": true,
     "workerErrorIsolation": true
+  },
+  "runtimeBoundary": {
+    "samples": 206,
+    "counts": {
+      "runner": 64,
+      "read": 80,
+      "backoff": 36,
+      "budget": 24,
+      "cancel": 2
+    },
+    "observationDigest": "85ddb7daf591b60a7db0488032c4fa83163b13c551b6b14030384c5ab6f50d13",
+    "lifecycleAdapterCases": 600
   },
   "observed": {
     "deterministicScenarios": 43,

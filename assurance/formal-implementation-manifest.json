@@ -193,7 +193,10 @@
         "Defer"
       ],
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "signatureHash": "87d751c45eb47275d4e65e883b534ddf51ae04d8f515a87968434c6926fa35c6",
@@ -307,7 +310,10 @@
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#onError",
       "modelActions": [],
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "signatureHash": "c5d9bed7c96b287c7355c5e051bfe1e51daf8c974b22eb2934e6109d95993087",
@@ -579,10 +585,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.CompareExchangePort.compareExchange",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "b948bad43aa943f25f08fd0f217f18f3eb3355349653f924513fd1685f3df5d8"
     },
     {
@@ -591,10 +600,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.CompareExchangePort.getMany",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2188db5ef920a56765d7128e948a62dc60bdaa03c073f594d8d9f390619e056c"
     },
     {
@@ -603,10 +615,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.CompareExchangePort.query",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     },
     {
@@ -615,10 +630,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "962f770acb4333a051c18a2ce0ceddd5b885f4646a636adb217d496499dbc0fb"
     },
     {
@@ -627,10 +645,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.atomic",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "607de81d24eaa87aeda036fdb1daac5b27677524d3e4105b9f227b386375f131"
     },
     {
@@ -639,10 +660,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.getMany",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2188db5ef920a56765d7128e948a62dc60bdaa03c073f594d8d9f390619e056c"
     },
     {
@@ -651,37 +675,51 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "cas.createCompareExchangeStore.query",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     },
     {
       "classification": "assurance-infrastructure",
       "evidence": [
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "conformance.ConformanceFixture.advance",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "28fbfd8b280f285de8511d16ff43b9786941cbea038dc7e664c543e1959bbd05"
     },
     {
       "classification": "assurance-infrastructure",
       "evidence": [
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "conformance.ConformanceFixture.close",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "c906bb038b83ddd6c5513ecc9007fe92b03de5348ad1224551e8f2ce0c8afc36"
     },
     {
       "classification": "assurance-infrastructure",
       "evidence": [
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "conformance.runConformance",
       "modelActions": [],
+      "runtimeContracts": [
+        "BoundarySampleOK"
+      ],
       "signatureHash": "473b37805e6da2e242f743c26ad3a42eb4e7aa7dfdaed5a7b0bf5912b4454a4b"
     },
     {
@@ -690,10 +728,13 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "aa31e158703eced7a8992fa28e7dd966d29d49c5d78dd79d7eeef2e8a27b8a93"
     },
     {
@@ -702,12 +743,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun.defer",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
@@ -716,12 +760,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun.fail",
       "modelActions": [
         "Fail"
       ],
+      "runtimeContracts": [],
       "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
@@ -730,12 +777,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun.retry",
       "modelActions": [
         "Retry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
@@ -744,12 +794,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun.succeed",
       "modelActions": [
         "Success"
       ],
+      "runtimeContracts": [],
       "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
@@ -758,12 +811,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkRun.wait",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
@@ -772,7 +828,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkService.claim",
       "modelActions": [
@@ -780,6 +838,7 @@
         "ExhaustAttempts",
         "ExhaustDeadline"
       ],
+      "runtimeContracts": [],
       "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
     },
     {
@@ -788,10 +847,13 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkService.ensure",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "26cf6222e890277370928dbb051ab780deab5185d1cc4d02e2535dad1e6ec9f6"
     },
     {
@@ -800,12 +862,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkService.heartbeat",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
     },
     {
@@ -814,7 +879,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkService.settle",
       "modelActions": [
@@ -823,6 +890,7 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
     },
     {
@@ -831,7 +899,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkTransport.claim",
       "modelActions": [
@@ -839,6 +909,7 @@
         "ExhaustAttempts",
         "ExhaustDeadline"
       ],
+      "runtimeContracts": [],
       "signatureHash": "86a90d0054b712acf25cfd80f4622f72931084e969f9c81aba85c97ba157ae84"
     },
     {
@@ -847,12 +918,15 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkTransport.heartbeat",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
     },
     {
@@ -861,7 +935,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkTransport.settle",
       "modelActions": [
@@ -870,6 +946,7 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
     },
     {
@@ -878,10 +955,13 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.ExternalWorkerOptions.onError",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
     },
     {
@@ -890,7 +970,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.processExternal",
       "modelActions": [
@@ -901,6 +983,7 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "09c2447ad1972af0b2fa47dace87e400f274ef7f9190bc09ca754d85912c3eaa"
     },
     {
@@ -909,7 +992,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.runExternal",
       "modelActions": [
@@ -920,6 +1005,14 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [
+        "RunnerRejects",
+        "ClaimReply",
+        "ObserveHandled",
+        "ObserveFatal",
+        "ActiveDone",
+        "Finish"
+      ],
       "signatureHash": "a5bf5cbb0999138bb841620fb9124bd6b76b1b2d90e0641297aa97001802deb7"
     },
     {
@@ -928,7 +1021,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "external.runExternalAvailable",
       "modelActions": [
@@ -939,65 +1034,83 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "c3bf6c5b847f725367b10a35a9a00a6174fcf6ad42b647147fad9de154a43d1f"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.WorkConflict",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2d4d12750cb0548b999e6fbaecf55969b40213088fb53dd32cda987150fc96aa"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.assertCurrent",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "8d30436fad6458b39c3bfc23fffe32e80d34aeee92834e14fc49563c1321b41f"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.cancelRecord",
       "modelActions": [
         "Cancel"
       ],
+      "runtimeContracts": [],
       "signatureHash": "08f5a48bd716920d6068c5532d101dc8b50b6d20407975193c34adc3236b7c94"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.canonical",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "d9706d0e2ea83dc2c0adb0a9c9b134a03f05f9c6285ec3a21089810b40818085"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.changed",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "4f456781dd07775ff1affb28fbbb4eb51532169c22dcaf8c59f17ff854218dc3"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.claimRecord",
       "modelActions": [
@@ -1005,119 +1118,152 @@
         "ExhaustAttempts",
         "ExhaustDeadline"
       ],
+      "runtimeContracts": [],
       "signatureHash": "d0b9ae3b3904c32e0a521672644f091148a93130d444daf46c4df0a7745d3d05"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.copy",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "d2a6490be351e2a3f1b1667b7a2afe769a43fe41e88b4cf6b0a8c6c3b55916b1"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.createRecord",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "b60b26aad7c3ca226ec1a188636985653c5aa1328d528a59ff8b39b3b1e79442"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.dueAt",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "94ec8637899248c9fdedbca88b3fa64676e743edf1e62015a5699b27b02f168d"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.effectiveNow",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "27b2c353a13811093fa9da4957b8fcb23bc0cf648ac4134fcd66a4e87b45bfab"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.integer",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "6fb3e165bb8662815c05ca3da22b6a43b10b5201d884624d40459a929efc5cc4"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.renewRecord",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "13e9d73c4e83157de98cae388f95ec2e67e8ca3ac230bcae37083096dbd45066"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.replayReceipt",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "4d9c4bd421256890b54ab6dffe593dbbf7b49373889a892bff52aacc9f514875"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.rerunRecord",
       "modelActions": [
         "Rerun"
       ],
+      "runtimeContracts": [],
       "signatureHash": "b085059b2d01b8113306fb249c052e197501cb27ab91429a6c111ed98914aecc"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.retryRecord",
       "modelActions": [
         "ManualRetry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "b085059b2d01b8113306fb249c052e197501cb27ab91429a6c111ed98914aecc"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.sameRequest",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "f7ae1619902f49ce38990d1f8bdd1e4cc61a6f597d8abf2f4fce1a6e72c6fbbf"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.settleRecord",
       "modelActions": [
@@ -1126,16 +1272,20 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "29d891fd364262a40a6816f618058125b671260e9900d89a84f758504c81530b"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "kernel.workId",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "467e1efaeaa6f2f23c7e8cf4bda7490016dbc282e9053fc32794bcf670fa11ef"
     },
     {
@@ -1144,10 +1294,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "memory.createMemoryStore",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "6fd8a6b66d7ade2cf404d914a225b917adf05eb9cc8b5eed1a1a25f44b1073f9"
     },
     {
@@ -1156,10 +1309,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "memory.createMemoryStore.atomic",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "607de81d24eaa87aeda036fdb1daac5b27677524d3e4105b9f227b386375f131"
     },
     {
@@ -1168,10 +1324,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "memory.createMemoryStore.getMany",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2188db5ef920a56765d7128e948a62dc60bdaa03c073f594d8d9f390619e056c"
     },
     {
@@ -1180,238 +1339,309 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "memory.createMemoryStore.query",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "aa31e158703eced7a8992fa28e7dd966d29d49c5d78dd79d7eeef2e8a27b8a93"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun.defer",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun.fail",
       "modelActions": [
         "Fail"
       ],
+      "runtimeContracts": [],
       "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun.retry",
       "modelActions": [
         "Retry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun.succeed",
       "modelActions": [
         "Success"
       ],
+      "runtimeContracts": [],
       "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.ExternalWorkRun.wait",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkConflict",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2d4d12750cb0548b999e6fbaecf55969b40213088fb53dd32cda987150fc96aa"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "cfd865928192d0c796481f920501106c4de68804a8eac4ebb2a67f7bc6bb2805"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.cancel",
       "modelActions": [
         "Cancel"
       ],
+      "runtimeContracts": [],
       "signatureHash": "5da06305ca8946bda6f3d9025ca452b547e882db13de58f309cd8389b4a9e3df"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.enqueue",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "d027f3dd6573961710e67db866d8e28445d6ad1317075fe5f1d2a4fa6c0bda78"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.ensure",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "d027f3dd6573961710e67db866d8e28445d6ad1317075fe5f1d2a4fa6c0bda78"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.inspect",
       "modelActions": [],
+      "runtimeContracts": [
+        "ReadAllowed"
+      ],
       "signatureHash": "0029bea6805a637850e2b31171ad7f88de2ce0370263734b6387d95fc2db61b3"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.request",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "21eda4d1142ff7167491d1c767daddf2797d2866f36f8c820fc19ccefd9be9ed"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.rerun",
-      "modelActions": [],
+      "modelActions": [
+        "Rerun"
+      ],
+      "runtimeContracts": [],
       "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.restart",
       "modelActions": [
         "ManualRetry",
         "Rerun"
       ],
+      "runtimeContracts": [],
       "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.retry",
-      "modelActions": [],
+      "modelActions": [
+        "ManualRetry"
+      ],
+      "runtimeContracts": [],
       "signatureHash": "f3feb762832da02e78617d7ccda25e6b8adaf8b047ed35b607a388a124bbae83"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkItem.wake",
       "modelActions": [
         "Wake"
       ],
+      "runtimeContracts": [],
       "signatureHash": "82ad0786b26a709ecc0e4c9ee824743b1339840e885a60f6ea0e893f3e705510"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "0fbc11f8f0f1c16172c65a2d09c69930fdd6a7316c4505c523137da97001d4f9"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.cancel",
       "modelActions": [
         "Cancel"
       ],
+      "runtimeContracts": [],
       "signatureHash": "35aa7afb5b43bfe429a704fd8a862a2a8f01dc0562eb4a4737837d654ccb1b3d"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.cancelCurrent",
       "modelActions": [
         "Cancel"
       ],
+      "runtimeContracts": [],
       "signatureHash": "543700b38be8b41fc490a1f2a0e6b03748a1abed0bc3b46319cb80f50f3ebea8"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.claim",
       "modelActions": [
@@ -1419,26 +1649,33 @@
         "ExhaustAttempts",
         "ExhaustDeadline"
       ],
+      "runtimeContracts": [],
       "signatureHash": "f820b219d525082e345a0777a81f48e2eb36fa6da5b842ac70703e51ab56467c"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.enqueue",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "eb6db9952bdde4cff6cf0064e3bdd7af702c7516f0c98fadd59b27026a2307db"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.ensure",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "eb6db9952bdde4cff6cf0064e3bdd7af702c7516f0c98fadd59b27026a2307db"
     },
     {
@@ -1447,7 +1684,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.handoff",
       "modelActions": [
@@ -1458,78 +1697,108 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "edb034b3d2b40c63c0f4600c69ff7850ae5dfe6f4b884d89628f1a92a44e8b38"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.heartbeat",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "72dc40078cb90de77292fdacb1cea9205a2abb01090062e3c67025e1f3ecac85"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.history",
       "modelActions": [],
+      "runtimeContracts": [
+        "ReadAllowed"
+      ],
       "signatureHash": "6b14c834d7c9f47bc6c8da8a453c82c3cfbb93e67fb5b6fea1d64e63653f21bd"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.inspect",
       "modelActions": [],
+      "runtimeContracts": [
+        "ReadAllowed"
+      ],
       "signatureHash": "e5a57a0ccb1866ffdf00071c5d80b5ae9dd3d5d742b53821d30fb4fa001e2ff1"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.inspectId",
       "modelActions": [],
+      "runtimeContracts": [
+        "ReadAllowed"
+      ],
       "signatureHash": "40ac9a50ac0b84890a7e6bfa40b60941ce5dd9bf102bb20d3eb199af705fb1f1"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.inspectMany",
       "modelActions": [],
+      "runtimeContracts": [
+        "ReadAllowed"
+      ],
       "signatureHash": "394fcf5ccf064eda2c1910159cda8e44f8695cb7e5c97e833d781dca44eb22db"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.item",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "62af44129d2e4040d846e4b6f586d95cf60dd948eb33e7025b68fbda6fa88b53"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.key",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "66321539c270dbb7cebea127ad0175d9e9343306bb71ee041e21a16d9b8fcfab"
     },
     {
@@ -1538,7 +1807,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.process",
       "modelActions": [
@@ -1549,65 +1820,81 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "ea755a6a77831f631a38ac13666828b0b979ba8bcc830ea78b5e105a7c2ca79c"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.renew",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "72dc40078cb90de77292fdacb1cea9205a2abb01090062e3c67025e1f3ecac85"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.request",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2ab95eb27db5659cfd9c6d360c178e411ce24fc82188b1386344af8d6fabcb65"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.rerun",
       "modelActions": [
         "Rerun"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e1f20e810a3749b677d6460bb79054cf06a90bdee38273bc53c5ea1595e36cd7"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.restart",
       "modelActions": [
         "ManualRetry",
         "Rerun"
       ],
+      "runtimeContracts": [],
       "signatureHash": "d4bc5f3c1f254e0379a8817a9daf41dac475605a190e877a26ce6f9bc5b5dd3e"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.retry",
       "modelActions": [
         "ManualRetry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e1f20e810a3749b677d6460bb79054cf06a90bdee38273bc53c5ea1595e36cd7"
     },
     {
@@ -1616,7 +1903,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.run",
       "modelActions": [
@@ -1627,6 +1916,14 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [
+        "RunnerRejects",
+        "ClaimReply",
+        "ObserveHandled",
+        "ObserveFatal",
+        "ActiveDone",
+        "Finish"
+      ],
       "signatureHash": "e13bfab485fa61d580e3422b68647b8f790c956545e343919ff65c060804586a"
     },
     {
@@ -1635,7 +1932,9 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.runAvailable",
       "modelActions": [
@@ -1646,13 +1945,16 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "416e77e89c1b96f34c2453cba7fdab3b539076d6ab750cd6baa95cae4300d15b"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.serveExternal",
       "modelActions": [
@@ -1663,13 +1965,16 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "5a4e0430c876037c7293025f120018cac334afbc4b319c26e5b98c0f0497e33b"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.settle",
       "modelActions": [
@@ -1678,64 +1983,80 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "8e9a3eedb89f4f0632c45badd34b4c4f81d68c460c2fc8e5a4e0e4fc6610df81"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.wake",
       "modelActions": [
         "Wake"
       ],
+      "runtimeContracts": [],
       "signatureHash": "c30faa7dcf13841ab97af14044ab6d18681f41617d05547c4acfe655dc5e1880"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkQueue.wakeCurrent",
       "modelActions": [
         "Wake"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e12de015b68d6fd882d45de9fd08d5760fdda0534a08bbeca5409ce3769015c4"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "26e21f4f476b52fbdb8a8f1601fcf37ec65a20d6b536b1903c4c46824310242a"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.defer",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.fail",
       "modelActions": [
         "Fail"
       ],
+      "runtimeContracts": [],
       "signatureHash": "513e2e55dc0087ab4145aad3888412ed07561402d71c6b051bdcdd531d998b8f"
     },
     {
@@ -1744,53 +2065,67 @@
         "test/worker.test.mjs",
         "test/external.test.mjs",
         "test/handoff.test.mjs",
-        "test/edge-regressions.test.mjs"
+        "test/edge-regressions.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.handoff",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "c3130c5c44c2022d515a766cb03e8863051f8648ab1090abbb252cb538a8b75c"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.heartbeat",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "5fd69f14a5abe00f184ea5b1ac330facfec8d3474b069396c798403ba9a9ba9e"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.renew",
       "modelActions": [
         "Renew"
       ],
+      "runtimeContracts": [],
       "signatureHash": "5fd69f14a5abe00f184ea5b1ac330facfec8d3474b069396c798403ba9a9ba9e"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.retry",
       "modelActions": [
         "Retry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.settle",
       "modelActions": [
@@ -1799,98 +2134,123 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "e3a467649d8d6e7699ab3c23981fda3b7c31677b1c7082fafe3554c011a23164"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.succeed",
       "modelActions": [
         "Success"
       ],
+      "runtimeContracts": [],
       "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
       "classification": "observational",
       "evidence": [
         "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.toJSON",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "e77732cb8324cd47cb075afa6a8b0821bd6d5fd3017f0eee24d199e81f5fd88d"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.WorkRun.wait",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
-        "test/types/api.ts"
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.createWorkOnce",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "d0f80adb3a2c4486a652a0d792390eeac4d6abf285a82c392fb19148820a951d"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.createWorkOnce.define",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "31b3c13d60c74930935abb9d09e76995f13e85970f105e2dca6f0edef0ea1282"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.createWorkOnce.dispatch",
       "modelActions": [
         "CreateChild",
         "AckChild"
       ],
+      "runtimeContracts": [],
       "signatureHash": "c90f86c98c7cde94eefab0659d2c6d1c24af571ae139da1964baa7bd937253c2"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.createWorkOnce.runDispatcher",
       "modelActions": [
         "CreateChild",
         "AckChild"
       ],
+      "runtimeContracts": [],
       "signatureHash": "4ac6d7d12b21659fa034413c1eb1f23c895d2658697a3298530cce69e3417cfd"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.defer",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "696c046f2873d6a4f97883930f768f35bb0317a7ad78b53e704a9e28df0e0b95"
     },
     {
@@ -1898,11 +2258,16 @@
       "evidence": [
         "test/cas.test.mjs",
         "test/continuation-policy.test.mjs",
-        "test/readable-api.test.mjs"
+        "test/readable-api.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.exponentialBackoff",
       "modelActions": [
         "Retry"
+      ],
+      "runtimeContracts": [
+        "BackoffDelay"
       ],
       "signatureHash": "4f30d7f17f594d88517f931d28e5e5e019d01c9620d9b352a3e23e96a402aa43"
     },
@@ -1910,19 +2275,24 @@
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.fail",
       "modelActions": [
         "Fail"
       ],
+      "runtimeContracts": [],
       "signatureHash": "807e97f6b173d9db4de6602540884a55dbbefdc0cd40e6646cd833d3f46565f1"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.processExternal",
       "modelActions": [
@@ -1933,25 +2303,31 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "09c2447ad1972af0b2fa47dace87e400f274ef7f9190bc09ca754d85912c3eaa"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.retry",
       "modelActions": [
         "Retry"
       ],
+      "runtimeContracts": [],
       "signatureHash": "30ed5eaa9dc9ad5e7a5e4f6dc695e2f9cecb6cf58dffc83fd74bf92b21b3bfdc"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.runExternal",
       "modelActions": [
@@ -1962,13 +2338,23 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [
+        "RunnerRejects",
+        "ClaimReply",
+        "ObserveHandled",
+        "ObserveFatal",
+        "ActiveDone",
+        "Finish"
+      ],
       "signatureHash": "a5bf5cbb0999138bb841620fb9124bd6b76b1b2d90e0641297aa97001802deb7"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.runExternalAvailable",
       "modelActions": [
@@ -1979,30 +2365,37 @@
         "Retry",
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "c3bf6c5b847f725367b10a35a9a00a6174fcf6ad42b647147fad9de154a43d1f"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.succeed",
       "modelActions": [
         "Success"
       ],
+      "runtimeContracts": [],
       "signatureHash": "2f5d628817efcaa77f51d573e31ab2c491c9b1d4397ed6e529302471a62b9cce"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "root.wait",
       "modelActions": [
         "Defer"
       ],
+      "runtimeContracts": [],
       "signatureHash": "696c046f2873d6a4f97883930f768f35bb0317a7ad78b53e704a9e28df0e0b95"
     },
     {
@@ -2011,10 +2404,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "sqlite.createSqliteStore",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "85c402bc8be048f6205b12dc8f9799c9d0a2a4812654c1c12ddd5c441690d4bb"
     },
     {
@@ -2023,10 +2419,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.atomic",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "607de81d24eaa87aeda036fdb1daac5b27677524d3e4105b9f227b386375f131"
     },
     {
@@ -2035,10 +2434,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.close",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "6354497f8207115373894a8c62b20f8020b95b84ed8ddcbfa815851d1238c651"
     },
     {
@@ -2047,10 +2449,13 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.getMany",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2188db5ef920a56765d7128e948a62dc60bdaa03c073f594d8d9f390619e056c"
     },
     {
@@ -2059,40 +2464,52 @@
         "test/cas.test.mjs",
         "test/conformance.test.mjs",
         "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "sqlite.createSqliteStore.query",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "storage.WorkStore.atomic",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "607de81d24eaa87aeda036fdb1daac5b27677524d3e4105b9f227b386375f131"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "storage.WorkStore.getMany",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "2188db5ef920a56765d7128e948a62dc60bdaa03c073f594d8d9f390619e056c"
     },
     {
       "classification": "abstract-semantic",
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
-        "test/conformance.test.mjs"
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
       ],
       "key": "storage.WorkStore.query",
       "modelActions": [],
+      "runtimeContracts": [],
       "signatureHash": "9626acc15094b30882855ba7b69f0895a88dab3dbe381b9fc5b0a13901e57c35"
     }
   ],
@@ -2420,18 +2837,18 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "abstract-semantic",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
       ],
       "field": "initialDelayMs",
       "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#initialDelayMs",
       "modelConcepts": [
-        "observationOnly"
+        "BackoffDelay"
       ],
       "optional": false,
       "source": "src/retry-policy.ts",
@@ -2464,18 +2881,18 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "abstract-semantic",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
       ],
       "field": "maxDelayMs",
       "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#maxDelayMs",
       "modelConcepts": [
-        "observationOnly"
+        "BackoffDelay"
       ],
       "optional": false,
       "source": "src/retry-policy.ts",
@@ -2508,18 +2925,18 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "abstract-semantic",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
       ],
       "field": "multiplier",
       "key": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44#multiplier",
       "modelConcepts": [
-        "observationOnly"
+        "BackoffDelay"
       ],
       "optional": true,
       "source": "src/retry-policy.ts",
@@ -2544,7 +2961,10 @@
       "field": "status",
       "key": "ExternalProcessResult|src/external.ts|0|d7261e87b489#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -2592,7 +3012,10 @@
       "field": "status",
       "key": "ExternalRunAvailableResult|src/external.ts|0|aaf8253ea95d#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -2714,7 +3137,10 @@
       "field": "signal",
       "key": "ExternalWorkRun<6fddad540f0b>|src/external.ts|0|6fddad540f0b#signal",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -2739,7 +3165,10 @@
       "field": "concurrency",
       "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#concurrency",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/external.ts",
@@ -2750,19 +3179,24 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "worker-runtime",
       "directions": [
         "exported-type",
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
       ],
       "field": "heartbeatMs",
       "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#heartbeatMs",
       "modelConcepts": [
-        "observationOnly"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/external.ts",
@@ -2773,19 +3207,24 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "worker-runtime",
       "directions": [
         "exported-type",
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
       ],
       "field": "idleMs",
       "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#idleMs",
       "modelConcepts": [
-        "observationOnly"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/external.ts",
@@ -2833,7 +3272,10 @@
       "field": "signal",
       "key": "ExternalWorkerOptions|src/external.ts|0|0b97a3ac6550#signal",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -3016,7 +3458,10 @@
       "field": "status",
       "key": "ProcessResult|src/worker.ts|0|98a015ed65fa#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/worker.ts",
@@ -3241,7 +3686,10 @@
       "field": "status",
       "key": "RunAvailableResult|src/worker.ts|0|f68e87143aef#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/worker.ts",
@@ -3802,7 +4250,10 @@
       "field": "perform",
       "key": "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/work.ts",
@@ -5663,7 +6114,10 @@
       "field": "signal",
       "key": "WorkRun<fbff81ec80db>|src/work.ts|0|fbff81ec80db#signal",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/work.ts",
@@ -5987,7 +6441,10 @@
       "field": "concurrency",
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#concurrency",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/worker.ts",
@@ -5998,18 +6455,23 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "worker-runtime",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
       ],
       "field": "heartbeatMs",
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#heartbeatMs",
       "modelConcepts": [
-        "observationOnly"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/worker.ts",
@@ -6020,18 +6482,23 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "observational",
+      "classification": "worker-runtime",
       "directions": [
         "input"
       ],
       "evidence": [
-        "test/inspection.test.mjs",
-        "test/types/api.ts"
+        "test/worker.test.mjs",
+        "test/external.test.mjs",
+        "test/handoff.test.mjs",
+        "test/edge-regressions.test.mjs"
       ],
       "field": "idleMs",
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#idleMs",
       "modelConcepts": [
-        "observationOnly"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/worker.ts",
@@ -6055,7 +6522,10 @@
       "field": "onError",
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#onError",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/worker.ts",
@@ -6079,7 +6549,10 @@
       "field": "signal",
       "key": "WorkerOptions|src/worker.ts|0|f567006e9fa3#signal",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/worker.ts",
@@ -6218,7 +6691,10 @@
       "field": "status",
       "key": "anonymous@src/external.ts#3|src/external.ts|3|d4f683fe8841#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -6266,7 +6742,10 @@
       "field": "error",
       "key": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7#error",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -6291,7 +6770,10 @@
       "field": "status",
       "key": "anonymous@src/external.ts#4|src/external.ts|4|1d6e5489e6b7#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/external.ts",
@@ -8914,7 +9396,10 @@
       "field": "activeAttempt",
       "key": "anonymous@src/work.ts#19|src/work.ts|19|c34c2fcf71b0#activeAttempt",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/work.ts",
@@ -9385,7 +9870,10 @@
       "field": "signal",
       "key": "anonymous@src/work.ts#25|src/work.ts|25|5104e16c3b1f#signal",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/work.ts",
@@ -9638,7 +10126,10 @@
       "field": "activeAttempt",
       "key": "anonymous@src/work.ts#6|src/work.ts|6|c34c2fcf71b0#activeAttempt",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": true,
       "source": "src/work.ts",
@@ -9839,7 +10330,10 @@
       "field": "status",
       "key": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/worker.ts",
@@ -9885,7 +10379,10 @@
       "field": "error",
       "key": "anonymous@src/worker.ts#1|src/worker.ts|1|1d6e5489e6b7#error",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/worker.ts",
@@ -9909,7 +10406,10 @@
       "field": "status",
       "key": "anonymous@src/worker.ts#1|src/worker.ts|1|1d6e5489e6b7#status",
       "modelConcepts": [
-        "workerRuntime"
+        "pc",
+        "active",
+        "fatalPresent",
+        "aborted"
       ],
       "optional": false,
       "source": "src/worker.ts",
@@ -9970,16 +10470,35 @@
       "TypeOK",
       "WaitingHasCause"
     ],
+    "runtime": {
+      "config": "formal/WorkOnceRuntime.cfg",
+      "configuredChecks": [
+        "DrainedBeforeReturn",
+        "FailurePresenceIndependent",
+        "FatalReturnRejects",
+        "NoAdmissionAfterStop",
+        "NoFatalBackoff",
+        "RuntimeSamplesConform",
+        "RuntimeTypeOK"
+      ],
+      "contract": "formal/WorkOnceContract.tla",
+      "observationBinding": "scripts/formal.mjs",
+      "observationProducer": "scripts/runtime-boundary-refinement.mjs",
+      "spec": "formal/WorkOnceRuntime.tla"
+    },
     "spec": "formal/WorkOnce.tla"
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "modelDigest": "461cf3a1abe9da71c81e126568f1704a6225980aa4a831b12cec8531f7d9889a",
+    "modelDigest": "afbbf666558e0cab294166335c6d10a381c677d2ca8942b2f17c13269ca6e546",
     "modelFiles": [
       "formal/WorkOnce.tla",
-      "formal/WorkOnce.cfg"
+      "formal/WorkOnce.cfg",
+      "formal/WorkOnceContract.tla",
+      "formal/WorkOnceRuntime.tla",
+      "formal/WorkOnceRuntime.cfg"
     ],
-    "sourceDigest": "dca27285c52cbebbf81fb9215cd808106751b8e05b96ae9bdd0b7b819f750e1a",
+    "sourceDigest": "f63f468e3cb5aa777158e893fe931595e5622524077f9ede09bb92a223451e6a",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -9991,6 +10510,7 @@
       "src/memory.ts",
       "src/sqlite.ts",
       "src/cas.ts",
+      "src/conformance.ts",
       "src/external.ts",
       "src/retry-policy.ts"
     ]

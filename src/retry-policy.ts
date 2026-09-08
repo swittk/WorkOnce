@@ -38,7 +38,7 @@ export function exponentialBackoff(
   const manualRetry = options.manualRetry ?? true;
   return ({ retries }) => {
     integer(retries, 'retries', 0);
-    const scaled = initialDelayMs * multiplier ** retries;
+    const scaled = initialDelayMs === 0 ? 0 : initialDelayMs * multiplier ** retries;
     const afterMs = Math.min(maxDelayMs, Number.isFinite(scaled) ? Math.ceil(scaled) : maxDelayMs);
     return { retry: true, afterMs, maxRetries, manualRetry };
   };

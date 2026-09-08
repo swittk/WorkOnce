@@ -194,8 +194,20 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     ]);
     const phase = (await q.inspect('job'))!.phase;
     assert.ok(phase.state === 'cancelled' || phase.state === 'succeeded');
-    if (phase.state === 'cancelled') assert.equal(raced[1]!.status, 'rejected');
-    else assert.equal(raced[0]!.status, 'rejected');
+    const cancelled = raced[0]!;
+    assert.equal(cancelled.status, 'fulfilled');
+    if (cancelled.status === 'fulfilled') assert.deepEqual(cancelled.value.phase, phase);
+    const completion = raced[1]!;
+    if (phase.state === 'cancelled') {
+      assert.equal(completion.status, 'rejected');
+      if (completion.status === 'rejected') {
+        assert.ok(completion.reason instanceof WorkConflict);
+        assert.equal(completion.reason.code, 'stale_attempt');
+      }
+    } else {
+      assert.equal(completion.status, 'fulfilled');
+      if (completion.status === 'fulfilled') assert.deepEqual(completion.value, phase);
+    }
     assert.equal((await q.claim({ workerId: 'B' })).length, 0);
   });
   await test('crashed workers cannot bypass the total claim budget', async ({ store, advance }) => {
@@ -279,6 +291,11 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     await rejects(b.renew(run!.ref), 'not_found');
     const newer = createWorkOnce({ store, scope: 'a' }).define('one', { version: '2' });
     await rejects(newer.renew(run!.ref), 'definition_changed');
+    await rejects(newer.inspect('job'), 'definition_changed');
+    await rejects(newer.inspectMany(['missing', 'job']), 'definition_changed');
+    await rejects(newer.item(null, 'job').inspect(), 'definition_changed');
+    await rejects(newer.inspectId(run!.ref.workId), 'definition_changed');
+    await rejects(newer.history('job'), 'definition_changed');
   });
   await test('failed atomic decisions leave the stored row untouched', async ({ store }) => {
     const q = createWorkOnce({ store, scope: 't' }).define('one');

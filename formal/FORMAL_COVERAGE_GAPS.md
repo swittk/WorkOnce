@@ -17,13 +17,30 @@
 - `Defer`: `external.ExternalWorkRun.defer`, `external.ExternalWorkRun.wait`, `external.ExternalWorkService.settle`, `external.ExternalWorkTransport.settle`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.settleRecord`, `root.ExternalWorkRun.defer`, `root.ExternalWorkRun.wait`, `root.WorkQueue.handoff`, `root.WorkQueue.process`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.WorkQueue.settle`, `root.WorkRun.defer`, `root.WorkRun.settle`, `root.WorkRun.wait`, `root.defer`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `root.wait`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#defer`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#wait`
 - `Cancel`: `kernel.cancelRecord`, `root.WorkItem.cancel`, `root.WorkQueue.cancel`, `root.WorkQueue.cancelCurrent`
 - `Wake`: `root.WorkItem.wake`, `root.WorkQueue.wake`, `root.WorkQueue.wakeCurrent`
-- `ManualRetry`: `kernel.retryRecord`, `root.WorkItem.restart`, `root.WorkQueue.restart`, `root.WorkQueue.retry`
-- `Rerun`: `kernel.rerunRecord`, `root.WorkItem.restart`, `root.WorkQueue.rerun`, `root.WorkQueue.restart`
+- `ManualRetry`: `kernel.retryRecord`, `root.WorkItem.restart`, `root.WorkItem.retry`, `root.WorkQueue.restart`, `root.WorkQueue.retry`
+- `Rerun`: `kernel.rerunRecord`, `root.WorkItem.rerun`, `root.WorkItem.restart`, `root.WorkQueue.rerun`, `root.WorkQueue.restart`
 - `ExhaustAttempts`: `external.ExternalWorkService.claim`, `external.ExternalWorkTransport.claim`, `kernel.claimRecord`, `root.WorkQueue.claim`
 - `ExhaustDeadline`: `external.ExternalWorkService.claim`, `external.ExternalWorkTransport.claim`, `kernel.claimRecord`, `root.WorkQueue.claim`
 - `CreateChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#next`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#thenDo`
 - `AckChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `Tick`: **internal/time-only action**
+
+## Runtime boundary model
+
+- Spec: `formal/WorkOnceRuntime.tla`
+- Fresh compiled observations: `scripts/runtime-boundary-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `DrainedBeforeReturn`, `FailurePresenceIndependent`, `FatalReturnRejects`, `NoAdmissionAfterStop`, `NoFatalBackoff`, `RuntimeSamplesConform`, `RuntimeTypeOK`
+
+- `conformance.runConformance`: `BoundarySampleOK`
+- `external.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
+- `root.WorkItem.inspect`: `ReadAllowed`
+- `root.WorkQueue.history`: `ReadAllowed`
+- `root.WorkQueue.inspect`: `ReadAllowed`
+- `root.WorkQueue.inspectId`: `ReadAllowed`
+- `root.WorkQueue.inspectMany`: `ReadAllowed`
+- `root.WorkQueue.run`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
+- `root.exponentialBackoff`: `BackoffDelay`
+- `root.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
 
 ## Coverage rule
 

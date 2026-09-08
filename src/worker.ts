@@ -139,7 +139,7 @@ export async function runWorker<I, O, R extends string>(
   const capacity = validateWorkerOptions(options);
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
-  let fatal: unknown;
+  let fatal: { error: unknown } | undefined;
   let wakePoll: (() => void) | undefined;
   const waitForWakeablePoll = async () => {
     if (!active.size) {
@@ -173,13 +173,13 @@ export async function runWorker<I, O, R extends string>(
       claims = await queue.claim({ workerId: options.workerId, limit: available });
     } catch (error) {
       if (!options.onError) {
-        fatal = error;
+        fatal = { error };
         break;
       }
       try {
         await options.onError(error);
       } catch (observerError) {
-        fatal = observerError;
+        fatal = { error: observerError };
         break;
       }
       if (fatal !== undefined || options.signal.aborted) break;
@@ -192,11 +192,11 @@ export async function runWorker<I, O, R extends string>(
         .then(async (result) => {
           if (result.status === 'interrupted' && !options.signal.aborted) {
             if (options.onError) await options.onError(result.error);
-            else fatal = result.error;
+            else fatal = { error: result.error };
           }
         })
         .catch((error) => {
-          fatal = error;
+          fatal = { error };
         })
         .finally(() => {
           active.delete(pending);
@@ -207,5 +207,5 @@ export async function runWorker<I, O, R extends string>(
     if (!claims.length) await waitForWakeablePoll();
   }
   await Promise.all(active);
-  if (fatal !== undefined) throw fatal;
+  if (fatal !== undefined) throw fatal.error;
 }

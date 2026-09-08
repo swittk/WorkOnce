@@ -1,5 +1,5 @@
 ------------------------------ MODULE WorkOnce ------------------------------
-EXTENDS Naturals, FiniteSets, Integers
+EXTENDS Naturals, FiniteSets, Integers, WorkOnceContract
 CONSTANTS Workers, MaxTime, MaxFence, MaxGeneration, MaxAttempts, MaxRetries, MaxDeferrals, MaxElapsed
 VARIABLES state, waitCause, owner, fence, generation, lease, now, available,
           attempts, retries, deferrals, firstStarted, manualRetryAllowed, stopReason,
@@ -56,9 +56,10 @@ Fail(t, withNext, allowManual) ==
   /\ lastAcceptedFence' = t.fence
   /\ UNCHANGED <<fence, generation, lease, now, available, attempts, retries,
                  deferrals, firstStarted, tokens, childCreated>>
-Retry(t, policyAllows, allowManual) ==
+Retry(t, policyAllows, allowManual, delay) ==
+  /\ delay \in 0..2
   /\ Current(t) /\ policyAllows \in BOOLEAN /\ allowManual \in BOOLEAN
-  /\ owner' = 0 /\ waitCause' = IF policyAllows /\ retries < MaxRetries /\ attempts < MaxAttempts /\ now + 1 < Deadline THEN "retry" ELSE "none"
+  /\ owner' = 0 /\ waitCause' = IF policyAllows /\ retries < MaxRetries /\ attempts < MaxAttempts /\ now + delay < Deadline THEN "retry" ELSE "none"
   /\ lastAcceptedFence' = t.fence /\ pendingNext' = FALSE /\ terminalNeedsNext' = FALSE
   /\ IF ~policyAllows
         THEN /\ state' = "failed" /\ manualRetryAllowed' = allowManual /\ stopReason' = "retry_not_allowed" /\ UNCHANGED <<retries, available>>
@@ -66,23 +67,22 @@ Retry(t, policyAllows, allowManual) ==
         THEN /\ state' = "failed" /\ manualRetryAllowed' = allowManual /\ stopReason' = "retry_budget_exhausted" /\ UNCHANGED <<retries, available>>
       ELSE IF attempts >= MaxAttempts
         THEN /\ state' = "failed" /\ manualRetryAllowed' = allowManual /\ stopReason' = "attempt_budget_exhausted" /\ UNCHANGED <<retries, available>>
-      ELSE IF now + 1 >= Deadline
+      ELSE IF now + delay >= Deadline
         THEN /\ state' = "failed" /\ manualRetryAllowed' = allowManual /\ stopReason' = "deadline_exceeded" /\ UNCHANGED <<retries, available>>
-      ELSE /\ state' = "waiting" /\ retries' = retries + 1 /\ available' = now + 1
+      ELSE /\ state' = "waiting" /\ retries' = retries + 1 /\ available' = now + delay
            /\ manualRetryAllowed' = FALSE /\ stopReason' = "none"
   /\ UNCHANGED <<fence, generation, lease, now, attempts, deferrals, firstStarted, tokens, childCreated>>
-Defer(t) ==
+Defer(t, delay) ==
+  /\ delay \in 0..2
   /\ Current(t) /\ owner' = 0
-  /\ waitCause' = IF deferrals < MaxDeferrals /\ attempts < MaxAttempts /\ now + 1 < Deadline THEN "defer" ELSE "none"
+  /\ waitCause' = IF deferrals < MaxDeferrals /\ attempts < MaxAttempts /\ now + delay < Deadline THEN "defer" ELSE "none"
   /\ lastAcceptedFence' = t.fence /\ pendingNext' = FALSE /\ terminalNeedsNext' = FALSE
-  /\ IF deferrals >= MaxDeferrals
-        THEN /\ state' = "failed" /\ manualRetryAllowed' = TRUE /\ stopReason' = "deferral_budget_exhausted" /\ UNCHANGED <<deferrals, available>>
-      ELSE IF attempts >= MaxAttempts
-        THEN /\ state' = "failed" /\ manualRetryAllowed' = TRUE /\ stopReason' = "attempt_budget_exhausted" /\ UNCHANGED <<deferrals, available>>
-      ELSE IF now + 1 >= Deadline
-        THEN /\ state' = "failed" /\ manualRetryAllowed' = TRUE /\ stopReason' = "deadline_exceeded" /\ UNCHANGED <<deferrals, available>>
-      ELSE /\ state' = "waiting" /\ deferrals' = deferrals + 1 /\ available' = now + 1
-           /\ manualRetryAllowed' = FALSE /\ stopReason' = "none"
+  /\ LET stopped == DeferralStopReason(attempts >= MaxAttempts, now + delay >= Deadline, deferrals >= MaxDeferrals) IN
+       IF stopped # "none"
+         THEN /\ state' = "failed" /\ manualRetryAllowed' = TRUE /\ stopReason' = stopped
+              /\ UNCHANGED <<deferrals, available>>
+         ELSE /\ state' = "waiting" /\ deferrals' = deferrals + 1 /\ available' = now + delay
+              /\ manualRetryAllowed' = FALSE /\ stopReason' = "none"
   /\ UNCHANGED <<fence, generation, lease, now, attempts, retries, firstStarted, tokens, childCreated>>
 Cancel ==
   /\ state \in {"queued", "running", "waiting"}
@@ -143,8 +143,8 @@ Tick ==
                  tokens, pendingNext, childCreated, terminalNeedsNext, lastAcceptedFence>>
 
 Next == (\E w \in Workers : Claim(w))
-        \/ (\E t \in tokens : Renew(t) \/ Defer(t)
-             \/ (\E policyAllows \in BOOLEAN, allowManual \in BOOLEAN : Retry(t, policyAllows, allowManual))
+        \/ (\E t \in tokens : Renew(t) \/ (\E delay \in 0..2 : Defer(t, delay))
+             \/ (\E policyAllows \in BOOLEAN, allowManual \in BOOLEAN, delay \in 0..2 : Retry(t, policyAllows, allowManual, delay))
              \/ (\E withNext \in BOOLEAN : Success(t, withNext))
              \/ (\E withNext \in BOOLEAN, allowManual \in BOOLEAN : Fail(t, withNext, allowManual)))
         \/ Cancel \/ Wake \/ ManualRetry \/ Rerun \/ ExhaustAttempts \/ ExhaustDeadline

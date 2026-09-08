@@ -1,0 +1,432 @@
+import assert from 'node:assert/strict';
+import { setImmediate as nextTurn } from 'node:timers/promises';
+import { createWorkOnce, runExternal, exponentialBackoff } from '../dist/index.js';
+import { createMemoryStore } from '../dist/memory.js';
+
+export const auditPhases = [
+  'queued',
+  'running',
+  'waitingRetry',
+  'waitingDefer',
+  'failedManual',
+  'failedDenied',
+  'succeeded',
+  'cancelled',
+];
+
+export async function seedAuditPhase(store, scope, phase) {
+  const queue = createWorkOnce({ store, scope }).define('job', {
+    version: '1',
+    limits: { leaseMs: 5000 },
+    retry: { retry: true, afterMs: 0, maxRetries: 3, manualRetry: true },
+  });
+  await queue.ensure({ value: 1 }, { key: 'job' });
+  let run, outcome;
+  if (phase !== 'queued') {
+    [run] = await queue.claim({ workerId: 'owner' });
+    if (phase === 'waitingRetry') outcome = run.retry('pending', { afterMs: 0 });
+    if (phase === 'waitingDefer') outcome = run.wait('pending', { afterMs: 0 });
+    if (phase === 'failedManual' || phase === 'failedDenied')
+      outcome = run.fail('failed', { manualRetry: phase === 'failedManual' });
+    if (phase === 'succeeded') outcome = run.succeed({ value: 2 });
+    if (outcome) await run.settle(outcome);
+    if (phase === 'cancelled') await queue.cancel({ key: 'job', generation: 1 });
+  }
+  return { queue, run, outcome, snapshot: await queue.inspect('job') };
+}
+
+const observe = (promise) =>
+  promise.then(
+    (value) => ({ rejected: false, value }),
+    (error) => ({ rejected: true, error }),
+  );
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+async function runnerSample(mode, site, error) {
+  const stop = new AbortController();
+  const base = createMemoryStore();
+  const claimError = new Error('claim fault');
+  let queries = 0,
+    handlerFinished = false,
+    observedError,
+    timedOut = false;
+  const release = deferred();
+  const claimFails = site === 'claim' || site === 'claimObserver' || site === 'handledClaim';
+  const backoff = site.startsWith('backoff');
+  const store = {
+    ...base,
+    async query(query) {
+      if (claimFails || (backoff && ++queries > 1))
+        throw site === 'claim' || site === 'handledClaim' ? error : claimError;
+      return base.query(query);
+    },
+  };
+  const queue = createWorkOnce({ store, scope: 'runner-boundary' }).define('job', {
+    limits: { leaseMs: 5000 },
+  });
+  if (!claimFails) await queue.ensure(null, { key: 'job' });
+  const service = queue.serveExternal({
+    prepare: (run) => run.handoff(run.input),
+    onPrepareError: (run) => run.fail('prepare'),
+  });
+  const options = {
+    workerId: mode,
+    concurrency: backoff ? 2 : 1,
+    heartbeatMs: 100,
+    idleMs: 10000,
+    signal: stop.signal,
+  };
+  if (site.endsWith('Observer') || site.startsWith('handled') || backoff) {
+    options.onError = async (failure) => {
+      if (backoff && failure === claimError) {
+        if (site === 'backoffBefore') {
+          release.resolve();
+          await nextTurn();
+        } else setTimeout(release.resolve, 0);
+        return;
+      }
+      observedError = failure;
+      if (site.startsWith('handled')) {
+        stop.abort();
+        return;
+      }
+      throw error;
+    };
+  }
+  const handler = async () => {
+    if (backoff) await release.promise;
+    handlerFinished = true;
+    throw site === 'activeObserver' ? new Error('handler fault') : error;
+  };
+  const watchdog = setTimeout(() => {
+    timedOut = true;
+    stop.abort();
+    release.resolve();
+  }, 1000);
+  let result;
+  try {
+    result = await observe(
+      mode === 'local' ? queue.run(options, handler) : runExternal(service, options, handler),
+    );
+  } finally {
+    clearTimeout(watchdog);
+    stop.abort();
+  }
+  const handled = site.startsWith('handled');
+  return {
+    kind: 'runner',
+    mode,
+    site,
+    errorKind: error === undefined ? 'undefined' : 'defined',
+    handled,
+    rejected: result.rejected,
+    preserved: handled ? observedError === error : result.error === error,
+    drained: claimFails || handlerFinished,
+    timedOut,
+  };
+}
+
+async function drainSample(mode, error) {
+  const queue = createWorkOnce({ store: createMemoryStore(), scope: 'drain-boundary' }).define(
+    'job',
+    {
+      limits: { leaseMs: 5000 },
+    },
+  );
+  await queue.ensure('bad', { key: 'a' });
+  await queue.ensure('healthy', { key: 'b' });
+  const entered = deferred(),
+    release = deferred(),
+    stop = new AbortController();
+  let finished = false,
+    ended = false,
+    timedOut = false;
+  const handler = async (run, input) => {
+    if (input === 'bad') throw error;
+    entered.resolve();
+    await release.promise;
+    finished = true;
+    return run.succeed();
+  };
+  const options = {
+    workerId: mode,
+    concurrency: 2,
+    heartbeatMs: 100,
+    idleMs: 10000,
+    signal: stop.signal,
+  };
+  const service = queue.serveExternal({
+    prepare: (r) => r.handoff(r.input),
+    onPrepareError: (r) => r.fail('prepare'),
+  });
+  const watchdog = setTimeout(() => {
+    timedOut = true;
+    stop.abort();
+    release.resolve();
+    entered.resolve();
+  }, 1000);
+  const running = observe(
+    mode === 'local' ? queue.run(options, handler) : runExternal(service, options, handler),
+  ).then((result) => {
+    ended = true;
+    return result;
+  });
+  await entered.promise;
+  await nextTurn();
+  const rejectedBeforeDrain = ended;
+  release.resolve();
+  const result = await running;
+  clearTimeout(watchdog);
+  stop.abort();
+  return {
+    kind: 'runner',
+    mode,
+    site: 'drain',
+    errorKind: error === undefined ? 'undefined' : 'defined',
+    handled: false,
+    rejected: result.rejected,
+    preserved: result.error === error,
+    drained:
+      finished && !rejectedBeforeDrain && (await queue.inspect('b')).phase.state === 'succeeded',
+    timedOut,
+  };
+}
+
+async function admissionSample(mode, error) {
+  const base = createMemoryStore();
+  const entered = deferred(),
+    release = deferred(),
+    stop = new AbortController();
+  let queries = 0,
+    timedOut = false;
+  const started = [];
+  const store = {
+    ...base,
+    async query(query) {
+      queries++;
+      if (queries === 2) {
+        entered.resolve();
+        await release.promise;
+      }
+      const result = await base.query(query);
+      return { ...result, rows: result.rows.slice(0, 1) };
+    },
+  };
+  const queue = createWorkOnce({ store, scope: 'admission-boundary' }).define('job', {
+    limits: { leaseMs: 5000 },
+  });
+  await queue.ensure('a', { key: 'a' });
+  await queue.ensure('b', { key: 'b' });
+  const service = queue.serveExternal({
+    prepare: (run) => run.handoff(run.input),
+    onPrepareError: (run) => run.fail('prepare'),
+  });
+  const handler = async (run, input) => {
+    started.push(input);
+    if (input === 'a') {
+      await entered.promise;
+      throw error;
+    }
+    stop.abort();
+    return run.succeed();
+  };
+  const options = {
+    workerId: mode,
+    concurrency: 2,
+    heartbeatMs: 100,
+    idleMs: 10000,
+    signal: stop.signal,
+  };
+  const watchdog = setTimeout(() => {
+    timedOut = true;
+    stop.abort();
+    entered.resolve();
+    release.resolve();
+  }, 1000);
+  const running = observe(
+    mode === 'local' ? queue.run(options, handler) : runExternal(service, options, handler),
+  );
+  await entered.promise;
+  await nextTurn();
+  release.resolve();
+  const result = await running;
+  clearTimeout(watchdog);
+  stop.abort();
+  return {
+    kind: 'runner',
+    mode,
+    site: 'claimGate',
+    errorKind: error === undefined ? 'undefined' : 'defined',
+    handled: false,
+    rejected: result.rejected,
+    preserved: result.error === error,
+    drained: started.includes('a'),
+    started: started.length,
+    timedOut,
+  };
+}
+
+export async function runRuntimeBoundarySamples() {
+  const samples = [];
+  for (const mode of ['local', 'external']) {
+    for (const error of [undefined, null, 0, '', new Error('original failure')])
+      for (const site of ['claim', 'claimObserver', 'active', 'activeObserver'])
+        samples.push(await runnerSample(mode, site, error));
+    for (const error of [undefined, new Error('original failure')]) {
+      for (const site of ['handledClaim', 'handledActive', 'backoffBefore', 'backoffDuring'])
+        samples.push(await runnerSample(mode, site, error));
+      samples.push(await drainSample(mode, error));
+      samples.push(await admissionSample(mode, error));
+    }
+  }
+  for (const phase of auditPhases) {
+    const store = createMemoryStore({ now: () => 100 });
+    const { queue, snapshot } = await seedAuditPhase(store, 'read-boundary', phase);
+    const newer = createWorkOnce({ store, scope: 'read-boundary' }).define('job', { version: '2' });
+    for (const matched of [true, false]) {
+      const reader = matched ? queue : newer;
+      for (const method of ['inspect', 'inspectMany', 'item', 'inspectId', 'history']) {
+        const result = await observe(
+          method === 'item'
+            ? reader.item(null, 'job').inspect()
+            : method === 'inspectMany'
+              ? reader.inspectMany(['missing', 'job', 'job'])
+              : method === 'inspectId'
+                ? reader.inspectId(snapshot.id)
+                : reader[method]('job'),
+        );
+        if (matched) {
+          assert.equal(result.rejected, false);
+          if (method === 'inspectMany')
+            assert.deepEqual(result.value, [undefined, snapshot, snapshot]);
+          else if (method !== 'history') assert.deepEqual(result.value, snapshot);
+        }
+        samples.push({
+          kind: 'read',
+          phase,
+          method,
+          matched,
+          accepted: !result.rejected,
+          definitionError: result.error?.code === 'definition_changed',
+        });
+      }
+    }
+  }
+  for (const initial of [0, 1, 8])
+    for (const factor of [1, 2])
+      for (const retries of [0, 1, 4, 1023, 1024, Number.MAX_SAFE_INTEGER]) {
+        const result = exponentialBackoff({
+          initialDelayMs: initial,
+          multiplier: factor,
+          maxDelayMs: 64,
+          maxRetries: Number.MAX_SAFE_INTEGER,
+        })({ retries });
+        samples.push({
+          kind: 'backoff',
+          initial,
+          factor,
+          steps: Math.min(retries, 7),
+          delay: result.afterMs,
+        });
+      }
+  for (const attemptsExhausted of [false, true])
+    for (const elapsedExhausted of [false, true])
+      for (const deferralsExhausted of [false, true])
+        for (const delay of [0, 1, 2]) {
+          let now = 0;
+          const queue = createWorkOnce({
+            store: createMemoryStore({ now: () => now }),
+            scope: 'budget-boundary',
+          }).define('job', {
+            limits: {
+              leaseMs: 20,
+              maxAttempts: attemptsExhausted ? 2 : 4,
+              maxElapsedMs: elapsedExhausted ? 2 : 10,
+              maxDeferrals: deferralsExhausted ? 1 : 3,
+            },
+          });
+          await queue.ensure(null, { key: 'job' });
+          let [run] = await queue.claim({ workerId: 'a' });
+          await run.settle(run.wait('pending', { afterMs: 0 }));
+          now = 1;
+          [run] = await queue.claim({ workerId: 'b' });
+          const phase = await run.settle(run.wait('pending', { afterMs: delay }));
+          samples.push({
+            kind: 'budget',
+            attemptsExhausted,
+            deadlineExhausted: elapsedExhausted && delay >= 1,
+            deferralsExhausted,
+            stop: phase.state === 'waiting' ? 'none' : phase.stoppedBy,
+            reasonPreserved: phase.reason === 'pending',
+          });
+        }
+  for (const first of ['cancel', 'complete']) {
+    const queue = createWorkOnce({ store: createMemoryStore(), scope: 'cancel-boundary' }).define(
+      'job',
+    );
+    await queue.ensure(null, { key: 'job' });
+    const [run] = await queue.claim({ workerId: 'a' });
+    let cancelled, completed;
+    if (first === 'cancel') {
+      cancelled = await observe(queue.cancel({ key: 'job', generation: 1 }));
+      completed = await observe(run.settle(run.succeed()));
+    } else {
+      completed = await observe(run.settle(run.succeed()));
+      cancelled = await observe(queue.cancel({ key: 'job', generation: 1 }));
+    }
+    samples.push({
+      kind: 'cancel',
+      first,
+      state: (await queue.inspect('job')).phase.state,
+      cancelRejected: cancelled.rejected,
+      completionRejected: completed.rejected,
+      cancelState: cancelled.value?.phase.state ?? 'rejected',
+    });
+  }
+  return samples;
+}
+
+export function assertRuntimeBoundarySamples(samples) {
+  for (const s of samples) {
+    const name = JSON.stringify(s);
+    if (s.kind === 'runner') {
+      assert.equal(s.rejected, !s.handled, name);
+      assert.ok(s.preserved && s.drained && !s.timedOut, name);
+      if (s.site === 'claimGate') assert.equal(s.started, 1, name);
+    } else if (s.kind === 'read') {
+      assert.equal(s.accepted, s.matched, name);
+      if (!s.matched) assert.ok(s.definitionError, name);
+    } else if (s.kind === 'backoff') {
+      assert.equal(s.delay, Math.min(64, s.initial * s.factor ** s.steps), name);
+    } else if (s.kind === 'budget') {
+      const expected = s.attemptsExhausted
+        ? 'attempt_budget_exhausted'
+        : s.deadlineExhausted
+          ? 'deadline_exceeded'
+          : s.deferralsExhausted
+            ? 'deferral_budget_exhausted'
+            : 'none';
+      assert.equal(s.stop, expected, name);
+      assert.ok(s.reasonPreserved, name);
+    } else if (s.kind === 'cancel') {
+      assert.equal(s.cancelRejected, false, name);
+      assert.equal(s.state, s.first === 'cancel' ? 'cancelled' : 'succeeded', name);
+      assert.equal(s.cancelState, s.state, name);
+      assert.equal(s.completionRejected, s.first === 'cancel', name);
+    } else assert.fail(`Unmapped boundary sample: ${name}`);
+  }
+  assert.deepEqual([...new Set(samples.map((s) => s.kind))].sort(), [
+    'backoff',
+    'budget',
+    'cancel',
+    'read',
+    'runner',
+  ]);
+  return samples.length;
+}

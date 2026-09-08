@@ -23,10 +23,17 @@ const semanticSourceFiles = [
   'src/memory.ts',
   'src/sqlite.ts',
   'src/cas.ts',
+  'src/conformance.ts',
   'src/external.ts',
   'src/retry-policy.ts',
 ];
-const modelFiles = ['formal/WorkOnce.tla', 'formal/WorkOnce.cfg'];
+const modelFiles = [
+  'formal/WorkOnce.tla',
+  'formal/WorkOnce.cfg',
+  'formal/WorkOnceContract.tla',
+  'formal/WorkOnceRuntime.tla',
+  'formal/WorkOnceRuntime.cfg',
+];
 const expectedEntrypoints = [
   'root',
   'storage',
@@ -181,10 +188,8 @@ function readConfiguredChecksFromText(cfg) {
   }
   return [...new Set(tokens)].sort(compareExact);
 }
-function readConfiguredChecks() {
-  return readConfiguredChecksFromText(
-    fs.readFileSync(path.join(root, 'formal/WorkOnce.cfg'), 'utf8'),
-  );
+function readConfiguredChecks(file = 'formal/WorkOnce.cfg') {
+  return readConfiguredChecksFromText(fs.readFileSync(path.join(root, file), 'utf8'));
 }
 if (process.argv.includes('--self-test-config-checks')) {
   const parsed = readConfiguredChecksFromText(`
@@ -257,6 +262,16 @@ function fieldClassification(typeName, fieldName, callable) {
   if (callable) return callableFieldClassification(typeName, fieldName);
   if (['input', 'result'].includes(fieldName)) return 'opaque-payload';
   if (
+    ['WorkerOptions', 'ExternalWorkerOptions'].includes(typeName) &&
+    ['idleMs', 'heartbeatMs'].includes(fieldName)
+  )
+    return 'worker-runtime';
+  if (
+    typeName === 'ExponentialBackoffOptions' &&
+    ['initialDelayMs', 'maxDelayMs', 'multiplier'].includes(fieldName)
+  )
+    return 'abstract-semantic';
+  if (
     /^(?:id|key|scope|kind|definition|version|workId|generation|fence|workerId|number|revision|attempts|retries|deferrals|attempt|operationId|expectedRevision|expectedGeneration|submissionHash)$/u.test(
       fieldName,
     )
@@ -288,7 +303,12 @@ function fieldClassification(typeName, fieldName, callable) {
 function modelConceptsForField(typeName, fieldName, classification) {
   if (classification === 'opaque-payload') return ['opaquePayload'];
   if (classification === 'storage-boundary') return ['storageAtomicity'];
-  if (classification === 'worker-runtime') return ['workerRuntime'];
+  if (classification === 'worker-runtime') return ['pc', 'active', 'fatalPresent', 'aborted'];
+  if (
+    typeName === 'ExponentialBackoffOptions' &&
+    ['initialDelayMs', 'maxDelayMs', 'multiplier'].includes(fieldName)
+  )
+    return ['BackoffDelay'];
   if (classification === 'observational') return ['observationOnly'];
   if (classification === 'policy-callback') {
     if (fieldName === 'retry') return ['retries', 'available', 'manualRetryAllowed'];
@@ -341,8 +361,18 @@ function modelActionsForKey(key) {
     return ['Defer'];
   if (key === 'root.succeed' || key === 'root.WorkRun.succeed') return ['Success'];
   if (key === 'root.fail' || key === 'root.WorkRun.fail') return ['Fail'];
-  if (key === 'root.WorkQueue.retry' || key === 'kernel.retryRecord') return ['ManualRetry'];
-  if (key === 'root.WorkQueue.rerun' || key === 'kernel.rerunRecord') return ['Rerun'];
+  if (
+    key === 'root.WorkQueue.retry' ||
+    key === 'root.WorkItem.retry' ||
+    key === 'kernel.retryRecord'
+  )
+    return ['ManualRetry'];
+  if (
+    key === 'root.WorkQueue.rerun' ||
+    key === 'root.WorkItem.rerun' ||
+    key === 'kernel.rerunRecord'
+  )
+    return ['Rerun'];
   if (key.endsWith('.restart')) return ['ManualRetry', 'Rerun'];
   if (key.endsWith('.claim') || key === 'kernel.claimRecord')
     return ['Claim', 'ExhaustAttempts', 'ExhaustDeadline'];
@@ -379,6 +409,21 @@ function modelActionsForKey(key) {
   if (key === 'root.exponentialBackoff') return ['Retry'];
   return [];
 }
+function runtimeContractsForKey(key) {
+  if (/^(?:root|external)\.runExternal$/u.test(key) || key === 'root.WorkQueue.run')
+    return [
+      'RunnerRejects',
+      'ClaimReply',
+      'ObserveHandled',
+      'ObserveFatal',
+      'ActiveDone',
+      'Finish',
+    ];
+  if (/\.(?:inspect|inspectId|inspectMany|history)$/u.test(key)) return ['ReadAllowed'];
+  if (key === 'root.exponentialBackoff') return ['BackoffDelay'];
+  if (key === 'conformance.runConformance') return ['BoundarySampleOK'];
+  return [];
+}
 function modelActionsForField(typeName, fieldName) {
   if (typeName.startsWith('WorkDefinition')) {
     if (fieldName === 'retry') return ['Retry'];
@@ -407,7 +452,12 @@ function buildManifest(live) {
         classification,
         signatureHash: signatureHash(row),
         modelActions: modelActionsForKey(row.key),
-        evidence: evidenceByClassification[classification],
+        runtimeContracts: runtimeContractsForKey(row.key),
+        evidence: [
+          ...evidenceByClassification[classification],
+          'test/runtime-boundary-refinement.test.mjs',
+          'test/lifecycle-transition-matrix.test.mjs',
+        ],
       });
     }
   }
@@ -482,6 +532,14 @@ function buildManifest(live) {
         'Tick',
       ],
       configuredChecks: readConfiguredChecks(),
+      runtime: {
+        spec: 'formal/WorkOnceRuntime.tla',
+        config: 'formal/WorkOnceRuntime.cfg',
+        contract: 'formal/WorkOnceContract.tla',
+        configuredChecks: readConfiguredChecks('formal/WorkOnceRuntime.cfg'),
+        observationProducer: 'scripts/runtime-boundary-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+      },
     },
     entrypoints: expectedEntrypoints,
     callables,
@@ -526,6 +584,21 @@ function renderReport(manifest) {
     lines.push(
       `- \`${action}\`: ${owners.length ? owners.map((owner) => `\`${owner}\``).join(', ') : '**internal/time-only action**'}`,
     );
+  }
+  lines.push(
+    '',
+    '## Runtime boundary model',
+    '',
+    `- Spec: \`${manifest.model.runtime.spec}\``,
+    `- Fresh compiled observations: \`${manifest.model.runtime.observationProducer}\` via \`${manifest.model.runtime.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.runtime.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    '',
+  );
+  for (const row of manifest.callables) {
+    if (row.runtimeContracts.length)
+      lines.push(
+        `- \`${row.key}\`: ${row.runtimeContracts.map((name) => `\`${name}\``).join(', ')}`,
+      );
   }
   lines.push(
     '',
