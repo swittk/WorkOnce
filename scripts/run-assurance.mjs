@@ -54,6 +54,9 @@ run('typed-read source/model mutation guard', process.execPath, [
 run('typed-read route/order mutation guard', process.execPath, [
   'scripts/check-read-contract-mutation.mjs',
 ]);
+run('read-history retention/order mutation guard', process.execPath, [
+  'scripts/check-read-history-mutations.mjs',
+]);
 run('policy source/model mutation guard', process.execPath, [
   'scripts/check-policy-source-model-binding-mutation.mjs',
 ]);

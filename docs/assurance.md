@@ -286,6 +286,34 @@ than being fabricated. The numeric claim remains finite: JavaScript safe-integer
 deadline boundaries and the sampled multiplier/overflow classes are proved; arbitrary infinite
 numeric domains are not claimed.
 
+## Read-history and multi-id read boundary
+
+`formal/WorkOnceReadHistory.tla` directly represents two distinct **128-event durable history
+sequences** whose non-history work projection is identical. Its paired transition relation explores
+three-step futures over claim, heartbeat, success, failure, retry, non-failure wait, cancellation,
+wake, manual retry and rerun. The configured invariants require the same current projection, same
+enabled operations, same result/error class for every operation, the same next projection, exact
+128-event suffix-plus-append retention and preservation of the intentionally different historical
+trace. Heartbeat is represented as a revision-changing operation that does not append a history
+event, matching the implementation. The exact 128-element representation is deliberate; the
+history limit is not quotiented to a smaller toy capacity.
+
+Fresh compiled observations independently construct two real rows that differ only in an old
+failure reason, then drive six materially different future traces through the public API. They
+compare every operation result/error, every post-operation durable projection with `history`
+removed, every appended future-history tail and the still-visible historical distinction. Another
+compiled trace crosses the real retention boundary and requires exactly the latest 128 events in
+order. Mutants changing the implementation to 127 retained events or reversing public history are
+required to fail, and all configured read-history invariants have injected TLC witnesses.
+
+`WorkStore.getMany()` guarantees exact caller order, detached valid per-id rows and one returned
+storage-time observation. It intentionally does **not** require a cross-id transactional snapshot
+while concurrent writers run. Memory and SQLite currently provide endpoint-consistent batches
+(the SQLite adapter uses a bounded read transaction), while a conforming native-CAS port may
+return a legitimate mixture of per-id revisions. Executable races cover reader-first and
+writer-first memory/SQLite orderings plus a mixed native-CAS batch. WorkOnce therefore does not
+reject a conforming adapter merely for lacking stronger cross-id snapshot isolation.
+
 ## Fast complete gate
 
 `npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **51.76 seconds wall-clock** and about **353 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.

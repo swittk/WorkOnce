@@ -37,6 +37,8 @@ const modelFiles = [
   'formal/WorkOncePolicy.cfg',
   'formal/WorkOnceLocalRunner.tla',
   'formal/WorkOnceLocalRunner.cfg',
+  'formal/WorkOnceReadHistory.tla',
+  'formal/WorkOnceReadHistory.cfg',
 ];
 const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
 const policySourceSymbols = {
@@ -90,7 +92,11 @@ const runtimeModelFiles = [
   'formal/WorkOnceLocalRunner.tla',
   'formal/WorkOnceLocalRunner.cfg',
 ];
-const readModelFiles = ['formal/WorkOnceContract.tla'];
+const readModelFiles = [
+  'formal/WorkOnceContract.tla',
+  'formal/WorkOnceReadHistory.tla',
+  'formal/WorkOnceReadHistory.cfg',
+];
 const readSourceMethods = [
   'WorkItem.inspect',
   'WorkQueue.key',
@@ -103,6 +109,11 @@ const readSourceMethods = [
   'WorkQueue.assertDefinition',
   'WorkQueue.snapshot',
 ];
+const readSourceSymbols = {
+  'src/work.ts': readSourceMethods,
+  'src/kernel.ts': ['changed'],
+};
+const readSourceFiles = Object.keys(readSourceSymbols);
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
@@ -119,6 +130,12 @@ const assuranceInfrastructureFiles = [
   'scripts/check-read-boundary-mutation.mjs',
   'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/check-read-contract-mutation.mjs',
+  'scripts/read-history-refinement.mjs',
+  'scripts/check-read-history-mutations.mjs',
+  'test/read-history-refinement.test.mjs',
+  'formal/WorkOnceReadHistory.tla',
+  'formal/WorkOnceReadHistory.cfg',
+  'assurance/red-before/read-history-future-congruence.json',
   'scripts/local-runner-refinement.mjs',
   'scripts/check-local-runner-implementation-mutations.mjs',
   'scripts/check-local-runner-source-model-mutation.mjs',
@@ -287,27 +304,7 @@ function sourceSymbolDigest(bindings, label) {
   return digest(found.sort(compareExact).join('\n---\n'));
 }
 function readSurfaceDigest() {
-  const file = path.join(root, 'src/work.ts');
-  const text = fs.readFileSync(file, 'utf8');
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const wanted = new Set(readSourceMethods);
-  const found = [];
-  for (const node of source.statements) {
-    if (!ts.isClassDeclaration(node) || !node.name) continue;
-    const className = node.name.text;
-    for (const member of node.members) {
-      if (!ts.isMethodDeclaration(member) || !member.name) continue;
-      const key = `${className}.${member.name.getText(source)}`;
-      if (wanted.has(key)) found.push(`${key}\n${semanticTokenString(member.getText(source))}`);
-    }
-  }
-  const keys = found.map((entry) => entry.slice(0, entry.indexOf('\n'))).sort(compareExact);
-  const expected = [...wanted].sort(compareExact);
-  if (JSON.stringify(keys) !== JSON.stringify(expected))
-    throw new Error(
-      `Typed-read source binding drifted: expected=${expected.join(',')} found=${keys.join(',')}`,
-    );
-  return digest(found.sort(compareExact).join('\n---\n'));
+  return sourceSymbolDigest(readSourceSymbols, 'Typed-read/history');
 }
 function policySurfaceDigest() {
   return sourceSymbolDigest(policySourceSymbols, 'Retry/defer policy');
@@ -765,9 +762,16 @@ function buildManifest(live) {
       },
       reads: {
         contract: 'formal/WorkOnceContract.tla',
+        historySpec: 'formal/WorkOnceReadHistory.tla',
+        historyConfig: 'formal/WorkOnceReadHistory.cfg',
+        historyConfiguredChecks: readConfiguredChecks('formal/WorkOnceReadHistory.cfg'),
         observationProducer: 'scripts/read-boundary-refinement.mjs',
+        historyObservationProducer: 'scripts/read-history-refinement.mjs',
         observationBridge: 'scripts/runtime-boundary-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        sourceFiles: readSourceFiles,
         sourceMethods: readSourceMethods,
+        sourceSymbols: readSourceSymbols,
         sourceDigest: readSurfaceDigest(),
         modelFiles: readModelFiles,
         modelDigest: formalDigest(readModelFiles),
@@ -863,6 +867,8 @@ function renderReport(manifest) {
     `- Contract: \`${manifest.model.reads.contract}\``,
     `- Cross-adapter producer: \`${manifest.model.reads.observationProducer}\``,
     `- Bound source methods: ${manifest.model.reads.sourceMethods.map((name) => `\`${name}\``).join(', ')}`,
+    `- History spec: \`${manifest.model.reads.historySpec}\` via \`${manifest.model.reads.historyObservationProducer}\``,
+    `- History invariants: ${manifest.model.reads.historyConfiguredChecks.map((name) => `\`${name}\``).join(', ')}`,
     '',
     '## Retry/defer policy boundary',
     '',
@@ -896,6 +902,22 @@ function assertSourceModelPairing(previousBinding, currentBinding, message) {
     throw new Error(message);
 }
 
+if (process.argv.includes('--check-infrastructure-binding-only')) {
+  if (!fs.existsSync(manifestPath))
+    throw new Error(
+      'Missing assurance/formal-implementation-manifest.json. Run npm run assurance:update and review it.',
+    );
+  const previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const expected = previous.stateMachineBinding?.assuranceInfrastructureDigest;
+  const actual = contentDigest(assuranceInfrastructureFiles);
+  if (expected !== actual)
+    throw new Error(
+      `Assurance infrastructure digest drifted: expected=${expected ?? 'missing'} actual=${actual}`,
+    );
+  console.log('Assurance infrastructure content binding matches the reviewed manifest.');
+  process.exit(0);
+}
+
 const bindingOnly = process.argv.find((argument) =>
   [
     '--check-read-binding-only',
@@ -913,7 +935,7 @@ if (bindingOnly) {
     assertSourceModelPairing(
       previous.model?.reads,
       { sourceDigest: readSurfaceDigest(), modelDigest: formalDigest(readModelFiles) },
-      'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
+      'Bound typed-read/history semantics changed without a read-model semantic change. Update the read/history abstraction or explicitly acknowledge the unchanged abstraction after review.',
     );
   } else if (bindingOnly === '--check-policy-binding-only') {
     assertSourceModelPairing(
@@ -968,7 +990,7 @@ if (write) {
   assertSourceModelPairing(
     previous?.model?.reads,
     current.model.reads,
-    'Bound typed-read/definition-fence semantics changed without a read-contract semantic change. Update the read abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    'Bound typed-read/history semantics changed without a read-model semantic change. Update the read/history abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
   assertSourceModelPairing(
     previous?.model?.runtime,

@@ -76,3 +76,19 @@ No API was added, no storage schema was changed, and the package version was not
 An audit and finite model checks do not establish absence of every possible defect. External
 side effects still require application idempotency/fencing; third-party storage needs its own
 real-process proof. Full CodeRabbit reviews remain a separate, current-head convergence gate.
+
+## Exhaustive read-history follow-up
+
+The later internal-state proof pass found no additional read runtime defect, but it did find a
+formal-completeness gap in the earlier public-surface audit: durable `history` content was still
+collapsed out of the machine state. The dedicated read-history model now keeps two exact
+128-event histories with the same non-history projection and checks enabled operations, exact
+operation result/error classes, next-state projections, bounded legal futures and suffix/append
+retention directly. Six compiled public-API future traces provide an independent implementation
+bridge and the retention/order implementation mutants are required to turn the gate red.
+
+The same pass makes the multi-id read contract explicit. `getMany` promises caller order, valid
+detached per-id rows and one storage-time observation; it does not promise cross-id transactional
+snapshot isolation during concurrent writes. Memory and SQLite exercise both endpoint orderings,
+and a native-CAS test deliberately returns a valid mixed-revision batch. This is a supported
+adapter ordering rather than a hidden snapshot guarantee.

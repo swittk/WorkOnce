@@ -10,6 +10,12 @@
     "scripts/check-read-boundary-mutation.mjs",
     "scripts/check-read-source-model-binding-mutation.mjs",
     "scripts/check-read-contract-mutation.mjs",
+    "scripts/read-history-refinement.mjs",
+    "test/read-history-refinement.test.mjs",
+    "scripts/check-read-history-mutations.mjs",
+    "formal/WorkOnceReadHistory.tla",
+    "formal/WorkOnceReadHistory.cfg",
+    "assurance/red-before/read-history-future-congruence.json",
     "test/runtime-boundary-refinement.test.mjs",
     "scripts/local-runner-refinement.mjs",
     "test/local-runner-refinement.test.mjs",
@@ -41,7 +47,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "5aae982eeccaf0d3d8011783380e2fcdad44c9da5c15939e0ff435c268af07d5",
+  "evidenceDigest": "dd20130a9c6b0cfa10da745491b636d5ac5f892166e201aa1f5babfa860652f3",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -114,6 +120,17 @@
     },
     "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d",
     "lifecycleAdapterCases": 600
+  },
+  "readHistoryBoundary": {
+    "samples": 7,
+    "counts": {
+      "historyCongruence": 1,
+      "historyTruncation": 1,
+      "inspectManyRace": 5
+    },
+    "observationDigest": "51fc580de5e0c0445ddad89bae3cadb56540f7272bad2280461dfd9653df8a32",
+    "historyLimit": 128,
+    "futureCongruenceTraces": 6
   },
   "localRunnerBoundary": {
     "samples": 23,

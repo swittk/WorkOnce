@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "family": "E.definitionBoundReadsTypedInspection",
+  "classification": "formal_completeness_defect",
+  "runtimeSemanticBug": false,
+  "preProofHead": "f7042c0fb46f021a46177f57d067e666ba14b4be",
+  "observedAt": "2026-09-08T17:00:00Z",
+  "oldAssuranceVerdict": "GREEN",
+  "defect": "The supported durable history buffer and its effect on history() were outside the committed formal state. The first isolated draft represented distinct histories only as opaque A/B tags and synchronized one coarse future, so it could not state exact 128-event retention/order or compare all materially different operation result/error classes from equivalent current projections.",
+  "redBeforeReason": "A source mutation to the 128-event history retention rule could not be rejected by the committed TLA/CFG because no committed formal variable represented the history sequence. A one-representative future cannot establish future congruence for hidden state.",
+  "requiredCorrection": [
+    "represent an exact 128-element bounded history sequence directly",
+    "start from two histories with identical non-history durable projection",
+    "compare enabled operations, result/error classes, next projections, and bounded legal futures",
+    "prove exact suffix-plus-append retention/order",
+    "mutation-kill history retention/order and every configured invariant"
+  ],
+  "notClaimed": [
+    "unbounded history",
+    "arbitrary application callback liveness",
+    "cross-id transactional snapshot semantics beyond WorkStore.getMany contract"
+  ]
+}

@@ -10626,13 +10626,32 @@
     },
     "reads": {
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "c345a784cc1c98c722845094630ee6984015f1e5fb39662584ebfd2f30871bed",
-      "modelFiles": [
-        "formal/WorkOnceContract.tla"
+      "historyConfig": "formal/WorkOnceReadHistory.cfg",
+      "historyConfiguredChecks": [
+        "CurrentProjectionCongruent",
+        "EnabledFutureCongruent",
+        "HistoryBounded",
+        "HistoryDifferenceVisible",
+        "HistoryRetentionOrder",
+        "OutcomeFutureCongruent",
+        "ReadHistoryTypeOK"
       ],
+      "historyObservationProducer": "scripts/read-history-refinement.mjs",
+      "historySpec": "formal/WorkOnceReadHistory.tla",
+      "modelDigest": "415bc9ad4e1faff07daccf010b1638d229e7bbc408c1698f31973d95b89bc49f",
+      "modelFiles": [
+        "formal/WorkOnceContract.tla",
+        "formal/WorkOnceReadHistory.tla",
+        "formal/WorkOnceReadHistory.cfg"
+      ],
+      "observationBinding": "scripts/formal.mjs",
       "observationBridge": "scripts/runtime-boundary-refinement.mjs",
       "observationProducer": "scripts/read-boundary-refinement.mjs",
-      "sourceDigest": "58fcd323a419d3c5de72fe82a026d5e6ce7e1205d9bc81416d58dfa7a5354e82",
+      "sourceDigest": "451f86e0f8158519fdf9e5bc29db97ef720601a109d733cfb1a36aec50000f34",
+      "sourceFiles": [
+        "src/work.ts",
+        "src/kernel.ts"
+      ],
       "sourceMethods": [
         "WorkItem.inspect",
         "WorkQueue.key",
@@ -10644,7 +10663,24 @@
         "WorkQueue.requireRow",
         "WorkQueue.assertDefinition",
         "WorkQueue.snapshot"
-      ]
+      ],
+      "sourceSymbols": {
+        "src/kernel.ts": [
+          "changed"
+        ],
+        "src/work.ts": [
+          "WorkItem.inspect",
+          "WorkQueue.key",
+          "WorkQueue.item",
+          "WorkQueue.inspect",
+          "WorkQueue.inspectId",
+          "WorkQueue.inspectMany",
+          "WorkQueue.history",
+          "WorkQueue.requireRow",
+          "WorkQueue.assertDefinition",
+          "WorkQueue.snapshot"
+        ]
+      }
     },
     "runtime": {
       "config": "formal/WorkOnceRuntime.cfg",
@@ -10680,7 +10716,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "5579060ebdaf959a0243a9385edb94670725a57e772ed356ed918e7429cc5408",
+    "assuranceInfrastructureDigest": "6d94452b27912e44380cd736da3b568603fa16972273b7aa2880d13d6df270ee",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10697,6 +10733,12 @@
       "scripts/check-read-boundary-mutation.mjs",
       "scripts/check-read-source-model-binding-mutation.mjs",
       "scripts/check-read-contract-mutation.mjs",
+      "scripts/read-history-refinement.mjs",
+      "scripts/check-read-history-mutations.mjs",
+      "test/read-history-refinement.test.mjs",
+      "formal/WorkOnceReadHistory.tla",
+      "formal/WorkOnceReadHistory.cfg",
+      "assurance/red-before/read-history-future-congruence.json",
       "scripts/local-runner-refinement.mjs",
       "scripts/check-local-runner-implementation-mutations.mjs",
       "scripts/check-local-runner-source-model-mutation.mjs",
@@ -10712,7 +10754,7 @@
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "425518da8e4bd8c8f3515281dbfda5613781e2888343bb7696f73b7f862e9120",
+    "modelDigest": "00a7321d494e7fa6506ba2cbb4e134ecbb8204a6a95b59ebdf049855621feaae",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -10722,7 +10764,9 @@
       "formal/WorkOncePolicy.tla",
       "formal/WorkOncePolicy.cfg",
       "formal/WorkOnceLocalRunner.tla",
-      "formal/WorkOnceLocalRunner.cfg"
+      "formal/WorkOnceLocalRunner.cfg",
+      "formal/WorkOnceReadHistory.tla",
+      "formal/WorkOnceReadHistory.cfg"
     ],
     "sourceDigest": "ea413ebd90aacb9ec03ebb1c97442c603f83091605afacb4db087134936ebee2",
     "sourceFiles": [

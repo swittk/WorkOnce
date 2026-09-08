@@ -252,6 +252,33 @@ const runtimeMutants = {
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
+const readHistoryMutants = {
+  ReadHistoryTypeOK: String.raw`  /\ left' = [BaseProjection EXCEPT !.state = "invalid"]
+  /\ right' = BaseProjection /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+  CurrentProjectionCongruent: String.raw`  /\ left' = BaseProjection
+  /\ right' = [BaseProjection EXCEPT !.state = "running"]
+  /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+  EnabledFutureCongruent: String.raw`  /\ left' = BaseProjection
+  /\ right' = [BaseProjection EXCEPT !.state = "running"]
+  /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+  OutcomeFutureCongruent: String.raw`  /\ left' = BaseProjection
+  /\ right' = [BaseProjection EXCEPT !.state = "running"]
+  /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+  HistoryBounded: String.raw`  /\ left' = BaseProjection /\ right' = BaseProjection
+  /\ leftHistory' = <<>> /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+  HistoryRetentionOrder: String.raw`  /\ left' = BaseProjection /\ right' = BaseProjection
+  /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryB
+  /\ futureHistory' = <<"claim">> /\ historyWrites' = 1 /\ depth' = 1`,
+  HistoryDifferenceVisible: String.raw`  /\ left' = BaseProjection /\ right' = BaseProjection
+  /\ leftHistory' = BaseHistoryA /\ rightHistory' = BaseHistoryA
+  /\ futureHistory' = <<>> /\ historyWrites' = 0 /\ depth' = 0`,
+};
+
 const localRunnerMutants = {
   LocalTypeOK: String.raw`  /\ pc' = "invalid"
   /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
@@ -449,6 +476,65 @@ requireInvariantRejects(
   admissionMutantConfig,
   admissionMutant,
   'NoAdmissionAfterStop',
+);
+
+const { runReadHistorySamples, assertReadHistorySamples } = await import(
+  './read-history-refinement.mjs'
+);
+const readHistorySamples = await runReadHistorySamples();
+assertReadHistorySamples(readHistorySamples);
+const readHistoryObserved = resolve('.artifacts/tlc/WorkOnceReadHistoryObserved.tla');
+const readHistoryConfig = resolve('.artifacts/tlc/WorkOnceReadHistory-observed.cfg');
+writeFileSync(
+  readHistoryObserved,
+  `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+);
+writeFileSync(
+  readHistoryConfig,
+  `${readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8').replace(
+    'CONSTANT Samples = {}',
+    'CONSTANT Samples <- ObservedSamples',
+  )}\nINVARIANT ReadHistorySamplesConform\n`,
+);
+console.log(
+  `TLC read-history boundary receives ${readHistorySamples.length} fresh compiled observations.`,
+);
+runModel('WorkOnceReadHistoryObserved', readHistoryConfig, readHistoryObserved);
+
+const baseReadHistoryConfig = readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8');
+assertMutantSetMatchesConfig('formal/WorkOnceReadHistory.cfg', readHistoryMutants);
+runMutationWitnessBatch({
+  model: 'WorkOnceReadHistoryInvariantMutationBatch',
+  baseModule: 'WorkOnceReadHistory',
+  baseConfig: baseReadHistoryConfig,
+  mutants: readHistoryMutants,
+});
+
+const readHistorySampleMutant = resolve('.artifacts/tlc/WorkOnceReadHistorySamplesMutant.tla');
+const readHistorySampleMutantConfig = resolve(
+  '.artifacts/tlc/WorkOnceReadHistorySamplesMutant.cfg',
+);
+writeFileSync(
+  readHistorySampleMutant,
+  String.raw`---- MODULE WorkOnceReadHistorySamplesMutant ----
+EXTENDS WorkOnceReadHistoryObserved
+BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+);
+writeFileSync(
+  readHistorySampleMutantConfig,
+  singleInvariantConfig(
+    readFileSync(readHistoryConfig, 'utf8'),
+    'ReadHistorySamplesConform',
+  ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
+);
+requireInvariantRejects(
+  'WorkOnceReadHistorySamplesMutant',
+  readHistorySampleMutantConfig,
+  readHistorySampleMutant,
+  'ReadHistorySamplesConform',
 );
 
 const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(

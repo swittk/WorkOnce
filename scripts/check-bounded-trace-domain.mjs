@@ -16,6 +16,9 @@ const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = 
 const { runPolicyRefinementSamples, assertPolicyRefinementSamples } = await import(
   './policy-refinement.mjs'
 );
+const { runReadHistorySamples, assertReadHistorySamples } = await import(
+  './read-history-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -28,6 +31,12 @@ const evidenceFiles = [
   'scripts/check-read-boundary-mutation.mjs',
   'scripts/check-read-source-model-binding-mutation.mjs',
   'scripts/check-read-contract-mutation.mjs',
+  'scripts/read-history-refinement.mjs',
+  'test/read-history-refinement.test.mjs',
+  'scripts/check-read-history-mutations.mjs',
+  'formal/WorkOnceReadHistory.tla',
+  'formal/WorkOnceReadHistory.cfg',
+  'assurance/red-before/read-history-future-congruence.json',
   'test/runtime-boundary-refinement.test.mjs',
   'scripts/local-runner-refinement.mjs',
   'test/local-runner-refinement.test.mjs',
@@ -67,6 +76,21 @@ function digestFiles(files) {
   }
   return hash.digest('hex');
 }
+if (process.argv.includes('--check-evidence-binding-only')) {
+  if (!fs.existsSync(target))
+    throw new Error('Missing assurance/bounded-trace-domain.json. Run npm run assurance:update.');
+  const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
+  if (JSON.stringify(previous.evidenceFiles) !== JSON.stringify(evidenceFiles))
+    throw new Error('Bounded trace evidence file list drifted.');
+  const actual = digestFiles(evidenceFiles);
+  if (previous.evidenceDigest !== actual)
+    throw new Error(
+      `Bounded trace evidence digest drifted: expected=${previous.evidenceDigest ?? 'missing'} actual=${actual}`,
+    );
+  console.log('Bounded trace evidence content binding matches the reviewed report.');
+  process.exit(0);
+}
+
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
@@ -74,6 +98,8 @@ const localRunnerSamples = await runLocalRunnerRefinementSamples();
 assertLocalRunnerRefinementSamples(localRunnerSamples);
 const policySamples = await runPolicyRefinementSamples();
 assertPolicyRefinementSamples(policySamples);
+const readHistorySamples = await runReadHistorySamples();
+assertReadHistorySamples(readHistorySamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -95,6 +121,21 @@ const current = {
       .update(JSON.stringify(boundarySamples))
       .digest('hex'),
     lifecycleAdapterCases: 600,
+  },
+  readHistoryBoundary: {
+    samples: readHistorySamples.length,
+    counts: Object.fromEntries(
+      [...new Set(readHistorySamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, readHistorySamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(readHistorySamples))
+      .digest('hex'),
+    historyLimit: 128,
+    futureCongruenceTraces: readHistorySamples.find((sample) => sample.kind === 'historyCongruence')
+      ?.futureTraceCount,
   },
   localRunnerBoundary: {
     samples: localRunnerSamples.length,

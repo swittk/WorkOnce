@@ -19,7 +19,10 @@ export interface CompareExchange {
  * only when storage proved that this exact comparison did not commit.
  */
 export interface CompareExchangePort {
-  /** Detached reads in caller order, with the trusted storage clock (including empty reads). */
+  /**
+   * Detached reads in caller order, with the trusted storage clock (including empty reads).
+   * Per-id values must be valid; cross-id transactional snapshot isolation is not required.
+   */
   getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
   /** Indexed discovery. Scope/kind/definition and the limit must be applied in storage. */
   query(query: WorkQuery): Promise<{ rows: WorkRecord[]; now: number }>;

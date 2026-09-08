@@ -55,6 +55,8 @@
 - Contract: `formal/WorkOnceContract.tla`
 - Cross-adapter producer: `scripts/read-boundary-refinement.mjs`
 - Bound source methods: `WorkItem.inspect`, `WorkQueue.key`, `WorkQueue.item`, `WorkQueue.inspect`, `WorkQueue.inspectId`, `WorkQueue.inspectMany`, `WorkQueue.history`, `WorkQueue.requireRow`, `WorkQueue.assertDefinition`, `WorkQueue.snapshot`
+- History spec: `formal/WorkOnceReadHistory.tla` via `scripts/read-history-refinement.mjs`
+- History invariants: `CurrentProjectionCongruent`, `EnabledFutureCongruent`, `HistoryBounded`, `HistoryDifferenceVisible`, `HistoryRetentionOrder`, `OutcomeFutureCongruent`, `ReadHistoryTypeOK`
 
 ## Retry/defer policy boundary
 
@@ -65,8 +67,8 @@
 
 ## Assurance infrastructure binding
 
-- Bound proof/checker files: **29**
-- Content digest: `5579060ebdaf959a0243a9385edb94670725a57e772ed356ed918e7429cc5408`
+- Bound proof/checker files: **35**
+- Content digest: `6d94452b27912e44380cd736da3b568603fa16972273b7aa2880d13d6df270ee`
 
 ## Coverage rule
 
