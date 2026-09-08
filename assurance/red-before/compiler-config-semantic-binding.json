@@ -1,0 +1,18 @@
+{
+  "kind": "assurance_framework_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "fdc07897146bcd399f9f84a4bb2e740f566239d9",
+  "defect": "Ordinary assurance:update accepted a semantic compiler-configuration change (tsconfig target ES2018 to ES2020) without requiring the explicit source/model review acknowledgement path.",
+  "preFixEvidence": {
+    "mutation": "tsconfig.json compilerOptions.target ES2018 -> ES2020",
+    "assuranceUpdateExit": 0,
+    "baseBuildSourceDigest": "8f59bfa072163b1cb8132cb8fd0d7cf1d5384619b71c7c8c9741df5940205a7a",
+    "mutatedBuildSourceDigest": "2b54b861fce2a6d3e759b76034568b07caa2037d80eaccd8e1e81a65d1367602",
+    "baseArtifactDigest": "857524aa4ec2b781baf2ff6e1a7f834ad480cd7fc565e8d3a3ad6614d2fae8b8",
+    "mutatedArtifactDigest": "64e07192e66e1072c9202c99d4c8dcc5540ce6ede71f0f1a5d6e48a4a01c9d75"
+  },
+  "impact": "Compiler/toolchain configuration materially controls the compiled implementation used by executable refinement. A normal manifest refresh could therefore acknowledge semantic build drift without the review fence required for source/model changes.",
+  "fix": "Bind all tracked tsconfig files plus package.json and package-lock.json as the semantic compiler/toolchain environment and make ordinary --write fail when that environment changes unless --ack-source-model-review is explicitly supplied after review.",
+  "mutationKill": "The assurance-infrastructure mutation guard changes tsconfig.json target and requires ordinary manifest --write to fail specifically with the compiler/toolchain review-fence error."
+}

@@ -96,8 +96,10 @@
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **83**
-- Content digest: `44d3aba55a1fc5d3f525949d9589e6b2928ab12e82124be6033bb86c3ec78982`
+- Bound proof/checker files: **96**
+- Content digest: `7b432f08fb4a53a6c5c3511d40ebcf9100a1626dc18727c838ad2a88d133e10f`
+- Semantic compiler/toolchain inputs: **6**
+- Semantic compiler/toolchain digest: `157b043411d436c18dfaa5f084a544c9087f8fdbce75fd43c63e50a9aa3976ac`
 
 ## Coverage rule
 

@@ -171,6 +171,14 @@ const readSourceSymbols = {
   'src/kernel.ts': ['changed'],
 };
 const readSourceFiles = Object.keys(readSourceSymbols);
+const semanticEnvironmentFiles = [
+  'tsconfig.json',
+  'tsconfig.cjs.json',
+  'tsconfig.tests.json',
+  'tsconfig.webworker.json',
+  'package.json',
+  'package-lock.json',
+];
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'test/source-semantic-hash.test.mjs',
@@ -261,7 +269,8 @@ const assuranceInfrastructureFiles = [
   'scripts/run-assurance.mjs',
   'scripts/consumer-smoke.mjs',
   'scripts/prepare-package.mjs',
-  'package.json',
+  ...semanticEnvironmentFiles,
+  'assurance/red-before/compiler-config-semantic-binding.json',
 ];
 
 function assertAssuranceRunnerScriptsBound() {
@@ -1383,6 +1392,8 @@ function buildManifest(live) {
       modelFiles,
       sourceDigest: semanticSourceDigest(semanticSourceFiles),
       modelDigest: formalDigest(modelFiles),
+      semanticEnvironmentFiles,
+      semanticEnvironmentDigest: contentDigest(semanticEnvironmentFiles),
       assuranceInfrastructureFiles,
       assuranceInfrastructureDigest: contentDigest(assuranceInfrastructureFiles),
     },
@@ -1495,6 +1506,8 @@ function renderReport(manifest) {
     `- TLA semantic digest schema: \`${manifest.model.formalDigestSchema}\``,
     `- Bound proof/checker files: **${manifest.stateMachineBinding.assuranceInfrastructureFiles.length}**`,
     `- Content digest: \`${manifest.stateMachineBinding.assuranceInfrastructureDigest}\``,
+    `- Semantic compiler/toolchain inputs: **${manifest.stateMachineBinding.semanticEnvironmentFiles.length}**`,
+    `- Semantic compiler/toolchain digest: \`${manifest.stateMachineBinding.semanticEnvironmentDigest}\``,
     '',
     '## Coverage rule',
     '',
@@ -1628,6 +1641,18 @@ const previous = fs.existsSync(manifestPath)
   : undefined;
 if (write) {
   assertDigestSchemaReview(previous, current);
+  if (
+    previous &&
+    (previous.stateMachineBinding?.semanticEnvironmentDigest !==
+      current.stateMachineBinding.semanticEnvironmentDigest ||
+      canonicalText(previous.stateMachineBinding?.semanticEnvironmentFiles ?? []) !==
+        canonicalText(current.stateMachineBinding.semanticEnvironmentFiles)) &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound compiler/toolchain semantics changed without explicit source/model review. Use assurance:update:ack only after reviewing why the formal abstraction deliberately remains unchanged.',
+    );
+  }
   assertSourceModelPairing(
     previous?.model?.localRunner,
     current.model.localRunner,

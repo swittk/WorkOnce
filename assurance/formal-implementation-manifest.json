@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "44d3aba55a1fc5d3f525949d9589e6b2928ab12e82124be6033bb86c3ec78982",
+    "assuranceInfrastructureDigest": "7b432f08fb4a53a6c5c3511d40ebcf9100a1626dc18727c838ad2a88d133e10f",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10891,6 +10891,13 @@
       "scripts/build-source-binding.mjs",
       "scripts/check-build-source-binding-mutation.mjs",
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
+      "scripts/check-assurance-scheduling.mjs",
+      "scripts/check-alias-contract-mutation.mjs",
+      "scripts/check-assurance-scheduling-mutation.mjs",
+      "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
+      "assurance/red-before/mutation-guard-cross-contamination.json",
+      "assurance/red-before/process-fault-test-concurrency.json",
+      "assurance/red-before/unbound-assurance-runner.json",
       "scripts/tlc-outcome.mjs",
       "scripts/check-tlc-outcome-classification.mjs",
       "scripts/check-formal-config-coverage-mutation.mjs",
@@ -10963,7 +10970,13 @@
       "scripts/run-assurance.mjs",
       "scripts/consumer-smoke.mjs",
       "scripts/prepare-package.mjs",
-      "package.json"
+      "tsconfig.json",
+      "tsconfig.cjs.json",
+      "tsconfig.tests.json",
+      "tsconfig.webworker.json",
+      "package.json",
+      "package-lock.json",
+      "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
     "modelDigest": "8434356fdd04cb2fec04469d010fc4b35c5e3c16fa195cc3f3c249843365b64e",
@@ -10987,6 +11000,15 @@
       "formal/WorkOnceOutbox.cfg",
       "formal/WorkOnceOutboxBudget.tla",
       "formal/WorkOnceOutboxBudget.cfg"
+    ],
+    "semanticEnvironmentDigest": "157b043411d436c18dfaa5f084a544c9087f8fdbce75fd43c63e50a9aa3976ac",
+    "semanticEnvironmentFiles": [
+      "tsconfig.json",
+      "tsconfig.cjs.json",
+      "tsconfig.tests.json",
+      "tsconfig.webworker.json",
+      "package.json",
+      "package-lock.json"
     ],
     "sourceDigest": "928a4c8c5ff467761a2812b64d362d87668cdee3e89895a04c06d968ac6a3544",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",

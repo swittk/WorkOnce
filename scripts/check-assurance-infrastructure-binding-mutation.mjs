@@ -9,6 +9,8 @@ const target = path.join(root, 'scripts/formal.mjs');
 const original = fs.readFileSync(target, 'utf8');
 const runnerTarget = path.join(root, 'scripts/run-assurance.mjs');
 const runnerOriginal = fs.readFileSync(runnerTarget, 'utf8');
+const configTarget = path.join(root, 'tsconfig.json');
+const configOriginal = fs.readFileSync(configTarget, 'utf8');
 
 function run(script, ...args) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -49,10 +51,26 @@ try {
   assert.notEqual(runnerBinding.status, 0, 'formal manifest accepted an unbound assurance runner');
   assert.match(output(runnerBinding), /Full assurance invokes unbound proof\/checker scripts/u);
 
+  fs.writeFileSync(runnerTarget, runnerOriginal);
+  const configMutant = configOriginal.replace('\"target\": \"ES2018\"', '\"target\": \"ES2020\"');
+  assert.notEqual(configMutant, configOriginal, 'compiler target mutation anchor is missing');
+  fs.writeFileSync(configTarget, configMutant);
+  const configBinding = run('scripts/check-formal-implementation-conformance.mjs', '--write');
+  assert.notEqual(
+    configBinding.status,
+    0,
+    'ordinary manifest update accepted compiler-config drift',
+  );
+  assert.match(
+    output(configBinding),
+    /Bound compiler\/toolchain semantics changed without explicit source\/model review/u,
+  );
+
   console.log(
-    'Assurance infrastructure binding rejects proof-runner mutation and any unbound full-gate checker.',
+    'Assurance infrastructure binding rejects proof-runner mutation, unbound full-gate checkers, and unacknowledged compiler/toolchain drift.',
   );
 } finally {
   fs.writeFileSync(target, original);
   fs.writeFileSync(runnerTarget, runnerOriginal);
+  fs.writeFileSync(configTarget, configOriginal);
 }
