@@ -10522,7 +10522,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "3b50cbbe598d7a8c7d278fccb46f114cdb8228e6a02d0ce04ee6adcd189c038b",
+    "assuranceInfrastructureDigest": "376166014757720cb0f71d3a6e6c490a77443599c4a456f5d01c1056558e429c",
     "assuranceInfrastructureFiles": [
       "test/process/sqlite-busy-child.mjs",
       "test/process/sqlite-busy-startup.test.mjs",

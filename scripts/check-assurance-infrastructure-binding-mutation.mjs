@@ -8,8 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'scripts/formal.mjs');
 const original = fs.readFileSync(target, 'utf8');
 
-function run(script) {
-  return spawnSync(process.execPath, [script], {
+function run(script, ...args) {
+  return spawnSync(process.execPath, [script, ...args], {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
@@ -22,13 +22,16 @@ function output(result) {
 try {
   fs.writeFileSync(target, `${original}\n// assurance-infrastructure-binding-mutant\n`);
 
-  const manifest = run('scripts/check-formal-implementation-conformance.mjs');
+  const manifest = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
   assert.notEqual(manifest.status, 0, 'formal manifest accepted a changed proof runner');
-  assert.match(output(manifest), /Formal implementation manifest drifted/u);
+  assert.match(output(manifest), /Assurance infrastructure digest drifted/u);
 
-  const bounded = run('scripts/check-bounded-trace-domain.mjs');
+  const bounded = run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only');
   assert.notEqual(bounded.status, 0, 'bounded trace report accepted a changed proof runner');
-  assert.match(output(bounded), /Bounded trace report drifted/u);
+  assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
 
   console.log('Assurance infrastructure binding rejects an unreviewed proof-runner mutation.');
 } finally {

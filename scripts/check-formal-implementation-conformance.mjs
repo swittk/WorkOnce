@@ -684,6 +684,22 @@ function renderReport(manifest) {
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
+if (process.argv.includes('--check-infrastructure-binding-only')) {
+  if (!fs.existsSync(manifestPath))
+    throw new Error(
+      'Missing assurance/formal-implementation-manifest.json. Run npm run assurance:update and review it.',
+    );
+  const previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const expected = previous.stateMachineBinding?.assuranceInfrastructureDigest;
+  const actual = contentDigest(assuranceInfrastructureFiles);
+  if (expected !== actual)
+    throw new Error(
+      `Assurance infrastructure digest drifted: expected=${expected ?? 'missing'} actual=${actual}`,
+    );
+  console.log('Assurance infrastructure content binding matches the reviewed manifest.');
+  process.exit(0);
+}
+
 const live = surface();
 for (const entrypoint of expectedEntrypoints)
   if (!(entrypoint in live.entrypoints))

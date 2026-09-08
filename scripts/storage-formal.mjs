@@ -193,5 +193,4 @@ mutationChecks.push(() =>
     'StorageSamplesConform',
   ),
 );
-for (let index = 0; index < mutationChecks.length; index += 2)
-  await Promise.all(mutationChecks.slice(index, index + 2).map((runMutation) => runMutation()));
+await Promise.all(mutationChecks.map((runMutation) => runMutation()));

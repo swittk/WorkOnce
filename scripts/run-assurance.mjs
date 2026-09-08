@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,6 +23,42 @@ function runNpm(label, args) {
   }
   run(label, 'npm', args);
 }
+function npmParallelEntry(label, args) {
+  if (process.platform === 'win32')
+    return [label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]];
+  return [label, 'npm', args];
+}
+async function runParallel(entries) {
+  const started = performance.now();
+  await Promise.all(
+    entries.map(
+      ([label, command, args]) =>
+        new Promise((resolvePromise, rejectPromise) => {
+          const childStarted = performance.now();
+          const child = spawn(command, args, {
+            cwd: root,
+            env: process.env,
+            stdio: 'inherit',
+            shell: false,
+          });
+          child.once('error', rejectPromise);
+          child.once('exit', (code, signal) => {
+            if (signal) {
+              rejectPromise(new Error(`${label} terminated by ${signal}`));
+              return;
+            }
+            if (code !== 0) {
+              rejectPromise(new Error(`${label} exited with status ${String(code)}`));
+              return;
+            }
+            console.log(`[assurance] ${label}: ${Math.round(performance.now() - childStarted)} ms`);
+            resolvePromise();
+          });
+        }),
+    ),
+  );
+  console.log(`[assurance] parallel batch: ${Math.round(performance.now() - started)} ms`);
+}
 const unitTests = fs
   .readdirSync(path.join(root, 'test'))
   .filter((name) => name.endsWith('.test.mjs'))
@@ -33,8 +69,10 @@ const processTests = fs
   .filter((name) => name.endsWith('.test.mjs'))
   .sort()
   .map((name) => `test/process/${name}`);
-runNpm('format', ['run', 'format:check']);
-runNpm('type surface', ['run', 'check']);
+await runParallel([
+  npmParallelEntry('format', ['run', 'format:check']),
+  npmParallelEntry('type surface', ['run', 'check']),
+]);
 runNpm('single build', ['run', 'build']);
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
@@ -57,11 +95,17 @@ run('type identity trivia', process.execPath, [
 run('public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']);
 run('implementation traces', process.execPath, ['--test', ...unitTests]);
 run('real process faults', process.execPath, ['--test', ...processTests]);
-run('storage implementation mutation guard', process.execPath, [
-  'scripts/check-storage-contract-mutation.mjs',
-]);
-run('storage source/model mutation guard', process.execPath, [
-  'scripts/check-storage-source-model-mutation.mjs',
+await runParallel([
+  [
+    'storage implementation mutation guard',
+    process.execPath,
+    ['scripts/check-storage-contract-mutation.mjs'],
+  ],
+  [
+    'storage source/model mutation guard',
+    process.execPath,
+    ['scripts/check-storage-source-model-mutation.mjs'],
+  ],
 ]);
 run('bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']);
 run('TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']);

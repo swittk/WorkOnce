@@ -55,6 +55,21 @@ function digestFiles(files) {
   }
   return hash.digest('hex');
 }
+if (process.argv.includes('--check-evidence-binding-only')) {
+  if (!fs.existsSync(target))
+    throw new Error(
+      'Missing assurance/bounded-trace-domain.json. Run npm run assurance:update and review it.',
+    );
+  const reviewed = JSON.parse(fs.readFileSync(target, 'utf8'));
+  const actual = digestFiles(evidenceFiles);
+  if (reviewed.evidenceDigest !== actual)
+    throw new Error(
+      `Bounded trace evidence digest drifted: expected=${reviewed.evidenceDigest ?? 'missing'} actual=${actual}`,
+    );
+  console.log('Bounded trace evidence binding matches the reviewed report.');
+  process.exit(0);
+}
+
 const report = await runBoundedRefinementCorpus();
 const boundarySamples = await runRuntimeBoundarySamples();
 assertRuntimeBoundarySamples(boundarySamples);
