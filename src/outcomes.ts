@@ -44,7 +44,7 @@ export function retry<R extends string>(
   reason: R,
   timing?: WorkTiming,
 ): Extract<WorkOutcome<never, R>, { type: 'retry' }> {
-  return { type: 'retry', reason, ...timing };
+  return { ...timing, type: 'retry', reason };
 }
 
 /** Wait without counting a failure retry; the current attempt ends and the work resumes later. */
@@ -52,7 +52,7 @@ export function wait<R extends string>(
   reason: R,
   timing?: WorkTiming,
 ): Extract<WorkOutcome<never, R>, { type: 'defer' }> {
-  return { type: 'defer', reason, ...timing };
+  return { ...timing, type: 'defer', reason };
 }
 
 /** Standard queue synonym for `wait`; prefer `wait` in application code. */

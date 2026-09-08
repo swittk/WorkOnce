@@ -211,17 +211,17 @@ export class WorkItem<I, O, R extends string> {
       check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
     } = {},
   ): Promise<WorkSnapshot<I, O, R>> {
-    return this.queue.restart({ key: this.key, ...options });
+    return this.queue.restart({ ...options, key: this.key });
   }
   /** Cancel this item's current unfinished generation. */
   cancel(
     options: { expectedGeneration?: number; reason?: string } = {},
   ): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
-    return this.queue.cancelCurrent({ key: this.key, ...options });
+    return this.queue.cancelCurrent({ ...options, key: this.key });
   }
   /** Make this waiting item eligible immediately after the caller revalidated its prerequisite. */
   wake(options: { expectedGeneration?: number } = {}): Promise<WorkSnapshot<I, O, R>> {
-    return this.queue.wakeCurrent({ key: this.key, ...options });
+    return this.queue.wakeCurrent({ ...options, key: this.key });
   }
 }
 
@@ -244,7 +244,7 @@ export class WorkRun<I, O, R extends string> {
   /** End this attempt successfully and optionally attach durable follow-up work. */
   succeed(
     ...args: O extends null
-      ? [result?: O, options?: FollowUpOptions]
+      ? [] | [result: O, options?: FollowUpOptions]
       : [result: O, options?: FollowUpOptions]
   ): WorkOutcome<O, R> {
     return (args.length === 0 ? succeed() : succeed(args[0], args[1])) as WorkOutcome<O, R>;

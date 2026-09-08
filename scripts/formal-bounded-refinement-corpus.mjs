@@ -42,6 +42,8 @@ const coverageKeys = [
   'dynamicRetry',
   'dynamicDefer',
   'dynamicNext',
+  'outcomeHelperAuthority',
+  'itemHandleKeyBinding',
   'workerErrorIsolation',
   'managedRunnerFatalWake',
   'managedExternalFatalWake',
@@ -398,6 +400,56 @@ async function replayAndDynamicPolicies(coverage) {
     );
     assert.equal(groups.flat().length, 1);
     hit(coverage, 'parallelClaimCompetition');
+  }
+  {
+    scenarios++;
+    const f = fixture({ scope: 'outcome-helper-authority' });
+    await f.queue.item({ id: 'x' }).ensure();
+    let [run] = await f.queue.claim({ workerId: 'A' });
+    const timing = { afterMs: 1, type: 'succeed', reason: 'hijacked' };
+    const retried = run.retry('retryable', timing);
+    assert.equal(retried.type, 'retry');
+    assert.equal(retried.reason, 'retryable');
+    await run.settle(retried);
+    f.advance(1);
+    [run] = await f.queue.claim({ workerId: 'B' });
+    const waited = run.wait('pending', timing);
+    assert.equal(waited.type, 'defer');
+    assert.equal(waited.reason, 'pending');
+    await run.settle(waited);
+    hit(coverage, 'outcomeHelperAuthority');
+  }
+  {
+    scenarios++;
+    let now = 1000;
+    const store = createMemoryStore({ now: () => now });
+    const work = createWorkOnce({ store, scope: 'item-handle-key-binding' });
+
+    const cancelQueue = work.define('cancel');
+    await cancelQueue.ensure(null, { key: 'a' });
+    await cancelQueue.ensure(null, { key: 'b' });
+    await cancelQueue.item(null, 'a').cancel({ key: 'b', reason: 'owner-cancel' });
+    assert.equal((await cancelQueue.inspect('a')).phase.state, 'cancelled');
+    assert.equal((await cancelQueue.inspect('b')).phase.state, 'queued');
+
+    const restartQueue = work.define('restart');
+    await restartQueue.ensure(null, { key: 'a' });
+    await restartQueue.ensure(null, { key: 'b' });
+    for (const claimed of await restartQueue.claim({ workerId: 'finish', limit: 2 }))
+      await claimed.settle(claimed.succeed());
+    await restartQueue.item(null, 'a').restart({ key: 'b', expectedGeneration: 1 });
+    assert.equal((await restartQueue.inspect('a')).generation, 2);
+    assert.equal((await restartQueue.inspect('b')).generation, 1);
+
+    const wakeQueue = work.define('wake', { wait: { afterMs: 100 } });
+    await wakeQueue.ensure(null, { key: 'a' });
+    await wakeQueue.ensure(null, { key: 'b' });
+    for (const claimed of await wakeQueue.claim({ workerId: 'wait', limit: 2 }))
+      await claimed.settle(claimed.wait('pending'));
+    await wakeQueue.item(null, 'a').wake({ key: 'b', expectedGeneration: 1 });
+    assert.equal((await wakeQueue.inspect('a')).phase.availableAt, now);
+    assert.equal((await wakeQueue.inspect('b')).phase.availableAt, now + 100);
+    hit(coverage, 'itemHandleKeyBinding');
   }
   {
     scenarios++;

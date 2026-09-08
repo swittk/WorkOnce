@@ -58,6 +58,30 @@ function show(snapshot: WorkSnapshot<Input, Output, Reason>) {
 }
 void show;
 
+const noResult = work.define<Input>('no-result');
+void noResult.runAvailable({ workerId: 'null-result' }, (run) => {
+  run.succeed();
+  run.succeed(null);
+  // @ts-expect-error The no-result facade accepts omission or explicit null, never undefined.
+  run.succeed(undefined);
+  return run.succeed();
+});
+const noResultExternal = noResult.serveExternal({
+  prepare: (run) => run.handoff(run.input),
+  onPrepareError: (run) => run.fail('prepare_failed'),
+});
+void runExternalAvailable(
+  noResultExternal,
+  { workerId: 'null-result-external', signal: new AbortController().signal },
+  async (run) => {
+    run.succeed();
+    run.succeed(null);
+    // @ts-expect-error External no-result facade has the same omission-or-null contract.
+    run.succeed(undefined);
+    return run.succeed();
+  },
+);
+
 const dynamic = work.define<Input, Output, Reason>('dynamic', {
   executionLimits: (input) => ({ maxAttempts: input.urgent ? 10 : 3 }),
   wait: async (context) => ({ afterMs: context.deferrals ? 30_000 : 1000 }),

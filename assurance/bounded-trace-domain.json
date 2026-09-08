@@ -4,7 +4,7 @@
     "scripts/formal-bounded-refinement-corpus.mjs",
     "test/formal-bounded-refinement.test.mjs"
   ],
-  "evidenceDigest": "7d2dfad1a5d987104bc3f806d7a769dad7b1d1ec7af565bc4fe27fbc63e80426",
+  "evidenceDigest": "e832965c207a6a528b73dd4c372c4de599947f13498dee59c30446d381bf109d",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -32,6 +32,7 @@
     "generationTwo": true,
     "identicalSettlementReplay": true,
     "invalidExternalRenewal": true,
+    "itemHandleKeyBinding": true,
     "leaseReclaim": true,
     "managedExternalFatalClaimGate": true,
     "managedExternalFatalWake": true,
@@ -41,6 +42,7 @@
     "manualRetryDenied": true,
     "missingHandlerPromiseRejection": true,
     "oneMillisecondLease": true,
+    "outcomeHelperAuthority": true,
     "parallelClaimCompetition": true,
     "queued": true,
     "renew": true,
@@ -60,7 +62,7 @@
     "workerErrorIsolation": true
   },
   "observed": {
-    "deterministicScenarios": 38,
+    "deterministicScenarios": 40,
     "fuzzTraces": 96,
     "fuzzStepsPerTrace": 10,
     "coverageCounts": {
@@ -102,6 +104,8 @@
       "dynamicRetry": 3,
       "dynamicDefer": 2,
       "dynamicNext": 1,
+      "outcomeHelperAuthority": 1,
+      "itemHandleKeyBinding": 1,
       "workerErrorIsolation": 1,
       "managedRunnerFatalWake": 1,
       "managedExternalFatalWake": 1,

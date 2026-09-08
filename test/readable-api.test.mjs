@@ -1,7 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWorkOnce, exponentialBackoff } from '../dist/index.js';
+import { createWorkOnce, defer, exponentialBackoff, retry, wait } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
+
+test('outcome helpers keep authoritative discriminants and reasons ahead of timing extras', () => {
+  const timing = { afterMs: 7, type: 'succeed', reason: 'hijacked' };
+  assert.deepEqual(retry('busy', timing), { afterMs: 7, type: 'retry', reason: 'busy' });
+  assert.deepEqual(wait('pending', timing), { afterMs: 7, type: 'defer', reason: 'pending' });
+  assert.deepEqual(defer('pending', timing), { afterMs: 7, type: 'defer', reason: 'pending' });
+});
+
+test('WorkItem keeps its bound key even when runtime option objects contain another key', async () => {
+  let now = 1000;
+  const work = createWorkOnce({
+    store: createMemoryStore({ now: () => now }),
+    scope: 'item-key-authority',
+  });
+
+  const cancelQueue = work.define('cancel');
+  await cancelQueue.ensure(null, { key: 'a' });
+  await cancelQueue.ensure(null, { key: 'b' });
+  await cancelQueue.item(null, 'a').cancel({ key: 'b', reason: 'owner-cancel' });
+  assert.equal((await cancelQueue.inspect('a')).phase.state, 'cancelled');
+  assert.equal((await cancelQueue.inspect('b')).phase.state, 'queued');
+
+  const restartQueue = work.define('restart');
+  await restartQueue.ensure(null, { key: 'a' });
+  await restartQueue.ensure(null, { key: 'b' });
+  for (const run of await restartQueue.claim({ workerId: 'finish', limit: 2 }))
+    await run.settle(run.succeed());
+  await restartQueue.item(null, 'a').restart({ key: 'b', expectedGeneration: 1 });
+  assert.equal((await restartQueue.inspect('a')).generation, 2);
+  assert.equal((await restartQueue.inspect('b')).generation, 1);
+
+  const wakeQueue = work.define('wake', { wait: { afterMs: 100 } });
+  await wakeQueue.ensure(null, { key: 'a' });
+  await wakeQueue.ensure(null, { key: 'b' });
+  for (const run of await wakeQueue.claim({ workerId: 'wait', limit: 2 }))
+    await run.settle(run.wait('pending'));
+  await wakeQueue.item(null, 'a').wake({ key: 'b', expectedGeneration: 1 });
+  assert.equal((await wakeQueue.inspect('a')).phase.availableAt, now);
+  assert.equal((await wakeQueue.inspect('b')).phase.availableAt, now + 100);
+});
 
 test('readable API names map to the same hardened lifecycle semantics', async () => {
   let now = 1000;

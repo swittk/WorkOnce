@@ -27,6 +27,7 @@ for (const kind of ['memory', 'sqlite'])
       const rows = (
         await store.query({ scope: 'scope', kind: 'unicode', select: 'all', limit: 100 })
       ).rows;
+      assert.equal(rows.length, names.length);
       const expected = rows
         .map((row) => row.id)
         .sort((left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right)));

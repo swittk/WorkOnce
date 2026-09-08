@@ -750,7 +750,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
+      "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
       "classification": "worker-runtime",
@@ -1242,7 +1242,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
+      "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
       "classification": "abstract-semantic",
@@ -1811,7 +1811,7 @@
       "modelActions": [
         "Success"
       ],
-      "signatureHash": "9a180eb655552e9f92d026f6869e6bdc9909f0c1c9aa64b9d0482c89d174a893"
+      "signatureHash": "d7b8571900223b741ac18ce7002fb3e4eb7dd13859cb6e6ad22338bb975bc7fe"
     },
     {
       "classification": "observational",
@@ -9979,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "046f7c7205a75f76e93147b06f1fcebe5c49c5c58604b10e82ec41e7af658d15",
+    "sourceDigest": "6b27960119ae7d3fefbbb06bdd326068df61e8068165e50ade5bb41a083ec8c9",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",

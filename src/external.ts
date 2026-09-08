@@ -63,7 +63,7 @@ export class ExternalWorkRun<O, R extends string> {
   /** Report successful completion; the external-work service still performs the authoritative settlement. */
   succeed(
     ...args: O extends null
-      ? [result?: O, options?: FollowUpOptions]
+      ? [] | [result: O, options?: FollowUpOptions]
       : [result: O, options?: FollowUpOptions]
   ): WorkOutcome<O, R> {
     return (args.length === 0 ? succeed() : succeed(args[0], args[1])) as WorkOutcome<O, R>;

@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { processExternal, runExternalAvailable, runExternal } from '../dist/external.js';
+import {
+  ExternalWorkRun,
+  processExternal,
+  runExternalAvailable,
+  runExternal,
+} from '../dist/external.js';
 
 function fixture(options = {}) {
   const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'external' });
@@ -14,6 +19,31 @@ function fixture(options = {}) {
   });
   return { work, queue, transport };
 }
+
+test('external and local outcome facades preserve identical helper semantics', async () => {
+  const work = createWorkOnce({ store: createMemoryStore(), scope: 'external-facade-parity' });
+  const queue = work.define('job');
+  await queue.ensure(null, { key: 'x' });
+  const [local] = await queue.claim({ workerId: 'local' });
+  const external = new ExternalWorkRun(local.ref, local.attempt.leaseUntil, local.observedAt);
+  const followup = queue.request(null, { key: 'followup' });
+
+  assert.deepEqual(external.succeed(), local.succeed());
+  assert.deepEqual(
+    external.succeed(null, { thenDo: [followup] }),
+    local.succeed(null, { thenDo: [followup] }),
+  );
+  assert.deepEqual(external.retry('busy', { afterMs: 3 }), local.retry('busy', { afterMs: 3 }));
+  assert.deepEqual(external.wait('pending', { at: 9 }), local.wait('pending', { at: 9 }));
+  assert.deepEqual(
+    external.defer('pending', { afterMs: 4 }),
+    local.defer('pending', { afterMs: 4 }),
+  );
+  assert.deepEqual(
+    external.fail('terminal', { manualRetry: true, result: null, thenDo: [followup] }),
+    local.fail('terminal', { manualRetry: true, result: null, thenDo: [followup] }),
+  );
+});
 
 test('external success facade preserves durable follow-ups through authoritative settlement', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 'external-success-followup' });

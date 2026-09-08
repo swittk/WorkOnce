@@ -11,7 +11,10 @@ export type {
 export interface StoreChange<T> {
   /** Omit when nothing should be persisted. Deletion is deliberately not supported. */
   next?: WorkRecord;
-  /** A storage-side exclusive deadline for this write; never accept an expired owner's commit. */
+  /**
+   * A storage-side exclusive deadline for this write; never accept an expired owner's commit.
+   * Reject when the storage clock is at or after this value (`now >= validUntil`).
+   */
   validUntil?: number;
   /** Value returned after the write is durably committed. */
   value: T;
