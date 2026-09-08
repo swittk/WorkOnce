@@ -10877,7 +10877,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "e5505eaa6de436fd366e7c4038f62580e31e2de9d4adb4b70900e55bc6f0a4ce",
+    "assuranceInfrastructureDigest": "f413b7be04904fa36f5c0164f66b57cc20c290afac159c8b3e30c9ad2de38ecf",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10916,6 +10916,9 @@
       "formal/WorkOnceLocalRunner.tla",
       "formal/WorkOnceLocalRunner.cfg",
       "assurance/red-before/local-runner-heartbeat-cause.json",
+      "assurance/red-before/tlc-infrastructure-classification.json",
+      "assurance/red-before/internal-mutable-property-topology.json",
+      "assurance/red-before/internal-mutable-container-updates.json",
       "scripts/policy-refinement.mjs",
       "scripts/check-policy-source-model-binding-mutation.mjs",
       "scripts/check-policy-implementation-mutations.mjs",

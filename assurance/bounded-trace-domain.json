@@ -26,6 +26,9 @@
     "scripts/check-local-runner-implementation-mutations.mjs",
     "scripts/check-local-runner-source-model-mutation.mjs",
     "assurance/red-before/local-runner-heartbeat-cause.json",
+    "assurance/red-before/tlc-infrastructure-classification.json",
+    "assurance/red-before/internal-mutable-property-topology.json",
+    "assurance/red-before/internal-mutable-container-updates.json",
     "test/lifecycle-transition-matrix.test.mjs",
     "scripts/policy-refinement.mjs",
     "test/policy-refinement.test.mjs",
@@ -90,7 +93,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "825a86213d90314f08439a2b5d323f45eb3eaf7c0394ee10986919e4d5fd9c64",
+  "evidenceDigest": "0de73f7cf1a46fdda7f76d26b42f378e9b79249d99762f0dd062fadc9a34e0bf",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

@@ -37,12 +37,50 @@ function newName(node) {
   if (!ts.isNewExpression(node)) return undefined;
   return normalize(node.expression.getText());
 }
+const mutatingMethodNames = new Set([
+  'add',
+  'clear',
+  'copyWithin',
+  'delete',
+  'fill',
+  'pop',
+  'push',
+  'reverse',
+  'set',
+  'shift',
+  'splice',
+  'unshift',
+]);
+function isPropertyTarget(node) {
+  return ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node);
+}
+
 function constructKind(node) {
   if (
     ts.isPropertyDeclaration(node) &&
     !node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword)
   )
     return 'mutable_property';
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+    node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+    isPropertyTarget(node.left)
+  )
+    return 'property_assignment';
+  if (
+    (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+    (node.operator === ts.SyntaxKind.PlusPlusToken ||
+      node.operator === ts.SyntaxKind.MinusMinusToken) &&
+    isPropertyTarget(node.operand)
+  )
+    return 'property_update';
+  if (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    mutatingMethodNames.has(node.expression.name.text)
+  )
+    return `call_mutator_${node.expression.name.text}`;
   if (ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Let) !== 0)
     return 'mutable_let';
   if (ts.isWhileStatement(node)) return 'while_loop';
@@ -51,7 +89,8 @@ function constructKind(node) {
   if (ts.isForOfStatement(node)) return 'for_of_loop';
   if (ts.isForInStatement(node)) return 'for_in_loop';
   const created = newName(node);
-  if (created && ['Map', 'Set', 'AbortController'].includes(created)) return `new_${created}`;
+  if (created && ['Map', 'Set', 'WeakMap', 'WeakSet', 'AbortController'].includes(created))
+    return `new_${created}`;
   const called = callName(node);
   if (
     called &&

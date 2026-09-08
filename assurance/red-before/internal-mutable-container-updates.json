@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-08T14:43:52.904587+00:00",
+  "baselineCommit": "0b4483730c323b2853302102d9f87e183577d786",
+  "oldGateExitStatus": 0,
+  "oldGateStdout": "Internal semantic topology: 88 constructs explicitly classified; families={\"G\":23,\"I\":9,\"D\":24,\"A\":15,\"E\":1,\"B\":16,\"F\":12,\"C\":22}.",
+  "oldGateStderrTail": "",
+  "existingSourceTopologyOmittedByOldDetector": [
+    {
+      "path": "src/worker.ts",
+      "construct": "new WeakMap<object, number>()",
+      "semanticRole": "local claim start-time history used by managed-runner failure/elapsed semantics"
+    },
+    {
+      "path": "src/worker.ts",
+      "construct": "localClaimStartedAt.set(run, startedAt)",
+      "semanticRole": "mutates the managed-runner WeakMap"
+    },
+    {
+      "path": "src/memory.ts",
+      "construct": "rows.set(id, next)",
+      "semanticRole": "mutates in-memory durable adapter truth"
+    },
+    {
+      "path": "src/work.ts",
+      "construct": "failures.push(error)",
+      "semanticRole": "accumulates bounded outbox dispatch failures"
+    },
+    {
+      "path": "src/work.ts",
+      "construct": "run.signal = controller.signal",
+      "semanticRole": "publishes runner-owned interruption signal"
+    }
+  ],
+  "classification": "ASSURANCE_FRAMEWORK_FALSE_GREEN",
+  "note": "The 0b448 topology detector returned GREEN with 88 classified constructs even though these current library-owned mutable container/update sites were outside its discovery grammar."
+}

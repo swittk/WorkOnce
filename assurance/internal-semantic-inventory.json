@@ -133,6 +133,70 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
+      "id": "src/conformance.ts:<callback>:property_assignment:0bfd95e35fd1a3d4:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "property_assignment",
+      "excerpt": "input.a = 99",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:property_assignment:3d4dc390e9d9dfd3:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "property_assignment",
+      "excerpt": "row!.generation = 500",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:property_assignment:6482e9e1506f3c2d:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "property_assignment",
+      "excerpt": "batch[1]!.input.a = 9",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:test:call_mutator_push:3bff53101c1c5637:1",
+      "path": "src/conformance.ts",
+      "context": "test",
+      "kind": "call_mutator_push",
+      "excerpt": "completed.push(name)",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+    },
+    {
+      "id": "src/external.ts:<callback>:call_mutator_delete:e61e26964f85bc38:1",
+      "path": "src/external.ts",
+      "context": "<callback>",
+      "kind": "call_mutator_delete",
+      "excerpt": "active.delete(pending)",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
+    },
+    {
       "id": "src/external.ts:<callback>:call_setTimeout:74ddfe9b0521c9f2:1",
       "path": "src/external.ts",
       "context": "<callback>",
@@ -265,6 +329,18 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
+      "id": "src/external.ts:processLease:property_assignment:e24d917738564b53:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "property_assignment",
+      "excerpt": "run.signal = controller.signal",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
+    },
+    {
       "id": "src/external.ts:runExternal:call_Promise.all:450d45cbb5b62294:1",
       "path": "src/external.ts",
       "context": "runExternal",
@@ -287,6 +363,18 @@
       ],
       "classification": "APPLICABLE",
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:runExternal:call_mutator_add:9d64ec3594156691:1",
+      "path": "src/external.ts",
+      "context": "runExternal",
+      "kind": "call_mutator_add",
+      "excerpt": "active.add(pending)",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
     },
     {
       "id": "src/external.ts:runExternal:for_of_loop:d33e4359b01feec0:1",
@@ -410,6 +498,55 @@
       "reason": "Lifecycle revision/history retention is durable A state and directly observable through E history reads."
     },
     {
+      "id": "src/kernel.ts:changed:property_assignment:cb70158483ca29a4:1",
+      "path": "src/kernel.ts",
+      "context": "changed",
+      "kind": "property_assignment",
+      "excerpt": "next.history = [ ...row.history.slice(-127), { at: now, generation: row.generation, fence: row.fence, action, state: phase.state, ...('reason' in phase ? { reason: phase.reason } : {}), ...(phase.state === 'running' ? { workerId: phase.atte",
+      "families": [
+        "A",
+        "E"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Durable history replacement/truncation is lifecycle truth observed by history reads; A owns the transition history and E owns exact typed/history inspection semantics."
+    },
+    {
+      "id": "src/kernel.ts:constructor:property_assignment:28d7990fcb0546cc:1",
+      "path": "src/kernel.ts",
+      "context": "constructor",
+      "kind": "property_assignment",
+      "excerpt": "this.name = 'WorkConflict'",
+      "families": [
+        "H"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "WorkConflict.name is consumer-visible exported conflict identity rather than durable state; family H owns public error/export identity."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:call_mutator_add:47d337218de50ef3:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "call_mutator_add",
+      "excerpt": "ids.add(request.id)",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:call_mutator_add:47d337218de50ef3:2",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "call_mutator_add",
+      "excerpt": "ids.add(request.id)",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
+    },
+    {
       "id": "src/kernel.ts:settleRecord:for_of_loop:fcc843c4ee1b62db:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
@@ -508,6 +645,43 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
+      "id": "src/kernel.ts:settleRecord:property_assignment:21cf5371d1ed2a39:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "property_assignment",
+      "excerpt": "next.outbox = copy(outcome.next)",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Settlement publishes the durable follow-up outbox atomically with terminal state; family B owns parent/child continuation state."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:property_assignment:8ee23ab696502cba:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "property_assignment",
+      "excerpt": "next.receipt = { attempt: { workId: row.id, generation: ref.generation, fence: ref.fence }, submissionHash, ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}), }",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Settlement receipt mutation binds accepted attempt/submission identity to replay and retry/defer outcomes; lifecycle A and policy F own those semantics."
+    },
+    {
+      "id": "src/memory.ts:atomic:call_mutator_set:6733b908cd45539e:1",
+      "path": "src/memory.ts",
+      "context": "atomic",
+      "kind": "call_mutator_set",
+      "excerpt": "rows.set(id, next)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
       "id": "src/memory.ts:createMemoryStore:new_Map:0af9272e511b01ff:1",
       "path": "src/memory.ts",
       "context": "createMemoryStore",
@@ -566,6 +740,138 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:42afc033bfc0181c:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "params.push(time)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:52f1a3cbea35f326:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "clauses.push('due_at IS NOT NULL AND due_at<=?')",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:56bd55f60cfcd8db:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "clauses.push('definition=?')",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:69cfc3e36f3b6aa8:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "clauses.push('id>?')",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:9398268750df11c2:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "params.push(query.afterId)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:95d83483691ced16:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "clauses.push('pending_next>0')",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:b42213725be559f2:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "params.push(query.limit)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:c31dc22d2be06efb:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "clauses.push('kind=?')",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:c7808e501eab0e47:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "params.push(query.kind)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_push:cd3dbf569a3a858b:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_push",
+      "excerpt": "params.push(query.definition)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:call_mutator_set:7edb498cedbc7936:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "call_mutator_set",
+      "excerpt": "queries.set(sql, statement)",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
       "id": "src/sqlite.ts:query:mutable_let:6d934c164302de97:1",
@@ -678,6 +984,18 @@
       "reason": "WorkRun cancellation signal is the runner-facing interruption surface used by local and external execution."
     },
     {
+      "id": "src/work.ts:claim:call_mutator_push:bc7e1311ef08301a:1",
+      "path": "src/work.ts",
+      "context": "claim",
+      "kind": "call_mutator_push",
+      "excerpt": "runs.push(run)",
+      "families": [
+        "A"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Claim result accumulation preserves the concrete order/cardinality of successfully claimed durable attempts; family A owns durable claim semantics."
+    },
+    {
       "id": "src/work.ts:claim:for_of_loop:919f0a1f18de6594:1",
       "path": "src/work.ts",
       "context": "claim",
@@ -691,6 +1009,18 @@
       "reason": "Bounded due discovery and per-candidate atomic claim bridge lifecycle A to storage/query semantics G."
     },
     {
+      "id": "src/work.ts:constructor:property_assignment:b2ba08d5ad4f2aba:1",
+      "path": "src/work.ts",
+      "context": "constructor",
+      "kind": "property_assignment",
+      "excerpt": "this.name = 'WorkDispatchError'",
+      "families": [
+        "H"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "WorkDispatchError.name is consumer-visible exported error identity rather than durable state; family H owns public error/export identity."
+    },
+    {
       "id": "src/work.ts:createWorkOnce:mutable_let:d56bc2711304e4c2:1",
       "path": "src/work.ts",
       "context": "createWorkOnce",
@@ -701,6 +1031,18 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+    },
+    {
+      "id": "src/work.ts:dispatch:call_mutator_push:d421463a11f36645:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "call_mutator_push",
+      "excerpt": "failures.push(error)",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Dispatch failure accumulation controls the bounded durable-follow-up result/error surface; family B owns retained failure and continuation semantics."
     },
     {
       "id": "src/work.ts:dispatch:for_of_loop:769058eeee6f0ee8:1",
@@ -761,6 +1103,18 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+    },
+    {
+      "id": "src/work.ts:handoff:call_mutator_push:a089fa7a54025767:1",
+      "path": "src/work.ts",
+      "context": "handoff",
+      "kind": "call_mutator_push",
+      "excerpt": "leases.push({ input: prepared.input, attempt: run.ref, leaseUntil: renewed.attempt.leaseUntil, observedAt: renewed.observedAt, })",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it."
     },
     {
       "id": "src/work.ts:handoff:for_of_loop:4cfe2e4bf0bbe109:1",
@@ -854,6 +1208,18 @@
       "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics."
     },
     {
+      "id": "src/worker.ts:<callback>:call_mutator_delete:a4b156d256cb65da:1",
+      "path": "src/worker.ts",
+      "context": "<callback>",
+      "kind": "call_mutator_delete",
+      "excerpt": "active.delete(pending)",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+    },
+    {
       "id": "src/worker.ts:<callback>:call_setTimeout:48022834247d5344:1",
       "path": "src/worker.ts",
       "context": "<callback>",
@@ -890,6 +1256,18 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
+      "id": "src/worker.ts:<module>:new_WeakMap:f8ed16a459dcbe35:1",
+      "path": "src/worker.ts",
+      "context": "<module>",
+      "kind": "new_WeakMap",
+      "excerpt": "new WeakMap<object, number>()",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+    },
+    {
       "id": "src/worker.ts:armExpiry:call_setTimeout:8361aa1811e37716:1",
       "path": "src/worker.ts",
       "context": "armExpiry",
@@ -912,6 +1290,18 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:markLocalClaimStartedAt:call_mutator_set:13c22c3e1590afc2:1",
+      "path": "src/worker.ts",
+      "context": "markLocalClaimStartedAt",
+      "kind": "call_mutator_set",
+      "excerpt": "localClaimStartedAt.set(run, startedAt)",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
       "id": "src/worker.ts:processClaim:call_setTimeout:dfac167a601af518:1",
@@ -986,6 +1376,18 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
+      "id": "src/worker.ts:processClaim:property_assignment:93b33be682faeeed:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "property_assignment",
+      "excerpt": "run.signal = controller.signal",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+    },
+    {
       "id": "src/worker.ts:processClaims:call_Promise.all:c263396efd05df23:1",
       "path": "src/worker.ts",
       "context": "processClaims",
@@ -1020,6 +1422,18 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:runWorker:call_mutator_add:2ba3cad21e40fa42:1",
+      "path": "src/worker.ts",
+      "context": "runWorker",
+      "kind": "call_mutator_add",
+      "excerpt": "active.add(pending)",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
       "id": "src/worker.ts:runWorker:for_of_loop:73e9f029234e402e:1",

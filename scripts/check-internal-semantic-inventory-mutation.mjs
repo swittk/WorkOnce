@@ -33,11 +33,16 @@ try {
   const brace = signatureEnd + bodyAnchor.length - 1;
   fs.writeFileSync(
     sourcePath,
-    `${source.slice(0, brace + 1)}\n  let internalSemanticInventoryMutant = 0;\n  internalSemanticInventoryMutant += 1;\n${source.slice(brace + 1)}`,
+    `${source.slice(0, brace + 1)}\n  let internalSemanticInventoryMutant = 0;\n  internalSemanticInventoryMutant += 1;\n  const internalSemanticWeakMapMutant = new WeakMap<object, number>();\n  internalSemanticWeakMapMutant.set({}, 1);\n  const internalSemanticQueueMutant: number[] = [];\n  internalSemanticQueueMutant.push(1);\n  const internalSemanticPropertyMutant = { value: 0 };\n  internalSemanticPropertyMutant.value = 1;\n${source.slice(brace + 1)}`,
   );
   const sourceMutant = run();
   assert.notEqual(sourceMutant.status, 0, 'new mutable runner state unexpectedly passed inventory');
-  assert.match(output(sourceMutant), /Internal semantic inventory drifted/u);
+  const sourceOutput = output(sourceMutant);
+  assert.match(sourceOutput, /Internal semantic inventory drifted/u);
+  assert.match(sourceOutput, /mutable_let/u);
+  assert.match(sourceOutput, /new_WeakMap/u);
+  assert.match(sourceOutput, /call_mutator_(?:set|push)/u);
+  assert.match(sourceOutput, /property_assignment/u);
 } finally {
   fs.writeFileSync(sourcePath, source);
 }
@@ -76,5 +81,5 @@ try {
 }
 
 console.log(
-  'Internal semantic inventory rejects new mutable locals/properties and unclassified cells.',
+  'Internal semantic inventory rejects new mutable locals/properties/containers/updates and unclassified cells.',
 );
