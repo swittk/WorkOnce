@@ -45,6 +45,8 @@ const evidenceFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
   'scripts/run-assurance.mjs',
+  'scripts/consumer-smoke.mjs',
+  'scripts/prepare-package.mjs',
   'package.json',
 ];
 function digestFiles(files) {

@@ -9,6 +9,7 @@ const packed = JSON.parse(
   execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', '.artifacts'], {
     cwd: root,
     encoding: 'utf8',
+    env: { ...process.env, WORKONCE_REUSE_BOUND_BUILD: '1' },
   }),
 )[0];
 for (const file of packed.files) {

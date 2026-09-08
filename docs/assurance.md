@@ -242,10 +242,12 @@ storage proof red for its intended witness.
 check, one compiler-map pass, one batched implementation test process, one real-process fault pass,
 one bounded-domain audit, the durable-lifecycle/runtime TLC checks, the storage/conformance TLC checks
 and the packed consumer smoke test. Read-only compiler/compatibility checks and the independent unit
-vs real-process test groups execute in parallel, while storage TLC and lifecycle/runtime TLC remain
-isolated from each other so one model checker cannot perturb another model checker's proof artifacts or
-infrastructure outcome. The HPSERVER completion budget is **under 60 seconds wall-clock** on Node
-22.22.1.
+vs real-process test groups execute in parallel. Storage TLC and lifecycle/runtime TLC remain isolated
+from each other so one model checker cannot perturb another model checker's proof artifacts or
+infrastructure outcome; the packed consumer may overlap storage TLC because it only reads a build whose
+source/artifact binding is reverified by the package `prepare` guard. The HPSERVER lifecycle/runtime TLC
+runner uses at most 16 local workers without changing the checked graph. The HPSERVER completion budget
+is **under 60 seconds wall-clock** on Node 22.22.1.
 
 That budget is a local gate requirement, not a universal performance promise. The important design rule
 is structural: no per-trace model-checker process explosion and no coverage reduction to meet the gate.

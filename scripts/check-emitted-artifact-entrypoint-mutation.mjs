@@ -26,6 +26,28 @@ try {
   );
 
   fs.writeFileSync(packagePath, original);
+  const preparePath = path.join(root, 'scripts/prepare-package.mjs');
+  const prepareOriginal = fs.readFileSync(preparePath, 'utf8');
+  try {
+    fs.writeFileSync(
+      preparePath,
+      prepareOriginal.replace('assertBuildSourceBinding();', 'void 0;'),
+    );
+    const unboundPrepare = spawnSync(
+      process.execPath,
+      ['scripts/check-emitted-artifact-entrypoints.mjs'],
+      { cwd: root, encoding: 'utf8', env: process.env },
+    );
+    const unboundOutput = `${unboundPrepare.stdout ?? ''}\n${unboundPrepare.stderr ?? ''}`;
+    assert.notEqual(unboundPrepare.status, 0, 'unbound prepare reuse unexpectedly passed');
+    assert.match(unboundOutput, /prepare-package\.mjs may reuse dist only after verifying/u);
+    console.log(
+      'Emitted-artifact entrypoint mutation guard rejects unbound package prepare reuse.',
+    );
+  } finally {
+    fs.writeFileSync(preparePath, prepareOriginal);
+  }
+
   const buildAnchor = "runNpm('single build'";
   assert.equal(assuranceOriginal.includes(buildAnchor), true, 'single-build anchor is stale');
   fs.writeFileSync(

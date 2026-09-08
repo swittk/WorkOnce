@@ -14,7 +14,7 @@ const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
   throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar. See docs/assurance.md.');
 mkdirSync('.artifacts/tlc', { recursive: true });
-const workers = String(Math.max(2, Math.min(8, availableParallelism())));
+const workers = String(Math.max(2, Math.min(16, availableParallelism())));
 const timeoutMs = 30_000;
 
 function tlcArgs(model, config, modulePath) {

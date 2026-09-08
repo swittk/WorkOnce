@@ -24,6 +24,17 @@ for (const [name, prefix] of Object.entries(requiredPrefixes)) {
     throw new Error(`Emitted-artifact entrypoint '${name}' lost its required build/binding guard.`);
 }
 
+if (scripts.prepare !== 'node scripts/prepare-package.mjs')
+  throw new Error('Package prepare must route through the source-bound build guard.');
+const prepare = fs.readFileSync(path.join(root, 'scripts/prepare-package.mjs'), 'utf8');
+const prepareReuse = prepare.indexOf("WORKONCE_REUSE_BOUND_BUILD === '1'");
+const prepareGuard = prepare.indexOf('assertBuildSourceBinding();');
+if (prepareReuse < 0 || prepareGuard < 0 || prepareGuard < prepareReuse)
+  throw new Error('prepare-package.mjs may reuse dist only after verifying the bound build.');
+const consumerSmoke = fs.readFileSync(path.join(root, 'scripts/consumer-smoke.mjs'), 'utf8');
+if (!consumerSmoke.includes("WORKONCE_REUSE_BOUND_BUILD: '1'"))
+  throw new Error('Packed consumer must explicitly request source-bound prepare reuse.');
+
 const formal = fs.readFileSync(path.join(root, 'scripts/formal.mjs'), 'utf8');
 const formalGuard = formal.indexOf('assertBuildSourceBinding();');
 const formalProducer = formal.indexOf("import('./runtime-boundary-refinement.mjs')");

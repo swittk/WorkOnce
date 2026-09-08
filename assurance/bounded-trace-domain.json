@@ -30,9 +30,11 @@
     "scripts/check-formal-implementation-conformance.mjs",
     "scripts/formal-implementation-surface.cjs",
     "scripts/run-assurance.mjs",
+    "scripts/consumer-smoke.mjs",
+    "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "77ea4c156b7a21b1184550e3b8b160a71e709bd385dcaf4329b0808693287ddd",
+  "evidenceDigest": "9f882fdabff96b1122fcad2f4bee1d9b2191e2528a9fee92808114da33a31d79",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

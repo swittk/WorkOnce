@@ -71,6 +71,8 @@ const assuranceInfrastructureFiles = [
   'scripts/check-emitted-artifact-entrypoints.mjs',
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
   'scripts/run-assurance.mjs',
+  'scripts/consumer-smoke.mjs',
+  'scripts/prepare-package.mjs',
   'package.json',
 ];
 const expectedEntrypoints = [
