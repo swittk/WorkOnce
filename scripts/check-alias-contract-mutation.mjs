@@ -69,6 +69,30 @@ for (const [relative, anchor, replacement, label] of [
   );
 }
 
+for (const [relative, anchor, replacement, label] of [
+  [
+    'dist/work.js',
+    'if (!next)\n                return { value: this.snapshot(row, now) };',
+    "if (!next)\n                throw new WorkConflict('not_waiting');",
+    'ESM WorkQueue.restart nonterminal semantics',
+  ],
+  [
+    'dist-cjs/work.js',
+    'if (!next)\n                return { value: this.snapshot(row, now) };',
+    "if (!next)\n                throw new kernel_js_1.WorkConflict('not_waiting');",
+    'CommonJS WorkQueue.restart nonterminal semantics',
+  ],
+]) {
+  mutateFile(
+    relative,
+    (text) => text.replace(anchor, replacement),
+    () => {
+      const result = runNode(['--test', 'test/alias-contract.test.mjs']);
+      requireRed(label, result, /restart preserves exact ergonomic-dispatch semantics/u);
+    },
+  );
+}
+
 const typeMutants = [
   [
     'src/work.ts',

@@ -89,3 +89,52 @@ test('ESM and CommonJS aliases execute the same hardened operations, not merely 
   for (const api of [external, require('../dist-cjs/external.js')])
     assert.equal(typeof api.processExternal, 'function');
 });
+
+async function exerciseRestartSemantics(api, memoryApi, label) {
+  const work = api.createWorkOnce({
+    store: memoryApi.createMemoryStore({ now: () => 1000 }),
+    scope: `restart-alias-${label}`,
+  });
+  const queue = work.define('job');
+
+  const queued = await queue.ensure(null, { key: 'queued' });
+  assert.deepEqual(
+    await queue.restart({ key: 'queued', expectedGeneration: queued.generation }),
+    queued,
+    `${label}.restart is a no-op outside terminal states rather than inventing a transition`,
+  );
+
+  await assert.rejects(
+    queue.restart({ key: 'queued', expectedGeneration: queued.generation + 1 }),
+    (error) => error instanceof api.WorkConflict && error.code === 'generation_conflict',
+  );
+  await assert.rejects(
+    queue.restart({ key: 'queued', check: async () => false }),
+    (error) => error instanceof api.WorkConflict && error.code === 'retry_denied',
+  );
+  await queue.cancel({ key: 'queued', generation: 1 });
+
+  await queue.ensure(null, { key: 'failed' });
+  const [failedRun] = await queue.claim({ workerId: `${label}:fail`, limit: 1 });
+  await failedRun.settle(failedRun.fail('repair', { manualRetry: true }));
+  const failedRestart = await queue.restart({ key: 'failed', expectedGeneration: 1 });
+  assert.equal(failedRestart.generation, 2);
+  assert.equal(failedRestart.phase.state, 'queued');
+  await queue.cancel({ key: 'failed', generation: 2 });
+
+  await queue.ensure(null, { key: 'succeeded' });
+  const [succeededRun] = await queue.claim({ workerId: `${label}:succeed`, limit: 1 });
+  await succeededRun.settle(succeededRun.succeed());
+  const succeededRestart = await queue.restart({ key: 'succeeded', expectedGeneration: 1 });
+  assert.equal(succeededRestart.generation, 2);
+  assert.equal(succeededRestart.phase.state, 'queued');
+}
+
+test('restart preserves exact ergonomic-dispatch semantics and rejection causes', async () => {
+  await exerciseRestartSemantics(root, memory, 'esm');
+  await exerciseRestartSemantics(
+    require('../dist-cjs/index.js'),
+    require('../dist-cjs/memory.js'),
+    'commonjs',
+  );
+});
