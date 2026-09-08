@@ -9,7 +9,10 @@ DeferralStopReason(attemptLimit, elapsedLimit, deferLimit) ==
   ELSE IF deferLimit THEN "deferral_budget_exhausted"
   ELSE "none"
 
-\* Presence of a failure is independent of its JavaScript rejection payload.
+\* Presence of a failure is independent of its JavaScript rejection payload, while the
+\* bounded runner abstraction still preserves representative payload identities exactly.
+RunnerFailureValues == {"undefined", "null", "zero", "empty", "errorA", "errorB"}
+RunnerFailureDomain == RunnerFailureValues \cup {"none"}
 RunnerRejects(fatalPresent) == fatalPresent
 ReadAllowed(definitionMatches) == definitionMatches
 BackoffDelay(initial, factor, steps, cap) == MinValue(cap, initial * (factor ^ steps))
@@ -17,9 +20,18 @@ BackoffDelay(initial, factor, steps, cap) == MinValue(cap, initial * (factor ^ s
 \* These records are fresh observations of compiled public APIs, not modeled test doubles.
 BoundarySampleOK(s) ==
   CASE s.kind = "runner" ->
+       /\ s.failureValue \in RunnerFailureDomain
+       /\ s.returnedValue \in RunnerFailureDomain
        /\ s.rejected = RunnerRejects(~s.handled)
+       /\ s.returnedValue = s.failureValue
        /\ s.preserved /\ s.drained /\ ~s.timedOut
        /\ (IF s.site = "claimGate" THEN s.started = 1 ELSE TRUE)
+       /\ (IF s.site = "abortClaimReply" THEN s.started = 0 /\ s.reclaimed ELSE TRUE)
+       /\ (IF s.site = "abortActive" THEN s.runSignalAborted /\ s.reclaimed ELSE TRUE)
+    [] s.kind = "runnerHistory" ->
+       /\ s.failureValue \in RunnerFailureValues
+       /\ s.bothRejected /\ s.exactIdentityPreserved
+       /\ s.sameTerminalProjection /\ s.sameReturnedValue
     [] s.kind = "read" ->
        /\ s.accepted = ReadAllowed(s.matched)
        /\ (~s.matched => s.definitionError)

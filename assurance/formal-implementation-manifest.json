@@ -10476,21 +10476,33 @@
         "DrainedBeforeReturn",
         "FailurePresenceIndependent",
         "FatalReturnRejects",
+        "FatalValuePreserved",
         "NoAdmissionAfterStop",
         "NoFatalBackoff",
         "RuntimeSamplesConform",
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
+      "modelDigest": "2a6bff094a1430de9549babcdde89d80c08a0fc1b7d998fd58880354cb37a922",
+      "modelFiles": [
+        "formal/WorkOnceRuntime.tla",
+        "formal/WorkOnceRuntime.cfg",
+        "formal/WorkOnceContract.tla"
+      ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
+      "sourceDigest": "c9a5f9fd5c8401f09e1a347299abe704700dcceeed1be305887cecd6768ec09a",
+      "sourceFiles": [
+        "src/worker.ts",
+        "src/work.ts"
+      ],
       "spec": "formal/WorkOnceRuntime.tla"
     },
     "spec": "formal/WorkOnce.tla"
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "66e571a2487558d6a2232fc1bd543ba309232eba187b9a8284f2005a40f58a54",
+    "assuranceInfrastructureDigest": "5cdcf33dd519563cc56c3ffe0efc448d120141729e93dcba7172c814ccd2c9c0",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "scripts/formal-implementation-surface.cjs",
@@ -10506,7 +10518,7 @@
       "scripts/run-assurance.mjs",
       "package.json"
     ],
-    "modelDigest": "c7255f611f61a6cf07f746217eae5852e996a3579799dc9fd7722318095c177a",
+    "modelDigest": "9e433161d0c30a78f9d1bdea3944aaca1e5d091d903803c75823525e36b21a54",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

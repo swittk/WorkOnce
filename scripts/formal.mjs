@@ -186,17 +186,20 @@ const lifecycleMutants = {
 
 const runtimeMutants = {
   RuntimeTypeOK: String.raw`  /\ pc' = "invalid"
-  /\ UNCHANGED <<active, fatalPresent, failureKind, aborted, result, stopActive>>`,
-  FailurePresenceIndependent: String.raw`  /\ fatalPresent' = TRUE /\ failureKind' = "none"
-  /\ UNCHANGED <<pc, active, aborted, result, stopActive>>`,
-  NoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ fatalPresent' = TRUE /\ failureKind' = "defined"
-  /\ UNCHANGED <<active, aborted, result, stopActive>>`,
+  /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>`,
+  FailurePresenceIndependent: String.raw`  /\ fatalPresent' = TRUE /\ failureKind' = "none" /\ failureValue' = "none"
+  /\ UNCHANGED <<pc, active, aborted, result, returnValue, stopActive>>`,
+  NoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ fatalPresent' = TRUE /\ failureKind' = "defined" /\ failureValue' = "errorA"
+  /\ UNCHANGED <<active, aborted, result, returnValue, stopActive>>`,
   NoAdmissionAfterStop: String.raw`  /\ pc' = "draining" /\ active' = 1 /\ aborted' = TRUE /\ stopActive' = 0
-  /\ UNCHANGED <<fatalPresent, failureKind, result>>`,
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, result, returnValue>>`,
   DrainedBeforeReturn: String.raw`  /\ pc' = "done" /\ active' = 1
-  /\ UNCHANGED <<fatalPresent, failureKind, aborted, result, stopActive>>`,
-  FatalReturnRejects: String.raw`  /\ pc' = "done" /\ active' = 0 /\ fatalPresent' = TRUE /\ failureKind' = "defined"
-  /\ result' = "fulfilled"
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>`,
+  FatalReturnRejects: String.raw`  /\ pc' = "done" /\ active' = 0 /\ fatalPresent' = TRUE
+  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ result' = "fulfilled" /\ returnValue' = "errorA"
+  /\ UNCHANGED <<aborted, stopActive>>`,
+  FatalValuePreserved: String.raw`  /\ pc' = "done" /\ active' = 0 /\ fatalPresent' = TRUE
+  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ result' = "rejected" /\ returnValue' = "errorB"
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
@@ -299,7 +302,7 @@ EXTENDS WorkOnceRuntimeObserved
 UnsafeLateAdmission ==
   /\ pc = "claim" /\ Stopped /\ active < 2
   /\ pc' = "draining" /\ active' = active + 1
-  /\ UNCHANGED <<fatalPresent, failureKind, aborted, result, stopActive>>
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>
 MutantNext == Next \/ UnsafeLateAdmission
 MutantSpec == Init /\ [][MutantNext]_vars
 ====

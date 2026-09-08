@@ -34,6 +34,12 @@ const modelFiles = [
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',
 ];
+const runtimeSourceFiles = ['src/worker.ts', 'src/work.ts'];
+const runtimeModelFiles = [
+  'formal/WorkOnceRuntime.tla',
+  'formal/WorkOnceRuntime.cfg',
+  'formal/WorkOnceContract.tla',
+];
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'scripts/formal-implementation-surface.cjs',
@@ -564,6 +570,10 @@ function buildManifest(live) {
         configuredChecks: readConfiguredChecks('formal/WorkOnceRuntime.cfg'),
         observationProducer: 'scripts/runtime-boundary-refinement.mjs',
         observationBinding: 'scripts/formal.mjs',
+        sourceFiles: runtimeSourceFiles,
+        modelFiles: runtimeModelFiles,
+        sourceDigest: semanticSourceDigest(runtimeSourceFiles),
+        modelDigest: formalDigest(runtimeModelFiles),
       },
     },
     entrypoints: expectedEntrypoints,
@@ -619,6 +629,7 @@ function renderReport(manifest) {
     `- Spec: \`${manifest.model.runtime.spec}\``,
     `- Fresh compiled observations: \`${manifest.model.runtime.observationProducer}\` via \`${manifest.model.runtime.observationBinding}\``,
     `- Checked invariants: ${manifest.model.runtime.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Bound runner source: ${manifest.model.runtime.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
     '',
   );
   for (const row of manifest.callables) {
@@ -662,6 +673,16 @@ const previous = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   : undefined;
 if (write) {
+  if (
+    previous?.model?.runtime &&
+    previous.model.runtime.sourceDigest !== current.model.runtime.sourceDigest &&
+    previous.model.runtime.modelDigest === current.model.runtime.modelDigest &&
+    !acknowledgePairing
+  ) {
+    throw new Error(
+      'Bound managed-runner semantics changed without a WorkOnceRuntime/contract semantic change. Update the runtime model or explicitly acknowledge the unchanged abstraction after review.',
+    );
+  }
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

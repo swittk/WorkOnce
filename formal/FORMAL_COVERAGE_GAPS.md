@@ -29,7 +29,8 @@
 
 - Spec: `formal/WorkOnceRuntime.tla`
 - Fresh compiled observations: `scripts/runtime-boundary-refinement.mjs` via `scripts/formal.mjs`
-- Checked invariants: `DrainedBeforeReturn`, `FailurePresenceIndependent`, `FatalReturnRejects`, `NoAdmissionAfterStop`, `NoFatalBackoff`, `RuntimeSamplesConform`, `RuntimeTypeOK`
+- Checked invariants: `DrainedBeforeReturn`, `FailurePresenceIndependent`, `FatalReturnRejects`, `FatalValuePreserved`, `NoAdmissionAfterStop`, `NoFatalBackoff`, `RuntimeSamplesConform`, `RuntimeTypeOK`
+- Bound runner source: `src/worker.ts`, `src/work.ts`
 
 - `conformance.runConformance`: `BoundarySampleOK`
 - `external.runExternal`: `RunnerRejects`, `ClaimReply`, `ObserveHandled`, `ObserveFatal`, `ActiveDone`, `Finish`
@@ -45,7 +46,7 @@
 ## Assurance infrastructure binding
 
 - Bound proof/checker files: **13**
-- Content digest: `66e571a2487558d6a2232fc1bd543ba309232eba187b9a8284f2005a40f58a54`
+- Content digest: `5cdcf33dd519563cc56c3ffe0efc448d120141729e93dcba7172c814ccd2c9c0`
 
 ## Coverage rule
 

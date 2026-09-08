@@ -96,14 +96,17 @@ error observers, active completion, interruptible backoff, shutdown, draining an
 Failure presence is independent of the rejection payload, including JavaScript `undefined`. When
 execution first stops, the model records the number of already-active handlers; that count may
 fall while draining but can never increase, so a claim response arriving after abort/fatal stop
-cannot be admitted. Its seven invariants cover control-state typing, failure presence, fatal
-backoff, admission after stop, draining, rejection and agreement with fresh implementation
-observations. The bounded graph has 229 generated / 58 distinct states, complete depth 9, with
-local capacity at most two.
+cannot be admitted. Its eight invariants cover control-state typing, failure presence and representative failure-value
+identity, fatal backoff, admission after stop, draining, rejection and agreement with fresh
+implementation observations. The bounded graph has 949 generated / 126 distinct states, complete
+depth 9, with local capacity at most two.
 
-`scripts/runtime-boundary-refinement.mjs` collects **206 observations from the real compiled public
-APIs**: 64 runner/error/race cases, 80 definition-bound reads, 36 backoff inputs, 24 overlapping
-budget cases and both cancel/completion orders. `scripts/formal.mjs` puts these fresh observations
+`scripts/runtime-boundary-refinement.mjs` collects **230 observations from the real compiled public
+APIs**: 86 runner/error/race cases, two local alternate-history congruence comparisons, 80
+definition-bound reads, 36 backoff inputs, 24 overlapping budget cases and both cancel/completion
+orders. The runner observations include exact representative rejection identities (`undefined`,
+`null`, `0`, empty string and two distinct Error identities), stop while a claim reply is in flight,
+stop while a handler is active, drain-before-return, and reclaim after the abandoned lease expires. `scripts/formal.mjs` puts these fresh observations
 into one generated TLA module and checks `BoundarySampleOK` from `WorkOnceContract.tla`. The
 expanded durable `Defer` action uses that contract's stop-reason operator too. The observations are
 not replaced by a simulated implementation or cached verdict. The larger retry indices have an
@@ -153,9 +156,32 @@ sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-a
 These controls prove that each configured invariant is active; they do not replace the real bounded
 state-space runs.
 
+## Local managed-runner internal-state refinement
+
+The local runner abstraction no longer collapses every defined JavaScript rejection into one
+formal value. `WorkOnceRuntime.tla` carries a bounded representative failure identity and the
+`FatalValuePreserved` invariant requires the terminal rejection value to match the first fatal
+value exactly. Fresh compiled observations still use strict object/value identity in JavaScript;
+the finite TLA values stand for representative equivalence classes rather than claiming an
+exhaustive universe of arbitrary application error objects.
+
+Two alternate-history pairs are checked explicitly: direct claim failure versus claim-observer
+failure, and direct active-handler failure versus active-observer failure. Each pair uses the same
+concrete rejection object and must converge to the same runner terminal projection and returned
+identity. Separate local observations abort while the first claim reply is in flight and while an
+active handler is draining; neither may admit new handler work after stop, and both abandoned
+attempts are reclaimable after their durable lease expires.
+
+The compiler/formal manifest now carries a dedicated runner source/model digest over
+`src/worker.ts`, `src/work.ts` and the runtime TLA/CFG/contract, in addition to the broader package
+semantic binding. A runner source change with an unchanged runtime abstraction therefore fails
+closed unless deliberately acknowledged after review. This remains bounded safety evidence: process
+crash persistence itself belongs to the durable lifecycle/storage families, and unbounded fleet
+fairness is not claimed here.
+
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the measured full gate is about **27 seconds wall-clock**; the durable-lifecycle TLC run itself is about **1–2.5 seconds** with bounded worker parallelism and parallel GC.
+`npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **50.43 seconds wall-clock** and about **365 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.
 
 That timing is evidence for this machine/version, not a universal performance promise. The important design rule is structural: no per-trace model-checker process explosion.
 

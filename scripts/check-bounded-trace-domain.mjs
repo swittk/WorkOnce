@@ -53,7 +53,7 @@ const current = {
   runtimeBoundary: {
     samples: boundarySamples.length,
     counts: Object.fromEntries(
-      ['runner', 'read', 'backoff', 'budget', 'cancel'].map((kind) => [
+      ['runner', 'runnerHistory', 'read', 'backoff', 'budget', 'cancel'].map((kind) => [
         kind,
         boundarySamples.filter((sample) => sample.kind === kind).length,
       ]),

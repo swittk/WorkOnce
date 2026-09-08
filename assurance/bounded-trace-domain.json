@@ -18,7 +18,7 @@
     "scripts/run-assurance.mjs",
     "package.json"
   ],
-  "evidenceDigest": "51eda17158cb6ea703b036aece6b9152c019a45256c723d46a2d162002da6b48",
+  "evidenceDigest": "638abda11d5ee55a0671576fa8a0263a2555327abf21879c7fa91d5aca314772",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -79,15 +79,16 @@
     "workerErrorIsolation": true
   },
   "runtimeBoundary": {
-    "samples": 206,
+    "samples": 230,
     "counts": {
-      "runner": 64,
+      "runner": 86,
+      "runnerHistory": 2,
       "read": 80,
       "backoff": 36,
       "budget": 24,
       "cancel": 2
     },
-    "observationDigest": "85ddb7daf591b60a7db0488032c4fa83163b13c551b6b14030384c5ab6f50d13",
+    "observationDigest": "b311a5f64d78508ea75155d1e5225b06ff32c14906067e780ad6d6207c48d4bd",
     "lifecycleAdapterCases": 600
   },
   "observed": {

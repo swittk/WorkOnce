@@ -48,7 +48,16 @@ function deferred() {
   return { promise, resolve };
 }
 
-async function runnerSample(mode, site, error) {
+function runnerFailureValue(error) {
+  if (error === undefined) return 'undefined';
+  if (error === null) return 'null';
+  if (error === 0) return 'zero';
+  if (error === '') return 'empty';
+  if (error instanceof Error && /B$/u.test(error.message)) return 'errorB';
+  return 'errorA';
+}
+
+async function runnerSample(mode, site, error, errorValue = runnerFailureValue(error)) {
   const stop = new AbortController();
   const base = createMemoryStore();
   const claimError = new Error('claim fault');
@@ -124,6 +133,8 @@ async function runnerSample(mode, site, error) {
     mode,
     site,
     errorKind: error === undefined ? 'undefined' : 'defined',
+    failureValue: handled ? 'none' : errorValue,
+    returnedValue: result.rejected ? runnerFailureValue(result.error) : 'none',
     handled,
     rejected: result.rejected,
     preserved: handled ? observedError === error : result.error === error,
@@ -189,6 +200,8 @@ async function drainSample(mode, error) {
     mode,
     site: 'drain',
     errorKind: error === undefined ? 'undefined' : 'defined',
+    failureValue: runnerFailureValue(error),
+    returnedValue: result.rejected ? runnerFailureValue(result.error) : 'none',
     handled: false,
     rejected: result.rejected,
     preserved: result.error === error,
@@ -263,6 +276,8 @@ async function admissionSample(mode, error) {
     mode,
     site: 'claimGate',
     errorKind: error === undefined ? 'undefined' : 'defined',
+    failureValue: runnerFailureValue(error),
+    returnedValue: result.rejected ? runnerFailureValue(result.error) : 'none',
     handled: false,
     rejected: result.rejected,
     preserved: result.error === error,
@@ -272,19 +287,179 @@ async function admissionSample(mode, error) {
   };
 }
 
+async function abortClaimReplySample() {
+  let now = 100;
+  const base = createMemoryStore({ now: () => now });
+  const entered = deferred();
+  const release = deferred();
+  let firstDueQuery = true;
+  const store = {
+    ...base,
+    async query(query) {
+      if (query.select === 'due' && firstDueQuery) {
+        firstDueQuery = false;
+        entered.resolve();
+        await release.promise;
+      }
+      return base.query(query);
+    },
+  };
+  const queue = createWorkOnce({ store, scope: 'runner-abort-claim-reply' }).define('job', {
+    limits: { leaseMs: 10, maxAttempts: 3 },
+  });
+  await queue.ensure(null, { key: 'job' });
+  const stop = new AbortController();
+  let started = 0;
+  const running = observe(
+    queue.run(
+      { workerId: 'stopping', concurrency: 1, idleMs: 1000, signal: stop.signal },
+      async (run) => {
+        started++;
+        return run.succeed();
+      },
+    ),
+  );
+  await entered.promise;
+  stop.abort();
+  release.resolve();
+  const result = await running;
+  const stranded = await queue.inspect('job');
+  now = 111;
+  const [reclaimed] = await queue.runAvailable({ workerId: 'reclaimer' }, async (run) =>
+    run.succeed(),
+  );
+  return {
+    kind: 'runner',
+    mode: 'local',
+    site: 'abortClaimReply',
+    errorKind: 'defined',
+    failureValue: 'none',
+    returnedValue: 'none',
+    handled: true,
+    rejected: result.rejected,
+    preserved: !result.rejected,
+    drained: true,
+    started,
+    reclaimed:
+      stranded.phase.state === 'running' &&
+      reclaimed?.status === 'settled' &&
+      (await queue.inspect('job')).phase.state === 'succeeded',
+    timedOut: false,
+  };
+}
+
+async function abortActiveSample() {
+  let now = 100;
+  const base = createMemoryStore({ now: () => now });
+  const queue = createWorkOnce({ store: base, scope: 'runner-abort-active' }).define('job', {
+    limits: { leaseMs: 1000, maxAttempts: 3 },
+  });
+  await queue.ensure(null, { key: 'job' });
+  const entered = deferred();
+  const release = deferred();
+  const stop = new AbortController();
+  let handlerFinished = false;
+  let runSignalAborted = false;
+  const running = observe(
+    queue.run(
+      {
+        workerId: 'stopping',
+        concurrency: 1,
+        heartbeatMs: 500,
+        idleMs: 1000,
+        signal: stop.signal,
+      },
+      async (run) => {
+        entered.resolve();
+        await release.promise;
+        runSignalAborted = run.signal.aborted;
+        handlerFinished = true;
+        return run.succeed();
+      },
+    ),
+  );
+  await entered.promise;
+  stop.abort();
+  release.resolve();
+  const result = await running;
+  const stranded = await queue.inspect('job');
+  now = 1101;
+  const [reclaimed] = await queue.runAvailable({ workerId: 'reclaimer' }, async (run) =>
+    run.succeed(),
+  );
+  return {
+    kind: 'runner',
+    mode: 'local',
+    site: 'abortActive',
+    errorKind: 'defined',
+    failureValue: 'none',
+    returnedValue: 'none',
+    handled: true,
+    rejected: result.rejected,
+    preserved: !result.rejected,
+    drained: handlerFinished,
+    runSignalAborted,
+    reclaimed:
+      stranded.phase.state === 'running' &&
+      reclaimed?.status === 'settled' &&
+      (await queue.inspect('job')).phase.state === 'succeeded',
+    timedOut: false,
+  };
+}
+
+async function localHistoryCongruenceSample(pair, firstSite, secondSite, errorValue) {
+  const error = new Error(errorValue === 'errorB' ? 'history B' : 'history A');
+  const first = await runnerSample('local', firstSite, error, errorValue);
+  const second = await runnerSample('local', secondSite, error, errorValue);
+  return {
+    kind: 'runnerHistory',
+    mode: 'local',
+    pair,
+    failureValue: errorValue,
+    bothRejected: first.rejected && second.rejected,
+    exactIdentityPreserved: first.preserved && second.preserved,
+    sameTerminalProjection:
+      first.rejected === second.rejected &&
+      first.drained === second.drained &&
+      first.timedOut === second.timedOut,
+    sameReturnedValue: first.returnedValue === second.returnedValue,
+  };
+}
+
 export async function runRuntimeBoundarySamples() {
   const samples = [];
+  const fatalCases = [
+    [undefined, 'undefined'],
+    [null, 'null'],
+    [0, 'zero'],
+    ['', 'empty'],
+    [new Error('original failure A'), 'errorA'],
+    [new Error('original failure B'), 'errorB'],
+  ];
+  const handledCases = [
+    [undefined, 'undefined'],
+    [new Error('original failure A'), 'errorA'],
+    [new Error('original failure B'), 'errorB'],
+  ];
   for (const mode of ['local', 'external']) {
-    for (const error of [undefined, null, 0, '', new Error('original failure')])
+    for (const [error, errorValue] of fatalCases)
       for (const site of ['claim', 'claimObserver', 'active', 'activeObserver'])
-        samples.push(await runnerSample(mode, site, error));
-    for (const error of [undefined, new Error('original failure')]) {
+        samples.push(await runnerSample(mode, site, error, errorValue));
+    for (const [error, errorValue] of handledCases) {
       for (const site of ['handledClaim', 'handledActive', 'backoffBefore', 'backoffDuring'])
-        samples.push(await runnerSample(mode, site, error));
+        samples.push(await runnerSample(mode, site, error, errorValue));
       samples.push(await drainSample(mode, error));
       samples.push(await admissionSample(mode, error));
     }
   }
+  samples.push(await abortClaimReplySample());
+  samples.push(await abortActiveSample());
+  samples.push(
+    await localHistoryCongruenceSample('claim-observer', 'claim', 'claimObserver', 'errorA'),
+  );
+  samples.push(
+    await localHistoryCongruenceSample('active-observer', 'active', 'activeObserver', 'errorB'),
+  );
   for (const phase of auditPhases) {
     const store = createMemoryStore({ now: () => 100 });
     const { queue, snapshot } = await seedAuditPhase(store, 'read-boundary', phase);
@@ -397,8 +572,25 @@ export function assertRuntimeBoundarySamples(samples) {
     const name = JSON.stringify(s);
     if (s.kind === 'runner') {
       assert.equal(s.rejected, !s.handled, name);
+      assert.equal(s.returnedValue, s.failureValue, name);
       assert.ok(s.preserved && s.drained && !s.timedOut, name);
       if (s.site === 'claimGate') assert.equal(s.started, 1, name);
+      if (s.site === 'abortClaimReply') {
+        assert.equal(s.started, 0, name);
+        assert.equal(s.reclaimed, true, name);
+      }
+      if (s.site === 'abortActive') {
+        assert.equal(s.runSignalAborted, true, name);
+        assert.equal(s.reclaimed, true, name);
+      }
+    } else if (s.kind === 'runnerHistory') {
+      assert.ok(
+        s.bothRejected &&
+          s.exactIdentityPreserved &&
+          s.sameTerminalProjection &&
+          s.sameReturnedValue,
+        name,
+      );
     } else if (s.kind === 'read') {
       assert.equal(s.accepted, s.matched, name);
       if (!s.matched) assert.ok(s.definitionError, name);
@@ -427,6 +619,7 @@ export function assertRuntimeBoundarySamples(samples) {
     'cancel',
     'read',
     'runner',
+    'runnerHistory',
   ]);
   return samples.length;
 }
