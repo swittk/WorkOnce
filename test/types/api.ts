@@ -58,6 +58,14 @@ function show(snapshot: WorkSnapshot<Input, Output, Reason>) {
 }
 void show;
 
+type FailedPhaseReason = Extract<
+  WorkSnapshot<Input, Output, Reason>['phase'],
+  { state: 'failed' }
+>['reason'];
+// @ts-expect-error Deferral-budget exhaustion preserves the handler reason; no synthetic reason exists.
+const impossibleDeferralReason: FailedPhaseReason = 'deferrals_exhausted';
+void impossibleDeferralReason;
+
 const noResult = work.define<Input>('no-result');
 void noResult.runAvailable({ workerId: 'null-result' }, (run) => {
   run.succeed();

@@ -9,6 +9,8 @@ possible deployment. See [assurance](docs/assurance.md) and [storage](docs/stora
 
 ## Define once, decide dynamically
 
+The WorkOnce code below is an application excerpt; `provider` represents your application's existing provider client.
+
 ```ts
 import { createWorkOnce, exponentialBackoff } from '@workonce/core';
 import { createSqliteStore } from '@workonce/core/sqlite';

@@ -6972,7 +6972,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "failedAt",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#failedAt",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#failedAt",
       "modelConcepts": [
         "now"
       ],
@@ -6996,7 +6996,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "manualRetry",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#manualRetry",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#manualRetry",
       "modelConcepts": [
         "manualRetryAllowed"
       ],
@@ -7020,14 +7020,14 @@
         "test/conformance.test.mjs"
       ],
       "field": "reason",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#reason",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#reason",
       "modelConcepts": [
         "stopReason",
         "waitCause"
       ],
       "optional": false,
       "source": "src/model.ts",
-      "typeHash": "aefd6a9a4d87284d3053a832740509839dbdfd9aa21a97d0668f76563946e0d7",
+      "typeHash": "1d381d0c1c0542d8f3e3ca2d2155dcd178b0a9ca2c6f87e1457f4704c5cc1b37",
       "typeName": "anonymous@src/model.ts#4"
     },
     {
@@ -7045,7 +7045,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "result",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#result",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#result",
       "modelConcepts": [
         "opaquePayload"
       ],
@@ -7069,7 +7069,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "state",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#state",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#state",
       "modelConcepts": [
         "state"
       ],
@@ -7093,7 +7093,7 @@
         "test/conformance.test.mjs"
       ],
       "field": "stoppedBy",
-      "key": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e#stoppedBy",
+      "key": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48#stoppedBy",
       "modelConcepts": [
         "stopReason"
       ],
@@ -9979,7 +9979,7 @@
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg"
     ],
-    "sourceDigest": "2d27ec164ddb920a2e999e9f244083aba2630b4a9ecfba00297e93c2c0a8960f",
+    "sourceDigest": "dca27285c52cbebbf81fb9215cd808106751b8e05b96ae9bdd0b7b819f750e1a",
     "sourceFiles": [
       "src/model.ts",
       "src/kernel.ts",
@@ -10617,9 +10617,9 @@
         "exported-type",
         "output"
       ],
-      "identity": "anonymous@src/model.ts#4|src/model.ts|4|53d0d72cf97e",
+      "identity": "anonymous@src/model.ts#4|src/model.ts|4|1baeb3b93f48",
       "name": "anonymous@src/model.ts#4",
-      "shapeHash": "444cd4bf7b81092d8e70fd045cdf9308bb7e8f3160e968b15a24c3e8cd1c2a3b",
+      "shapeHash": "8e8f7c91730ab427a51380f88435a9ebadc3377f388e7df34e04fa48255e26fe",
       "source": "src/model.ts"
     },
     {

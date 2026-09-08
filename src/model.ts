@@ -54,7 +54,7 @@ export type WorkPhase<O = unknown, R extends string = string> =
   | { state: 'succeeded'; result: O; completedAt: number }
   | {
       state: 'failed';
-      reason: R | 'attempts_exhausted' | 'deadline_exceeded' | 'deferrals_exhausted';
+      reason: R | 'attempts_exhausted' | 'deadline_exceeded';
       manualRetry: boolean;
       failedAt: number;
       /** Typed terminal diagnostic/result, when the handler supplied one. */
