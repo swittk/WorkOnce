@@ -314,6 +314,52 @@ return a legitimate mixture of per-id revisions. Executable races cover reader-f
 writer-first memory/SQLite orderings plus a mixed native-CAS batch. WorkOnce therefore does not
 reject a conforming adapter merely for lacking stronger cross-id snapshot isolation.
 
+## Durable lifecycle hidden-state and claim-scan refinement
+
+The base lifecycle model is supplemented by `formal/WorkOnceLifecycleTemporal.tla` and
+`formal/WorkOnceClaimScan.tla`. The temporal model keeps revision, generation, fence and settlement
+receipt identity as first-class state. This is necessary: two concrete histories that were equal in
+the older quotient after revision/history were erased can accept different future `wake()` commands.
+The compiled red-before witness in `scripts/lifecycle-refinement.mjs` demonstrates that split and the
+refined model no longer treats those histories as future-congruent. Terminal settlement receipts are
+also bound to generation/fence/submission identity, conflicting replay is `settlement_conflict`, and
+manual retry/rerun clears prior-generation receipts before the next claim.
+
+The bounded claim-scan model represents a candidate page separately from the requested claim limit.
+It proves that terminalizing an exhausted front page does not erase healthy later work, a bounded
+pass never returns more than the requested limit, and a subsequent invocation reaches work beyond a
+fully consumed front page. Fresh compiled observations exercise exact due ordering, an entirely
+stolen first candidate page, exhausted-front continuation and finite draining on memory, real SQLite
+and the native compare-exchange adapter. Dedicated implementation mutants remove the four-times
+candidate scan widening and introduce an off-by-one returned-claim limit; each must make the focused
+lifecycle proof red for the intended reachability/limit witness.
+
+The current compiled lifecycle observation set contains **24 observations**. In addition to the scan
+cases it covers exact lease-expiry versus stale-fence causes, legal cancel-before-completion and
+completion-before-cancel orderings, concurrent generation reset, async retry/rerun check races,
+terminal receipt replay/conflict, generation/fence monotonicity, cross-adapter lifecycle projection
+and safe-integer fence/revision/generation boundaries. `WorkOnceLifecycleTemporal.cfg` has seven
+configured invariants and `WorkOnceClaimScan.cfg` has six; every configured invariant has a batched
+mutation witness, and an invalid compiled-observation set is independently rejected.
+
+`test/process/lifecycle-process.test.mjs` adds seven real SQLite process-death prefixes: durable
+ensure before ACK, renewal before ACK, successful and failed terminal settlement before ACK,
+mid-multi-record claim scan after the first durable claim, and retry/rerun generation reset before
+ACK. Restart observes exactly the committed state: idempotent ensure remains one row, terminal
+receipts replay without a second write, resets advance one generation and clear old receipts, and a
+mid-scan death leaves later due rows immediately reachable by the next invocation. Existing
+process-level lease-death/reclaim tests cover the crashed owning attempt. Native-CAS unknown-ACK
+terminal settlement is separately replayed through the durable receipt. The memory adapter is the
+reference transition model but is intentionally **not** claimed crash-durable.
+
+`assurance/lifecycle-proof-binding.json` content-binds the lifecycle source set, both dedicated TLA
+models/configs, the lifecycle contract, formal runner, compiled producer, mutation controls and real
+process tests. A source-only lifecycle mutation with unchanged A model fails closed. The compiled
+mutation suite additionally requires stale-fence rejection, settlement-receipt identity,
+completion-before-cancel legality, claim-scan widening, exact claim limit and reset receipt clearing.
+These are library-owned durable queue semantics only; application callback side effects and external
+system exactly-once behavior remain outside this lifecycle proof.
+
 ## Fast complete gate
 
 `npm run assurance` runs the complete local gate with one build, the ES2018/WebWorker compatibility check, one compiler-map pass, one batched implementation test process, one real-process fault pass, one bounded-domain audit, a durable-lifecycle TLC graph, one small runtime-boundary TLC graph plus its admission mutation guard, and the packed consumer smoke test. On the current HPSERVER development machine the expanded exhaustive-proof candidate measured **51.76 seconds wall-clock** and about **353 MB peak RSS** under Node 22.22.1; the durable-lifecycle TLC run itself remains about **1–2.5 seconds** with bounded worker parallelism and parallel GC. The complete gate remains below the 60-second hard budget despite the emitted-artifact guards and per-invariant mutation controls.
