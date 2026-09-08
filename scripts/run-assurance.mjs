@@ -112,10 +112,8 @@ await runParallel([
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
 ]);
-await runParallel([
-  ['implementation traces', process.execPath, ['--test', ...unitTests]],
-  ['real process faults', process.execPath, ['--test', ...processTests]],
-]);
+run('implementation traces', process.execPath, ['--test', ...unitTests]);
+run('real process faults', process.execPath, ['--test', ...processTests]);
 await runParallel([
   [
     'typed-read definition-fence mutation guard',
