@@ -5,6 +5,31 @@ const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const sourceRoot = path.resolve(root, 'src');
 const sourcePrefix = `${path.normalize(sourceRoot)}${path.sep}`;
+if (process.argv.includes('--self-test-source-paths')) {
+  const canonical = portableSourcePath(path.join(root, 'node_modules/typescript/lib/lib.es5.d.ts'));
+  const sibling = portableSourcePath(
+    path.join(
+      path.dirname(root),
+      'workonce-proof-worktree/node_modules/typescript/lib/lib.es5.d.ts',
+    ),
+  );
+  const sharedInstall = portableSourcePath(
+    path.join(path.dirname(root), 'WorkOnces/node_modules/typescript/lib/lib.es5.d.ts'),
+  );
+  if (canonical !== 'node_modules/typescript/lib/lib.es5.d.ts')
+    throw new Error(`Unexpected canonical TypeScript lib source path: ${canonical}`);
+  if (sibling !== canonical || sharedInstall !== canonical)
+    throw new Error(
+      `TypeScript lib source identity depends on worktree/install topology: ${JSON.stringify({ canonical, sibling, sharedInstall })}`,
+    );
+  if (portableSourcePath(path.join(root, 'src/work.ts')) !== 'src/work.ts')
+    throw new Error('Package-owned source identity no longer stays repository-relative.');
+  console.log(
+    'Compiler source paths are stable across authoritative, sibling-worktree, and shared-install layouts.',
+  );
+  process.exit(0);
+}
+
 const configPath = path.join(root, 'tsconfig.json');
 const config = ts.readConfigFile(configPath, ts.sys.readFile);
 if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'));
@@ -242,31 +267,6 @@ function declarationOrdinal(declaration) {
   if (ordinal === undefined) throw new Error('Could not assign package-owned declaration ordinal.');
   return ordinal;
 }
-if (process.argv.includes('--self-test-source-paths')) {
-  const canonical = portableSourcePath(path.join(root, 'node_modules/typescript/lib/lib.es5.d.ts'));
-  const sibling = portableSourcePath(
-    path.join(
-      path.dirname(root),
-      'workonce-proof-worktree/node_modules/typescript/lib/lib.es5.d.ts',
-    ),
-  );
-  const sharedInstall = portableSourcePath(
-    path.join(path.dirname(root), 'WorkOnces/node_modules/typescript/lib/lib.es5.d.ts'),
-  );
-  if (canonical !== 'node_modules/typescript/lib/lib.es5.d.ts')
-    throw new Error(`Unexpected canonical TypeScript lib source path: ${canonical}`);
-  if (sibling !== canonical || sharedInstall !== canonical)
-    throw new Error(
-      `TypeScript lib source identity depends on worktree/install topology: ${JSON.stringify({ canonical, sibling, sharedInstall })}`,
-    );
-  if (portableSourcePath(path.join(root, 'src/work.ts')) !== 'src/work.ts')
-    throw new Error('Package-owned source identity no longer stays repository-relative.');
-  console.log(
-    'Compiler source paths are stable across authoritative, sibling-worktree, and shared-install layouts.',
-  );
-  process.exit(0);
-}
-
 if (process.argv.includes('--self-test-trivia-ordinals')) {
   const fingerprint = (text) => {
     const source = ts.createSourceFile('synthetic.ts', text, ts.ScriptTarget.Latest, true);

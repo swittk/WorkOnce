@@ -4,6 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const processScript = packageJson.scripts?.['test:process'] ?? '';
 const text = fs.readFileSync(path.join(root, 'scripts/run-assurance.mjs'), 'utf8');
 const formalText = fs.readFileSync(path.join(root, 'scripts/formal.mjs'), 'utf8');
 const lifecycleFormalText = fs.readFileSync(
@@ -86,6 +88,45 @@ function parallelBlocks(source) {
 const blocks = parallelBlocks(text);
 assert.match(
   text,
+  /name !== 'lifecycle-proof-controls\.test\.mjs'/u,
+  'The source-mutating lifecycle proof wrapper must stay out of the read-only unit-test parallel batch.',
+);
+for (const [label, script] of [
+  ['lifecycle proof binding', 'scripts/check-lifecycle-proof-binding.mjs'],
+  ['lifecycle source/model mutation guard', 'scripts/check-lifecycle-source-model-mutation.mjs'],
+  [
+    'lifecycle implementation mutation guards',
+    'scripts/check-lifecycle-implementation-mutations.mjs',
+  ],
+]) {
+  const start = text.indexOf(`run('${label}'`);
+  assert.notEqual(start, -1, `${label} must remain an explicit serialized full-assurance control`);
+  assert.equal(
+    text.slice(start, start + 260).includes(`'${script}'`),
+    true,
+    `${label} must execute ${script}`,
+  );
+}
+const implementationBlocks = blocks.filter((block) =>
+  block.text.includes("'implementation traces'"),
+);
+assert.equal(
+  implementationBlocks.length,
+  1,
+  'Expected implementation traces in exactly one read-only parallel group.',
+);
+assert.equal(
+  implementationBlocks[0].text.includes("'public mapping'"),
+  true,
+  'Read-only implementation traces must overlap the public mapping batch for assurance performance.',
+);
+assert.match(
+  processScript,
+  /node --test --test-concurrency=1 test\/process\/\*\.test\.mjs/u,
+  'test:process must serialize real process-fault files; CI concurrency can starve short lease/IPC crash fixtures.',
+);
+assert.match(
+  text,
   /process\.env\.WORKONCE_TLC_WORKERS = tlcWorkers/u,
   'Full assurance must publish its load-aware TLC worker budget to every proof child.',
 );
@@ -156,6 +197,11 @@ for (const block of blocks) {
     'Real process faults must run outside runParallel; constrained runners can starve crash-fixture IPC under compiler contention.',
   );
 }
+assert.match(
+  text,
+  /run\('real process faults',[\s\S]{0,180}'--test-concurrency',[\s\S]{0,80}'3'/u,
+  'HPSERVER full assurance must cap process-fault file concurrency at three.',
+);
 console.log(
   'Assurance scheduling preserves split source/type-contract checks, serializes mutating guards/process faults and cross-family TLC, while private workspaces isolate independent proof invocations.',
 );

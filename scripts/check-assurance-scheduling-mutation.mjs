@@ -10,6 +10,8 @@ const target = path.join(root, 'scripts/run-assurance.mjs');
 const original = fs.readFileSync(target, 'utf8');
 const formalTarget = path.join(root, 'scripts/formal.mjs');
 const formalOriginal = fs.readFileSync(formalTarget, 'utf8');
+const packageTarget = path.join(root, 'package.json');
+const packageOriginal = fs.readFileSync(packageTarget, 'utf8');
 function expectSchedulingFailure(label, mutate, pattern) {
   fs.writeFileSync(target, mutate(original));
   try {
@@ -25,6 +27,23 @@ function expectSchedulingFailure(label, mutate, pattern) {
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
     fs.writeFileSync(target, original);
+  }
+}
+function expectPackageSchedulingFailure(label, mutate, pattern) {
+  fs.writeFileSync(packageTarget, mutate(packageOriginal));
+  try {
+    const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+      timeout: 15_000,
+    });
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+    requireExpectedProcessFailure(result, `${label} scheduling mutant unexpectedly passed`);
+    assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
+    console.log(`Assurance scheduling mutation guard rejects ${label}.`);
+  } finally {
+    fs.writeFileSync(packageTarget, packageOriginal);
   }
 }
 function expectFormalSchedulingFailure(label, mutate, pattern) {
@@ -46,6 +65,17 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
 }
 
 try {
+  expectPackageSchedulingFailure(
+    'parallel package process-fault suite',
+    (text) => text.replace(' --test-concurrency=1', ''),
+    /test:process must serialize real process-fault files/u,
+  );
+  expectSchedulingFailure(
+    'source-mutating lifecycle proof wrapper in read-only unit batch',
+    (text) =>
+      text.replace("\n  .filter((name) => name !== 'lifecycle-proof-controls.test.mjs')", ''),
+    /source-mutating lifecycle proof wrapper must stay out/u,
+  );
   expectSchedulingFailure(
     'lost dedicated type-contract compile',
     (text) => text.replace("'tsconfig.tests.json'", "'tsconfig.json'"),
@@ -78,10 +108,15 @@ try {
     'parallel process-fault suite',
     (text) =>
       text.replace(
-        "  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],\n]);\nrun('real process faults', process.execPath, ['--test', ...processTests]);",
-        "  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],\n  ['real process faults', process.execPath, ['--test', ...processTests]],\n]);",
+        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n]);\nrun('real process faults', process.execPath, [\n  '--test',\n  '--test-concurrency',\n  '3',\n  ...processTests,\n]);",
+        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],\n]);",
       ),
     /Real process faults must run outside runParallel/u,
+  );
+  expectSchedulingFailure(
+    'unbounded HPSERVER process-fault file concurrency',
+    (text) => text.replace("  '--test-concurrency',\n  '3',\n", ''),
+    /full assurance must cap process-fault file concurrency at three/u,
   );
   expectSchedulingFailure(
     'parallel source-mutating guards',
@@ -113,4 +148,5 @@ try {
 } finally {
   fs.writeFileSync(target, original);
   fs.writeFileSync(formalTarget, formalOriginal);
+  fs.writeFileSync(packageTarget, packageOriginal);
 }

@@ -9,9 +9,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const logicalCpus = availableParallelism();
 const currentLoad = loadavg()[0];
 const availableTestCpus = Math.floor(logicalCpus - currentLoad);
-const unitTestConcurrency = String(Math.max(4, Math.min(logicalCpus, availableTestCpus)));
+const unitTestConcurrency = String(Math.max(4, Math.min(8, logicalCpus, availableTestCpus)));
 const tlcWorkers = String(
-  Math.max(2, Math.min(8, Math.floor(Math.max(4, logicalCpus - currentLoad) / 2))),
+  logicalCpus >= 16
+    ? 8
+    : Math.max(2, Math.min(8, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
 );
 process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
 function run(label, command, args) {
@@ -87,6 +89,7 @@ async function runParallel(entries) {
 const unitTests = fs
   .readdirSync(path.join(root, 'test'))
   .filter((name) => name.endsWith('.test.mjs'))
+  .filter((name) => name !== 'lifecycle-proof-controls.test.mjs')
   .sort()
   .map((name) => `test/${name}`);
 const processTests = fs
@@ -172,13 +175,24 @@ await runParallel([
     ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
+  [
+    'implementation traces',
+    process.execPath,
+    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],
+  ],
 ]);
-run('real process faults', process.execPath, ['--test', ...processTests]);
-run('implementation traces', process.execPath, [
+run('real process faults', process.execPath, [
   '--test',
   '--test-concurrency',
-  unitTestConcurrency,
-  ...unitTests,
+  '3',
+  ...processTests,
+]);
+run('lifecycle proof binding', process.execPath, ['scripts/check-lifecycle-proof-binding.mjs']);
+run('lifecycle source/model mutation guard', process.execPath, [
+  'scripts/check-lifecycle-source-model-mutation.mjs',
+]);
+run('lifecycle implementation mutation guards', process.execPath, [
+  'scripts/check-lifecycle-implementation-mutations.mjs',
 ]);
 run('typed-read definition-fence mutation guard', process.execPath, [
   'scripts/check-read-boundary-mutation.mjs',

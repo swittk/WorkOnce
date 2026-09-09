@@ -188,20 +188,25 @@ for (const kind of ['memory', 'sqlite', 'cas']) {
 }
 
 test('a supported zero-delay policy remains immediately claimable after exponent overflow', async () => {
-  const queue = createWorkOnce({
-    store: createMemoryStore({ now: () => 100 }),
-    scope: 'zero-delay',
-  }).define('job', {
+  const store = createMemoryStore({ now: () => 100 });
+  const queue = createWorkOnce({ store, scope: 'zero-delay' }).define('job', {
     limits: { maxAttempts: 2000 },
     retry: exponentialBackoff({ initialDelayMs: 0, maxDelayMs: 100, maxRetries: 2000 }),
   });
-  await queue.ensure(null, { key: 'job' });
-  for (let index = 0; index <= 1024; index++) {
-    const [run] = await queue.claim({ workerId: 'worker' });
-    assert.ok(run, `retry ${index} unexpectedly delayed`);
-    const phase = await run.settle(run.retry('pending'));
-    assert.equal(phase.state, 'waiting');
-    assert.equal(phase.availableAt, 100);
-  }
+  const seeded = await queue.ensure(null, { key: 'job' });
+  await store.atomic(seeded.id, (row, now) => {
+    assert.ok(row);
+    return {
+      next: { ...row, retries: 1024, revision: row.revision + 1, updatedAt: now },
+      value: null,
+    };
+  });
+  const [run] = await queue.claim({ workerId: 'worker' });
+  assert.ok(run, 'overflow-boundary retry unexpectedly delayed');
+  const phase = await run.settle(run.retry('pending'));
+  assert.equal(phase.state, 'waiting');
+  assert.equal(phase.availableAt, 100);
+  const snapshot = await queue.inspect('job');
+  assert.equal(snapshot?.retries, 1025);
   assert.equal((await queue.claim({ workerId: 'worker' })).length, 1);
 });

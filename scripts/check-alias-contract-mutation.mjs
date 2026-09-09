@@ -6,8 +6,6 @@ import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const typeBuildInfo = path.join(root, '.artifacts/alias-mutation.tsbuildinfo');
-
 function runNode(args) {
   return spawnSync(process.execPath, args, {
     cwd: root,
@@ -113,43 +111,43 @@ const typeMutants = [
     'src/work.ts',
     'export type EnqueueOptions = EnsureOptions;',
     'export type EnqueueOptions = any;',
-    'EnqueueOptions',
+    'test/types/aliases.ts(21,29)',
   ],
   [
     'src/worker.ts',
     'export type ProcessResult<O = unknown, R extends string = string> = RunAvailableResult<O, R>;',
     'export type ProcessResult<O = unknown, R extends string = string> = any;',
-    'ProcessResult',
+    'test/types/aliases.ts(22,34)',
   ],
   [
     'src/external.ts',
     'export type ExternalProcessResult<\n  O = unknown,\n  R extends string = string,\n> = ExternalRunAvailableResult<O, R>;',
     'export type ExternalProcessResult<O = unknown, R extends string = string> = any;',
-    'ExternalProcessResult',
+    'test/types/aliases.ts(24,3)',
   ],
 ];
-fs.rmSync(typeBuildInfo, { force: true });
+const typeOriginals = new Map();
 try {
-  for (const [relative, anchor, replacement, label] of typeMutants) {
-    mutateFile(
-      relative,
-      (text) => text.replace(anchor, replacement),
-      () => {
-        const result = runNode([
-          'node_modules/typescript/bin/tsc',
-          '--noEmit',
-          '-p',
-          'tsconfig.tests.json',
-          '--incremental',
-          '--tsBuildInfoFile',
-          typeBuildInfo,
-        ]);
-        requireRed(label, result, /test\/types\/aliases\.ts/u);
-      },
-    );
+  for (const [relative, anchor, replacement] of typeMutants) {
+    const target = path.join(root, relative);
+    const original = fs.readFileSync(target, 'utf8');
+    const changed = original.replace(anchor, replacement);
+    assert.notEqual(changed, original, `${relative} mutation anchor did not match`);
+    typeOriginals.set(target, original);
+    fs.writeFileSync(target, changed);
   }
+  const result = runNode([
+    'node_modules/typescript/bin/tsc',
+    '--noEmit',
+    '-p',
+    'tsconfig.tests.json',
+  ]);
+  requireExpectedProcessFailure(result, 'type alias mutant batch unexpectedly passed');
+  const diagnostics = output(result);
+  for (const [, , , diagnostic] of typeMutants)
+    assert.match(diagnostics, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'));
 } finally {
-  fs.rmSync(typeBuildInfo, { force: true });
+  for (const [target, original] of typeOriginals) fs.writeFileSync(target, original);
 }
 
 console.log(

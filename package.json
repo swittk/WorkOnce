@@ -127,7 +127,7 @@
     "build": "node scripts/clean.mjs && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs && node scripts/build-source-binding.mjs --write",
     "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
     "test": "npm run build && node --test test/*.test.mjs",
-    "test:process": "node scripts/build-source-binding.mjs && node --test test/process/*.test.mjs",
+    "test:process": "node scripts/build-source-binding.mjs && node --test --test-concurrency=1 test/process/*.test.mjs",
     "formal": "node scripts/formal.mjs && node scripts/storage-formal.mjs",
     "prepack": "npm run build",
     "prepare": "node scripts/prepare-package.mjs",

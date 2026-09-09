@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "7c6b980daee65fd39e7fd88530135e59d3be0b3c32db2b8401097f2b39ff4061",
+    "assuranceInfrastructureDigest": "b40c11f4e13db8f95f78778a79497e1df6b158739dfd01bfa5dcf5c5d9d445a9",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10892,10 +10892,16 @@
       "scripts/check-build-source-binding-mutation.mjs",
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",
       "scripts/check-assurance-scheduling.mjs",
+      "scripts/check-lifecycle-proof-binding.mjs",
+      "scripts/check-lifecycle-source-model-mutation.mjs",
+      "scripts/check-lifecycle-implementation-mutations.mjs",
       "scripts/check-alias-contract-mutation.mjs",
       "scripts/check-source-path-portability-mutation.mjs",
       "assurance/red-before/manifest-worktree-source-path-portability.json",
       "scripts/check-assurance-scheduling-mutation.mjs",
+      "scripts/check-lifecycle-proof-binding.mjs",
+      "scripts/check-lifecycle-source-model-mutation.mjs",
+      "scripts/check-lifecycle-implementation-mutations.mjs",
       "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
       "assurance/red-before/mutation-guard-cross-contamination.json",
       "assurance/red-before/process-fault-test-concurrency.json",
@@ -11013,7 +11019,7 @@
       "formal/WorkOnceOutboxBudget.tla",
       "formal/WorkOnceOutboxBudget.cfg"
     ],
-    "semanticEnvironmentDigest": "157b043411d436c18dfaa5f084a544c9087f8fdbce75fd43c63e50a9aa3976ac",
+    "semanticEnvironmentDigest": "c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb",
     "semanticEnvironmentFiles": [
       "tsconfig.json",
       "tsconfig.cjs.json",
