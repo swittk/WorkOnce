@@ -607,6 +607,34 @@ MutantSpec == Init /\ [][Next]_vars
   );
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
 
+  const runnerFailureMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeRunnerFailureMutant.tla');
+  const runnerFailureMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeRunnerFailureMutant.cfg');
+  writeFileSync(
+    runnerFailureMutant,
+    String.raw`---- MODULE WorkOnceRuntimeRunnerFailureMutant ----
+EXTENDS WorkOnceRuntimeObserved
+BadRunner == [kind |-> "runner", failureValue |-> "none", returnedValue |-> "none",
+              handled |-> FALSE, rejected |-> TRUE, preserved |-> TRUE,
+              drained |-> TRUE, timedOut |-> FALSE, site |-> "direct"]
+BadSamples == ObservedSamples \cup {BadRunner}
+MutantSpec == Init /\ [][Next]_vars
+====
+`,
+  );
+  writeFileSync(
+    runnerFailureMutantConfig,
+    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
+      'CONSTANT Samples <- ObservedSamples',
+      'CONSTANT Samples <- BadSamples',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceRuntimeRunnerFailureMutant',
+    runnerFailureMutantConfig,
+    runnerFailureMutant,
+    'RuntimeSamplesConform',
+  );
+
   const readFenceMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.tla');
   const readFenceMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.cfg');
   writeFileSync(

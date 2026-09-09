@@ -147,6 +147,13 @@ LocalFatalReturnPreserves ==
     /\ returnPresent = fatalPresent
     /\ returnValue = IF fatalPresent THEN lossValue ELSE "none"
 
+LocalAdapterDomain == {"memory", "sqlite", "cas"}
+StopReclaimAdapterModes == {
+  <<"memory", "caller">>, <<"memory", "heartbeat">>,
+  <<"sqlite", "caller">>, <<"sqlite", "heartbeat">>,
+  <<"cas", "caller">>, <<"cas", "heartbeat">>
+}
+
 LocalRunnerSampleOK(s) ==
   CASE s.kind = "stopReclaim" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
@@ -182,5 +189,9 @@ LocalRunnerSamplesConform ==
        "firstFatal", "dynamicArrival", "handledRecovery", "completionOrder", "handledAbortHistory",
        "backoffHistory", "lateClaimStop", "timerBoundary", "wakePoll"
      }
+  /\ {<<s.adapter, s.mode>> : s \in {x \in Samples : x.kind = "stopReclaim"}} = StopReclaimAdapterModes
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "undefinedHeartbeat"}} = LocalAdapterDomain
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "settleCause"}} = LocalAdapterDomain
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "competingRunners"}} = LocalAdapterDomain
   /\ \A s \in Samples : LocalRunnerSampleOK(s)
 =============================================================================

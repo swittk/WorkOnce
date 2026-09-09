@@ -10,15 +10,30 @@ test('compiled retry/defer policy observations cover temporal races, receipt ide
   assertPolicyRefinementSamples(samples);
 });
 
-test('policy refinement rejects loss of one wake-competition adapter lane', async () => {
+test('policy refinement rejects wake adapter substitution without a count change', async () => {
   const samples = await runPolicyRefinementSamples();
+  const sqliteIndex = samples.findIndex(
+    (sample) => sample.kind === 'wakeCompetition' && sample.adapter === 'sqlite',
+  );
+  const memory = samples.find(
+    (sample) => sample.kind === 'wakeCompetition' && sample.adapter === 'memory',
+  );
+  assert.notEqual(sqliteIndex, -1);
+  assert.ok(memory);
+  const mutant = samples.map((sample, index) => (index === sqliteIndex ? { ...memory } : sample));
   assert.throws(
-    () =>
-      assertPolicyRefinementSamples(
-        samples.filter(
-          (sample) => !(sample.kind === 'wakeCompetition' && sample.adapter === 'sqlite'),
-        ),
-      ),
-    /policy refinement sample family unexpectedly changed|wakeCompetition adapter coverage drifted/u,
+    () => assertPolicyRefinementSamples(mutant),
+    /wakeCompetition adapter coverage drifted/u,
+  );
+});
+
+test('policy refinement rejects collapsed adapter-equivalence coverage', async () => {
+  const samples = await runPolicyRefinementSamples();
+  const mutant = samples.map((sample) =>
+    sample.kind === 'adapterEquivalence' ? { ...sample, adapters: 'memory' } : sample,
+  );
+  assert.throws(
+    () => assertPolicyRefinementSamples(mutant),
+    /adapterEquivalence adapter coverage drifted/u,
   );
 });

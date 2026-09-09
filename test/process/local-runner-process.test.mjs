@@ -1,63 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce, succeed } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./local-runner-child.mjs', import.meta.url);
-const childInboxes = new WeakMap();
 function start(path, mode) {
-  const child = fork(childUrl, [path, mode], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
-  const inbox = { messages: [], waiters: [], ended: undefined };
-  childInboxes.set(child, inbox);
-  child.on('message', (message) => {
-    const waiter = inbox.waiters.shift();
-    if (waiter) waiter.resolve(message);
-    else inbox.messages.push(message);
-  });
-  const end = (error) => {
-    inbox.ended = error;
-    for (const waiter of inbox.waiters.splice(0)) waiter.reject(error);
-  };
-  child.once('exit', (code, signal) =>
-    end(
-      new Error(
-        `Local-runner child exited before its next IPC message: code=${String(code)} signal=${String(signal)}`,
-      ),
-    ),
+  return forkWithInbox(
+    childUrl,
+    [path, mode],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'Local-runner child',
   );
-  child.once('error', end);
-  return child;
 }
-async function nextMessage(child) {
-  const inbox = childInboxes.get(child);
-  assert.ok(inbox, 'Local-runner child inbox was not initialized');
-  if (inbox.messages.length) return inbox.messages.shift();
-  if (inbox.ended) throw inbox.ended;
-  return new Promise((resolve, reject) => {
-    const waiter = {
-      resolve(value) {
-        clearTimeout(timeout);
-        resolve(value);
-      },
-      reject(error) {
-        clearTimeout(timeout);
-        reject(error);
-      },
-    };
-    const timeout = setTimeout(() => {
-      const index = inbox.waiters.indexOf(waiter);
-      if (index >= 0) inbox.waiters.splice(index, 1);
-      reject(new Error('Timed out waiting for local-runner child IPC message'));
-    }, 15000);
-    inbox.waiters.push(waiter);
-  });
-}
+const nextMessage = (child) => nextChildMessage(child, 15000);
 async function kill(child) {
   if (child.exitCode !== null || child.signalCode !== null) {
     assert.equal(child.signalCode, 'SIGKILL');

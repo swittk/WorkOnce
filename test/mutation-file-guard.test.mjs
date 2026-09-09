@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createMutationFileGuard } from '../scripts/mutation-file-guard.mjs';
 
 async function waitForReady(child) {
   let output = '';
@@ -70,3 +71,23 @@ for (const [signal, expectedCode] of [
     }
   });
 }
+
+test('mutation file guard restores remembered files during normal disposal', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-dispose-'));
+  const existing = join(directory, 'existing.txt');
+  const created = join(directory, 'created.txt');
+  writeFileSync(existing, 'original\n');
+  const guard = createMutationFileGuard();
+  try {
+    guard.writeFileSync(existing, 'mutated\n');
+    guard.writeFileSync(created, 'new\n');
+    assert.equal(readFileSync(existing, 'utf8'), 'mutated\n');
+    assert.equal(existsSync(created), true);
+    guard.dispose();
+    assert.equal(readFileSync(existing, 'utf8'), 'original\n');
+    assert.equal(existsSync(created), false);
+  } finally {
+    guard.dispose();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

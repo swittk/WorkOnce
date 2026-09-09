@@ -11095,7 +11095,7 @@
         "LocalTypeOK",
         "LossPresenceExact"
       ],
-      "modelDigest": "c75a02f53bfd7d23fc19efe029a62b9510520aeb08209c2b0f362e02ee06e1e2",
+      "modelDigest": "7521203c5f164b68855a8962606a5293833b126930602ac5e2e298962254389e",
       "modelFiles": [
         "formal/WorkOnceLocalRunner.tla",
         "formal/WorkOnceLocalRunner.cfg"
@@ -11136,7 +11136,7 @@
         "PoisonIntentRetained"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "9f6912dcd47851009f8c9005b5c054f245f7336861fbf8a8d9c8c705b5d46c69",
+      "modelDigest": "099bbc73ce0a07f43af801676776acfa2733478db8e897c348e7cadde1fa3acb",
       "modelFiles": [
         "formal/WorkOnceOutbox.tla",
         "formal/WorkOnceOutbox.cfg",
@@ -11180,7 +11180,7 @@
         "StalePolicyCannotPublish",
         "SupersededReceiptRejectsOld"
       ],
-      "modelDigest": "8791b1b1ce11cde8d54756a2171683ac0042751a05e1e51c310c8243c37e3e18",
+      "modelDigest": "5b31c33ea4ec59375e1ac1759ca17331f7accac4f8ecb4d5d20aa4eff3315395",
       "modelFiles": [
         "formal/WorkOncePolicy.tla",
         "formal/WorkOncePolicy.cfg"
@@ -11240,7 +11240,7 @@
       ],
       "historyObservationProducer": "scripts/read-history-refinement.mjs",
       "historySpec": "formal/WorkOnceReadHistory.tla",
-      "modelDigest": "4c4b39f1b2898cd6e8878578506db8b741067d869e9dc3fd3b673b7f1b5de69b",
+      "modelDigest": "ee510d82ca6e3448774ffe967843df2bfcb5c2dcb588e4f1d62266689c918d02",
       "modelFiles": [
         "formal/WorkOnceContract.tla",
         "formal/WorkOnceReadHistory.tla",
@@ -11298,7 +11298,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "c55ea8304a6a13995c6b5ddc5b6c1c2b765cec6b63a68cf2b50e30ddf7e39739",
+      "modelDigest": "1057e3070228f3fd2d6542476407e92d5b819974787c89d6d7fe8d79d8644b15",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -11352,7 +11352,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "f7ade82bbbbd96e4560a9f946fe126b1508f0dd54f52e297440bb442b1e26555",
+    "assuranceInfrastructureDigest": "b8ef4ba2cb5b58214fa74ac581a3e6ff900fbad03938056c7a2e95dd7408628a",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -11375,6 +11375,7 @@
       "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
       "assurance/red-before/review-5149212380-conformance-batch.json",
       "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
+      "assurance/red-before/review-5152274957-formal-assurance-gaps.json",
       "assurance/red-before/mutation-guard-cross-contamination.json",
       "assurance/red-before/process-fault-test-concurrency.json",
       "assurance/red-before/unbound-assurance-runner.json",
@@ -11383,6 +11384,7 @@
       "test/subprocess-outcome.test.mjs",
       "scripts/check-assurance-verdict-integrity.mjs",
       "scripts/mutation-file-guard.mjs",
+      "scripts/refinement-sample-schema.mjs",
       "scripts/check-assurance-verdict-integrity-mutation.mjs",
       "assurance/red-before/review-5148224210-assurance-verdict-integrity.json",
       "scripts/tlc-workspace.mjs",
@@ -11414,6 +11416,7 @@
       "test/local-runner-refinement.test.mjs",
       "test/process/local-runner-child.mjs",
       "test/process/local-runner-process.test.mjs",
+      "test/process/child-ipc-inbox.mjs",
       "formal/WorkOnceLocalRunner.tla",
       "formal/WorkOnceLocalRunner.cfg",
       "assurance/red-before/local-runner-heartbeat-cause.json",
@@ -11470,7 +11473,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "f840b80c11400a76ec6e84377a0cd67fd8bbc7d46e5a679228b5e95ba9a3f496",
+    "modelDigest": "f807a06cde1c99f28fbc891e350cb49cf53d3e090e0dfb642dd287f5a6a6458e",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

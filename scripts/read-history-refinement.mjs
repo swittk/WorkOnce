@@ -6,6 +6,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 function deferred() {
   let resolve;
@@ -455,10 +456,19 @@ export function assertReadHistorySamples(samples) {
       );
       assert.ok(sample.futureTraceCount >= 5, 'historyCongruence.futureTraceCount');
     } else if (sample.kind === 'historyTruncation') {
+      assertExactBooleanSample(
+        sample,
+        [
+          'exactly128',
+          'latestActionsExact',
+          'latestReasonsExact',
+          'oldestDropped',
+          'newestRetained',
+          'publicEqualsDurable',
+        ],
+        ['retainedEvents'],
+      );
       assert.equal(sample.retainedEvents, 128, 'historyTruncation.retainedEvents');
-      for (const [field, value] of Object.entries(sample))
-        if (field !== 'kind' && field !== 'retainedEvents')
-          assert.equal(value, true, `${sample.kind}.${field}`);
     } else if (sample.kind === 'inspectManyRace') {
       assert.equal(sample.callerOrderExact, true, name);
       assert.equal(sample.perIdRealState, true, name);

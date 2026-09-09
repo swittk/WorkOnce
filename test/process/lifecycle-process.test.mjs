@@ -1,22 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./lifecycle-child.mjs', import.meta.url);
 function start(path, mode, detail = '') {
-  return fork(childUrl, [path, mode, detail], {
-    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
-  });
+  return forkWithInbox(
+    childUrl,
+    [path, mode, detail],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'Lifecycle child',
+  );
 }
-async function nextMessage(child) {
-  return (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];
-}
+const nextMessage = (child) => nextChildMessage(child, 15000);
 async function killAfterStage(path, mode, detail, expectedStage) {
   const child = start(path, mode, detail);
   try {

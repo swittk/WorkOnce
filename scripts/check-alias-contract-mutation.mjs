@@ -32,7 +32,7 @@ function mutateFile(relative, mutate, check) {
     mutationFiles.writeFileSync(target, changed);
     check();
   } finally {
-    mutationFiles.writeFileSync(target, original);
+    mutationFiles.restoreAll();
   }
 }
 
@@ -147,7 +147,7 @@ try {
   for (const [, , , diagnostic] of typeMutants)
     assert.match(diagnostics, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'));
 } finally {
-  for (const [target, original] of typeOriginals) mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 
 console.log(

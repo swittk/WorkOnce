@@ -2,6 +2,8 @@
 EXTENDS Naturals
 CONSTANTS ScanWidth, ClaimLimit, InitialFront, InitialHealthy
 ASSUME InitialFront <= ScanWidth
+ASSUME InitialHealthy > 0
+ASSUME ClaimLimit > 0
 VARIABLES pc, pass, frontRemaining, healthyRemaining, pageFront, pageHealthy,
           claimedThisPass, healthyClaimed, exhaustedTerminalized
 vars == <<pc, pass, frontRemaining, healthyRemaining, pageFront, pageHealthy,

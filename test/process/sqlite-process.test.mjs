@@ -1,21 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { once } from 'node:events';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 const childUrl = new URL('./worker-child.mjs', import.meta.url);
 function start(path, mode, id) {
-  return fork(childUrl, [path, mode, id], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
+  return forkWithInbox(
+    childUrl,
+    [path, mode, id],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'SQLite worker child',
+  );
 }
-async function message(child) {
-  const timer = AbortSignal.timeout(15000);
-  return (await once(child, 'message', { signal: timer }))[0];
-}
+const message = (child) => nextChildMessage(child, 15000);
 test('8 independent OS processes can initialize one new SQLite database', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'workonce-init-process-')),
     path = join(dir, 'queue.sqlite');

@@ -7,6 +7,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -829,6 +830,30 @@ export async function runLocalRunnerRefinementSamples() {
 
 export function assertLocalRunnerRefinementSamples(samples) {
   assert.equal(samples.length, 24, 'local runner refinement sample family unexpectedly changed');
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'stopReclaim')
+      .map((sample) => `${sample.adapter}:${sample.mode}`)
+      .sort(),
+    [
+      'cas:caller',
+      'cas:heartbeat',
+      'memory:caller',
+      'memory:heartbeat',
+      'sqlite:caller',
+      'sqlite:heartbeat',
+    ],
+    'stopReclaim adapter/mode coverage drifted',
+  );
+  for (const kind of ['undefinedHeartbeat', 'settleCause', 'competingRunners'])
+    assert.deepEqual(
+      samples
+        .filter((sample) => sample.kind === kind)
+        .map((sample) => sample.adapter)
+        .sort(),
+      ['cas', 'memory', 'sqlite'],
+      `${kind} adapter coverage drifted`,
+    );
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     switch (sample.kind) {
@@ -880,8 +905,13 @@ export function assertLocalRunnerRefinementSamples(samples) {
         assert.equal(sample.lateLeaseNotExecuted, true, name);
         break;
       case 'timerBoundary':
-        for (const [field, value] of Object.entries(sample))
-          if (field !== 'kind') assert.equal(value, true, `${sample.kind}.${field}`);
+        assertExactBooleanSample(sample, [
+          'exactLeaseRejects',
+          'oneBelowAccepts',
+          'hugeFiniteAccepted',
+          'expiryCauseExact',
+          'hugeIdleInterruptible',
+        ]);
         break;
       case 'wakePoll':
         assert.equal(sample.exactCause, true, name);

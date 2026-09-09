@@ -30,7 +30,7 @@ function expectSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    mutationFiles.writeFileSync(target, original);
+    mutationFiles.restoreAll();
   }
 }
 function expectPackageSchedulingFailure(label, mutate, pattern) {
@@ -49,7 +49,7 @@ function expectPackageSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    mutationFiles.writeFileSync(packageTarget, packageOriginal);
+    mutationFiles.restoreAll();
   }
 }
 function expectFormalSchedulingFailure(label, mutate, pattern) {
@@ -68,7 +68,7 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    mutationFiles.writeFileSync(formalTarget, formalOriginal);
+    mutationFiles.restoreAll();
   }
 }
 
@@ -172,8 +172,6 @@ try {
     /External formal family must stay on the reviewed lighter runtime shard/u,
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
-  mutationFiles.writeFileSync(formalTarget, formalOriginal);
-  mutationFiles.writeFileSync(packageTarget, packageOriginal);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

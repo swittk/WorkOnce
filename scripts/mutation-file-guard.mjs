@@ -26,8 +26,10 @@ export function createMutationFileGuard() {
   };
   const onSigint = () => terminate(130);
   const onSigterm = () => terminate(143);
+  const onExit = () => restoreAll();
   process.once('SIGINT', onSigint);
   process.once('SIGTERM', onSigterm);
+  process.once('exit', onExit);
   return {
     writeFileSync(file, data, options) {
       remember(file);
@@ -41,8 +43,10 @@ export function createMutationFileGuard() {
     dispose() {
       if (disposed) return;
       disposed = true;
+      restoreAll();
       process.off('SIGINT', onSigint);
       process.off('SIGTERM', onSigterm);
+      process.off('exit', onExit);
     },
   };
 }

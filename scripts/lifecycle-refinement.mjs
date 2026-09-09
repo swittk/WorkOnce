@@ -7,6 +7,7 @@ import { createWorkOnce } from '../dist/index.js';
 import { changed, claimRecord, retryRecord } from '../dist/kernel.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -371,6 +372,7 @@ async function claimOrderEquivalenceSample() {
     values.push(await claimOrderProjection(adapter));
   return {
     kind: 'claimOrderEquivalence',
+    adapters: 'memory,sqlite,cas',
     exactOrder: values[0].join(',') === '99:a,99:b,100:m,100:y,100:z',
     adaptersEquivalent: values.every(
       (value) => JSON.stringify(value) === JSON.stringify(values[0]),
@@ -410,12 +412,13 @@ async function exhaustedPageContinuationSample(adapter) {
   }
 }
 
-async function stolenPageContinuationSample() {
-  let now = 100;
-  const base = createMemoryStore({ now: () => now });
+async function stolenPageContinuationSample(adapter) {
+  const fixture = adapterFixture(adapter);
   let stealFirstPage = true;
+  const base = fixture.store;
   const store = {
-    ...base,
+    getMany: (ids) => base.getMany(ids),
+    atomic: (id, decision) => base.atomic(id, decision),
     async query(query) {
       const result = await base.query(query);
       if (stealFirstPage && query.select === 'due') {
@@ -431,21 +434,26 @@ async function stolenPageContinuationSample() {
       return result;
     },
   };
-  const queue = createWorkOnce({ store, scope: 'stolen-page' }).define('job', {
-    limits: { leaseMs: 20, maxAttempts: 3, maxElapsedMs: 100, maxDeferrals: 1 },
-  });
-  for (const key of ['a', 'b', 'c', 'd', 'e']) await queue.ensure(key, { key });
-  const stalePass = await queue.claim({ workerId: 'local', limit: 1 });
-  const nextPass = await queue.claim({ workerId: 'local', limit: 1 });
-  return {
-    kind: 'stolenPageContinuation',
-    stalePassCanReturnShort: stalePass.length === 0,
-    nextInvocationReachesBeyondPage: nextPass.length === 1 && nextPass[0].input === 'e',
-    stolenRowsRemainOwned: (await queue.inspectMany(['a', 'b', 'c', 'd'])).every(
-      (snapshot) =>
-        snapshot.phase.state === 'running' && snapshot.phase.attempt.workerId === 'competitor',
-    ),
-  };
+  try {
+    const queue = createWorkOnce({ store, scope: `stolen-page-${adapter}` }).define('job', {
+      limits: { leaseMs: 20, maxAttempts: 3, maxElapsedMs: 100, maxDeferrals: 1 },
+    });
+    for (const key of ['a', 'b', 'c', 'd', 'e']) await queue.ensure(key, { key });
+    const stalePass = await queue.claim({ workerId: 'local', limit: 1 });
+    const nextPass = await queue.claim({ workerId: 'local', limit: 1 });
+    return {
+      kind: 'stolenPageContinuation',
+      adapter,
+      stalePassCanReturnShort: stalePass.length === 0,
+      nextInvocationReachesBeyondPage: nextPass.length === 1 && nextPass[0].input === 'e',
+      stolenRowsRemainOwned: (await queue.inspectMany(['a', 'b', 'c', 'd'])).every(
+        (snapshot) =>
+          snapshot.phase.state === 'running' && snapshot.phase.attempt.workerId === 'competitor',
+      ),
+    };
+  } finally {
+    fixture.close();
+  }
 }
 
 async function claimLimitSample(adapter) {
@@ -569,6 +577,7 @@ async function adapterLifecycleEquivalenceSample() {
     values.push(await adapterLifecycleProjection(adapter));
   return {
     kind: 'adapterLifecycleEquivalence',
+    adapters: 'memory,sqlite,cas',
     equivalent: values.every((value) => JSON.stringify(value) === JSON.stringify(values[0])),
   };
 }
@@ -710,7 +719,6 @@ export async function runLifecycleRefinementSamples() {
     await resetCheckRaceSample('retry'),
     await resetCheckRaceSample('rerun'),
     await claimOrderEquivalenceSample(),
-    await stolenPageContinuationSample(),
     await adapterLifecycleEquivalenceSample(),
     await casTerminalAckLossSample('succeed'),
     await casTerminalAckLossSample('fail'),
@@ -718,6 +726,7 @@ export async function runLifecycleRefinementSamples() {
   ];
   for (const adapter of ['memory', 'sqlite', 'cas']) {
     samples.push(await exhaustedPageContinuationSample(adapter));
+    samples.push(await stolenPageContinuationSample(adapter));
     samples.push(await claimLimitSample(adapter));
     samples.push(await finiteDrainSample(adapter));
   }
@@ -725,8 +734,13 @@ export async function runLifecycleRefinementSamples() {
 }
 
 export function assertLifecycleRefinementSamples(samples) {
-  assert.equal(samples.length, 24, 'lifecycle refinement sample family unexpectedly changed');
-  for (const kind of ['claimScanContinuation', 'claimLimit', 'finiteClaimDrain']) {
+  assert.equal(samples.length, 26, 'lifecycle refinement sample family unexpectedly changed');
+  for (const kind of [
+    'claimScanContinuation',
+    'stolenPageContinuation',
+    'claimLimit',
+    'finiteClaimDrain',
+  ]) {
     assert.deepEqual(
       samples
         .filter((sample) => sample.kind === kind)
@@ -745,9 +759,21 @@ export function assertLifecycleRefinementSamples(samples) {
       assert.equal(sample.sameFutureCommand, true, name);
       assert.equal(sample.futureDiverges, true, name);
     } else if (sample.kind === 'terminalReceipt') {
-      for (const [field, value] of Object.entries(sample))
-        if (!['kind', 'outcomeKind', 'terminalState'].includes(field))
-          assert.equal(value, true, name);
+      assertExactBooleanSample(
+        sample,
+        [
+          'receiptBound',
+          'replayExact',
+          'conflictExact',
+          'lateCancelNoop',
+          'resetGeneration',
+          'resetClearsReceipt',
+          'resetCounters',
+          'oldReplayStale',
+          'fenceMonotone',
+        ],
+        ['outcomeKind', 'terminalState'],
+      );
       assert.equal(
         sample.terminalState,
         sample.outcomeKind === 'succeed' ? 'succeeded' : 'failed',
@@ -763,8 +789,12 @@ export function assertLifecycleRefinementSamples(samples) {
         name,
       );
     } else if (sample.kind === 'leaseFenceCause') {
-      for (const [field, value] of Object.entries(sample))
-        if (field !== 'kind') assert.equal(value, true, name);
+      assertExactBooleanSample(sample, [
+        'exactBoundaryExpired',
+        'reclaimedFence',
+        'staleRenewCause',
+        'staleSettleCause',
+      ]);
     } else if (sample.kind === 'generationCompetition') {
       assert.equal(sample.exactlyOneReset, true, name);
       assert.equal(sample.exactLoser, true, name);
@@ -776,15 +806,30 @@ export function assertLifecycleRefinementSamples(samples) {
       assert.equal(sample.exactLateCause, true, name);
       assert.equal(sample.noDoubleGeneration, true, name);
     } else if (sample.kind === 'claimOrderEquivalence') {
+      assert.equal(
+        sample.adapters,
+        'memory,sqlite,cas',
+        'claimOrderEquivalence adapter coverage drifted',
+      );
       assert.equal(sample.exactOrder, true, name);
       assert.equal(sample.adaptersEquivalent, true, name);
     } else if (sample.kind === 'claimScanContinuation') {
-      for (const [field, value] of Object.entries(sample))
-        if (!['kind', 'adapter'].includes(field)) assert.equal(value, true, name);
+      assertExactBooleanSample(
+        sample,
+        [
+          'firstPageFull',
+          'exhaustedPassReturnsNone',
+          'wholeCandidatePageTerminalized',
+          'nextInvocationReachesLater',
+        ],
+        ['adapter'],
+      );
     } else if (sample.kind === 'stolenPageContinuation') {
-      assert.equal(sample.stalePassCanReturnShort, true, name);
-      assert.equal(sample.nextInvocationReachesBeyondPage, true, name);
-      assert.equal(sample.stolenRowsRemainOwned, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['stalePassCanReturnShort', 'nextInvocationReachesBeyondPage', 'stolenRowsRemainOwned'],
+        ['adapter'],
+      );
     } else if (sample.kind === 'claimLimit') {
       assert.equal(sample.exactReturnedLimit, true, name);
       assert.equal(sample.exactRunningCount, true, name);
@@ -794,13 +839,25 @@ export function assertLifecycleRefinementSamples(samples) {
       assert.equal(sample.allReached, true, name);
       assert.equal(sample.boundedPasses, true, name);
     } else if (sample.kind === 'adapterLifecycleEquivalence') {
+      assert.equal(
+        sample.adapters,
+        'memory,sqlite,cas',
+        'adapterLifecycleEquivalence adapter coverage drifted',
+      );
       assert.equal(sample.equivalent, true, name);
     } else if (sample.kind === 'terminalAckLoss') {
-      for (const [field, value] of Object.entries(sample))
-        if (!['kind', 'outcomeKind'].includes(field)) assert.equal(value, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['exactAckError', 'durableTerminal', 'receiptDurable', 'replayConverges', 'noSecondWrite'],
+        ['outcomeKind'],
+      );
     } else if (sample.kind === 'lifecycleArithmetic') {
-      for (const [field, value] of Object.entries(sample))
-        if (field !== 'kind') assert.equal(value, true, name);
+      assertExactBooleanSample(sample, [
+        'fenceOverflowExact',
+        'revisionOverflowExact',
+        'generationOverflowExact',
+        'maximumFiniteClaimAccepted',
+      ]);
     } else assert.fail(`Unmapped lifecycle sample: ${name}`);
   }
   return samples.length;

@@ -7,6 +7,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce, runExternal, runExternalAvailable } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -815,14 +816,70 @@ export async function runExternalTransportSamples() {
   ];
 }
 
+const externalBooleanFields = {
+  capacityFairness: [
+    'boundedClaims',
+    'exactHandledFailure',
+    'healthySettled',
+    'laterHealthyAdmitted',
+    'noFatalEscape',
+    'observedWithinDeadline',
+  ],
+  externalAdapterEquivalence: ['equivalent', 'exactConflict'],
+  handoffHistory: [
+    'materiallyDifferentHistory',
+    'sameDurableProjection',
+    'sameFuture',
+    'sameLease',
+  ],
+  heartbeatFailure: ['exactAbortObserved', 'interruptedBeforeSettle', 'ownershipLossCause'],
+  leaseBoundary: [
+    'exactHeartbeatBoundary',
+    'invalidRenewalExact',
+    'maxSafeAccepted',
+    'nanRejectedBeforeHandler',
+    'oneTickHeartbeatCompatible',
+    'zeroRejectedBeforeHandler',
+  ],
+  oversizedClaim: ['exactError', 'noHandlerStarted'],
+  prepareDisposition: [
+    'errorSettledLocally',
+    'exactPrepareError',
+    'healthyStillRunning',
+    'oneLease',
+    'waitSettledLocally',
+  ],
+  prepareRace: ['noDomainErrorConversion', 'noStaleLeaseExported', 'winnerPreserved'],
+  staleForeignAttempt: [
+    'fenceAdvanced',
+    'heartbeatExact',
+    'settleExact',
+    'winnerPreserved',
+    'winnerSettled',
+  ],
+  stopSignal: ['abortDuringClaimFulfills', 'preAbortedNoClaim', 'sameSignalPropagated'],
+  unknownAckHistory: ['materiallyDifferentCallerHistory', 'sameDurableProjection', 'sameFuture'],
+  unknownSettleAck: [
+    'durableSuccess',
+    'exactAckError',
+    'handlerOnce',
+    'noLocalRerun',
+    'replayConverged',
+  ],
+};
+const externalMetadataFields = {
+  externalAdapterEquivalence: ['adapters'],
+  prepareRace: ['race'],
+};
+
 export function assertExternalTransportSamples(samples) {
   assert.equal(samples.length, 13, 'external transport sample family unexpectedly changed');
   for (const sample of samples) {
-    const name = JSON.stringify(sample);
-    for (const [field, value] of Object.entries(sample)) {
-      if (field === 'kind' || field === 'race' || field === 'adapters') continue;
-      if (typeof value === 'boolean') assert.equal(value, true, `${sample.kind}.${field}: ${name}`);
-    }
+    const fields = externalBooleanFields[sample.kind];
+    assert.ok(fields, `Unmapped external sample: ${JSON.stringify(sample)}`);
+    assertExactBooleanSample(sample, fields, externalMetadataFields[sample.kind] ?? []);
+    if (sample.kind === 'externalAdapterEquivalence')
+      assert.equal(sample.adapters, 'memory,sqlite,cas', 'external adapter coverage drifted');
   }
   return samples.length;
 }

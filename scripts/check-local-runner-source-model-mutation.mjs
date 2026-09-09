@@ -21,16 +21,15 @@ try {
     ['scripts/check-formal-implementation-conformance.mjs', '--check-local-runner-binding-only'],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   requireExpectedProcessFailure(
     result,
-    'local-runner source/model drift mutant unexpectedly passed',
+    'local-runner source/model drift mutant',
+    /Bound local managed-runner semantics changed/u,
   );
-  assert.match(output, /Bound local managed-runner semantics changed/u);
   console.log(
     'Local-runner source/model mutation guard rejects changed worker semantics with an unchanged local-runner model.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

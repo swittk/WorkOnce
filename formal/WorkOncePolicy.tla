@@ -1,5 +1,5 @@
 --------------------------- MODULE WorkOncePolicy ---------------------------
-EXTENDS Naturals, FiniteSets
+EXTENDS Naturals, FiniteSets, WorkOnceContract
 CONSTANT Samples
 VARIABLES pc, phase, revision, snapRevision, fence,
           receiptFence, receipt, snapReceiptFence, snapReceipt,
@@ -18,10 +18,7 @@ RetryStopReason(policyAllows, retryLimit, attemptLimit, deadlineLimit) ==
   ELSE "none"
 
 DeferStopReason(attemptLimit, deadlineLimit, deferralLimit) ==
-  IF attemptLimit THEN "attempt_budget_exhausted"
-  ELSE IF deadlineLimit THEN "deadline_exceeded"
-  ELSE IF deferralLimit THEN "deferral_budget_exhausted"
-  ELSE "none"
+  DeferralStopReason(attemptLimit, deadlineLimit, deferralLimit)
 
 Init ==
   /\ pc = "running" /\ phase = "running"
@@ -177,7 +174,8 @@ PolicySampleOK(s) ==
        /\ s.exactlyOneWake /\ s.exactLoser /\ s.immediateEligibility
        /\ s.claimable /\ s.terminalCauseExact
     [] s.kind = "adapterEquivalence" ->
-       /\ s.outcomeKind \in {"retry", "defer"} /\ s.equivalent
+       /\ s.outcomeKind \in {"retry", "defer"}
+       /\ s.adapters = "memory,sqlite,cas" /\ s.equivalent
     [] s.kind = "timingBoundary" ->
        /\ s.pastClampedToNow /\ s.exactDeadlineStops /\ s.hugeDelaySaturates
        /\ s.exactBothError /\ s.invalidTimingNoWrite
@@ -190,5 +188,6 @@ PolicySamplesConform ==
        "policyReplay", "casAckLoss", "receiptSplit", "receiptAcrossAttempts",
        "historyCongruence", "wakeCompetition", "adapterEquivalence", "timingBoundary"
      }
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "wakeCompetition"}} = {"memory", "sqlite", "cas"}
   /\ \A s \in Samples : PolicySampleOK(s)
 =============================================================================

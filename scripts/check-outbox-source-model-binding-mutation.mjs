@@ -31,6 +31,6 @@ try {
     'Outbox source/model mutation guard rejects a changed scheduler cursor update with unchanged outbox models.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

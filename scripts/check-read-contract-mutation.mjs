@@ -21,9 +21,7 @@ function requireRed(label, mutant, pattern) {
   assert.notEqual(mutant, original, `${label} mutation anchor did not match`);
   fs.writeFileSync(target, mutant);
   const result = runReadContract();
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
-  assert.match(output, pattern, `${label} failed for an unrelated reason`);
+  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   fs.writeFileSync(target, original);
 }
 

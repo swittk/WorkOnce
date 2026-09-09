@@ -48,10 +48,13 @@ function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
   mkdirSync(resolve(tlcWorkspace, model), { recursive: true });
   const result = spawnSync('java', tlcArgs(model, config, modulePath, heap), {
     cwd: 'formal',
-    stdio: 'inherit',
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
   });
+  process.stdout.write(result.stdout ?? '');
+  process.stderr.write(result.stderr ?? '');
   const outcome = classifyTlcOutcome(result);
   if (outcome.kind !== 'success') {
     const reason = outcome.reason ?? outcome.kind;
@@ -64,6 +67,7 @@ function requireInvariantRejects(model, config, modulePath, invariant) {
   const result = spawnSync('java', tlcArgs(model, config, modulePath, 256), {
     cwd: 'formal',
     encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
   });

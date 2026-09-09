@@ -38,7 +38,7 @@ try {
     'Compiler source-path portability mutation guard rejects worktree-relative TypeScript library identity.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 
 try {
@@ -63,6 +63,6 @@ try {
   );
   console.log('Compiler surface mutation guard rejects unresolved root-export type aliases.');
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

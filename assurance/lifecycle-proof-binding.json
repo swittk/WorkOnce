@@ -22,6 +22,7 @@
   ],
   "evidenceFiles": [
     "scripts/lifecycle-refinement.mjs",
+    "scripts/refinement-sample-schema.mjs",
     "scripts/lifecycle-formal.mjs",
     "scripts/tlc-workspace.mjs",
     "test/tlc-workspace.test.mjs",
@@ -33,9 +34,10 @@
     "test/lifecycle-proof-controls.test.mjs",
     "test/process/lifecycle-child.mjs",
     "test/process/lifecycle-process.test.mjs",
+    "test/process/child-ipc-inbox.mjs",
     "test/process/sqlite-process.test.mjs"
   ],
   "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
-  "modelDigest": "e0ce67a1cf98c550e4b7152b429341b89d1c241240e764292b5b11b7ded5fe10",
-  "evidenceDigest": "4a2cc6a3444b93f9d199d59633f1b726a6fe318bf28d56901e0c1ab3ddb47dfa"
+  "modelDigest": "7b5eca7457641ff8860912db846f925c2f6eddcc74bfa339a82a96223c44f7ed",
+  "evidenceDigest": "5a210e1bd0c21af696d14cdb625c410e710190b759116e29cf9607835b8db7c1"
 }

@@ -28,6 +28,6 @@ try {
     'Storage source/model mutation guard rejects a semantic CAS retry-bound change with unchanged storage formal semantics.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

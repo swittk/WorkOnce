@@ -36,7 +36,7 @@ try {
   assert.match(output(result), /Formal config mutation coverage inventory drifted/u);
   assert.match(output(result), /WorkOnceUnregisteredMutation\.cfg/u);
 } finally {
-  fs.rmSync(extraConfigPath, { force: true });
+  mutationFiles.restoreAll();
 }
 
 try {
@@ -51,7 +51,7 @@ try {
   assert.match(output(result), /Formal mutation coverage drifted for formal\/WorkOnce\.cfg/u);
   assert.match(output(result), /UncoveredInvariant/u);
 } finally {
-  mutationFiles.writeFileSync(baseConfigPath, baseConfig);
+  mutationFiles.restoreAll();
 }
 
 console.log(

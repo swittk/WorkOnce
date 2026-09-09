@@ -16,7 +16,7 @@ const originals = new Map([
   [kernelPath, fs.readFileSync(kernelPath, 'utf8')],
 ]);
 function restore() {
-  for (const [file, text] of originals) mutationFiles.writeFileSync(file, text);
+  mutationFiles.restoreAll();
 }
 function expectBindingFailure(label) {
   const result = spawnSync(

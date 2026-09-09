@@ -28,6 +28,6 @@ try {
     'External source/model mutation guard rejects changed transport semantics with unchanged external model.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

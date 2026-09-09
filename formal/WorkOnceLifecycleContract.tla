@@ -1,6 +1,8 @@
 ---------------------- MODULE WorkOnceLifecycleContract ----------------------
 EXTENDS Naturals
 
+LifecycleAdapterDomain == {"memory", "sqlite", "cas"}
+
 LifecycleSampleOK(s) ==
   CASE s.kind = "revisionHistorySplit" ->
        /\ s.sameOldAbstraction /\ s.revisionsDiffer /\ s.historiesDiffer
@@ -24,12 +26,14 @@ LifecycleSampleOK(s) ==
        /\ s.resetKind \in {"retry", "rerun"}
        /\ s.checkOnce /\ s.winnerAdvanced /\ s.exactLateCause /\ s.noDoubleGeneration
     [] s.kind = "claimOrderEquivalence" ->
+       /\ s.adapters = "memory,sqlite,cas"
        /\ s.exactOrder /\ s.adaptersEquivalent
     [] s.kind = "claimScanContinuation" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.firstPageFull /\ s.exhaustedPassReturnsNone
        /\ s.wholeCandidatePageTerminalized /\ s.nextInvocationReachesLater
     [] s.kind = "stolenPageContinuation" ->
+       /\ s.adapter \in LifecycleAdapterDomain
        /\ s.stalePassCanReturnShort /\ s.nextInvocationReachesBeyondPage /\ s.stolenRowsRemainOwned
     [] s.kind = "claimLimit" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
@@ -37,7 +41,7 @@ LifecycleSampleOK(s) ==
     [] s.kind = "finiteClaimDrain" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.allUnique /\ s.allReached /\ s.boundedPasses
-    [] s.kind = "adapterLifecycleEquivalence" -> s.equivalent
+    [] s.kind = "adapterLifecycleEquivalence" -> /\ s.adapters = "memory,sqlite,cas" /\ s.equivalent
     [] s.kind = "terminalAckLoss" ->
        /\ s.outcomeKind \in {"succeed", "fail"}
        /\ s.exactAckError /\ s.durableTerminal /\ s.receiptDurable
@@ -54,5 +58,9 @@ LifecycleSamplesConform(Samples) ==
        "stolenPageContinuation", "claimLimit", "finiteClaimDrain", "adapterLifecycleEquivalence",
        "terminalAckLoss", "lifecycleArithmetic"
      }
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "claimScanContinuation"}} = LifecycleAdapterDomain
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "stolenPageContinuation"}} = LifecycleAdapterDomain
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "claimLimit"}} = LifecycleAdapterDomain
+  /\ {s.adapter : s \in {x \in Samples : x.kind = "finiteClaimDrain"}} = LifecycleAdapterDomain
   /\ \A s \in Samples : LifecycleSampleOK(s)
 =============================================================================

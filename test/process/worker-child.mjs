@@ -45,7 +45,11 @@ if (mode === 'open') {
           await q.renew(message.ref);
           process.send?.({ unexpected: 'renewed' });
         } catch (error) {
-          process.send?.({ code: error.code });
+          process.send?.({
+            code: error?.code,
+            name: error?.name ?? typeof error,
+            message: error instanceof Error ? error.message : String(error),
+          });
         } finally {
           store.close();
           process.disconnect?.();

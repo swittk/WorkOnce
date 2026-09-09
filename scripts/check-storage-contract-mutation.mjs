@@ -29,7 +29,7 @@ requireRed(
   'detached getMany rows',
   (text) => text.replace('return row ? copy(row) : undefined;', 'return row ?? undefined;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
-  /MUTATED|detached/u,
+  /getMany detached mutation leaked caller write into durable storage/u,
 );
 requireRed(
   'dist/cas.js',
@@ -84,7 +84,7 @@ requireRed(
   (text) =>
     text.replace('return /database is (?:locked|busy)/iu.test(error.message);', 'return false;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
-  /one-shot native busy|database is (?:locked|busy)/iu,
+  /SQLite busy startup retry must absorb one-shot busy and complete bootstrap/u,
 );
 console.log(
   'Storage mutation guard rejects detached-read, cursor/revision, CAS retry/deadline/unknown-ACK and SQLite busy regressions.',

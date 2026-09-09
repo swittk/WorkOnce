@@ -7,6 +7,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 function casFixture(options = {}) {
   let now = 100;
@@ -568,8 +569,43 @@ export function assertStorageRefinementSamples(samples) {
     expectedAdapterSamples,
     'storage adapter sample coverage drifted',
   );
-  for (const sample of samples)
-    for (const [field, value] of Object.entries(sample))
-      if (field !== 'kind' && field !== 'adapter' && value !== true)
-        throw new Error(`Storage refinement failed: ${sample.kind}.${field}`);
+  const booleanFields = {
+    adapterHistoryCongruence: ['materiallyDifferentHistory', 'sameDurableProjection', 'sameFuture'],
+    atomicContention: ['allSameSnapshot', 'oneInsertRevision', 'oneStoredRow'],
+    casBoundary: ['maxSafeAccepted', 'oneAccepted', 'zeroRejectedBeforeRead'],
+    casContention: ['committedOnce', 'freshReadRetries'],
+    casExhaustion: ['exactAttempts', 'exactError', 'noCallerWrite'],
+    casHistoryCongruence: ['materiallyDifferentHistory', 'sameDurableProjection', 'sameFuture'],
+    casUnknown: ['committedTruthPreserved', 'exactError', 'noBlindRetry'],
+    detached: [
+      'cursorExact',
+      'duplicateSlotsDetached',
+      'duplicateSlotsExact',
+      'getManyDetached',
+      'orderExact',
+      'queryDetached',
+    ],
+    invalidWrite: [
+      'deadlineEqualityRejected',
+      'exactDeadlineError',
+      'exactIdentityError',
+      'exactRevisionError',
+      'noWrite',
+      'serializationBeforeCommit',
+    ],
+    queryBoundary: [
+      'allCursorContinuation',
+      'allPageBounded',
+      'dueCursorExactError',
+      'dueLimitExact',
+      'dueOrderExact',
+    ],
+    sqliteBoundary: ['fractionExact', 'maxSafeAccepted', 'negativeExact', 'zeroAccepted'],
+    sqliteBusy: ['messageBusyRetried', 'nativeBusyCodeRetried', 'nativeLockedCodeRetried'],
+  };
+  for (const sample of samples) {
+    const fields = booleanFields[sample.kind];
+    assert.ok(fields, `Unmapped storage sample: ${JSON.stringify(sample)}`);
+    assertExactBooleanSample(sample, fields, sample.adapter === undefined ? [] : ['adapter']);
+  }
 }

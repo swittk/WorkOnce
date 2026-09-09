@@ -6,6 +6,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce, exponentialBackoff } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -798,10 +799,20 @@ export function assertPolicyRefinementSamples(samples) {
       assert.equal(sample.claimable, true, name);
       assert.equal(sample.terminalCauseExact, true, name);
     } else if (sample.kind === 'adapterEquivalence') {
+      assert.equal(
+        sample.adapters,
+        'memory,sqlite,cas',
+        `adapterEquivalence adapter coverage drifted: ${name}`,
+      );
       assert.equal(sample.equivalent, true, name);
     } else if (sample.kind === 'timingBoundary') {
-      for (const [field, value] of Object.entries(sample))
-        if (field !== 'kind') assert.equal(value, true, `${sample.kind}.${field}`);
+      assertExactBooleanSample(sample, [
+        'pastClampedToNow',
+        'exactDeadlineStops',
+        'hugeDelaySaturates',
+        'exactBothError',
+        'invalidTimingNoWrite',
+      ]);
     } else assert.fail(`Unmapped policy sample: ${name}`);
   }
   return samples.length;

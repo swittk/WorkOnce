@@ -29,6 +29,6 @@ try {
     'Policy source/model mutation guard rejects a changed retry-policy source with unchanged policy model.',
   );
 } finally {
-  mutationFiles.writeFileSync(target, original);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

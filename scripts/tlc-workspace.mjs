@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 const baseDirectory = resolve('.artifacts/tlc');
 
@@ -13,10 +13,23 @@ export function createTlcWorkspace(label = 'tlc') {
   return mkdtempSync(resolve(baseDirectory, `${safeLabel(label)}-`));
 }
 
+function insideBase(target) {
+  const relativePath = relative(baseDirectory, target);
+  return (
+    relativePath !== '' &&
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    !isAbsolute(relativePath)
+  );
+}
+
 /** Use a parent-provided private TLC workspace or allocate one for this process. */
 export function acquireTlcWorkspace(label = 'tlc') {
   const inherited = process.env.WORKONCE_TLC_ARTIFACT_DIR;
-  const workspace = inherited ? resolve(inherited) : createTlcWorkspace(label);
+  if (!inherited) return createTlcWorkspace(label);
+  const workspace = resolve(inherited);
+  if (!insideBase(workspace))
+    throw new Error('WORKONCE_TLC_ARTIFACT_DIR must be a private descendant of .artifacts/tlc');
   mkdirSync(workspace, { recursive: true });
   return workspace;
 }

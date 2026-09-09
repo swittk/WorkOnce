@@ -68,6 +68,11 @@ export function assertAssuranceVerdictIntegrity() {
       /await\s+[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)?\.promise\s*;/u,
       `${name} contains a bare deferred await instead of a bounded refinement wait`,
     );
+    assert.doesNotMatch(
+      source,
+      /Object\.entries\(sample\)/u,
+      `${name} validates only evidence fields that happen to be present instead of an exact sample schema`,
+    );
   }
   const heartbeatLocalRunnerRefinement = read('scripts/local-runner-refinement.mjs');
   const localHeartbeatAttempts = [
@@ -104,6 +109,30 @@ export function assertAssuranceVerdictIntegrity() {
     externalTest,
     /await within\(heartbeatAttempted\.promise, 'external heartbeat attempt'\)[\s\S]{0,160}?await waitForAbort\(run\.signal, 'external heartbeat abort'\)/u,
     'direct external heartbeat test must synchronize on the attempted heartbeat and abort',
+  );
+
+  const childIpcInbox = read('test/process/child-ipc-inbox.mjs');
+  assert.match(
+    childIpcInbox,
+    /child\.on\('message'/u,
+    'child IPC inbox must use a persistent message listener',
+  );
+  assert.doesNotMatch(
+    childIpcInbox,
+    /child\.once\('message'/u,
+    'child IPC inbox must not revert to a one-shot message listener',
+  );
+
+  const mutationFileGuard = read('scripts/mutation-file-guard.mjs');
+  assert.match(
+    mutationFileGuard,
+    /dispose\(\) \{[\s\S]{0,160}?restoreAll\(\)/u,
+    'mutation file guard must restore remembered files during normal disposal',
+  );
+  assert.match(
+    mutationFileGuard,
+    /process\.once\('exit', onExit\)/u,
+    'mutation file guard must restore remembered files on process exit',
   );
 
   const boundedDomain = read('scripts/check-bounded-trace-domain.mjs');
@@ -166,29 +195,50 @@ export function assertAssuranceVerdictIntegrity() {
       /once\([^,]+,\s*['"]exit['"]\s*\)/u,
       `${name} contains an unbounded child exit wait`,
     );
+    if (name.endsWith('.test.mjs')) {
+      assert.doesNotMatch(
+        source,
+        /once\([^,]+,\s*['"]message['"]/u,
+        `${name} contains a lossy one-shot child IPC message wait instead of the buffered inbox`,
+      );
+      assert.doesNotMatch(
+        source,
+        /\bfork\(/u,
+        `${name} forks a process without immediately attaching the buffered child IPC inbox`,
+      );
+    }
   }
 
-  for (const name of [
-    'check-alias-contract-mutation.mjs',
-    'check-assurance-infrastructure-binding-mutation.mjs',
-    'check-assurance-scheduling-mutation.mjs',
-    'check-assurance-verdict-integrity-mutation.mjs',
-    'check-emitted-artifact-entrypoint-mutation.mjs',
-    'check-external-source-model-mutation.mjs',
-    'check-formal-config-coverage-mutation.mjs',
-    'check-internal-semantic-inventory-mutation.mjs',
-    'check-local-runner-source-model-mutation.mjs',
-    'check-outbox-source-model-binding-mutation.mjs',
-    'check-policy-source-model-binding-mutation.mjs',
-    'check-read-source-model-binding-mutation.mjs',
-    'check-source-path-portability-mutation.mjs',
-    'check-storage-source-model-mutation.mjs',
-  ])
-    assert.match(
-      read(`scripts/${name}`),
-      /createMutationFileGuard\(\)/u,
+  const generatedMutationRoots = ['dist', 'dist-cjs', '.artifacts'];
+  for (const name of mutationFiles) {
+    const source = read(`scripts/${name}`);
+    if (!/(?:writeFileSync|appendFileSync)\(/u.test(source)) continue;
+    if (/createMutationFileGuard\(\)/u.test(source)) continue;
+    const declaredTargets = [
+      ...[...source.matchAll(/path\.join\(root,\s*['"]([^'"]+)['"]/gu)].map((match) => match[1]),
+    ];
+    for (const helperName of ['requireRed', 'mutate', 'mutateFile'])
+      if (new RegExp(`function ${helperName}\\(relative\\b`, 'u').test(source))
+        declaredTargets.push(
+          ...[
+            ...source.matchAll(new RegExp(`\\b${helperName}\\(\\s*['\"]([^'\"]+)['\"]`, 'gu')),
+          ].map((match) => match[1]),
+        );
+    assert.ok(
+      declaredTargets.length > 0,
+      `${name} writes mutation files but its target roots cannot be proven generated-only`,
+    );
+    const generatedOnly = declaredTargets.every((target) =>
+      generatedMutationRoots.some(
+        (rootName) => target === rootName || target.startsWith(`${rootName}/`),
+      ),
+    );
+    assert.equal(
+      generatedOnly,
+      true,
       `${name} mutates tracked source/config without signal-safe file restoration`,
     );
+  }
 
   const liveTlcProbe = read('scripts/check-tlc-outcome-classification.mjs');
   assert.match(
@@ -220,6 +270,21 @@ export function assertAssuranceVerdictIntegrity() {
 
   const lifecycleFormal = read('scripts/lifecycle-formal.mjs');
   assert.match(lifecycleFormal, /classifyTlcOutcome/u);
+  assert.match(
+    lifecycleFormal,
+    /encoding: 'utf8'[\s\S]{0,100}?maxBuffer: 16 \* 1024 \* 1024/u,
+    'lifecycle formal runner must capture TLC output with an explicit buffer bound',
+  );
+  assert.match(
+    lifecycleFormal,
+    /process\.stdout\.write\(result\.stdout \?\? ''\)/u,
+    'lifecycle formal runner must re-emit captured TLC stdout after classification',
+  );
+  assert.match(
+    lifecycleFormal,
+    /process\.stderr\.write\(result\.stderr \?\? ''\)/u,
+    'lifecycle formal runner must re-emit captured TLC stderr after classification',
+  );
   assert.match(lifecycleFormal, /requireExpectedInvariantViolation\(result, invariant\)/u);
   assert.doesNotMatch(lifecycleFormal, /const semanticFailure\s*=/u);
   assert.match(lifecycleFormal, /let specSwapped = false/u);
@@ -334,19 +399,13 @@ export function assertAssuranceVerdictIntegrity() {
     '\nasync function kill(child)',
     'local-runner buffered IPC helper',
   );
-  assert.match(processTest, /const childInboxes = new WeakMap\(\)/u);
   assert.match(
-    messageHelper,
-    /child\.on\('message'/u,
-    'local-runner buffered IPC helper must retain a persistent message listener',
+    processTest,
+    /import \{ forkWithInbox, nextChildMessage \} from '\.\/child-ipc-inbox\.mjs'/u,
+    'local-runner process fixture must use the shared buffered IPC inbox',
   );
-  assert.match(messageHelper, /inbox\.messages\.push\(message\)/u);
-  assert.match(messageHelper, /inbox\.messages\.shift\(\)/u);
-  assert.match(messageHelper, /inbox\.waiters\.push\(waiter\)/u);
-  assert.match(messageHelper, /child\.once\('exit'/u);
-  assert.match(messageHelper, /child\.once\('error'/u);
-  assert.match(messageHelper, /Local-runner child exited before its next IPC message/u);
-  assert.doesNotMatch(messageHelper, /child\.once\('message'/u);
+  assert.match(messageHelper, /forkWithInbox\(/u);
+  assert.match(messageHelper, /nextChildMessage\(child, 15000\)/u);
 
   const multiFixture = boundedSection(
     processTest,

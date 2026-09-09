@@ -72,8 +72,7 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /property_assignment/u);
   assert.match(sourceOutput, /mutable_property/u);
 } finally {
-  mutationFiles.writeFileSync(sourcePath, source);
-  mutationFiles.writeFileSync(workSourcePath, workSource);
+  mutationFiles.restoreAll();
 }
 
 try {
@@ -87,7 +86,7 @@ try {
   );
   assert.match(output(classificationMutant), /has no proof family/u);
 } finally {
-  mutationFiles.writeFileSync(inventoryPath, inventoryText);
+  mutationFiles.restoreAll();
 }
 
 console.log(

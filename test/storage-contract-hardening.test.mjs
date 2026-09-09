@@ -74,7 +74,11 @@ for (const fixture of fixtures()) {
       const batch = await fixture.store.getMany(ids);
       batch.rows[0].input.nested.key = 'MUTATED';
       const reread = await fixture.store.getMany([ids[0]]);
-      assert.equal(reread.rows[0].input.nested.key, 'delta');
+      assert.equal(
+        reread.rows[0].input.nested.key,
+        'delta',
+        'getMany detached mutation leaked caller write into durable storage',
+      );
 
       const all = await fixture.store.query({
         scope: `storage-${fixture.name}`,
@@ -181,9 +185,12 @@ test('SQLite startup retry helper handles a one-shot native busy before schema b
     return original.call(this, sql);
   };
   try {
-    const store = createSqliteStore(path, { busyTimeoutMs: 1000 });
+    let store;
+    assert.doesNotThrow(() => {
+      store = createSqliteStore(path, { busyTimeoutMs: 1000 });
+    }, 'SQLite busy startup retry must absorb one-shot busy and complete bootstrap');
     store.close();
-    assert.equal(injected, 1);
+    assert.equal(injected, 1, 'SQLite busy startup retry must execute the injected failure once');
   } finally {
     DatabaseSync.prototype.exec = original;
     rmSync(directory, { recursive: true, force: true });

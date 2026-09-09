@@ -16,7 +16,7 @@ WorkOnce assurance has four separate layers. None is presented as proof of exact
 
 The extractor inventories exported functions/constructors, public class methods, exported interface methods, returned callable objects such as `createWorkOnce().dispatch`, and callable policy fields. It then recursively walks every package-owned input/output/callback type, including optional/null/undefined flags, recursive references, index values and callback arguments/results.
 
-The reviewed manifest currently maps **124 public callables**, **21 callable policy/storage fields**, **107 reachable package-owned types**, and **333 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
+The reviewed manifest currently maps **142 public callables**, **21 callable policy/storage fields**, **109 reachable package-owned types**, and **337 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
@@ -359,7 +359,7 @@ and the native compare-exchange adapter. Dedicated implementation mutants remove
 candidate scan widening and introduce an off-by-one returned-claim limit; each must make the focused
 lifecycle proof red for the intended reachability/limit witness.
 
-The current compiled lifecycle observation set contains **24 observations**. In addition to the scan
+The current compiled lifecycle observation set contains **26 observations**. In addition to the scan
 cases it covers exact lease-expiry versus stale-fence causes, legal cancel-before-completion and
 completion-before-cancel orderings, concurrent generation reset, async retry/rerun check races,
 terminal receipt replay/conflict, generation/fence monotonicity, cross-adapter lifecycle projection

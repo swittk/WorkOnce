@@ -29,8 +29,7 @@ try {
   console.log(
     'Emitted-artifact entrypoint mutation guard rejects removal of test:process freshness.',
   );
-
-  mutationFiles.writeFileSync(packagePath, original);
+  mutationFiles.restoreAll();
   const preparePath = path.join(root, 'scripts/prepare-package.mjs');
   const prepareOriginal = fs.readFileSync(preparePath, 'utf8');
   try {
@@ -55,7 +54,7 @@ try {
       'Emitted-artifact entrypoint mutation guard rejects unbound package prepare reuse.',
     );
   } finally {
-    mutationFiles.writeFileSync(preparePath, prepareOriginal);
+    mutationFiles.restoreAll();
   }
 
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
@@ -85,7 +84,6 @@ try {
   );
   console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
 } finally {
-  mutationFiles.writeFileSync(packagePath, original);
-  mutationFiles.writeFileSync(assurancePath, assuranceOriginal);
+  mutationFiles.restoreAll();
 }
 mutationFiles.dispose();

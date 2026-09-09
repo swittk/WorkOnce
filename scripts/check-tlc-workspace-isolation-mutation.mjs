@@ -3,33 +3,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 function mutate(relative, from, to, label, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
   assert.ok(original.includes(from), `${label} mutation anchor is stale`);
-  let restored = false;
-  const restore = () => {
-    if (restored) return;
-    fs.writeFileSync(target, original);
-    restored = true;
-  };
-  const handlers = new Map();
-  for (const [signal, code] of [
-    ['SIGINT', 130],
-    ['SIGTERM', 143],
-  ]) {
-    const handler = () => {
-      restore();
-      process.exit(code);
-    };
-    handlers.set(signal, handler);
-    process.once(signal, handler);
-  }
   try {
-    fs.writeFileSync(target, original.replace(from, to));
+    mutationFiles.writeFileSync(target, original.replace(from, to));
     const result = spawnSync(process.execPath, ['scripts/check-tlc-workspace-isolation.mjs'], {
       cwd: root,
       encoding: 'utf8',
@@ -38,8 +22,7 @@ function mutate(relative, from, to, label, pattern) {
     });
     requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   } finally {
-    for (const [signal, handler] of handlers) process.off(signal, handler);
-    restore();
+    mutationFiles.restoreAll();
   }
 }
 
@@ -53,7 +36,7 @@ mutate(
 mutate(
   'scripts/lifecycle-formal.mjs',
   "const tlcWorkspace = acquireTlcWorkspace('lifecycle-formal');",
-  "const tlcWorkspace = resolve('.artifacts/tlc');",
+  "const tlcWorkspace = resolve('.artifacts', 'tlc');",
   'lifecycle global TLC workspace regression',
   /process-global generated TLC directory|acquire a private TLC workspace/u,
 );
@@ -72,4 +55,13 @@ mutate(
   /successful invocation/u,
 );
 
+mutate(
+  'scripts/tlc-workspace.mjs',
+  '  if (!insideBase(workspace))',
+  '  if (false)',
+  'inherited TLC workspace containment removal',
+  /containment-checked|private descendant/u,
+);
+
 console.log('TLC workspace isolation mutation guard rejects shared generated-module namespaces.');
+mutationFiles.dispose();

@@ -1,19 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./storage-child.mjs', import.meta.url);
-async function message(child) {
-  return (await once(child, 'message', { signal: AbortSignal.timeout(10000) }))[0];
-}
+const message = (child) => nextChildMessage(child, 10000);
 async function killAt(path, mode, stage) {
-  const child = fork(childUrl, [path, mode], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
+  const child = forkWithInbox(
+    childUrl,
+    [path, mode],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'Storage child',
+  );
   try {
     assert.equal((await message(child)).ready, true);
     const seen = await message(child);

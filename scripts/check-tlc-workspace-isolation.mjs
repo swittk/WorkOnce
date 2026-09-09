@@ -16,6 +16,12 @@ assert.match(
 assert.match(helper, /rmSync\(workspace, \{ recursive: true, force: true \}\)/u);
 assert.match(
   helper,
+  /insideBase\(workspace\)/u,
+  'inherited TLC workspace cleanup is not containment-checked',
+);
+assert.match(helper, /must be a private descendant of \.artifacts\/tlc/u);
+assert.match(
+  helper,
   /if \(code === 0\) rmSync\(workspace,/u,
   'TLC workspaces must be removed only after a successful invocation',
 );
@@ -43,7 +49,7 @@ for (const runner of [
   );
   assert.doesNotMatch(
     source,
-    /['"`]\.artifacts\/tlc(?:['"`/])/u,
+    /\.artifacts\/tlc\b|\.artifacts['"`]\s*,\s*['"`]tlc\b/u,
     `${runner} still addresses the process-global generated TLC directory`,
   );
   assert.match(

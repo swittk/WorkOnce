@@ -28,6 +28,7 @@ const modelFiles = [
 ];
 const evidenceFiles = [
   'scripts/lifecycle-refinement.mjs',
+  'scripts/refinement-sample-schema.mjs',
   'scripts/lifecycle-formal.mjs',
   'scripts/tlc-workspace.mjs',
   'test/tlc-workspace.test.mjs',
@@ -39,6 +40,7 @@ const evidenceFiles = [
   'test/lifecycle-proof-controls.test.mjs',
   'test/process/lifecycle-child.mjs',
   'test/process/lifecycle-process.test.mjs',
+  'test/process/child-ipc-inbox.mjs',
   'test/process/sqlite-process.test.mjs',
 ];
 function digest(files) {

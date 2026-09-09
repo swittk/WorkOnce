@@ -27,7 +27,7 @@ function mutate(relative, from, to, label, pattern) {
       `${label} failed for an unrelated reason`,
     );
   } finally {
-    mutationFiles.writeFileSync(target, original);
+    mutationFiles.restoreAll();
   }
 }
 
@@ -187,13 +187,6 @@ mutate(
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
-  "  child.on('message', (message) => {",
-  "  child.once('message', (message) => {",
-  'IPC inbox loses messages between awaits',
-  /AssertionError: local-runner buffered IPC helper must retain a persistent message listener/u,
-);
-mutate(
-  'test/process/local-runner-process.test.mjs',
   "          const snapshots = await observing.queue.inspectMany(['0', '1', '2']);",
   '          const snapshots = [];',
   'multi-active crash synchronization stops observing durable WorkOnce state',
@@ -249,6 +242,42 @@ mutate(
   '      maxBuffer: 1024,',
   'storage formal loses bounded TLC output capacity',
   /storage formal wrapper must bound captured TLC output explicitly/u,
+);
+
+mutate(
+  'scripts/lifecycle-refinement.mjs',
+  '      assertExactBooleanSample(\n        sample,\n        [',
+  '      Object.entries(sample);\n      assertExactBooleanSample(\n        sample,\n        [',
+  'refinement validator returns to presence-only evidence checking',
+  /validates only evidence fields that happen to be present/u,
+);
+mutate(
+  'test/process/lifecycle-process.test.mjs',
+  'const nextMessage = (child) => nextChildMessage(child, 15000);',
+  "const nextMessage = async (child) => (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];",
+  'lifecycle process fixture returns to one-shot IPC waits',
+  /lossy one-shot child IPC message wait/u,
+);
+mutate(
+  'test/process/child-ipc-inbox.mjs',
+  "  child.on('message', (message) => {",
+  "  child.once('message', (message) => {",
+  'child IPC inbox loses persistent message buffering',
+  /persistent message listener/u,
+);
+mutate(
+  'scripts/mutation-file-guard.mjs',
+  "      restoreAll();\n      process.off('SIGINT', onSigint);",
+  "      void restoreAll;\n      process.off('SIGINT', onSigint);",
+  'mutation file guard loses normal-disposal restoration',
+  /restore remembered files during normal disposal/u,
+);
+mutate(
+  'scripts/lifecycle-formal.mjs',
+  "  process.stdout.write(result.stdout ?? '');",
+  '  void result.stdout;',
+  'lifecycle formal runner drops captured TLC stdout',
+  /re-emit captured TLC stdout/u,
 );
 
 console.log(

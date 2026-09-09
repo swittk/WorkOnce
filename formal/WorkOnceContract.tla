@@ -24,6 +24,7 @@ BoundarySampleOK(s) ==
        /\ s.returnedValue \in RunnerFailureDomain
        /\ s.rejected = RunnerRejects(~s.handled)
        /\ s.returnedValue = s.failureValue
+       /\ (s.rejected <=> s.failureValue # "none")
        /\ s.preserved /\ s.drained /\ ~s.timedOut
        /\ (IF s.site = "claimGate" THEN s.started = 1 ELSE TRUE)
        /\ (IF s.site = "abortClaimReply" THEN s.started = 0 /\ s.reclaimed ELSE TRUE)

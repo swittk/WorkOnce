@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce, runExternalAvailable } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
@@ -14,13 +14,14 @@ function effects(path) {
   if (!existsSync(path)) return [];
   return readFileSync(path, 'utf8').trim().split('\n').filter(Boolean).map(Number);
 }
-async function message(child) {
-  return (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];
-}
+const message = (child) => nextChildMessage(child, 15000);
 function start(dbPath, effectPath, mode) {
-  return fork(childUrl, [dbPath, effectPath, mode], {
-    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
-  });
+  return forkWithInbox(
+    childUrl,
+    [dbPath, effectPath, mode],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'External-effect child',
+  );
 }
 async function setup(dbPath) {
   const store = createSqliteStore(dbPath);

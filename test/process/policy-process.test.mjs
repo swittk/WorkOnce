@@ -1,23 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce, retry, wait } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./policy-child.mjs', import.meta.url);
 function start(path, mode, outcomeKind) {
-  return fork(childUrl, [path, mode, outcomeKind], {
-    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
-  });
+  return forkWithInbox(
+    childUrl,
+    [path, mode, outcomeKind],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'Policy child',
+  );
 }
-async function message(child) {
-  return (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];
-}
+const message = (child) => nextChildMessage(child, 15000);
 async function setup(path) {
   const store = createSqliteStore(path);
   try {

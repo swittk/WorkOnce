@@ -5,6 +5,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 function within(promise, label, timeoutMs = 3000) {
   let timer;
@@ -1246,36 +1247,85 @@ export async function runOutboxRefinementSamples() {
   ]);
 }
 
+const outboxBooleanFields = {
+  ackLoss: ['childDurableBeforeAck', 'exactFailure', 'parentIntentRetained', 'retryConverged'],
+  adapter: ['firstParentDrained', 'laterParentReached', 'threePassesSent', 'wrapped'],
+  adapterBudget: ['allChildrenDurable', 'allParentsDrained', 'exactCounts', 'maxSafeLimitWorks'],
+  adapterConcurrent: ['allConverge', 'threeAdapters'],
+  adapterFaults: ['allReplayConverge', 'durablePrefixesMatch', 'exactErrors', 'sixPrefixes'],
+  budget: [
+    'exactTwoAttemptCounts',
+    'laterParentsReached',
+    'maxSafeLimitDrains',
+    'midParentBudgetPreserved',
+    'wrapped',
+  ],
+  casAckLoss: [
+    'childCommitAmbiguityConverges',
+    'exactChildAckLoss',
+    'exactParentAckLoss',
+    'parentCommitAmbiguityConverges',
+  ],
+  concurrent: ['allChildrenDurable', 'boundedRounds', 'independentCursorsConverge'],
+  dynamic: [
+    'insertedBeforeCursor',
+    'insertedReachedAfterWrap',
+    'laterParentReached',
+    'originalPartialStillReachable',
+  ],
+  finiteArrivals: [
+    'allFiniteArrivalsReached',
+    'boundedAfterQuiescence',
+    'noPendingAfterQuiescence',
+  ],
+  grid: [
+    'allNormalConverged',
+    'allPoisonHealthyReached',
+    'normalMatrixComplete',
+    'poisonMatrixComplete',
+  ],
+  historyCongruence: [
+    'futureProjectionEqual',
+    'sameEnrichedProjection',
+    'sameNextFuture',
+    'threeMaterialHistories',
+  ],
+  historySplit: [
+    'cursorRequiredInAbstraction',
+    'differentImmediateFuture',
+    'eventualDurableConvergence',
+    'sameDurableProjection',
+  ],
+  limitBoundary: ['invalidIntervalExact', 'invalidLimitsNoQuery', 'invalidLimitsRejected'],
+  multiError: ['bothIntentsRetained', 'exactCauses', 'exactContainer', 'exactCount'],
+  multiPoison: ['limitOneConverges', 'limitTwoConverges'],
+  poison: ['exactConflict', 'healthySiblingReached', 'laterParentReached', 'poisonRetained'],
+  restart: ['pendingPreserved', 'remainingChildDelivered', 'restartedFromBeginning'],
+  rotation: [
+    'firstParentDrained',
+    'firstParentPartiallyDrained',
+    'firstParentStillReachable',
+    'firstPassSent',
+    'laterParentReached',
+    'secondPassSent',
+    'thirdPassSent',
+    'wrapped',
+  ],
+  rotationFailure: ['durableIntentPreserved', 'helperFailureNotSurfaced', 'originalCausePreserved'],
+  runDispatcher: [
+    'exactPoisonObserved',
+    'healthySiblingDelivered',
+    'neighborDelivered',
+    'observedWithinDeadline',
+    'poisonStillRetained',
+  ],
+  staleParent: ['childPreserved', 'exactStaleCause', 'rerunAdvancedGeneration', 'winnerAcked'],
+};
+const outboxMetadataFields = { adapter: ['adapter'], adapterBudget: ['adapter'] };
+
 export function assertOutboxRefinementSamples(samples) {
-  const kinds = samples.map((sample) => sample.kind);
-  const expectedKinds = [
-    'rotation',
-    'poison',
-    'restart',
-    'ackLoss',
-    'casAckLoss',
-    'adapter',
-    'adapter',
-    'adapter',
-    'adapterBudget',
-    'adapterBudget',
-    'adapterBudget',
-    'adapterFaults',
-    'adapterConcurrent',
-    'budget',
-    'grid',
-    'multiPoison',
-    'dynamic',
-    'finiteArrivals',
-    'concurrent',
-    'limitBoundary',
-    'staleParent',
-    'rotationFailure',
-    'multiError',
-    'runDispatcher',
-    'historyCongruence',
-    'historySplit',
-  ];
+  const kinds = [...new Set(samples.map((sample) => sample.kind))].sort();
+  const expectedKinds = Object.keys(outboxBooleanFields).sort();
   if (JSON.stringify(kinds) !== JSON.stringify(expectedKinds))
     throw new Error(`Unexpected outbox sample kinds: ${JSON.stringify(kinds)}`);
   const adapters = samples
@@ -1287,10 +1337,10 @@ export function assertOutboxRefinementSamples(samples) {
     JSON.stringify(['cas', 'cas', 'memory', 'memory', 'sqlite', 'sqlite'])
   )
     throw new Error(`Unexpected outbox adapter set: ${JSON.stringify(adapters)}`);
-  for (const sample of samples) {
-    for (const [field, value] of Object.entries(sample)) {
-      if (field === 'kind' || field === 'adapter') continue;
-      if (value !== true) throw new Error(`Outbox refinement failed: ${sample.kind}.${field}`);
-    }
-  }
+  for (const sample of samples)
+    assertExactBooleanSample(
+      sample,
+      outboxBooleanFields[sample.kind],
+      outboxMetadataFields[sample.kind] ?? [],
+    );
 }

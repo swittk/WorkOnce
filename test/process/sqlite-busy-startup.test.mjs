@@ -1,19 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./sqlite-busy-child.mjs', import.meta.url);
 async function lock(path, holdMs) {
-  const child = fork(childUrl, [path, String(holdMs)], {
-    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
-  });
+  const child = forkWithInbox(
+    childUrl,
+    [path, String(holdMs)],
+    { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
+    'SQLite busy child',
+  );
   try {
-    const [message] = await once(child, 'message', { signal: AbortSignal.timeout(5000) });
+    const message = await nextChildMessage(child, 5000);
     assert.equal(message.locked, true);
     return child;
   } catch (error) {
