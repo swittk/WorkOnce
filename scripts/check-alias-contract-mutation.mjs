@@ -4,8 +4,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 function runNode(args, timeout = 15_000) {
   return spawnSync(process.execPath, args, {
     cwd: root,
@@ -27,10 +29,10 @@ function mutateFile(relative, mutate, check) {
   try {
     const changed = mutate(original);
     assert.notEqual(changed, original, `${relative} mutation anchor did not match`);
-    fs.writeFileSync(target, changed);
+    mutationFiles.writeFileSync(target, changed);
     check();
   } finally {
-    fs.writeFileSync(target, original);
+    mutationFiles.writeFileSync(target, original);
   }
 }
 
@@ -134,7 +136,7 @@ try {
     const changed = original.replace(anchor, replacement);
     assert.notEqual(changed, original, `${relative} mutation anchor did not match`);
     typeOriginals.set(target, original);
-    fs.writeFileSync(target, changed);
+    mutationFiles.writeFileSync(target, changed);
   }
   const result = runNode(
     ['node_modules/typescript/bin/tsc', '--noEmit', '-p', 'tsconfig.tests.json'],
@@ -145,9 +147,10 @@ try {
   for (const [, , , diagnostic] of typeMutants)
     assert.match(diagnostics, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'));
 } finally {
-  for (const [target, original] of typeOriginals) fs.writeFileSync(target, original);
+  for (const [target, original] of typeOriginals) mutationFiles.writeFileSync(target, original);
 }
 
 console.log(
   'Alias mutation guard rejects broken ESM/CommonJS runtime forwarders and any-degraded public type aliases.',
 );
+mutationFiles.dispose();

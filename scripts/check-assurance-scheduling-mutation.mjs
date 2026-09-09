@@ -4,8 +4,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const target = path.join(root, 'scripts/run-assurance.mjs');
 const original = fs.readFileSync(target, 'utf8');
 const formalTarget = path.join(root, 'scripts/formal.mjs');
@@ -13,7 +15,9 @@ const formalOriginal = fs.readFileSync(formalTarget, 'utf8');
 const packageTarget = path.join(root, 'package.json');
 const packageOriginal = fs.readFileSync(packageTarget, 'utf8');
 function expectSchedulingFailure(label, mutate, pattern) {
-  fs.writeFileSync(target, mutate(original));
+  const mutant = mutate(original);
+  assert.notEqual(mutant, original, `${label} scheduling mutation anchor is stale`);
+  mutationFiles.writeFileSync(target, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
       cwd: root,
@@ -26,11 +30,13 @@ function expectSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    fs.writeFileSync(target, original);
+    mutationFiles.writeFileSync(target, original);
   }
 }
 function expectPackageSchedulingFailure(label, mutate, pattern) {
-  fs.writeFileSync(packageTarget, mutate(packageOriginal));
+  const mutant = mutate(packageOriginal);
+  assert.notEqual(mutant, packageOriginal, `${label} scheduling mutation anchor is stale`);
+  mutationFiles.writeFileSync(packageTarget, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
       cwd: root,
@@ -43,11 +49,13 @@ function expectPackageSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    fs.writeFileSync(packageTarget, packageOriginal);
+    mutationFiles.writeFileSync(packageTarget, packageOriginal);
   }
 }
 function expectFormalSchedulingFailure(label, mutate, pattern) {
-  fs.writeFileSync(formalTarget, mutate(formalOriginal));
+  const mutant = mutate(formalOriginal);
+  assert.notEqual(mutant, formalOriginal, `${label} scheduling mutation anchor is stale`);
+  mutationFiles.writeFileSync(formalTarget, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
       cwd: root,
@@ -60,7 +68,7 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
-    fs.writeFileSync(formalTarget, formalOriginal);
+    mutationFiles.writeFileSync(formalTarget, formalOriginal);
   }
 }
 
@@ -164,7 +172,8 @@ try {
     /External formal family must stay on the reviewed lighter runtime shard/u,
   );
 } finally {
-  fs.writeFileSync(target, original);
-  fs.writeFileSync(formalTarget, formalOriginal);
-  fs.writeFileSync(packageTarget, packageOriginal);
+  mutationFiles.writeFileSync(target, original);
+  mutationFiles.writeFileSync(formalTarget, formalOriginal);
+  mutationFiles.writeFileSync(packageTarget, packageOriginal);
 }
+mutationFiles.dispose();

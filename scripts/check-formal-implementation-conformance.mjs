@@ -209,6 +209,7 @@ const assuranceInfrastructureFiles = [
   'scripts/subprocess-outcome.mjs',
   'test/subprocess-outcome.test.mjs',
   'scripts/check-assurance-verdict-integrity.mjs',
+  'scripts/mutation-file-guard.mjs',
   'scripts/check-assurance-verdict-integrity-mutation.mjs',
   'assurance/red-before/review-5148224210-assurance-verdict-integrity.json',
   'scripts/tlc-workspace.mjs',

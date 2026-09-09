@@ -5,7 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const sourcePath = path.join(root, 'src/worker.ts');
 const workSourcePath = path.join(root, 'src/work.ts');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
@@ -33,7 +36,7 @@ try {
   const signatureEnd = source.indexOf(bodyAnchor, index);
   assert.notEqual(signatureEnd, -1, 'runWorker body anchor is missing');
   const brace = signatureEnd + bodyAnchor.length - 1;
-  fs.writeFileSync(
+  mutationFiles.writeFileSync(
     sourcePath,
     `${source.slice(0, brace + 1)}
   let internalSemanticInventoryMutant = 0;
@@ -48,7 +51,7 @@ ${source.slice(brace + 1)}`,
   );
   const classAnchor = 'export class WorkRun<I, O, R extends string> {';
   assert.ok(workSource.includes(classAnchor), 'WorkRun class anchor is missing');
-  fs.writeFileSync(
+  mutationFiles.writeFileSync(
     workSourcePath,
     workSource.replace(
       classAnchor,
@@ -69,14 +72,14 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /property_assignment/u);
   assert.match(sourceOutput, /mutable_property/u);
 } finally {
-  fs.writeFileSync(sourcePath, source);
-  fs.writeFileSync(workSourcePath, workSource);
+  mutationFiles.writeFileSync(sourcePath, source);
+  mutationFiles.writeFileSync(workSourcePath, workSource);
 }
 
 try {
   const inventory = JSON.parse(inventoryText);
   inventory.entries[0].families = [];
-  fs.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
+  mutationFiles.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
   const classificationMutant = run();
   requireExpectedProcessFailure(
     classificationMutant,
@@ -84,9 +87,10 @@ try {
   );
   assert.match(output(classificationMutant), /has no proof family/u);
 } finally {
-  fs.writeFileSync(inventoryPath, inventoryText);
+  mutationFiles.writeFileSync(inventoryPath, inventoryText);
 }
 
 console.log(
   'Internal semantic inventory rejects new mutable locals/properties/containers/updates and unclassified cells.',
 );
+mutationFiles.dispose();

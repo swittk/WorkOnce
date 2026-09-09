@@ -7,7 +7,13 @@ const trials = [];
 const count = 1000;
 for (let trial = 0; trial < 3; trial++) {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-benchmark-'));
-  const store = createSqliteStore(join(directory, 'queue.sqlite'));
+  let store;
+  try {
+    store = createSqliteStore(join(directory, 'queue.sqlite'));
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw error;
+  }
   try {
     const q = createWorkOnce({ store, scope: 'benchmark' }).define('noop');
     const start = performance.now();

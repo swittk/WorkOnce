@@ -139,8 +139,15 @@ test('durable WorkOnce settlement before executor ACK prevents re-claim after cr
       assert.equal(later.length, 0);
       assert.equal(reruns, 0);
       assert.deepEqual(effects(effectPath), [1]);
+      const beforeReplay = (await opened.store.getMany([stage.attempt.workId])).rows[0];
       const replay = await opened.service.settle(stage.attempt, stage.outcome);
       assert.equal(replay.state, 'succeeded');
+      const afterReplay = (await opened.store.getMany([stage.attempt.workId])).rows[0];
+      assert.deepEqual(
+        afterReplay,
+        beforeReplay,
+        'settlement replay must not rewrite durable state',
+      );
     } finally {
       opened.store.close();
     }

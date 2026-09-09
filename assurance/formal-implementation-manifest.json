@@ -11350,7 +11350,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "6617601d5a958d85f0d9370a95f6b683b3cdd5483fb3f4e8b8e835e5fec2186e",
+    "assuranceInfrastructureDigest": "01d5056b0bd0231fe3cd62b4db98664a902fce7f3c1bef9b4f06f171bdadc34d",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -11380,6 +11380,7 @@
       "scripts/subprocess-outcome.mjs",
       "test/subprocess-outcome.test.mjs",
       "scripts/check-assurance-verdict-integrity.mjs",
+      "scripts/mutation-file-guard.mjs",
       "scripts/check-assurance-verdict-integrity-mutation.mjs",
       "assurance/red-before/review-5148224210-assurance-verdict-integrity.json",
       "scripts/tlc-workspace.mjs",

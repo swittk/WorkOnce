@@ -197,7 +197,6 @@ const current = {
       .createHash('sha256')
       .update(JSON.stringify(boundarySamples))
       .digest('hex'),
-    lifecycleAdapterCases: 600,
   },
   readHistoryBoundary: {
     samples: readHistorySamples.length,
@@ -210,7 +209,8 @@ const current = {
       .createHash('sha256')
       .update(JSON.stringify(readHistorySamples))
       .digest('hex'),
-    historyLimit: 128,
+    historyLimit: readHistorySamples.find((sample) => sample.kind === 'historyTruncation')
+      ?.retainedEvents,
     futureCongruenceTraces: readHistorySamples.find((sample) => sample.kind === 'historyCongruence')
       ?.futureTraceCount,
   },
@@ -225,8 +225,6 @@ const current = {
       .createHash('sha256')
       .update(JSON.stringify(localRunnerSamples))
       .digest('hex'),
-    sqliteProcessCrashCases: 3,
-    implementationMutants: 3,
   },
   policyBoundary: {
     samples: policySamples.length,
@@ -254,7 +252,6 @@ const current = {
       .createHash('sha256')
       .update(JSON.stringify(outboxSamples))
       .digest('hex'),
-    sqliteProcessCrashPrefixes: 5,
   },
   externalBoundary: {
     samples: externalSamples.length,

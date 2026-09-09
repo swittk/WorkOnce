@@ -5,7 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const workPath = path.join(root, 'src/work.ts');
 const kernelPath = path.join(root, 'src/kernel.ts');
 const originals = new Map([
@@ -13,7 +16,7 @@ const originals = new Map([
   [kernelPath, fs.readFileSync(kernelPath, 'utf8')],
 ]);
 function restore() {
-  for (const [file, text] of originals) fs.writeFileSync(file, text);
+  for (const [file, text] of originals) mutationFiles.writeFileSync(file, text);
 }
 function expectBindingFailure(label) {
   const result = spawnSync(
@@ -33,7 +36,7 @@ try {
     const needle = `  async inspect(key: string): Promise<WorkSnapshot<I, O, R> | undefined> {\n    return (await this.inspectMany([key]))[0];\n  }`;
     const replacement = `  async inspect(key: string): Promise<WorkSnapshot<I, O, R> | undefined> {\n    void key;\n    return (await this.inspectMany([key]))[0];\n  }`;
     assert.equal(original.includes(needle), true, 'typed-read source mutation anchor is stale');
-    fs.writeFileSync(workPath, original.replace(needle, replacement));
+    mutationFiles.writeFileSync(workPath, original.replace(needle, replacement));
     expectBindingFailure('a changed read method with an unchanged read/history model');
     restore();
   }
@@ -45,10 +48,14 @@ try {
       true,
       'history retention source mutation anchor is stale',
     );
-    fs.writeFileSync(kernelPath, original.replace(needle, '...row.history.slice(-126),'));
+    mutationFiles.writeFileSync(
+      kernelPath,
+      original.replace(needle, '...row.history.slice(-126),'),
+    );
     expectBindingFailure('a changed history-retention rule with an unchanged read/history model');
     restore();
   }
 } finally {
   restore();
 }
+mutationFiles.dispose();

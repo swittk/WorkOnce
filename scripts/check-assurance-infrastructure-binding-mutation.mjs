@@ -4,8 +4,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const target = path.join(root, 'scripts/formal.mjs');
 const original = fs.readFileSync(target, 'utf8');
 const runnerTarget = path.join(root, 'scripts/run-assurance.mjs');
@@ -26,7 +28,7 @@ function output(result) {
 }
 
 try {
-  fs.writeFileSync(target, `${original}\n// assurance-infrastructure-binding-mutant\n`);
+  mutationFiles.writeFileSync(target, `${original}\n// assurance-infrastructure-binding-mutant\n`);
 
   const manifest = run(
     'scripts/check-formal-implementation-conformance.mjs',
@@ -39,13 +41,13 @@ try {
   requireExpectedProcessFailure(bounded, 'bounded trace report accepted a changed proof runner');
   assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
 
-  fs.writeFileSync(target, original);
+  mutationFiles.writeFileSync(target, original);
   const runnerMutant = runnerOriginal.replace(
     "'scripts/check-assurance-scheduling.mjs'",
     "'scripts/check-unbound-assurance-mutant.mjs'",
   );
   assert.notEqual(runnerMutant, runnerOriginal, 'assurance runner mutation anchor is missing');
-  fs.writeFileSync(runnerTarget, runnerMutant);
+  mutationFiles.writeFileSync(runnerTarget, runnerMutant);
   const runnerBinding = run(
     'scripts/check-formal-implementation-conformance.mjs',
     '--check-infrastructure-binding-only',
@@ -56,10 +58,10 @@ try {
   );
   assert.match(output(runnerBinding), /Full assurance invokes unbound proof\/checker scripts/u);
 
-  fs.writeFileSync(runnerTarget, runnerOriginal);
+  mutationFiles.writeFileSync(runnerTarget, runnerOriginal);
   const configMutant = configOriginal.replace('\"target\": \"ES2018\"', '\"target\": \"ES2020\"');
   assert.notEqual(configMutant, configOriginal, 'compiler target mutation anchor is missing');
-  fs.writeFileSync(configTarget, configMutant);
+  mutationFiles.writeFileSync(configTarget, configMutant);
   const configBinding = run(
     'scripts/check-formal-implementation-conformance.mjs',
     '--check-semantic-environment-binding-only',
@@ -77,7 +79,8 @@ try {
     'Assurance infrastructure binding rejects proof-runner mutation, unbound full-gate checkers, and unacknowledged compiler/toolchain drift.',
   );
 } finally {
-  fs.writeFileSync(target, original);
-  fs.writeFileSync(runnerTarget, runnerOriginal);
-  fs.writeFileSync(configTarget, configOriginal);
+  mutationFiles.writeFileSync(target, original);
+  mutationFiles.writeFileSync(runnerTarget, runnerOriginal);
+  mutationFiles.writeFileSync(configTarget, configOriginal);
 }
+mutationFiles.dispose();

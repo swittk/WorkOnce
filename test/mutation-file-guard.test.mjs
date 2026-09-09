@@ -1,0 +1,72 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+
+async function waitForReady(child) {
+  let output = '';
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(
+      () => reject(new Error('mutation guard child did not become ready')),
+      5000,
+    );
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      output += chunk;
+      if (output.includes('ready\n')) {
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+    child.once('error', (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.once('exit', (code, signal) => {
+      if (!output.includes('ready\n')) {
+        clearTimeout(timeout);
+        reject(new Error(`mutation guard child exited early: ${String(code)} ${String(signal)}`));
+      }
+    });
+  });
+}
+
+for (const [signal, expectedCode] of [
+  ['SIGINT', 130],
+  ['SIGTERM', 143],
+]) {
+  test(`mutation file guard restores original bytes on ${signal}`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-guard-'));
+    const target = join(directory, 'tracked.txt');
+    writeFileSync(target, 'original\n');
+    const code = `
+      import { createMutationFileGuard } from './scripts/mutation-file-guard.mjs';
+      const guard = createMutationFileGuard();
+      guard.writeFileSync(process.env.WORKONCE_MUTATION_TARGET, 'mutated\\n');
+      process.stdout.write('ready\\n');
+      setInterval(() => {}, 1000);
+    `;
+    const child = spawn(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: process.cwd(),
+      env: { ...process.env, WORKONCE_MUTATION_TARGET: target },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    try {
+      await waitForReady(child);
+      assert.equal(readFileSync(target, 'utf8'), 'mutated\n');
+      child.kill(signal);
+      const [exitCode, exitSignal] = await once(child, 'exit', {
+        signal: AbortSignal.timeout(5000),
+      });
+      assert.equal(exitSignal, null);
+      assert.equal(exitCode, expectedCode);
+      assert.equal(readFileSync(target, 'utf8'), 'original\n');
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}

@@ -5,7 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const target = path.join(root, 'scripts/formal-implementation-surface.cjs');
 const original = fs.readFileSync(target, 'utf8');
 const stableReturn = 'return `node_modules/typescript/lib/${tail}`;';
@@ -14,7 +17,7 @@ const legacyReturn = "return path.relative(root, absolute).split(path.sep).join(
 try {
   const mutant = original.replace(stableReturn, legacyReturn);
   assert.notEqual(mutant, original, 'source-path portability mutation anchor did not match');
-  fs.writeFileSync(target, mutant);
+  mutationFiles.writeFileSync(target, mutant);
   const result = spawnSync(process.execPath, [target, '--self-test-source-paths'], {
     cwd: root,
     encoding: 'utf8',
@@ -35,7 +38,7 @@ try {
     'Compiler source-path portability mutation guard rejects worktree-relative TypeScript library identity.',
   );
 } finally {
-  fs.writeFileSync(target, original);
+  mutationFiles.writeFileSync(target, original);
 }
 
 try {
@@ -46,7 +49,7 @@ try {
     true,
     'export-alias resolver mutation anchor is stale',
   );
-  fs.writeFileSync(target, original.replace(aliasAnchor, 'return symbol;'));
+  mutationFiles.writeFileSync(target, original.replace(aliasAnchor, 'return symbol;'));
   const result = spawnSync(process.execPath, [target, '--self-test-trivia-ordinals'], {
     cwd: root,
     encoding: 'utf8',
@@ -60,5 +63,6 @@ try {
   );
   console.log('Compiler surface mutation guard rejects unresolved root-export type aliases.');
 } finally {
-  fs.writeFileSync(target, original);
+  mutationFiles.writeFileSync(target, original);
 }
+mutationFiles.dispose();

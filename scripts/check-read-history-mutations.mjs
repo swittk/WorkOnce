@@ -33,7 +33,10 @@ try {
     const needle = '...row.history.slice(-127),';
     assert.equal(original.includes(needle), true, 'history retention mutation anchor is stale');
     fs.writeFileSync(kernelPath, original.replace(needle, '...row.history.slice(-126),'));
-    runExpectedFailure('127-event history retention', /historyTruncation\.exactly128/u);
+    runExpectedFailure(
+      '127-event history retention',
+      /historyTruncation\.(?:retainedEvents|exactly128)/u,
+    );
     restore();
   }
   {

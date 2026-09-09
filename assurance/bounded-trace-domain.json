@@ -109,7 +109,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "0b9ea036ea12e5553ee8085fa3803e5a9b2e2bf54dc77a9ed9241d27995c18b3",
+  "evidenceDigest": "f8d6a6f0f1d37e46e1ef9aaa3984306e85e5f3222217c443671eb512e9980321",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -180,8 +180,7 @@
       "budget": 24,
       "cancel": 2
     },
-    "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d",
-    "lifecycleAdapterCases": 600
+    "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d"
   },
   "readHistoryBoundary": {
     "samples": 7,
@@ -190,7 +189,7 @@
       "historyTruncation": 1,
       "inspectManyRace": 5
     },
-    "observationDigest": "51fc580de5e0c0445ddad89bae3cadb56540f7272bad2280461dfd9653df8a32",
+    "observationDigest": "d2b2d63cc2430de1307d16be51edeb6dab914d20c2ace845fd5cf59e6eb200ed",
     "historyLimit": 128,
     "futureCongruenceTraces": 6
   },
@@ -210,9 +209,7 @@
       "undefinedHeartbeat": 3,
       "wakePoll": 1
     },
-    "observationDigest": "7a0be865716be211c0b5eea0cae27874e68c86e6df38314ee88563206d2f5ecc",
-    "sqliteProcessCrashCases": 3,
-    "implementationMutants": 3
+    "observationDigest": "7a0be865716be211c0b5eea0cae27874e68c86e6df38314ee88563206d2f5ecc"
   },
   "policyBoundary": {
     "samples": 45,
@@ -245,8 +242,7 @@
       "memory",
       "sqlite"
     ],
-    "observationDigest": "e248f5638437faf42ad2e665711d9b52e0ef8b67d80a25da469b716a69d12390",
-    "sqliteProcessCrashPrefixes": 5
+    "observationDigest": "e248f5638437faf42ad2e665711d9b52e0ef8b67d80a25da469b716a69d12390"
   },
   "externalBoundary": {
     "samples": 13,

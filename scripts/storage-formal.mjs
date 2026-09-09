@@ -136,6 +136,12 @@ if (JSON.stringify(storageConfigured) !== JSON.stringify(storageGuarded))
     `Storage formal mutation coverage drifted: configured=${storageConfigured.join(',')} guarded=${storageGuarded.join(',')}`,
   );
 
+const baseStorageConfig = readFileSync('formal/WorkOnceStorage.cfg', 'utf8');
+const maxConflictsMatch = /^CONSTANT\s+MaxConflicts\s*=\s*(\d+)\s*$/mu.exec(baseStorageConfig);
+if (!maxConflictsMatch)
+  throw new Error('formal/WorkOnceStorage.cfg is missing numeric MaxConflicts');
+const maxConflicts = Number(maxConflictsMatch[1]);
+
 const mutationEntries = Object.entries(mutants);
 const mutationBranches = mutationEntries
   .map(([invariant, action], index) => {
@@ -169,7 +175,7 @@ writeFileSync(
 );
 writeFileSync(
   batchConfig,
-  `SPECIFICATION BatchSpec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT MutationWitnesses\nINVARIANT MutationStepEnabled\nCHECK_DEADLOCK FALSE\n`,
+  `SPECIFICATION BatchSpec\nCONSTANT MaxConflicts = ${maxConflicts}\nCONSTANT Samples <- ObservedSamples\nINVARIANT MutationWitnesses\nINVARIANT MutationStepEnabled\nCHECK_DEADLOCK FALSE\n`,
 );
 const batchResult = tlc('WorkOnceStorageInvariantMutationBatch', batchConfig, batchModule, true);
 const batchOutcome = classifyTlcOutcome(batchResult);
@@ -197,7 +203,7 @@ writeFileSync(
 );
 writeFileSync(
   sampleConfig,
-  `SPECIFICATION Spec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- BadSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
+  `SPECIFICATION Spec\nCONSTANT MaxConflicts = ${maxConflicts}\nCONSTANT Samples <- BadSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
 );
 requireRejects(
   'WorkOnceStorageMutant_StorageSamplesConform',
@@ -233,7 +239,7 @@ writeFileSync(
 );
 writeFileSync(
   duplicateSlotConfig,
-  `SPECIFICATION Spec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
+  `SPECIFICATION Spec\nCONSTANT MaxConflicts = ${maxConflicts}\nCONSTANT Samples <- ObservedSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
 );
 requireRejects(
   'WorkOnceStorageMutant_DuplicateSlotsConform',

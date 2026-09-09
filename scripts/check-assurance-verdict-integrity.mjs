@@ -106,6 +106,35 @@ export function assertAssuranceVerdictIntegrity() {
     'direct external heartbeat test must synchronize on the attempted heartbeat and abort',
   );
 
+  const boundedDomain = read('scripts/check-bounded-trace-domain.mjs');
+  assert.doesNotMatch(
+    boundedDomain,
+    /(?:lifecycleAdapterCases|sqliteProcessCrashCases|implementationMutants|sqliteProcessCrashPrefixes)\s*:\s*\d+/u,
+    'bounded-domain report contains an unobserved hard-coded coverage claim',
+  );
+  assert.match(
+    boundedDomain,
+    /historyLimit:[\s\S]{0,180}?historyTruncation[\s\S]{0,120}?retainedEvents/u,
+    'bounded-domain history limit must come from the observed truncation sample',
+  );
+  const storageFormalSource = read('scripts/storage-formal.mjs');
+  assert.match(
+    storageFormalSource,
+    /maxConflictsMatch[\s\S]{0,220}?formal\/WorkOnceStorage\.cfg/u,
+    'storage mutation configs must derive MaxConflicts from the reviewed base config',
+  );
+  assert.doesNotMatch(
+    storageFormalSource,
+    /CONSTANT MaxConflicts = 3/u,
+    'storage mutation configs must not hard-code a different MaxConflicts bound',
+  );
+  const policyRefinementSource = read('scripts/policy-refinement.mjs');
+  assert.match(
+    policyRefinementSource,
+    /finally \{\s*release\.resolve\(\);\s*if \(pending\) await observe\(pending\);\s*fixture\.close\(\);/u,
+    'policy async-race cleanup must settle the pending promise before fixture close',
+  );
+
   const boundedCorpus = read('scripts/formal-bounded-refinement-corpus.mjs');
   assert.doesNotMatch(
     boundedCorpus,
@@ -118,10 +147,6 @@ export function assertAssuranceVerdictIntegrity() {
     /maxBuffer:\s*64 \* 1024 \* 1024/u,
     'lifecycle formal wrapper must bound captured TLC output explicitly',
   );
-  const storageSourceModelMutation = read('scripts/check-storage-source-model-mutation.mjs');
-  assert.match(storageSourceModelMutation, /process\.once\('SIGINT'/u);
-  assert.match(storageSourceModelMutation, /process\.once\('SIGTERM'/u);
-
   for (const name of fs
     .readdirSync(path.join(root, 'test/process'))
     .filter((name) => name.endsWith('.mjs'))) {
@@ -132,6 +157,28 @@ export function assertAssuranceVerdictIntegrity() {
       `${name} contains an unbounded child exit wait`,
     );
   }
+
+  for (const name of [
+    'check-alias-contract-mutation.mjs',
+    'check-assurance-infrastructure-binding-mutation.mjs',
+    'check-assurance-scheduling-mutation.mjs',
+    'check-assurance-verdict-integrity-mutation.mjs',
+    'check-emitted-artifact-entrypoint-mutation.mjs',
+    'check-external-source-model-mutation.mjs',
+    'check-formal-config-coverage-mutation.mjs',
+    'check-internal-semantic-inventory-mutation.mjs',
+    'check-local-runner-source-model-mutation.mjs',
+    'check-outbox-source-model-binding-mutation.mjs',
+    'check-policy-source-model-binding-mutation.mjs',
+    'check-read-source-model-binding-mutation.mjs',
+    'check-source-path-portability-mutation.mjs',
+    'check-storage-source-model-mutation.mjs',
+  ])
+    assert.match(
+      read(`scripts/${name}`),
+      /createMutationFileGuard\(\)/u,
+      `${name} mutates tracked source/config without signal-safe file restoration`,
+    );
 
   const liveTlcProbe = read('scripts/check-tlc-outcome-classification.mjs');
   assert.match(
@@ -312,7 +359,11 @@ export function assertAssuranceVerdictIntegrity() {
   const assuranceRunner = read('scripts/run-assurance.mjs');
   assert.match(assuranceRunner, /requireSuccessfulProcess\(result, label\)/u);
   assert.match(assuranceRunner, /const terminateSiblings = \(failedChild\) =>/u);
-  assert.match(assuranceRunner, /child\.kill\(\)/u);
+  assert.match(
+    assuranceRunner,
+    /child\.kill\(\)/u,
+    'parallel assurance failure paths must kill surviving siblings',
+  );
   assert.ok(
     (assuranceRunner.match(/terminateSiblings\(child\)/gu) ?? []).length >= 3,
     'parallel assurance failure paths no longer terminate surviving siblings',

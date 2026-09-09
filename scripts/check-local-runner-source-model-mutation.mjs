@@ -5,14 +5,17 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const target = path.join(root, 'src/worker.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = 'const stop = () => controller.abort(options.signal?.reason);';
 const replacement = 'const stop = () => controller.abort();';
 assert.equal(original.includes(needle), true, 'local-runner source/model mutation anchor is stale');
 try {
-  fs.writeFileSync(target, original.replace(needle, replacement));
+  mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(
     process.execPath,
     ['scripts/check-formal-implementation-conformance.mjs', '--check-local-runner-binding-only'],
@@ -28,5 +31,6 @@ try {
     'Local-runner source/model mutation guard rejects changed worker semantics with an unchanged local-runner model.',
   );
 } finally {
-  fs.writeFileSync(target, original);
+  mutationFiles.writeFileSync(target, original);
 }
+mutationFiles.dispose();

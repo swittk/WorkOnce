@@ -5,7 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 const packagePath = path.join(root, 'package.json');
 const original = fs.readFileSync(packagePath, 'utf8');
 const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
@@ -13,7 +16,7 @@ const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');
 try {
   const pkg = JSON.parse(original);
   pkg.scripts['test:process'] = 'node --test test/process/*.test.mjs';
-  fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+  mutationFiles.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
   const result = spawnSync(process.execPath, ['scripts/check-emitted-artifact-entrypoints.mjs'], {
     cwd: root,
     encoding: 'utf8',
@@ -27,7 +30,7 @@ try {
     'Emitted-artifact entrypoint mutation guard rejects removal of test:process freshness.',
   );
 
-  fs.writeFileSync(packagePath, original);
+  mutationFiles.writeFileSync(packagePath, original);
   const preparePath = path.join(root, 'scripts/prepare-package.mjs');
   const prepareOriginal = fs.readFileSync(preparePath, 'utf8');
   try {
@@ -36,7 +39,7 @@ try {
       true,
       'prepare-package binding anchor is stale',
     );
-    fs.writeFileSync(
+    mutationFiles.writeFileSync(
       preparePath,
       prepareOriginal.replace('assertBuildSourceBinding();', 'void 0;'),
     );
@@ -52,12 +55,12 @@ try {
       'Emitted-artifact entrypoint mutation guard rejects unbound package prepare reuse.',
     );
   } finally {
-    fs.writeFileSync(preparePath, prepareOriginal);
+    mutationFiles.writeFileSync(preparePath, prepareOriginal);
   }
 
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(assuranceOriginal.includes(buildAnchor), true, 'startup-build anchor is stale');
-  fs.writeFileSync(
+  mutationFiles.writeFileSync(
     assurancePath,
     assuranceOriginal.replace(
       buildAnchor,
@@ -82,6 +85,7 @@ try {
   );
   console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
 } finally {
-  fs.writeFileSync(packagePath, original);
-  fs.writeFileSync(assurancePath, assuranceOriginal);
+  mutationFiles.writeFileSync(packagePath, original);
+  mutationFiles.writeFileSync(assurancePath, assuranceOriginal);
 }
+mutationFiles.dispose();

@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -541,6 +542,32 @@ export function assertStorageRefinementSamples(samples) {
     'sqliteBusy',
   ])
     if (!kinds.has(required)) throw new Error(`Missing storage sample kind ${required}`);
+  const adapterSamples = samples
+    .filter((sample) => sample.adapter !== undefined)
+    .map((sample) => `${sample.kind}:${sample.adapter}`)
+    .sort();
+  const expectedAdapterSamples = [
+    'adapterHistoryCongruence:cas',
+    'adapterHistoryCongruence:memory',
+    'adapterHistoryCongruence:sqlite',
+    'atomicContention:cas',
+    'atomicContention:memory',
+    'atomicContention:sqlite',
+    'detached:cas',
+    'detached:memory',
+    'detached:sqlite',
+    'invalidWrite:cas',
+    'invalidWrite:memory',
+    'invalidWrite:sqlite',
+    'queryBoundary:cas',
+    'queryBoundary:memory',
+    'queryBoundary:sqlite',
+  ];
+  assert.deepEqual(
+    adapterSamples,
+    expectedAdapterSamples,
+    'storage adapter sample coverage drifted',
+  );
   for (const sample of samples)
     for (const [field, value] of Object.entries(sample))
       if (field !== 'kind' && field !== 'adapter' && value !== true)

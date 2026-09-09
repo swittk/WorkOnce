@@ -252,6 +252,7 @@ async function asyncRaceSample(outcomeKind, race) {
   const release = deferred();
   let callbackCalls = 0;
   let contextExact = false;
+  let pending;
   try {
     const policy = async (context) => {
       callbackCalls++;
@@ -277,7 +278,7 @@ async function asyncRaceSample(outcomeKind, race) {
     });
     await queue.ensure(null, { key: 'job' });
     const run = await claimOne(queue);
-    const pending = run.settle(outcomeKind === 'retry' ? run.retry('busy') : run.wait('pending'));
+    pending = run.settle(outcomeKind === 'retry' ? run.retry('busy') : run.wait('pending'));
     await within(entered.promise, 'policy async-race entry');
     let winner;
     if (race === 'cancel') {
@@ -306,6 +307,7 @@ async function asyncRaceSample(outcomeKind, race) {
     };
   } finally {
     release.resolve();
+    if (pending) await observe(pending);
     fixture.close();
   }
 }

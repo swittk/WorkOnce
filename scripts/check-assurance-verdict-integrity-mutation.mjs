@@ -4,13 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertAssuranceVerdictIntegrity } from './check-assurance-verdict-integrity.mjs';
 
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
 function mutate(relative, from, to, label, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
   assert.ok(original.includes(from), `${label} mutation anchor is stale`);
   try {
-    fs.writeFileSync(target, original.replace(from, to));
+    mutationFiles.writeFileSync(target, original.replace(from, to));
     let failure;
     try {
       assertAssuranceVerdictIntegrity();
@@ -24,7 +27,7 @@ function mutate(relative, from, to, label, pattern) {
       `${label} failed for an unrelated reason`,
     );
   } finally {
-    fs.writeFileSync(target, original);
+    mutationFiles.writeFileSync(target, original);
   }
 }
 
@@ -51,10 +54,10 @@ mutate(
 );
 mutate(
   'scripts/check-storage-source-model-mutation.mjs',
-  "process.once('SIGTERM', onSigterm);",
-  'void onSigterm;',
+  'const mutationFiles = createMutationFileGuard();',
+  'const mutationFiles = { writeFileSync: fs.writeFileSync.bind(fs), dispose() {} };',
   'source-mutating storage guard loses termination cleanup',
-  /SIGTERM/u,
+  /signal-safe file restoration/u,
 );
 mutate(
   'scripts/local-runner-refinement.mjs',
@@ -210,14 +213,30 @@ mutate(
   'unbounded process exit wait',
   /unbounded child exit wait/u,
 );
+
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "    historyLimit: readHistorySamples.find((sample) => sample.kind === 'historyTruncation')\n      ?.retainedEvents,",
+  '    historyLimit: 128,',
+  'bounded-domain coverage returns to an unobserved literal',
+  /history limit must come from the observed truncation sample/u,
+);
+mutate(
+  'scripts/storage-formal.mjs',
+  'CONSTANT MaxConflicts = ${maxConflicts}',
+  'CONSTANT MaxConflicts = 3',
+  'storage mutation config diverges from the reviewed base bound',
+  /must not hard-code a different MaxConflicts bound/u,
+);
 mutate(
   'scripts/run-assurance.mjs',
   '        child.kill();',
   '        void child;',
   'parallel sibling leak',
-  /The input did not match/u,
+  /parallel assurance failure paths must kill surviving siblings/u,
 );
 
 console.log(
   'Assurance verdict integrity mutation guard rejects all reviewed false-green and hang regressions.',
 );
+mutationFiles.dispose();

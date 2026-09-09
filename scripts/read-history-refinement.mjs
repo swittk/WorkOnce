@@ -243,6 +243,7 @@ async function historyTruncationSample() {
   const expectedRetainedReasons = expectedReasons.slice(-retainedReasons.length);
   return {
     kind: 'historyTruncation',
+    retainedEvents: history.length,
     exactly128: history.length === 128,
     latestActionsExact: stable(history.map((event) => event.action)) === stable(expectedTail),
     latestReasonsExact: stable(retainedReasons) === stable(expectedRetainedReasons),
@@ -452,8 +453,10 @@ export function assertReadHistorySamples(samples) {
       );
       assert.ok(sample.futureTraceCount >= 5, 'historyCongruence.futureTraceCount');
     } else if (sample.kind === 'historyTruncation') {
+      assert.equal(sample.retainedEvents, 128, 'historyTruncation.retainedEvents');
       for (const [field, value] of Object.entries(sample))
-        if (field !== 'kind') assert.equal(value, true, `${sample.kind}.${field}`);
+        if (field !== 'kind' && field !== 'retainedEvents')
+          assert.equal(value, true, `${sample.kind}.${field}`);
     } else if (sample.kind === 'inspectManyRace') {
       assert.equal(sample.callerOrderExact, true, name);
       assert.equal(sample.perIdRealState, true, name);
