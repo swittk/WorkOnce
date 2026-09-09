@@ -105,17 +105,21 @@ try {
     /storage-formal and formal\.mjs must never be co-scheduled/u,
   );
   expectSchedulingFailure(
-    'parallel process-fault suite',
+    'process faults overlap compiler/mapping work',
     (text) =>
       text.replace(
-        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n]);\nrun('real process faults', process.execPath, [\n  '--test',\n  '--test-concurrency',\n  '3',\n  ...processTests,\n]);",
+        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n]);",
         "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],\n]);",
       ),
-    /Real process faults must run outside runParallel/u,
+    /Expected exactly one bounded process-fault parallel group|must not overlap compiler\/mapping work/u,
   );
   expectSchedulingFailure(
     'unbounded HPSERVER process-fault file concurrency',
-    (text) => text.replace("  '--test-concurrency',\n  '3',\n", ''),
+    (text) =>
+      text.replace(
+        "['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],",
+        "['real process faults', process.execPath, ['--test', ...processTests]],",
+      ),
     /full assurance must cap process-fault file concurrency at three/u,
   );
   expectSchedulingFailure(

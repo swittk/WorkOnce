@@ -453,14 +453,17 @@ async function stopSignalSample() {
 }
 
 async function leaseBoundarySample() {
-  async function one(lease) {
+  async function one(lease, claimDelayMs = 0) {
     let handlerCalls = 0;
     let settleCalls = 0;
+    let heartbeatCalls = 0;
     const transport = {
       async claim() {
+        if (claimDelayMs > 0) await sleep(claimDelayMs);
         return [lease];
       },
       async heartbeat() {
+        heartbeatCalls++;
         return { observedAt: lease.observedAt, leaseUntil: lease.leaseUntil };
       },
       async settle() {
@@ -476,7 +479,7 @@ async function leaseBoundarySample() {
         return run.succeed();
       },
     );
-    return { result, handlerCalls, settleCalls };
+    return { result, handlerCalls, settleCalls, heartbeatCalls };
   }
   const invalidZero = await one({
     input: null,
@@ -502,6 +505,15 @@ async function leaseBoundarySample() {
     observedAt: 100,
     leaseUntil: 101,
   });
+  const delayedOneTick = await one(
+    {
+      input: null,
+      attempt: { workId: 'delayed-one-tick', generation: 1, fence: 1 },
+      observedAt: 100,
+      leaseUntil: 101,
+    },
+    5,
+  );
   let heartbeatConfigHandlers = 0;
   const heartbeatConfig = await observe(
     runExternalAvailable(
@@ -574,10 +586,20 @@ async function leaseBoundarySample() {
       maxFinite.result.status === 'settled' &&
       maxFinite.handlerCalls === 1 &&
       maxFinite.settleCalls === 1,
-    oneTickAccepted:
-      oneTick.result.status === 'settled' &&
-      oneTick.handlerCalls === 1 &&
-      oneTick.settleCalls === 1,
+    oneTickHeartbeatCompatible:
+      oneTick.heartbeatCalls === 0 &&
+      ((oneTick.result.status === 'settled' &&
+        oneTick.handlerCalls === 1 &&
+        oneTick.settleCalls === 1) ||
+        (oneTick.result.status === 'interrupted' &&
+          String(oneTick.result.error).includes('Confirmed external lease deadline passed') &&
+          oneTick.handlerCalls <= 1 &&
+          oneTick.settleCalls === 0)) &&
+      delayedOneTick.result.status === 'interrupted' &&
+      String(delayedOneTick.result.error).includes('Confirmed external lease deadline passed') &&
+      delayedOneTick.handlerCalls === 0 &&
+      delayedOneTick.settleCalls === 0 &&
+      delayedOneTick.heartbeatCalls === 0,
     invalidRenewalExact:
       invalidRenewal[0]?.status === 'interrupted' &&
       invalidRenewal[0]?.error instanceof RangeError &&

@@ -132,6 +132,45 @@ test('a one-millisecond external lease does not fail solely because automatic he
   assert.equal(heartbeatCalls, 0);
 });
 
+test('a one-millisecond external lease may expire from claim latency without synthetic heartbeat failure', async () => {
+  let heartbeatCalls = 0;
+  let handlerCalls = 0;
+  let settleCalls = 0;
+  const [result] = await runExternalAvailable(
+    {
+      async claim() {
+        await sleep(5);
+        return [
+          {
+            input: null,
+            attempt: { workId: 'delayed-one-tick', generation: 1, fence: 1 },
+            observedAt: 100,
+            leaseUntil: 101,
+          },
+        ];
+      },
+      async heartbeat() {
+        heartbeatCalls++;
+        throw new Error('unexpected heartbeat');
+      },
+      async settle() {
+        settleCalls++;
+        return { state: 'succeeded', result: null };
+      },
+    },
+    { workerId: 'relay', signal: new AbortController().signal },
+    async (run) => {
+      handlerCalls++;
+      return run.succeed();
+    },
+  );
+  assert.equal(result.status, 'interrupted');
+  assert.match(String(result.error), /Confirmed external lease deadline passed/);
+  assert.equal(handlerCalls, 0);
+  assert.equal(settleCalls, 0);
+  assert.equal(heartbeatCalls, 0);
+});
+
 test('external claim response latency cannot extend authoritative ownership', async () => {
   const { queue, transport: base } = fixture({ leaseMs: 80 });
   await queue.ensure(null, { key: 'x' });

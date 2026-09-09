@@ -12,7 +12,7 @@ const availableTestCpus = Math.floor(logicalCpus - currentLoad);
 const unitTestConcurrency = String(Math.max(4, Math.min(8, logicalCpus, availableTestCpus)));
 const tlcWorkers = String(
   logicalCpus >= 16
-    ? 8
+    ? 12
     : Math.max(2, Math.min(8, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
 );
 process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
@@ -90,6 +90,7 @@ const unitTests = fs
   .readdirSync(path.join(root, 'test'))
   .filter((name) => name.endsWith('.test.mjs'))
   .filter((name) => name !== 'lifecycle-proof-controls.test.mjs')
+  .filter((name) => name !== 'lifecycle-formal.test.mjs')
   .sort()
   .map((name) => `test/${name}`);
 const processTests = fs
@@ -104,8 +105,8 @@ await runParallel([
     process.execPath,
     ['node_modules/typescript/bin/tsc', '--noEmit', '-p', 'tsconfig.tests.json'],
   ],
+  npmParallelEntry('single build', ['run', 'build']),
 ]);
-runNpm('single build', ['run', 'build']);
 await runParallel([
   [
     'internal semantic topology audit',
@@ -181,11 +182,13 @@ await runParallel([
     ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],
   ],
 ]);
-run('real process faults', process.execPath, [
-  '--test',
-  '--test-concurrency',
-  '3',
-  ...processTests,
+await runParallel([
+  [
+    'lifecycle formal proof wrapper',
+    process.execPath,
+    ['--test', 'test/lifecycle-formal.test.mjs'],
+  ],
+  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],
 ]);
 run('lifecycle proof binding', process.execPath, ['scripts/check-lifecycle-proof-binding.mjs']);
 run('lifecycle source/model mutation guard', process.execPath, [

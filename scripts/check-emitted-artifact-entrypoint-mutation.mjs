@@ -50,8 +50,8 @@ try {
     fs.writeFileSync(preparePath, prepareOriginal);
   }
 
-  const buildAnchor = "runNpm('single build'";
-  assert.equal(assuranceOriginal.includes(buildAnchor), true, 'single-build anchor is stale');
+  const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
+  assert.equal(assuranceOriginal.includes(buildAnchor), true, 'startup-build anchor is stale');
   fs.writeFileSync(
     assurancePath,
     assuranceOriginal.replace(

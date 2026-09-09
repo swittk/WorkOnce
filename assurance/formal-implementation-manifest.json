@@ -10571,7 +10571,7 @@
         "SuccessReceiptCurrent",
         "UnknownAckIsDurable"
       ],
-      "modelDigest": "0bd3a6224959d5fe66f8a0c2e9e14e844d0ea259e9b1818b5c6a4ca2451f8958",
+      "modelDigest": "d02c8aba0155b3eac75a2bc223d3756ecbdcadce452846682af61f69daf3d706",
       "modelFiles": [
         "formal/WorkOnceExternal.tla",
         "formal/WorkOnceExternal.cfg"
@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "e852ead1c097dc8f8decd49a0d0e37d572721ec4888a16fd62cdf0069ee086ec",
+    "assuranceInfrastructureDigest": "5534d7d0d97bd6b8d972c936bae194cdf50fba9871522d1b2a00676ad7e823af",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10997,7 +10997,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "8434356fdd04cb2fec04469d010fc4b35c5e3c16fa195cc3f3c249843365b64e",
+    "modelDigest": "85dc48b2b51513e5bda9ce72b5a5e70edbad74b23a4cc586af01f61a3f6ae9bb",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

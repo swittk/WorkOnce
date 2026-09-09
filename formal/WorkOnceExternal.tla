@@ -100,7 +100,7 @@ ExternalSampleOK(s) ==
     [] s.kind = "stopSignal" -> /\ s.preAbortedNoClaim /\ s.sameSignalPropagated /\ s.abortDuringClaimFulfills
     [] s.kind = "leaseBoundary" ->
        /\ s.zeroRejectedBeforeHandler /\ s.nanRejectedBeforeHandler
-       /\ s.maxSafeAccepted /\ s.oneTickAccepted /\ s.invalidRenewalExact
+       /\ s.maxSafeAccepted /\ s.oneTickHeartbeatCompatible /\ s.invalidRenewalExact
        /\ s.exactHeartbeatBoundary
     [] s.kind = "heartbeatFailure" ->
        /\ s.exactAbortObserved /\ s.interruptedBeforeSettle /\ s.ownershipLossCause

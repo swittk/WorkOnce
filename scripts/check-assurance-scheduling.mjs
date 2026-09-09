@@ -91,6 +91,11 @@ assert.match(
   /name !== 'lifecycle-proof-controls\.test\.mjs'/u,
   'The source-mutating lifecycle proof wrapper must stay out of the read-only unit-test parallel batch.',
 );
+assert.match(
+  text,
+  /name !== 'lifecycle-formal\.test\.mjs'/u,
+  'The dedicated lifecycle TLC wrapper must execute once in the lifecycle/process block, not again inside implementation traces.',
+);
 for (const [label, script] of [
   ['lifecycle proof binding', 'scripts/check-lifecycle-proof-binding.mjs'],
   ['lifecycle source/model mutation guard', 'scripts/check-lifecycle-source-model-mutation.mjs'],
@@ -107,6 +112,24 @@ for (const [label, script] of [
     `${label} must execute ${script}`,
   );
 }
+const startupBlocks = blocks.filter((block) => block.text.includes("'single build'"));
+assert.equal(
+  startupBlocks.length,
+  1,
+  'Expected exactly one startup block containing the single build.',
+);
+assert.equal(
+  startupBlocks[0].start,
+  blocks[0]?.start,
+  'The build/type/format startup block must be the first parallel batch.',
+);
+for (const label of ['format', 'type-contract tests', 'single build'])
+  assert.equal(
+    startupBlocks[0].text.includes(`'${label}'`),
+    true,
+    `Startup parallel batch must retain ${label}.`,
+  );
+
 const implementationBlocks = blocks.filter((block) =>
   block.text.includes("'implementation traces'"),
 );
@@ -120,10 +143,49 @@ assert.equal(
   true,
   'Read-only implementation traces must overlap the public mapping batch for assurance performance.',
 );
+assert.equal(
+  implementationBlocks[0].text.includes('lifecycle formal proof wrapper'),
+  false,
+  'Dedicated lifecycle TLC must not be duplicated inside the mapping/unit batch.',
+);
+assert.equal(
+  implementationBlocks[0].text.includes('real process faults'),
+  false,
+  'Real process faults must not overlap compiler/mapping work.',
+);
+const processBlocks = blocks.filter((block) => block.text.includes("'real process faults'"));
+assert.equal(processBlocks.length, 1, 'Expected exactly one bounded process-fault parallel group.');
+assert.equal(
+  processBlocks[0].text.includes("'lifecycle formal proof wrapper'"),
+  true,
+  'Real process faults may overlap only the independent lifecycle formal wrapper.',
+);
+for (const forbidden of [
+  'public mapping',
+  'implementation traces',
+  'single build',
+  'type-contract tests',
+  'format',
+])
+  assert.equal(
+    processBlocks[0].text.includes(`'${forbidden}'`),
+    false,
+    `Lifecycle/process block must not overlap ${forbidden}.`,
+  );
+assert.match(
+  processBlocks[0].text,
+  /'real process faults'[\s\S]{0,180}'--test-concurrency'[\s\S]{0,80}'3'/u,
+  'HPSERVER full assurance must cap process-fault file concurrency at three.',
+);
 assert.match(
   processScript,
   /node --test --test-concurrency=1 test\/process\/\*\.test\.mjs/u,
   'test:process must serialize real process-fault files; CI concurrency can starve short lease/IPC crash fixtures.',
+);
+assert.match(
+  text,
+  /logicalCpus >= 16[\s\S]{0,32}\? 12/u,
+  'High-core HPSERVER assurance must use the measured twelve-worker TLC ceiling.',
 );
 assert.match(
   text,
@@ -148,9 +210,9 @@ assert.match(
   'Assurance must retain the dedicated type-contract test compile when the main source compile is provided by the build.',
 );
 assert.match(
-  text,
-  /runNpm\('single build', \['run', 'build'\]\)/u,
-  'Assurance must retain the main source build/typecheck exactly once before emitted-artifact consumers.',
+  startupBlocks[0].text,
+  /npmParallelEntry\('single build', \['run', 'build'\]\)/u,
+  'Assurance must retain the main source build/typecheck exactly once in the startup batch before emitted-artifact consumers.',
 );
 
 const mutatingParallel = blocks.flatMap((block) =>
@@ -186,21 +248,9 @@ assert.notEqual(
   'Expected the TLC workspace isolation audit in full assurance.',
 );
 assert.equal(
-  workspaceAudit < storageBlocks[0].start,
+  workspaceAudit < processBlocks[0].start && workspaceAudit < storageBlocks[0].start,
   true,
   'TLC workspace isolation must be audited before any formal family runs',
-);
-for (const block of blocks) {
-  assert.equal(
-    block.text.includes('real process faults'),
-    false,
-    'Real process faults must run outside runParallel; constrained runners can starve crash-fixture IPC under compiler contention.',
-  );
-}
-assert.match(
-  text,
-  /run\('real process faults',[\s\S]{0,180}'--test-concurrency',[\s\S]{0,80}'3'/u,
-  'HPSERVER full assurance must cap process-fault file concurrency at three.',
 );
 console.log(
   'Assurance scheduling preserves split source/type-contract checks, serializes mutating guards/process faults and cross-family TLC, while private workspaces isolate independent proof invocations.',

@@ -115,6 +115,23 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(drainSample, /boundedPasses:\s*passes < maxPasses/u);
   assert.doesNotMatch(drainSample, /for \(;;\)/u);
 
+  const externalRefinement = read('scripts/external-transport-refinement.mjs');
+  const leaseStart = externalRefinement.indexOf('async function leaseBoundarySample');
+  const leaseEnd = externalRefinement.indexOf(
+    '\nasync function heartbeatFailureSample',
+    leaseStart + 1,
+  );
+  const leaseSample = externalRefinement.slice(leaseStart, leaseEnd);
+  assert.match(leaseSample, /async function one\(lease, claimDelayMs = 0\)/u);
+  assert.match(leaseSample, /if \(claimDelayMs > 0\) await sleep\(claimDelayMs\)/u);
+  assert.match(leaseSample, /delayedOneTick = await one\([\s\S]*?,\s*5,\s*\)/u);
+  assert.match(leaseSample, /oneTickHeartbeatCompatible/u);
+  assert.match(leaseSample, /Confirmed external lease deadline passed/u);
+  assert.match(leaseSample, /delayedOneTick\.heartbeatCalls === 0/u);
+  const externalModel = read('formal/WorkOnceExternal.tla');
+  assert.match(externalModel, /s\.oneTickHeartbeatCompatible/u);
+  assert.doesNotMatch(externalModel, /s\.oneTickAccepted/u);
+
   const readHistory = read('scripts/read-history-refinement.mjs');
   const mixedStart = readHistory.indexOf('async function casMixedRaceSample');
   const mixedEnd = readHistory.indexOf('\nexport async function ', mixedStart + 1);

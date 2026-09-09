@@ -78,6 +78,20 @@ mutate(
   /for \(;;\)|maxPasses/u,
 );
 mutate(
+  'scripts/external-transport-refinement.mjs',
+  '        if (claimDelayMs > 0) await sleep(claimDelayMs);',
+  '        void claimDelayMs;',
+  'one-tick refinement loses deterministic claim-latency witness',
+  /claimDelayMs|delayedOneTick/u,
+);
+mutate(
+  'formal/WorkOnceExternal.tla',
+  's.oneTickHeartbeatCompatible',
+  's.oneTickAccepted',
+  'external model restores unconditional one-tick acceptance claim',
+  /oneTickHeartbeatCompatible|oneTickAccepted/u,
+);
+mutate(
   'test/process/local-runner-process.test.mjs',
   "    child.once('exit', onExit);",
   '    void onExit;',

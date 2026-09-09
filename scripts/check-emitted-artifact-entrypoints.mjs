@@ -58,7 +58,7 @@ const sourceFile = ts.createSourceFile(
   true,
   ts.ScriptKind.JS,
 );
-let build = -1;
+const buildPositions = [];
 const consumerPositions = new Map();
 function recordConsumer(label, position) {
   const positions = consumerPositions.get(label) ?? [];
@@ -73,8 +73,11 @@ function literalText(node) {
 function inspectCall(node) {
   if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return;
   const name = node.expression.text;
-  if (name === 'runNpm' && literalText(node.arguments[0]) === 'single build') {
-    build = node.getStart(sourceFile);
+  if (
+    (name === 'runNpm' || name === 'npmParallelEntry') &&
+    literalText(node.arguments[0]) === 'single build'
+  ) {
+    buildPositions.push(node.getStart(sourceFile));
     return;
   }
   if (name === 'run') {
@@ -94,7 +97,11 @@ function visit(node) {
   ts.forEachChild(node, visit);
 }
 visit(sourceFile);
-if (build < 0) throw new Error('Full assurance lost its single build step.');
+if (buildPositions.length !== 1)
+  throw new Error(
+    `Full assurance must execute exactly one build step; found ${buildPositions.length}.`,
+  );
+const [build] = buildPositions;
 for (const consumer of [
   'typed-read definition-fence mutation guard',
   'typed-read source/model mutation guard',
@@ -112,6 +119,7 @@ for (const consumer of [
   'storage source/model mutation guard',
   'alias runtime/type mutation guard',
   'implementation traces',
+  'lifecycle formal proof wrapper',
   'real process faults',
   'bounded-domain audit',
   'TLC storage/conformance + mutation guards',
