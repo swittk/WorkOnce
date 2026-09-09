@@ -33,6 +33,34 @@ function expectSchedulingFailure(label, mutate, pattern) {
     mutationFiles.restoreAll();
   }
 }
+function expectProcessTreeContainmentFailure(label, mutate) {
+  const mutant = mutate(original);
+  assert.notEqual(mutant, original, `${label} process-tree mutation anchor is stale`);
+  mutationFiles.writeFileSync(target, mutant);
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/run-assurance.mjs', '--self-test-process-tree'],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: process.env,
+        timeout: 5_000,
+      },
+    );
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+    requireExpectedProcessFailure(result, `${label} process-tree mutant unexpectedly passed`);
+    assert.match(
+      output,
+      /orphan descendant process/u,
+      `${label} process-tree mutant failed for an unrelated reason`,
+    );
+    console.log(`Assurance scheduling mutation guard rejects ${label}.`);
+  } finally {
+    mutationFiles.restoreAll();
+  }
+}
+
 function expectPackageSchedulingFailure(label, mutate, pattern) {
   const mutant = mutate(packageOriginal);
   assert.notEqual(mutant, packageOriginal, `${label} scheduling mutation anchor is stale`);
@@ -73,6 +101,18 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
 }
 
 try {
+  expectProcessTreeContainmentFailure('direct-child-only failure cleanup', (text) =>
+    text.replace("process.kill(-pid, 'SIGKILL');", "child.kill('SIGKILL');"),
+  );
+  expectSchedulingFailure(
+    'lost process-tree containment self-test',
+    (text) =>
+      text.replace(
+        "run('parallel process-tree containment self-test', process.execPath, [\n  'scripts/run-assurance.mjs',\n  '--self-test-process-tree',\n]);\n",
+        '',
+      ),
+    /descendant process-tree containment self-test exactly once/u,
+  );
   expectPackageSchedulingFailure(
     'parallel package process-fault suite',
     (text) => text.replace(' --test-concurrency=1', ''),

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
-import { availableParallelism, loadavg } from 'node:os';
+import { availableParallelism, loadavg, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
@@ -43,18 +43,30 @@ function npmParallelEntry(label, args) {
     return [label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]];
   return [label, 'npm', args];
 }
+function terminateProcessTree(child) {
+  const pid = child.pid;
+  if (!Number.isInteger(pid)) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    return;
+  }
+  try {
+    process.kill(-pid, 'SIGKILL');
+  } catch (error) {
+    if (error?.code !== 'ESRCH') throw error;
+  }
+}
 async function runParallel(entries) {
   const started = performance.now();
   const children = new Set();
-  let failed = false;
-  const terminateSiblings = (failedChild) => {
-    if (failed) return;
-    failed = true;
-    for (const child of children)
-      if (child !== failedChild && child.exitCode === null && child.signalCode === null)
-        child.kill();
+  let primaryError;
+  const terminateAllProcessTrees = () => {
+    for (const child of children) terminateProcessTree(child);
   };
-  await Promise.all(
+  const outcomes = await Promise.allSettled(
     entries.map(
       ([label, command, args]) =>
         new Promise((resolvePromise, rejectPromise) => {
@@ -64,31 +76,92 @@ async function runParallel(entries) {
             env: process.env,
             stdio: 'inherit',
             shell: false,
+            detached: process.platform !== 'win32',
           });
           children.add(child);
-          child.once('error', (error) => {
-            terminateSiblings(child);
+          const fail = (error) => {
+            if (primaryError === undefined) {
+              primaryError = error;
+              terminateAllProcessTrees();
+            }
             rejectPromise(error);
+          };
+          child.once('error', (error) => {
+            fail(error);
+            children.delete(child);
           });
           child.once('exit', (code, signal) => {
-            children.delete(child);
             if (signal) {
-              terminateSiblings(child);
-              rejectPromise(new Error(`${label} terminated by ${signal}`));
+              fail(new Error(`${label} terminated by ${signal}`));
+              children.delete(child);
               return;
             }
             if (code !== 0) {
-              terminateSiblings(child);
-              rejectPromise(new Error(`${label} exited with status ${String(code)}`));
+              fail(new Error(`${label} exited with status ${String(code)}`));
+              children.delete(child);
               return;
             }
+            children.delete(child);
             console.log(`[assurance] ${label}: ${Math.round(performance.now() - childStarted)} ms`);
             resolvePromise();
           });
         }),
     ),
   );
+  if (primaryError !== undefined) throw primaryError;
+  const unexpectedFailure = outcomes.find((outcome) => outcome.status === 'rejected');
+  if (unexpectedFailure) throw unexpectedFailure.reason;
   console.log(`[assurance] parallel batch: ${Math.round(performance.now() - started)} ms`);
+}
+async function runParallelProcessTreeSelfTest() {
+  if (process.platform === 'win32') {
+    console.log('Parallel assurance process-tree containment uses taskkill /t on Windows.');
+    return;
+  }
+  const directory = fs.mkdtempSync(path.join(tmpdir(), 'workonce-assurance-tree-'));
+  const failedMarker = path.join(directory, 'failed-descendant.txt');
+  const siblingMarker = path.join(directory, 'sibling-descendant.txt');
+  const descendantCode = (marker) => `
+    const fs = require('node:fs');
+    setTimeout(() => {
+      fs.writeFileSync(${JSON.stringify(marker)}, 'late\\n');
+      process.exit(0);
+    }, 400);
+  `;
+  const parentCode = (marker, fail) => `
+    const { spawn } = require('node:child_process');
+    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(marker))}], { stdio: 'ignore' });
+    ${fail ? 'setTimeout(() => process.exit(17), 60);' : ''}
+    setInterval(() => {}, 1000);
+  `;
+  try {
+    let observedFailure = false;
+    try {
+      const selfTestEntries = [
+        ['process-tree failing parent', process.execPath, ['-e', parentCode(failedMarker, true)]],
+        ['process-tree sibling parent', process.execPath, ['-e', parentCode(siblingMarker, false)]],
+      ];
+      await runParallel(selfTestEntries);
+    } catch (error) {
+      if (!/process-tree failing parent exited with status 17/u.test(String(error?.message)))
+        throw error;
+      observedFailure = true;
+    }
+    if (!observedFailure)
+      throw new Error('parallel process-tree self-test did not observe parent failure');
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 650));
+    if (fs.existsSync(failedMarker) || fs.existsSync(siblingMarker))
+      throw new Error('parallel assurance failure left an orphan descendant process running');
+    console.log(
+      'Parallel assurance failure contains both failed-child and sibling descendant process trees.',
+    );
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+if (process.argv.includes('--self-test-process-tree')) {
+  await runParallelProcessTreeSelfTest();
+  process.exit(0);
 }
 const unitTests = fs
   .readdirSync(path.join(root, 'test'))
@@ -245,6 +318,10 @@ run('storage source/model mutation guard', process.execPath, [
 ]);
 run('assurance infrastructure binding mutation guard', process.execPath, [
   'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+]);
+run('parallel process-tree containment self-test', process.execPath, [
+  'scripts/run-assurance.mjs',
+  '--self-test-process-tree',
 ]);
 run('assurance scheduling audit', process.execPath, ['scripts/check-assurance-scheduling.mjs']);
 run('assurance scheduling mutation guard', process.execPath, [

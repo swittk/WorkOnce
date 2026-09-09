@@ -272,10 +272,10 @@ mutate(
 );
 mutate(
   'scripts/run-assurance.mjs',
-  '        child.kill();',
-  '        void child;',
-  'parallel sibling leak',
-  /parallel assurance failure paths must kill surviving siblings/u,
+  '              terminateAllProcessTrees();',
+  '              void children;',
+  'parallel descendant tree leak',
+  /parallel assurance failure no longer terminates every active child tree/u,
 );
 
 mutate(

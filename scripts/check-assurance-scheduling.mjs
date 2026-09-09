@@ -100,6 +100,32 @@ function parallelBlocks(source) {
 const blocks = parallelBlocks(text);
 assert.match(
   text,
+  /run\('parallel process-tree containment self-test', process\.execPath, \[\s*'scripts\/run-assurance\.mjs',[\s\S]{0,80}?'--self-test-process-tree'/u,
+  'Full assurance must execute the descendant process-tree containment self-test exactly once.',
+);
+assert.match(
+  text,
+  /detached: process\.platform !== 'win32'/u,
+  'POSIX parallel assurance children must own private process groups.',
+);
+assert.match(
+  text,
+  /process\.kill\(-pid, 'SIGKILL'\)/u,
+  'POSIX parallel assurance failure must terminate the complete process group, including orphan descendants.',
+);
+assert.match(
+  text,
+  /spawnSync\('taskkill', \['\/pid', String\(pid\), '\/t', '\/f'\]/u,
+  'Windows parallel assurance failure must terminate the complete child process tree.',
+);
+assert.match(
+  text,
+  /const outcomes = await Promise\.allSettled\(/u,
+  'Parallel assurance must wait for every direct child to settle before propagating a failure.',
+);
+
+assert.match(
+  text,
   /name !== 'lifecycle-proof-controls\.test\.mjs'/u,
   'The source-mutating lifecycle proof wrapper must stay out of the read-only unit-test parallel batch.',
 );
@@ -270,5 +296,5 @@ assert.equal(
   'TLC workspace isolation must be audited before any formal family runs',
 );
 console.log(
-  'Assurance scheduling preserves split source/type-contract checks, serializes mutating guards/process faults and cross-family TLC, while private workspaces isolate independent proof invocations.',
+  'Assurance scheduling preserves split source/type-contract checks, contains failed process trees, serializes mutating guards/process faults and cross-family TLC, while private workspaces isolate independent proof invocations.',
 );

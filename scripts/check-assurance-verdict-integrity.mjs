@@ -631,15 +631,26 @@ export function assertAssuranceVerdictIntegrity() {
 
   const assuranceRunner = read('scripts/run-assurance.mjs');
   assert.match(assuranceRunner, /requireSuccessfulProcess\(result, label\)/u);
-  assert.match(assuranceRunner, /const terminateSiblings = \(failedChild\) =>/u);
+  assert.match(assuranceRunner, /function terminateProcessTree\(child\)/u);
   assert.match(
     assuranceRunner,
-    /child\.kill\(\)/u,
-    'parallel assurance failure paths must kill surviving siblings',
+    /detached: process\.platform !== 'win32'/u,
+    'parallel assurance children must be isolatable as complete process trees',
   );
-  assert.ok(
-    (assuranceRunner.match(/terminateSiblings\(child\)/gu) ?? []).length >= 3,
-    'parallel assurance failure paths no longer terminate surviving siblings',
+  assert.match(
+    assuranceRunner,
+    /process\.kill\(-pid, 'SIGKILL'\)/u,
+    'parallel assurance failure must terminate POSIX descendant process groups, not only direct children',
+  );
+  assert.match(
+    assuranceRunner,
+    /const outcomes = await Promise\.allSettled\(/u,
+    'parallel assurance failure must wait for all direct children to settle before returning',
+  );
+  assert.match(
+    assuranceRunner,
+    /terminateAllProcessTrees\(\)/u,
+    'parallel assurance failure no longer terminates every active child tree',
   );
 
   for (const wrapper of [
