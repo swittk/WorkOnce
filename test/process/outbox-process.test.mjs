@@ -21,35 +21,41 @@ function start(path, mode, parentId) {
 const message = (child) => nextChildMessage(child, 15000);
 async function setup(path, childKeys) {
   const store = createSqliteStore(path);
-  const work = createWorkOnce({ store, scope: 'outbox-process' });
-  const parent = work.define('parent');
-  const child = work.define('child');
-  const snapshot = await parent.ensure(null, { key: 'p' });
-  const [run] = await parent.claim({ workerId: 'setup' });
-  await run.settle(
-    run.succeed(null, { next: childKeys.map((key) => child.request(null, { key })) }),
-  );
-  store.close();
-  return snapshot.id;
+  try {
+    const work = createWorkOnce({ store, scope: 'outbox-process' });
+    const parent = work.define('parent');
+    const child = work.define('child');
+    const snapshot = await parent.ensure(null, { key: 'p' });
+    const [run] = await parent.claim({ workerId: 'setup' });
+    await run.settle(
+      run.succeed(null, { next: childKeys.map((key) => child.request(null, { key })) }),
+    );
+    return snapshot.id;
+  } finally {
+    store.close();
+  }
 }
 async function setupPoison(path) {
   const store = createSqliteStore(path);
-  const work = createWorkOnce({ store, scope: 'outbox-process' });
-  const parent = work.define('parent');
-  const child = work.define('child');
-  await child.ensure({ original: true }, { key: 'poison' });
-  const snapshot = await parent.ensure(null, { key: 'p' });
-  const [run] = await parent.claim({ workerId: 'setup' });
-  await run.settle(
-    run.succeed(null, {
-      next: [
-        child.request({ wrong: true }, { key: 'poison' }),
-        child.request(null, { key: 'healthy' }),
-      ],
-    }),
-  );
-  store.close();
-  return snapshot.id;
+  try {
+    const work = createWorkOnce({ store, scope: 'outbox-process' });
+    const parent = work.define('parent');
+    const child = work.define('child');
+    await child.ensure({ original: true }, { key: 'poison' });
+    const snapshot = await parent.ensure(null, { key: 'p' });
+    const [run] = await parent.claim({ workerId: 'setup' });
+    await run.settle(
+      run.succeed(null, {
+        next: [
+          child.request({ wrong: true }, { key: 'poison' }),
+          child.request(null, { key: 'healthy' }),
+        ],
+      }),
+    );
+    return snapshot.id;
+  } finally {
+    store.close();
+  }
 }
 
 async function killAtStage(path, mode, parentId, expectedStage) {

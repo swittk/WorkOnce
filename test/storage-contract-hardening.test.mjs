@@ -14,8 +14,12 @@ function casFixture(options = {}) {
   const native = createMemoryStore({ now: () => now });
   let falseWrites = options.falseWrites ?? 0;
   let compareCalls = 0;
+  let readCalls = 0;
   const port = {
-    getMany: (ids) => native.getMany(ids),
+    getMany: (ids) => {
+      readCalls++;
+      return native.getMany(ids);
+    },
     query: (query) => native.query(query),
     async compareExchange(change) {
       compareCalls++;
@@ -38,6 +42,7 @@ function casFixture(options = {}) {
     port,
     store: createCompareExchangeStore(port, { maxConflicts: options.maxConflicts ?? 100 }),
     compareCalls: () => compareCalls,
+    readCalls: () => readCalls,
     setNow(value) {
       now = value;
     },
@@ -234,6 +239,11 @@ test('native CAS retries proven compare-miss contention only after a fresh read'
   const snapshot = await q.ensure(null, { key: 'x' });
   assert.equal(snapshot.phase.state, 'queued');
   assert.equal(f.compareCalls(), 3);
+  assert.equal(
+    f.readCalls(),
+    f.compareCalls(),
+    'each CAS retry must start from a fresh native read',
+  );
   assert.ok((await f.native.getMany([snapshot.id])).rows[0]);
 });
 

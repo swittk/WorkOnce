@@ -58,7 +58,7 @@ requireRed(
       '',
     ),
   ['--test', 'test/storage-refinement.test.mjs'],
-  /deadlineEqualityRejected|Storage refinement failed/u,
+  /deadlineEqualityRejected/u,
 );
 requireRed(
   'dist/memory.js',
@@ -69,14 +69,14 @@ requireRed(
       'compareUtf8Text(row.id, query.afterId) >= 0',
     ),
   ['--test', 'test/storage-refinement.test.mjs'],
-  /cursorExact|Storage refinement failed/u,
+  /cursorExact/u,
 );
 requireRed(
   'dist/storage-validation.js',
   'exact +1 revision validation',
   (text) => text.replace('next.revision !== expectedRevision', 'false'),
   ['--test', 'test/storage-refinement.test.mjs'],
-  /exactRevisionError|Storage refinement failed/u,
+  /exactRevisionError/u,
 );
 requireRed(
   'dist/sqlite.js',

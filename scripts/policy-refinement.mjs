@@ -749,62 +749,81 @@ export function assertPolicyRefinementSamples(samples) {
   );
   for (const sample of samples) {
     const name = JSON.stringify(sample);
-    if (sample.kind === 'retryBoundary' || sample.kind === 'deferBoundary') {
+    if (sample.kind === 'retryBoundary') {
+      assertExactBooleanSample(
+        sample,
+        ['reasonPreserved', 'counterExact'],
+        ['policyAllows', 'retryLimit', 'attemptLimit', 'deadlineLimit', 'stop', 'expected'],
+      );
       assert.equal(sample.stop, sample.expected, name);
-      assert.equal(sample.reasonPreserved, true, name);
-      assert.equal(sample.counterExact, true, name);
+    } else if (sample.kind === 'deferBoundary') {
+      assertExactBooleanSample(
+        sample,
+        ['reasonPreserved', 'counterExact'],
+        ['attemptLimit', 'deadlineLimit', 'deferralLimit', 'stop', 'expected'],
+      );
+      assert.equal(sample.stop, sample.expected, name);
     } else if (sample.kind === 'backoffFinite') {
-      assert.equal(sample.matchesExpected, true, name);
-      assert.equal(sample.safeInteger, true, name);
+      assertExactBooleanSample(sample, ['matchesExpected', 'safeInteger'], ['category']);
     } else if (sample.kind === 'policyRace') {
-      assert.equal(sample.callbackOnce, true, name);
-      assert.equal(sample.contextExact, true, name);
-      assert.equal(sample.exactStale, true, name);
-      assert.equal(sample.winnerPreserved, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['callbackOnce', 'contextExact', 'exactStale', 'winnerPreserved'],
+        ['outcomeKind', 'race'],
+      );
     } else if (sample.kind === 'policyFailure') {
-      assert.equal(sample.exactError, true, name);
-      assert.equal(sample.callbackOnce, true, name);
-      assert.equal(sample.noWrite, true, name);
-      assert.equal(sample.stillRunning, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['exactError', 'callbackOnce', 'noWrite', 'stillRunning'],
+        ['outcomeKind'],
+      );
     } else if (sample.kind === 'policyReplay') {
-      assert.equal(sample.callbackOnce, true, name);
-      assert.equal(sample.samePhase, true, name);
-      assert.equal(sample.waiting, true, name);
+      assertExactBooleanSample(sample, ['callbackOnce', 'samePhase', 'waiting'], ['outcomeKind']);
     } else if (sample.kind === 'casAckLoss') {
-      assert.equal(sample.exactAckError, true, name);
-      assert.equal(sample.committedWaiting, true, name);
-      assert.equal(sample.replayConverged, true, name);
-      assert.equal(sample.callbackOnce, true, name);
-      assert.equal(sample.counterOnce, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['exactAckError', 'committedWaiting', 'replayConverged', 'callbackOnce', 'counterOnce'],
+        ['outcomeKind'],
+      );
     } else if (sample.kind === 'receiptSplit') {
-      assert.equal(sample.samePublic, true, name);
-      assert.equal(sample.differentReceipt, true, name);
-      assert.equal(sample.otherwiseSameDurable, true, name);
-      assert.equal(sample.sameReplayAccepted, true, name);
-      assert.equal(sample.crossReplayConflict, true, name);
+      assertExactBooleanSample(sample, [
+        'samePublic',
+        'differentReceipt',
+        'otherwiseSameDurable',
+        'sameReplayAccepted',
+        'crossReplayConflict',
+      ]);
     } else if (sample.kind === 'receiptAcrossAttempts') {
-      assert.equal(sample.firstReceiptFence, true, name);
-      assert.equal(sample.oldReplayDuringNewAttempt, true, name);
-      assert.equal(sample.oldConflictExact, true, name);
-      assert.equal(sample.secondReceiptFence, true, name);
-      assert.equal(sample.oldReplayAfterReplacementStale, true, name);
+      assertExactBooleanSample(
+        sample,
+        [
+          'firstReceiptFence',
+          'oldReplayDuringNewAttempt',
+          'oldConflictExact',
+          'secondReceiptFence',
+          'oldReplayAfterReplacementStale',
+        ],
+        ['outcomeKind'],
+      );
     } else if (sample.kind === 'historyCongruence') {
-      assert.equal(sample.materiallyDifferentHistory, true, name);
-      assert.equal(sample.sameDurableProjection, true, name);
-      assert.equal(sample.sameFuture, true, name);
+      assertExactBooleanSample(sample, [
+        'materiallyDifferentHistory',
+        'sameDurableProjection',
+        'sameFuture',
+      ]);
     } else if (sample.kind === 'wakeCompetition') {
-      assert.equal(sample.exactlyOneWake, true, name);
-      assert.equal(sample.exactLoser, true, name);
-      assert.equal(sample.immediateEligibility, true, name);
-      assert.equal(sample.claimable, true, name);
-      assert.equal(sample.terminalCauseExact, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['exactlyOneWake', 'exactLoser', 'immediateEligibility', 'claimable', 'terminalCauseExact'],
+        ['adapter'],
+      );
     } else if (sample.kind === 'adapterEquivalence') {
+      assertExactBooleanSample(sample, ['equivalent'], ['outcomeKind', 'adapters']);
       assert.equal(
         sample.adapters,
         'memory,sqlite,cas',
         `adapterEquivalence adapter coverage drifted: ${name}`,
       );
-      assert.equal(sample.equivalent, true, name);
     } else if (sample.kind === 'timingBoundary') {
       assertExactBooleanSample(sample, [
         'pastClampedToNow',

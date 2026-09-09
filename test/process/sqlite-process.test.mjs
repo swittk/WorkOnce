@@ -44,10 +44,14 @@ test('8 independent OS processes reopen the one current SQLite schema without ch
   let children = [];
   try {
     const store = createSqliteStore(path);
-    const queue = createWorkOnce({ store, scope: 'reopen' }).define('job');
-    const snapshot = await queue.ensure({ value: 1 }, { key: 'saved' });
-    const before = (await store.getMany([snapshot.id])).rows[0];
-    store.close();
+    let snapshot, before;
+    try {
+      const queue = createWorkOnce({ store, scope: 'reopen' }).define('job');
+      snapshot = await queue.ensure({ value: 1 }, { key: 'saved' });
+      before = (await store.getMany([snapshot.id])).rows[0];
+    } finally {
+      store.close();
+    }
     children = Array.from({ length: 8 }, (_, i) => start(path, 'open', String(i)));
     await Promise.all(children.map(message));
     const replies = children.map(message);
@@ -76,12 +80,15 @@ test('8 independent OS processes cannot double-claim one SQLite item', async () 
     path = join(dir, 'queue.sqlite');
   let children = [];
   try {
-    const store = createSqliteStore(path),
-      q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
+    const store = createSqliteStore(path);
+    try {
+      const q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
         limits: { leaseMs: 3000 },
       });
-    await q.enqueue(null, { key: 'job' });
-    store.close();
+      await q.enqueue(null, { key: 'job' });
+    } finally {
+      store.close();
+    }
     children = Array.from({ length: 8 }, (_, i) => start(path, 'claim', String(i)));
     await Promise.all(children.map(message));
     const replies = children.map(message);

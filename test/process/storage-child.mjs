@@ -25,9 +25,11 @@ if (mode === 'commit-before-ack') {
   await queue.ensure({ value: 1 }, { key: 'x' });
   process.send?.({ unexpectedReturn: true });
 } else if (mode === 'decision-fault') {
+  const queue = createWorkOnce({ store: base, scope: 'storage-process' }).define('job');
+  const request = queue.request(null, { key: 'x' });
   process.send?.({ ready: true });
   try {
-    await base.atomic('["storage-process","job","x"]', () => {
+    await base.atomic(request.id, () => {
       throw new Error('decision failed');
     });
   } catch (error) {

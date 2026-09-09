@@ -19,14 +19,15 @@ function start(path, mode, outcomeKind) {
   );
 }
 const message = (child) => nextChildMessage(child, 15000);
+const jobDefinition = {
+  retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
+  wait: { afterMs: 0 },
+  limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 30000, maxDeferrals: 4 },
+};
 async function setup(path) {
   const store = createSqliteStore(path);
   try {
-    const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', {
-      retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
-      wait: { afterMs: 0 },
-      limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 4 },
-    });
+    const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', jobDefinition);
     await queue.ensure(null, { key: 'job' });
   } finally {
     store.close();
@@ -34,11 +35,7 @@ async function setup(path) {
 }
 function reopen(path) {
   const store = createSqliteStore(path);
-  const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', {
-    retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
-    wait: { afterMs: 0 },
-    limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 4 },
-  });
+  const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', jobDefinition);
   return { store, queue };
 }
 async function killAt(path, mode, outcomeKind, expectedStage) {

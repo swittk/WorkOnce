@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -215,25 +216,148 @@ export function assertAssuranceVerdictIntegrity() {
   }
 
   const generatedMutationRoots = ['dist', 'dist-cjs', '.artifacts'];
+  function resolvedMutationWriteTargets(source, name) {
+    const sourceFile = ts.createSourceFile(
+      name,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.JS,
+    );
+    const declarations = new Map();
+    const domains = new Map();
+    const functions = new Map();
+    const calls = [];
+    const writes = [];
+    const add = (map, key, value) => {
+      const values = map.get(key) ?? [];
+      values.push(value);
+      map.set(key, values);
+    };
+    function discover(node) {
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)
+        add(declarations, node.name.text, node.initializer);
+      if (ts.isFunctionDeclaration(node) && node.name) functions.set(node.name.text, node);
+      if (ts.isForOfStatement(node)) {
+        const [declaration] = node.initializer.declarations ?? [];
+        if (declaration && ts.isIdentifier(declaration.name))
+          add(domains, declaration.name.text, node.expression);
+        else if (declaration && ts.isArrayBindingPattern(declaration.name))
+          declaration.name.elements.forEach((element, index) => {
+            if (ts.isBindingElement(element) && ts.isIdentifier(element.name))
+              add(domains, element.name.text, { iterable: node.expression, index });
+          });
+      }
+      if (ts.isCallExpression(node)) {
+        calls.push(node);
+        if (
+          ts.isPropertyAccessExpression(node.expression) &&
+          (node.expression.name.text === 'writeFileSync' ||
+            node.expression.name.text === 'appendFileSync')
+        )
+          writes.push(node);
+      }
+      ts.forEachChild(node, discover);
+    }
+    discover(sourceFile);
+    for (const call of calls) {
+      if (!ts.isIdentifier(call.expression)) continue;
+      const fn = functions.get(call.expression.text);
+      if (!fn) continue;
+      fn.parameters.forEach((parameter, index) => {
+        if (ts.isIdentifier(parameter.name) && call.arguments[index])
+          add(domains, parameter.name.text, call.arguments[index]);
+      });
+    }
+    function iterableElements(expression, index, seen) {
+      if (ts.isIdentifier(expression)) {
+        const initializers = declarations.get(expression.text) ?? [];
+        return initializers.flatMap((initializer) => iterableElements(initializer, index, seen));
+      }
+      if (ts.isNewExpression(expression) && expression.expression.getText(sourceFile) === 'Map') {
+        const [entries] = expression.arguments ?? [];
+        return entries ? iterableElements(entries, index, seen) : [];
+      }
+      if (!ts.isArrayLiteralExpression(expression)) return [];
+      const result = [];
+      for (const element of expression.elements) {
+        if (ts.isArrayLiteralExpression(element) && element.elements[index])
+          result.push(element.elements[index]);
+        else if (index === 0) result.push(element);
+      }
+      return result;
+    }
+    function resolve(expression, seen = new Set()) {
+      if (ts.isStringLiteralLike(expression)) return [expression.text];
+      if (ts.isTemplateExpression(expression)) {
+        let value = expression.head.text;
+        for (const span of expression.templateSpans) {
+          if (
+            !(
+              ts.isPropertyAccessExpression(span.expression) &&
+              span.expression.expression.getText(sourceFile) === 'process' &&
+              span.expression.name.text === 'pid'
+            )
+          )
+            return [];
+          value += '__PID__' + span.literal.text;
+        }
+        return [value];
+      }
+      if (ts.isIdentifier(expression)) {
+        if (expression.text === 'root') return [''];
+        if (seen.has(expression.text)) return [];
+        const nextSeen = new Set(seen).add(expression.text);
+        const values = [];
+        for (const domain of domains.get(expression.text) ?? []) {
+          if (domain?.iterable)
+            for (const candidate of iterableElements(domain.iterable, domain.index, nextSeen))
+              values.push(...resolve(candidate, nextSeen));
+          else if (ts.isArrayLiteralExpression(domain))
+            for (const candidate of domain.elements) values.push(...resolve(candidate, nextSeen));
+          else values.push(...resolve(domain, nextSeen));
+        }
+        for (const initializer of declarations.get(expression.text) ?? [])
+          values.push(...resolve(initializer, nextSeen));
+        return [...new Set(values)];
+      }
+      if (
+        ts.isCallExpression(expression) &&
+        ts.isPropertyAccessExpression(expression.expression) &&
+        expression.expression.expression.getText(sourceFile) === 'path' &&
+        expression.expression.name.text === 'join'
+      ) {
+        let paths = [''];
+        for (const argument of expression.arguments) {
+          const segments = resolve(argument, seen);
+          if (segments.length === 0) return [];
+          paths = paths.flatMap((base) =>
+            segments.map((segment) => path.posix.join(base, segment)),
+          );
+        }
+        return paths;
+      }
+      return [];
+    }
+    assert.ok(writes.length > 0, `${name} write-target audit found no writes to classify`);
+    const targets = [];
+    for (const write of writes) {
+      const target = write.arguments[0];
+      const resolved = target ? resolve(target) : [];
+      assert.ok(
+        resolved.length > 0,
+        `${name} write target cannot be statically resolved before generated-only classification`,
+      );
+      targets.push(...resolved);
+    }
+    return [...new Set(targets)];
+  }
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
     if (!/(?:writeFileSync|appendFileSync)\(/u.test(source)) continue;
     if (/createMutationFileGuard\(\)/u.test(source)) continue;
-    const declaredTargets = [
-      ...[...source.matchAll(/path\.join\(root,\s*['"]([^'"]+)['"]/gu)].map((match) => match[1]),
-    ];
-    for (const helperName of ['requireRed', 'mutate', 'mutateFile'])
-      if (new RegExp(`function ${helperName}\\(relative\\b`, 'u').test(source))
-        declaredTargets.push(
-          ...[
-            ...source.matchAll(new RegExp(`\\b${helperName}\\(\\s*['\"]([^'\"]+)['\"]`, 'gu')),
-          ].map((match) => match[1]),
-        );
-    assert.ok(
-      declaredTargets.length > 0,
-      `${name} writes mutation files but its target roots cannot be proven generated-only`,
-    );
-    const generatedOnly = declaredTargets.every((target) =>
+    const resolvedTargets = resolvedMutationWriteTargets(source, name);
+    const generatedOnly = resolvedTargets.every((target) =>
       generatedMutationRoots.some(
         (rootName) => target === rootName || target.startsWith(`${rootName}/`),
       ),
@@ -302,7 +426,11 @@ export function assertAssuranceVerdictIntegrity() {
   assert.doesNotMatch(storageFormal, /const rejectedForInvariant\s*=/u);
 
   const storageRefinement = read('scripts/storage-refinement.mjs');
-  assert.doesNotMatch(storageRefinement, /oneAccepted\s*:\s*true/u);
+  assert.doesNotMatch(
+    storageRefinement,
+    /oneAccepted\s*:\s*true/u,
+    'storage refinement oneAccepted witness must be observation-derived',
+  );
   assert.doesNotMatch(storageRefinement, /maxSafeAccepted\s*:\s*true/u);
   assert.match(storageRefinement, /oneAccepted\s*=\s*true/u);
   assert.match(storageRefinement, /maxSafeAccepted\s*=\s*true/u);
@@ -342,7 +470,11 @@ export function assertAssuranceVerdictIntegrity() {
     'finite-drain sample',
   );
   assert.match(drainSample, /const maxPasses\s*=\s*\d+/u);
-  assert.match(drainSample, /for \(; passes < maxPasses; passes\+\+\)/u);
+  assert.match(
+    drainSample,
+    /for \(; passes < maxPasses; passes\+\+\)/u,
+    'finite claim-drain witness must remain explicitly bounded by maxPasses',
+  );
   assert.match(drainSample, /boundedPasses:\s*passes < maxPasses/u);
   assert.doesNotMatch(drainSample, /for \(;;\)/u);
 
@@ -354,7 +486,11 @@ export function assertAssuranceVerdictIntegrity() {
     'external lease-boundary sample',
   );
   assert.match(leaseSample, /async function one\(lease, claimDelayMs = 0\)/u);
-  assert.match(leaseSample, /if \(claimDelayMs > 0\) await sleep\(claimDelayMs\)/u);
+  assert.match(
+    leaseSample,
+    /if \(claimDelayMs > 0\) await sleep\(claimDelayMs\)/u,
+    'external one-tick lease witness must preserve deterministic claimDelayMs injection',
+  );
   assert.match(leaseSample, /delayedOneTick = await one\([\s\S]*?,\s*5,\s*\)/u);
   assert.match(leaseSample, /oneTickHeartbeatCompatible/u);
   assert.match(leaseSample, /Confirmed external lease deadline passed/u);
@@ -419,14 +555,22 @@ export function assertAssuranceVerdictIntegrity() {
     'multi-active crash fixture',
   );
   assert.match(multiFixture, /seed\(path, 3, 2000\)/u);
-  assert.match(multiFixture, /inspectMany\(\['0', '1', '2'\]\)/u);
+  assert.match(
+    multiFixture,
+    /inspectMany\(\['0', '1', '2'\]\)/u,
+    'multi-active crash fixture must observe durable WorkOnce state before SIGKILL',
+  );
   assert.match(multiFixture, /snapshot\?\.phase\.state === 'running'/u);
   assert.match(multiFixture, /snapshots\.map\(\(snapshot\) => snapshot\.phase\.attempt\)/u);
   assert.doesNotMatch(multiFixture, /nextMessage\(child\)/u);
   assert.match(multiFixture, /sleep\(2050\)/u);
   assert.match(multiFixture, /reopen\(path, 2000\)/u);
   const processChild = read('test/process/local-runner-child.mjs');
-  assert.match(processChild, /mode === 'multi-active' \? 2000 : 200/u);
+  assert.match(
+    processChild,
+    /mode === 'multi-active' \? 2000 : 200/u,
+    'multi-active crash child must keep the 2000ms synchronization lease',
+  );
 
   const killHelper = boundedSection(
     processTest,

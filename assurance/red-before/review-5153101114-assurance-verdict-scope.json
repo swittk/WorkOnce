@@ -1,0 +1,15 @@
+{
+  "reviewId": 5153101114,
+  "findingCommentId": 3967405187,
+  "head": "1dc54d22942fc0cb7f8283bc33b9259614a014f6",
+  "defect": "assurance verdict mutation-scope audit accepted a mutation checker whose dynamic path.join(root, relative) target set included tracked src/worker.ts because only separately declared generated targets were considered",
+  "probe": "temporarily add src/worker.ts to the real check-build-source-binding-mutation.mjs dynamic relative target list, then run the real check-assurance-verdict-integrity.mjs",
+  "expectedPreFix": "checker should fail closed",
+  "observedPreFix": {
+    "exitStatus": 0,
+    "passed": true,
+    "output": "Assurance verdict integrity is fail-closed across 25 mutation checkers, TLC classification, observed witnesses, bounded races/drains and process-fault waits."
+  },
+  "streakRelevant": true,
+  "tlaDisposition": "assurance-harness verdict defect; no TLA state transition can represent the checker false-positive itself, so fix the verdict machinery rather than the runtime abstract machine"
+}

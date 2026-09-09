@@ -29,7 +29,11 @@ try {
   {
     const original = originals.get(kernelPath);
     const needle = '...row.history.slice(-127),';
-    assert.equal(original.includes(needle), true, 'history retention mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'history retention mutation anchor is not unique',
+    );
     fs.writeFileSync(kernelPath, original.replace(needle, '...row.history.slice(-126),'));
     runExpectedFailure(
       '127-event history retention',
@@ -40,7 +44,7 @@ try {
   {
     const original = originals.get(workPath);
     const needle = 'return copy(row.history);';
-    assert.equal(original.includes(needle), true, 'history order mutation anchor is stale');
+    assert.equal(original.split(needle).length, 2, 'history order mutation anchor is not unique');
     fs.writeFileSync(workPath, original.replace(needle, 'return copy(row.history).reverse();'));
     runExpectedFailure(
       'reversed public history order',

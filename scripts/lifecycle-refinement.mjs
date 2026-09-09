@@ -753,11 +753,13 @@ export function assertLifecycleRefinementSamples(samples) {
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     if (sample.kind === 'revisionHistorySplit') {
-      assert.equal(sample.sameOldAbstraction, true, name);
-      assert.equal(sample.revisionsDiffer, true, name);
-      assert.equal(sample.historiesDiffer, true, name);
-      assert.equal(sample.sameFutureCommand, true, name);
-      assert.equal(sample.futureDiverges, true, name);
+      assertExactBooleanSample(sample, [
+        'sameOldAbstraction',
+        'revisionsDiffer',
+        'historiesDiffer',
+        'sameFutureCommand',
+        'futureDiverges',
+      ]);
     } else if (sample.kind === 'terminalReceipt') {
       assertExactBooleanSample(
         sample,
@@ -780,7 +782,11 @@ export function assertLifecycleRefinementSamples(samples) {
         name,
       );
     } else if (sample.kind === 'cancelOrdering') {
-      assert.equal(sample.cancelAccepted, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['cancelAccepted'],
+        ['first', 'finalState', 'completionRejected', 'completionCause'],
+      );
       assert.equal(sample.finalState, sample.first === 'cancel' ? 'cancelled' : 'succeeded', name);
       assert.equal(sample.completionRejected, sample.first === 'cancel', name);
       assert.equal(
@@ -796,15 +802,14 @@ export function assertLifecycleRefinementSamples(samples) {
         'staleSettleCause',
       ]);
     } else if (sample.kind === 'generationCompetition') {
-      assert.equal(sample.exactlyOneReset, true, name);
-      assert.equal(sample.exactLoser, true, name);
-      assert.equal(sample.queuedOnce, true, name);
+      assertExactBooleanSample(sample, ['exactlyOneReset', 'exactLoser', 'queuedOnce']);
     } else if (sample.kind === 'resetCheckRace') {
+      assertExactBooleanSample(
+        sample,
+        ['checkOnce', 'winnerAdvanced', 'exactLateCause', 'noDoubleGeneration'],
+        ['resetKind'],
+      );
       assert.ok(['retry', 'rerun'].includes(sample.resetKind), name);
-      assert.equal(sample.checkOnce, true, name);
-      assert.equal(sample.winnerAdvanced, true, name);
-      assert.equal(sample.exactLateCause, true, name);
-      assert.equal(sample.noDoubleGeneration, true, name);
     } else if (sample.kind === 'claimOrderEquivalence') {
       assert.equal(
         sample.adapters,
@@ -831,13 +836,13 @@ export function assertLifecycleRefinementSamples(samples) {
         ['adapter'],
       );
     } else if (sample.kind === 'claimLimit') {
-      assert.equal(sample.exactReturnedLimit, true, name);
-      assert.equal(sample.exactRunningCount, true, name);
-      assert.equal(sample.laterDueRemainReachable, true, name);
+      assertExactBooleanSample(
+        sample,
+        ['exactReturnedLimit', 'exactRunningCount', 'laterDueRemainReachable'],
+        ['adapter'],
+      );
     } else if (sample.kind === 'finiteClaimDrain') {
-      assert.equal(sample.allUnique, true, name);
-      assert.equal(sample.allReached, true, name);
-      assert.equal(sample.boundedPasses, true, name);
+      assertExactBooleanSample(sample, ['allUnique', 'allReached', 'boundedPasses'], ['adapter']);
     } else if (sample.kind === 'adapterLifecycleEquivalence') {
       assert.equal(
         sample.adapters,

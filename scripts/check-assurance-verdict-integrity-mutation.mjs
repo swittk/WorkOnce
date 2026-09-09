@@ -32,6 +32,13 @@ function mutate(relative, from, to, label, pattern) {
 }
 
 mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {",
+  "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts', 'src/worker.ts']) {",
+  'generated-only mutation scope hides a tracked dynamic path target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
   'requireExpectedProcessFailure(result, `${label} mutant`, pattern);',
   'assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',
@@ -106,7 +113,7 @@ mutate(
   '    oneAccepted,\n    maxSafeAccepted,',
   '    oneAccepted: true,\n    maxSafeAccepted: true,',
   'fabricated storage acceptance witness',
-  /oneAccepted|literal/u,
+  /storage refinement oneAccepted witness must be observation-derived/u,
 );
 mutate(
   'scripts/lifecycle-formal.mjs',
@@ -141,7 +148,7 @@ mutate(
   '    for (; passes < maxPasses; passes++) {',
   '    for (;;) {',
   'unbounded lifecycle claim drain',
-  /for \(;;\)|maxPasses/u,
+  /finite claim-drain witness must remain explicitly bounded by maxPasses/u,
 );
 mutate(
   'scripts/lifecycle-refinement.mjs',
@@ -169,7 +176,7 @@ mutate(
   '        if (claimDelayMs > 0) await sleep(claimDelayMs);',
   '        void claimDelayMs;',
   'one-tick refinement loses deterministic claim-latency witness',
-  /claimDelayMs|delayedOneTick/u,
+  /external one-tick lease witness must preserve deterministic claimDelayMs injection/u,
 );
 mutate(
   'formal/WorkOnceExternal.tla',
@@ -190,14 +197,14 @@ mutate(
   "          const snapshots = await observing.queue.inspectMany(['0', '1', '2']);",
   '          const snapshots = [];',
   'multi-active crash synchronization stops observing durable WorkOnce state',
-  /inspectMany|durable WorkOnce/u,
+  /multi-active crash fixture must observe durable WorkOnce state before SIGKILL/u,
 );
 mutate(
   'test/process/local-runner-child.mjs',
   "const leaseMs = mode === 'multi-active' ? 2000 : 200;",
   'const leaseMs = 200;',
   'scheduler-sensitive multi-active crash lease',
-  /multi-active|2000/u,
+  /multi-active crash child must keep the 2000ms synchronization lease/u,
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
