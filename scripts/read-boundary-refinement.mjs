@@ -5,6 +5,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -140,8 +141,10 @@ export function assertTypedReadBoundarySamples(samples) {
   const adapters = samples.map((sample) => sample.adapter).sort();
   if (JSON.stringify(adapters) !== JSON.stringify(['cas', 'memory', 'sqlite']))
     throw new Error(`Unexpected read adapter set: ${JSON.stringify(adapters)}`);
-  for (const sample of samples)
+  for (const sample of samples) {
     for (const field of typedReadAdapterEvidenceFields)
       if (sample[field] !== true)
         throw new Error(`Typed read refinement failed: ${sample.adapter}.${field}`);
+    assertExactBooleanSample(sample, typedReadAdapterEvidenceFields, ['adapter']);
+  }
 }

@@ -1,6 +1,7 @@
 ------------------------- MODULE WorkOnceClaimScan -------------------------
 EXTENDS Naturals
 CONSTANTS ScanWidth, ClaimLimit, InitialFront, InitialHealthy
+ASSUME ScanWidth > 0
 ASSUME InitialFront <= ScanWidth
 ASSUME InitialHealthy > 0
 ASSUME ClaimLimit > 0

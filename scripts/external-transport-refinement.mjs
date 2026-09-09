@@ -877,15 +877,43 @@ const externalMetadataFields = {
   externalAdapterEquivalence: ['adapters'],
   prepareRace: ['race'],
 };
+const externalExpectedKindCounts = Object.freeze({
+  capacityFairness: 1,
+  externalAdapterEquivalence: 1,
+  handoffHistory: 1,
+  heartbeatFailure: 1,
+  leaseBoundary: 1,
+  oversizedClaim: 1,
+  prepareDisposition: 1,
+  prepareRace: 2,
+  staleForeignAttempt: 1,
+  stopSignal: 1,
+  unknownAckHistory: 1,
+  unknownSettleAck: 1,
+});
 
 export function assertExternalTransportSamples(samples) {
   assert.equal(samples.length, 13, 'external transport sample family unexpectedly changed');
+  const observedKindCounts = {};
+  const prepareRaces = [];
   for (const sample of samples) {
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+    if (sample.kind === 'prepareRace') prepareRaces.push(sample.race);
     const fields = externalBooleanFields[sample.kind];
     assert.ok(fields, `Unmapped external sample: ${JSON.stringify(sample)}`);
     assertExactBooleanSample(sample, fields, externalMetadataFields[sample.kind] ?? []);
     if (sample.kind === 'externalAdapterEquivalence')
       assert.equal(sample.adapters, 'memory,sqlite,cas', 'external adapter coverage drifted');
   }
+  assert.deepEqual(
+    observedKindCounts,
+    externalExpectedKindCounts,
+    'external sample kind coverage drifted',
+  );
+  assert.deepEqual(
+    prepareRaces.sort(),
+    ['cancel', 'reclaim'],
+    'external prepare-race coverage drifted',
+  );
   return samples.length;
 }

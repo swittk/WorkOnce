@@ -37,7 +37,7 @@ try {
     fs.writeFileSync(kernelPath, original.replace(needle, '...row.history.slice(-126),'));
     runExpectedFailure(
       '127-event history retention',
-      /historyTruncation\.(?:retainedEvents|exactly128)/u,
+      /historyTruncation\.(?:retainedEvents|exactly128): .*"retainedEvents":127/u,
     );
     restore();
   }
@@ -48,7 +48,7 @@ try {
     fs.writeFileSync(workPath, original.replace(needle, 'return copy(row.history).reverse();'));
     runExpectedFailure(
       'reversed public history order',
-      /historyCongruence\.allFutureHistoryTailsSame|historyTruncation\.latestActionsExact/u,
+      /(?:historyCongruence\.allFutureHistoryTailsSame: .*"allFutureHistoryTailsSame":false|historyTruncation\.latestActionsExact: .*"latestActionsExact":false)/u,
     );
     restore();
   }

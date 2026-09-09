@@ -56,7 +56,8 @@ function terminateProcessTree(child) {
   try {
     process.kill(-pid, 'SIGKILL');
   } catch (error) {
-    if (error?.code !== 'ESRCH') throw error;
+    if (error?.code !== 'ESRCH')
+      console.error(`[assurance] process-tree termination failed for pid ${pid}:`, error);
   }
 }
 async function runParallel(entries) {

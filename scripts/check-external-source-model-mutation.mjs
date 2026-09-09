@@ -13,7 +13,11 @@ const target = path.join(root, 'src/external.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = '    if (leases.length > limit)';
 const replacement = '    if (leases.length >= limit)';
-assert.equal(original.includes(needle), true, 'external source/model mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'external source/model mutation anchor is not unique',
+);
 try {
   mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(

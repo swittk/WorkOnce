@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import { requireSuccessfulProcess } from '../scripts/subprocess-outcome.mjs';
 
 function run(script) {
@@ -25,4 +26,24 @@ test('lifecycle proof is source/model bound and critical compiled mutants are ki
   assert.match(mutations, /claim-scan widening removal/u);
   assert.match(mutations, /claim limit off-by-one/u);
   assert.match(mutations, /retry reset retaining old receipt/u);
+});
+
+test('lifecycle binding write mode ignores mutation-only digest injection', () => {
+  const target = 'assurance/lifecycle-proof-binding.json';
+  const original = fs.readFileSync(target, 'utf8');
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/check-lifecycle-proof-binding.mjs', '--write'],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, WORKONCE_LIFECYCLE_BINDING_MUTANT: 'src/work.ts' },
+        timeout: 300000,
+      },
+    );
+    requireSuccessfulProcess(result, 'lifecycle binding write child');
+    assert.equal(fs.readFileSync(target, 'utf8'), original);
+  } finally {
+    fs.writeFileSync(target, original);
+  }
 });

@@ -41,11 +41,16 @@ try {
   requireExpectedProcessFailure(bounded, 'bounded trace report accepted a changed proof runner');
   assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
   mutationFiles.restoreAll();
+  const runnerNeedle = "'scripts/check-assurance-scheduling.mjs'";
+  assert.equal(
+    runnerOriginal.split(runnerNeedle).length,
+    2,
+    'assurance runner mutation anchor is not unique',
+  );
   const runnerMutant = runnerOriginal.replace(
-    "'scripts/check-assurance-scheduling.mjs'",
+    runnerNeedle,
     "'scripts/check-unbound-assurance-mutant.mjs'",
   );
-  assert.notEqual(runnerMutant, runnerOriginal, 'assurance runner mutation anchor is missing');
   mutationFiles.writeFileSync(runnerTarget, runnerMutant);
   const runnerBinding = run(
     'scripts/check-formal-implementation-conformance.mjs',

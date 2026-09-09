@@ -241,6 +241,7 @@ export function assertAssuranceVerdictIntegrity() {
     const calls = [];
     const mutations = [];
     const promiseMutationImports = new Map();
+    const promiseMutationNamespaces = new Set();
     const directMutationPathArguments = new Map([
       ['writeFileSync', [0]],
       ['appendFileSync', [0]],
@@ -274,6 +275,11 @@ export function assertAssuranceVerdictIntegrity() {
       const direct = directMutationPathArguments.get(expression.name.text);
       if (direct) return direct;
       if (
+        ts.isIdentifier(expression.expression) &&
+        promiseMutationNamespaces.has(expression.expression.text)
+      )
+        return promiseMutationPathArguments.get(expression.name.text) ?? [];
+      if (
         ts.isPropertyAccessExpression(expression.expression) &&
         expression.expression.name.text === 'promises'
       )
@@ -289,15 +295,26 @@ export function assertAssuranceVerdictIntegrity() {
       if (
         ts.isImportDeclaration(node) &&
         ts.isStringLiteralLike(node.moduleSpecifier) &&
-        node.moduleSpecifier.text === 'node:fs/promises' &&
-        node.importClause?.namedBindings &&
-        ts.isNamedImports(node.importClause.namedBindings)
-      )
-        for (const element of node.importClause.namedBindings.elements) {
-          const imported = element.propertyName?.text ?? element.name.text;
-          if (promiseMutationPathArguments.has(imported))
-            promiseMutationImports.set(element.name.text, imported);
-        }
+        node.importClause?.namedBindings
+      ) {
+        if (
+          node.moduleSpecifier.text === 'node:fs/promises' &&
+          ts.isNamedImports(node.importClause.namedBindings)
+        )
+          for (const element of node.importClause.namedBindings.elements) {
+            const imported = element.propertyName?.text ?? element.name.text;
+            if (promiseMutationPathArguments.has(imported))
+              promiseMutationImports.set(element.name.text, imported);
+          }
+        if (
+          node.moduleSpecifier.text === 'node:fs' &&
+          ts.isNamedImports(node.importClause.namedBindings)
+        )
+          for (const element of node.importClause.namedBindings.elements) {
+            const imported = element.propertyName?.text ?? element.name.text;
+            if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
+          }
+      }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)
         add(declarations, node.name.text, node.initializer);
       if (ts.isFunctionDeclaration(node) && node.name) functions.set(node.name.text, node);
@@ -417,7 +434,8 @@ export function assertAssuranceVerdictIntegrity() {
       !/(?:writeFileSync|appendFileSync|copyFileSync|cpSync|renameSync|rmSync|unlinkSync|truncateSync|writeSync|promises\s*\.\s*(?:writeFile|appendFile|copyFile|cp|rename|rm|unlink|truncate))\s*\(/u.test(
         source,
       ) &&
-      !/from ['"]node:fs\/promises['"]/u.test(source)
+      !/from ['"]node:fs\/promises['"]/u.test(source) &&
+      !/import\s*\{[^}]*\bpromises\b[^}]*\}\s*from\s*['"]node:fs['"]/u.test(source)
     )
       continue;
     if (/createMutationFileGuard\(\)/u.test(source)) continue;

@@ -47,7 +47,7 @@ const evidenceFiles = [
 ];
 function digest(files) {
   const hash = crypto.createHash('sha256');
-  const mutantFile = process.env.WORKONCE_LIFECYCLE_BINDING_MUTANT;
+  const mutantFile = write ? undefined : process.env.WORKONCE_LIFECYCLE_BINDING_MUTANT;
   for (const file of files) {
     let text = fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n?/gu, '\n');
     if (mutantFile === file) text += '\n/* lifecycle binding mutation */\n';

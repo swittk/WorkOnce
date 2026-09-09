@@ -24,7 +24,7 @@ test('cancelCurrent returns the revoked running attempt and keeps expected-gener
   const item = q.item({ id: 'a' });
   await item.enqueue();
   const [run] = await q.claim({ workerId: 'A' });
-  const cancelled = await item.cancel({ expectedGeneration: 1, reason: 'staff' });
+  const cancelled = await item.cancel({ reason: 'staff' });
   assert.deepEqual(cancelled.activeAttempt, run.ref);
   assert.equal(cancelled.snapshot.phase.state, 'cancelled');
 });
