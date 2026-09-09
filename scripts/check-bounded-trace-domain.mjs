@@ -32,6 +32,7 @@ const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
   'scripts/formal-bounded-refinement-corpus.mjs',
+  'scripts/refinement-sample-schema.mjs',
   'test/formal-bounded-refinement.test.mjs',
   'scripts/runtime-boundary-refinement.mjs',
   'scripts/read-boundary-refinement.mjs',

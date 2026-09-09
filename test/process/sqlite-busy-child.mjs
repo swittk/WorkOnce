@@ -12,8 +12,8 @@ process.once('message', (message) => {
   if (message?.startHold !== true) throw new Error('expected startHold handshake');
   setTimeout(() => {
     try {
-      process.send?.({ unlocking: true, unlockingAt: Date.now() });
       db.exec('COMMIT');
+      process.send?.({ unlocking: true, unlockingAt: Date.now() });
     } finally {
       db.close();
       process.disconnect?.();

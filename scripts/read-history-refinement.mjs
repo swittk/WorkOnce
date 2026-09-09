@@ -428,6 +428,19 @@ export async function runReadHistorySamples() {
 
 export function assertReadHistorySamples(samples) {
   assert.equal(samples.length, 7, 'read-history sample family unexpectedly changed');
+  assert.deepEqual(
+    samples.map((sample) => `${sample.kind}:${sample.adapter ?? ''}:${sample.mode ?? ''}`).sort(),
+    [
+      'historyCongruence::',
+      'historyTruncation::',
+      'inspectManyRace:cas:mixed',
+      'inspectManyRace:memory:readerFirst',
+      'inspectManyRace:memory:writerFirst',
+      'inspectManyRace:sqlite:readerFirst',
+      'inspectManyRace:sqlite:writerFirst',
+    ],
+    'read-history sample coverage drifted',
+  );
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     if (sample.kind === 'historyCongruence') {

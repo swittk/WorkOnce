@@ -137,6 +137,13 @@ mutate(
   /signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-storage-source-model-mutation.mjs',
+  'const mutationFiles = createMutationFileGuard();',
+  'const mutationFiles = createMutationFileGuard();\nfs.writeFileSync(target, original);',
+  'guarded mutation checker hides adjacent raw tracked write',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/local-runner-refinement.mjs',
   '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
   '          await sleep(35);',
@@ -290,6 +297,27 @@ mutate(
   '  await parentAckEntered;',
   'outbox stale-parent refinement restores unbounded held-ack wait',
   /outbox stale-parent refinement must bound its held-acknowledgement wait/u,
+);
+mutate(
+  'scripts/outbox-refinement.mjs',
+  '  } finally {\n    release();\n    try {\n      await delayed;\n    } catch (error) {\n      staleError = error;\n    }\n  }',
+  '  } finally {\n    try {\n      await delayed;\n    } catch (error) {\n      staleError = error;\n    }\n  }\n  release();',
+  'outbox stale-parent cleanup releases held acknowledgement after cleanup',
+  /outbox stale-parent refinement must release its held acknowledgement and drain delayed work in finally/u,
+);
+mutate(
+  'test/process/sqlite-busy-child.mjs',
+  "      db.exec('COMMIT');\n      process.send?.({ unlocking: true, unlockingAt: Date.now() });",
+  "      process.send?.({ unlocking: true, unlockingAt: Date.now() });\n      db.exec('COMMIT');",
+  'SQLite busy child publishes unlock before commit',
+  /SQLite busy lock-release witness must publish only after COMMIT completes/u,
+);
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'scripts/refinement-sample-schema.mjs',\n",
+  '',
+  'bounded-domain evidence loses shared refinement sample schema',
+  /bounded-domain evidence must hash the shared refinement sample schema/u,
 );
 mutate(
   'scripts/storage-formal.mjs',

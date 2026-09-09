@@ -684,15 +684,21 @@ async function staleParentRaceSample() {
   holdParentAck = true;
   const delayed = firstWork.dispatch({ limit: 1 });
   await within(parentAckEntered, 'stale-parent held acknowledgement');
-  const winner = await secondWork.dispatch({ limit: 1 });
-  const drained = (await parent.inspect('p')).pendingFollowups === 0;
-  const rerun = await parent2.rerun({ key: 'p', generation: 1 });
-  release();
+  let winner;
+  let drained;
+  let rerun;
   let staleError;
   try {
-    await delayed;
-  } catch (error) {
-    staleError = error;
+    winner = await secondWork.dispatch({ limit: 1 });
+    drained = (await parent.inspect('p')).pendingFollowups === 0;
+    rerun = await parent2.rerun({ key: 'p', generation: 1 });
+  } finally {
+    release();
+    try {
+      await delayed;
+    } catch (error) {
+      staleError = error;
+    }
   }
   return {
     kind: 'staleParent',

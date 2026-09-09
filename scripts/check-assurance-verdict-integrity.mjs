@@ -147,6 +147,11 @@ export function assertAssuranceVerdictIntegrity() {
     /historyLimit:[\s\S]{0,180}?historyTruncation[\s\S]{0,120}?retainedEvents/u,
     'bounded-domain history limit must come from the observed truncation sample',
   );
+  assert.match(
+    boundedDomain,
+    /'scripts\/refinement-sample-schema\.mjs'/u,
+    'bounded-domain evidence must hash the shared refinement sample schema',
+  );
   const formalSource = read('scripts/formal.mjs');
   assert.match(
     formalSource,
@@ -197,6 +202,17 @@ export function assertAssuranceVerdictIntegrity() {
     /await within\(parentAckEntered, 'stale-parent held acknowledgement'\)/u,
     'outbox stale-parent refinement must bound its held-acknowledgement wait',
   );
+  assert.match(
+    outboxRefinement,
+    /finally \{\s*release\(\);\s*try \{\s*await delayed;\s*\} catch \(error\) \{\s*staleError = error;\s*\}\s*\}/u,
+    'outbox stale-parent refinement must release its held acknowledgement and drain delayed work in finally',
+  );
+  const sqliteBusyChild = read('test/process/sqlite-busy-child.mjs');
+  assert.match(
+    sqliteBusyChild,
+    /db\.exec\('COMMIT'\);\s*process\.send\?\.\(\{ unlocking: true, unlockingAt: Date\.now\(\) \}\);/u,
+    'SQLite busy lock-release witness must publish only after COMMIT completes',
+  );
   const lifecycleFormalTest = read('test/lifecycle-formal.test.mjs');
   assert.match(
     lifecycleFormalTest,
@@ -240,6 +256,8 @@ export function assertAssuranceVerdictIntegrity() {
     const functions = new Map();
     const calls = [];
     const mutations = [];
+    const mutationGuardBindings = new Set();
+    let guardedMutations = 0;
     const promiseMutationImports = new Map();
     const promiseMutationNamespaces = new Set();
     const directMutationPathArguments = new Map([
@@ -272,6 +290,14 @@ export function assertAssuranceVerdictIntegrity() {
         return imported ? (promiseMutationPathArguments.get(imported) ?? []) : [];
       }
       if (!ts.isPropertyAccessExpression(expression)) return [];
+      if (
+        ts.isIdentifier(expression.expression) &&
+        mutationGuardBindings.has(expression.expression.text) &&
+        (expression.name.text === 'writeFileSync' || expression.name.text === 'appendFileSync')
+      ) {
+        guardedMutations++;
+        return [];
+      }
       const direct = directMutationPathArguments.get(expression.name.text);
       if (direct) return direct;
       if (
@@ -319,8 +345,15 @@ export function assertAssuranceVerdictIntegrity() {
             if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
           }
       }
-      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
         add(declarations, node.name.text, node.initializer);
+        if (
+          ts.isCallExpression(node.initializer) &&
+          ts.isIdentifier(node.initializer.expression) &&
+          node.initializer.expression.text === 'createMutationFileGuard'
+        )
+          mutationGuardBindings.add(node.name.text);
+      }
       if (ts.isFunctionDeclaration(node) && node.name) functions.set(node.name.text, node);
       if (ts.isForOfStatement(node)) {
         const [declaration] = node.initializer.declarations ?? [];
@@ -419,7 +452,10 @@ export function assertAssuranceVerdictIntegrity() {
       }
       return [];
     }
-    assert.ok(mutations.length > 0, `${name} mutation-target audit found no writes to classify`);
+    assert.ok(
+      mutations.length + guardedMutations > 0,
+      `${name} mutation-target audit found no writes to classify`,
+    );
     const targets = [];
     for (const mutation of mutations) {
       const target = mutation.call.arguments[mutation.targetIndex];
@@ -442,7 +478,6 @@ export function assertAssuranceVerdictIntegrity() {
       !/import\s*\{[^}]*\bpromises\b[^}]*\}\s*from\s*['"]node:fs['"]/u.test(source)
     )
       continue;
-    if (/createMutationFileGuard\(\)/u.test(source)) continue;
     const resolvedTargets = resolvedMutationWriteTargets(source, name);
     const generatedOnly = resolvedTargets.every((target) =>
       generatedMutationRoots.some(

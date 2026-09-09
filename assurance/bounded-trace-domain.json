@@ -2,6 +2,7 @@
   "version": 1,
   "evidenceFiles": [
     "scripts/formal-bounded-refinement-corpus.mjs",
+    "scripts/refinement-sample-schema.mjs",
     "test/formal-bounded-refinement.test.mjs",
     "scripts/runtime-boundary-refinement.mjs",
     "scripts/read-boundary-refinement.mjs",
@@ -110,7 +111,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "72f390f4e3cc848e15c9705fb563912e00c57ef1e60eaef5949334f9b5fca72f",
+  "evidenceDigest": "a7eedc82db75544e40d7be88a62474a419ef3e2783d044067a540de1c11354c1",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
