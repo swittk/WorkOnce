@@ -27,6 +27,19 @@ test('policy refinement rejects wake adapter substitution without a count change
   );
 });
 
+test('policy refinement rejects count-preserving sample-kind substitution', async () => {
+  const samples = await runPolicyRefinementSamples();
+  const historyIndex = samples.findIndex((sample) => sample.kind === 'historyCongruence');
+  const receipt = samples.find((sample) => sample.kind === 'receiptSplit');
+  assert.notEqual(historyIndex, -1);
+  assert.ok(receipt);
+  const mutant = samples.map((sample, index) => (index === historyIndex ? { ...receipt } : sample));
+  assert.throws(
+    () => assertPolicyRefinementSamples(mutant),
+    /policy sample kind coverage drifted/u,
+  );
+});
+
 test('policy refinement rejects collapsed adapter-equivalence coverage', async () => {
   const samples = await runPolicyRefinementSamples();
   const mutant = samples.map((sample) =>

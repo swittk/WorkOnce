@@ -460,6 +460,7 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(
     liveTlcProbe,
     /requireExpectedProcessFailure\(result, 'invalid TLC jar formal-assurance probe'\)/u,
+    'live TLC probe must preserve the shared fail-closed process classifier',
   );
   assert.match(liveTlcProbe, /timeout:\s*15_000/u);
 
@@ -467,6 +468,7 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(
     formalConformance,
     /requireSuccessfulProcess\(result, 'formal implementation surface extractor'\)/u,
+    'formal implementation extractor must preserve the shared successful-process classifier',
   );
   assert.match(
     formalConformance,
@@ -501,7 +503,11 @@ export function assertAssuranceVerdictIntegrity() {
     /process\.stderr\.write\(result\.stderr \?\? ''\)/u,
     'lifecycle formal runner must re-emit captured TLC stderr after classification',
   );
-  assert.match(lifecycleFormal, /requireExpectedInvariantViolation\(result, invariant\)/u);
+  assert.match(
+    lifecycleFormal,
+    /requireExpectedInvariantViolation\(result, invariant\)/u,
+    'lifecycle formal runner must preserve fail-closed invariant-violation classification',
+  );
   assert.doesNotMatch(lifecycleFormal, /const semanticFailure\s*=/u);
   assert.match(
     lifecycleFormal,

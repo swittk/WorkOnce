@@ -36,7 +36,7 @@ requireRed(
   'bounded compare-miss retries',
   (text) => text.replace('conflicts < maxConflicts', 'conflicts <= maxConflicts'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
-  /compareCalls|bounded contention exhaustion/u,
+  /bounded contention exhaustion must stop after exactly maxConflicts compare attempts/u,
 );
 requireRed(
   'dist/cas.js',

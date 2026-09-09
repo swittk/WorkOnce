@@ -254,7 +254,11 @@ test('native CAS bounded contention exhaustion is exact and leaves no caller wri
     q.ensure(null, { key: 'x' }),
     /Work store remained contended; retry the command, not the external effect/,
   );
-  assert.equal(f.compareCalls(), 3);
+  assert.equal(
+    f.compareCalls(),
+    3,
+    'bounded contention exhaustion must stop after exactly maxConflicts compare attempts',
+  );
   const rows = await f.native.query({ scope: 'cas-exhaustion', select: 'all', limit: 10 });
   assert.equal(rows.rows.length, 0);
 });

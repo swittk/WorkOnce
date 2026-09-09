@@ -103,7 +103,7 @@ for (const [relative, anchor, replacement, label] of [
         '--test-name-pattern=restart preserves exact ergonomic-dispatch semantics',
         'test/alias-contract.test.mjs',
       ]);
-      requireRed(label, result, /restart preserves exact ergonomic-dispatch semantics/u);
+      requireRed(label, result, /restart must not reject outside terminal states/u);
     },
   );
 }

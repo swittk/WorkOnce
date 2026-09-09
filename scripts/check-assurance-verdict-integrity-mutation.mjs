@@ -190,21 +190,21 @@ mutate(
   '  requireExpectedInvariantViolation(result, invariant);',
   '  void result;',
   'weak lifecycle TLC mutation classification',
-  /requireExpectedInvariantViolation/u,
+  /lifecycle formal runner must preserve fail-closed invariant-violation classification/u,
 );
 mutate(
   'scripts/check-tlc-outcome-classification.mjs',
   "  requireExpectedProcessFailure(result, 'invalid TLC jar formal-assurance probe');",
   "  assert.notEqual(result.status, 0, 'invalid TLC jar unexpectedly passed formal assurance');",
   'live TLC probe bare status verdict',
-  /requireExpectedProcessFailure/u,
+  /live TLC probe must preserve the shared fail-closed process classifier/u,
 );
 mutate(
   'scripts/check-formal-implementation-conformance.mjs',
   "  requireSuccessfulProcess(result, 'formal implementation surface extractor');",
   "  if (result.status !== 0) throw new Error('surface extractor failed');",
   'surface extractor cause collapse',
-  /requireSuccessfulProcess/u,
+  /formal implementation extractor must preserve the shared successful-process classifier/u,
 );
 mutate(
   'scripts/lifecycle-refinement.mjs',

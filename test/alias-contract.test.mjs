@@ -98,8 +98,12 @@ async function exerciseRestartSemantics(api, memoryApi, label) {
   const queue = work.define('job');
 
   const queued = await queue.ensure(null, { key: 'queued' });
+  let queuedRestart;
+  await assert.doesNotReject(async () => {
+    queuedRestart = await queue.restart({ key: 'queued', expectedGeneration: queued.generation });
+  }, `${label}.restart must not reject outside terminal states`);
   assert.deepEqual(
-    await queue.restart({ key: 'queued', expectedGeneration: queued.generation }),
+    queuedRestart,
     queued,
     `${label}.restart is a no-op outside terminal states rather than inventing a transition`,
   );

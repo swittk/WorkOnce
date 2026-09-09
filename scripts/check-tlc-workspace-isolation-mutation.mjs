@@ -11,7 +11,7 @@ const mutationFiles = createMutationFileGuard();
 function mutate(relative, from, to, label, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
-  assert.ok(original.includes(from), `${label} mutation anchor is stale`);
+  assert.equal(original.split(from).length, 2, `${label} mutation anchor is stale or not unique`);
   try {
     mutationFiles.writeFileSync(target, original.replace(from, to));
     const result = spawnSync(process.execPath, ['scripts/check-tlc-workspace-isolation.mjs'], {

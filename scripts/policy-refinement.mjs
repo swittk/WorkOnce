@@ -737,8 +737,32 @@ export async function runPolicyRefinementSamples() {
   return samples;
 }
 
+const policyExpectedKindCounts = {
+  retryBoundary: 12,
+  deferBoundary: 8,
+  backoffFinite: 5,
+  policyRace: 4,
+  policyFailure: 2,
+  policyReplay: 2,
+  casAckLoss: 2,
+  receiptSplit: 1,
+  receiptAcrossAttempts: 2,
+  historyCongruence: 1,
+  wakeCompetition: 3,
+  adapterEquivalence: 2,
+  timingBoundary: 1,
+};
+
 export function assertPolicyRefinementSamples(samples) {
   assert.equal(samples.length, 45, 'policy refinement sample family unexpectedly changed');
+  const observedKindCounts = {};
+  for (const sample of samples)
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+  assert.deepEqual(
+    observedKindCounts,
+    policyExpectedKindCounts,
+    'policy sample kind coverage drifted',
+  );
   assert.deepEqual(
     samples
       .filter((sample) => sample.kind === 'wakeCompetition')

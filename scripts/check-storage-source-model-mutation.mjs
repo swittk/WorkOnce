@@ -13,7 +13,11 @@ const target = path.join(root, 'src/cas.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = 'for (let conflicts = 0; conflicts < maxConflicts; conflicts++)';
 const replacement = 'for (let conflicts = 0; conflicts <= maxConflicts; conflicts++)';
-assert.equal(original.includes(needle), true, 'storage source semantic mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'storage source semantic mutation anchor is stale or not unique',
+);
 try {
   mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(
