@@ -7,6 +7,7 @@ import {
   assertLifecycleRefinementSamples,
   runLifecycleRefinementSamples,
 } from './lifecycle-refinement.mjs';
+import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
 
 assertBuildSourceBinding();
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
@@ -41,15 +42,11 @@ function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
   });
-  if (result.error) {
-    const prefix =
-      result.error.code === 'ETIMEDOUT'
-        ? `TLC infrastructure timeout after ${timeoutMs} ms`
-        : 'TLC infrastructure spawn failure';
-    throw new Error(`${prefix}: ${result.error.message}`, { cause: result.error });
+  const outcome = classifyTlcOutcome(result);
+  if (outcome.kind !== 'success') {
+    const reason = outcome.reason ?? outcome.kind;
+    throw new Error(`TLC ${model} failed: ${reason}\n${outcome.output.slice(-2000)}`);
   }
-  if (result.signal) throw new Error(`TLC infrastructure terminated by signal ${result.signal}`);
-  if (result.status !== 0) throw new Error(`TLC ${model} exited ${result.status}`);
 }
 
 function requireInvariantRejects(model, config, modulePath, invariant) {
@@ -60,16 +57,7 @@ function requireInvariantRejects(model, config, modulePath, invariant) {
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
   });
-  if (result.error) throw result.error;
-  if (result.signal) throw new Error(`TLC mutation check terminated by signal ${result.signal}`);
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  const semanticFailure =
-    output.includes(`Invariant ${invariant} is violated`) ||
-    output.includes(`The invariant of ${invariant} is equal to FALSE`);
-  if (result.status === 0 || !semanticFailure)
-    throw new Error(
-      `Lifecycle formal mutant was not rejected by ${invariant}: ${output.slice(-2000)}`,
-    );
+  requireExpectedInvariantViolation(result, invariant);
   console.log(`Lifecycle sample mutation guard: ${invariant} rejects its intended counterexample.`);
 }
 

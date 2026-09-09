@@ -305,14 +305,14 @@ async function resetCheckRaceSample(resetKind) {
       generation: 1,
       check: async (snapshot) => {
         checkCalls++;
+        entered.resolve();
         assert.equal(snapshot.generation, 1);
         assert.equal(snapshot.phase.state, resetKind === 'retry' ? 'failed' : 'succeeded');
-        entered.resolve();
         await release.promise;
         return true;
       },
     });
-    await entered.promise;
+    await Promise.race([entered.promise, pending]);
     const winner = await queue[resetKind]({ key: 'job', generation: 1 });
     release.resolve();
     const late = await observe(pending);
@@ -467,7 +467,9 @@ async function finiteDrainSample(adapter) {
     );
     for (let i = 0; i < 9; i++) await queue.ensure(i, { key: String(i) });
     const seen = [];
-    for (;;) {
+    const maxPasses = 6;
+    let passes = 0;
+    for (; passes < maxPasses; passes++) {
       const runs = await queue.claim({ workerId: 'drain', limit: 2 });
       if (!runs.length) break;
       for (const run of runs) {
@@ -480,7 +482,7 @@ async function finiteDrainSample(adapter) {
       adapter,
       allUnique: new Set(seen).size === 9,
       allReached: seen.length === 9,
-      boundedPasses: seen.length === 9,
+      boundedPasses: passes < maxPasses,
     };
   } finally {
     fixture.close();

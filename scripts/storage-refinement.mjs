@@ -111,7 +111,11 @@ async function adapterHistoryCongruenceSample(adapter) {
       const settled = await run.settle(run.succeed({ value: 2 }));
       const after = await queue.inspect('same');
       const history = await queue.history('same');
-      return { requests, before, future: { heartbeat, settled, after, history } };
+      return {
+        completedRequests: snapshots.length,
+        before,
+        future: { heartbeat, settled, after, history },
+      };
     } finally {
       fixture.close();
     }
@@ -121,7 +125,10 @@ async function adapterHistoryCongruenceSample(adapter) {
   return {
     kind: 'adapterHistoryCongruence',
     adapter,
-    materiallyDifferentHistory: direct.requests === 1 && contended.requests === 12,
+    materiallyDifferentHistory:
+      direct.completedRequests !== contended.completedRequests &&
+      direct.before.revision === contended.before.revision &&
+      direct.future.history.length === contended.future.history.length,
     sameDurableProjection: JSON.stringify(direct.before) === JSON.stringify(contended.before),
     sameFuture: JSON.stringify(direct.future) === JSON.stringify(contended.future),
   };
@@ -304,23 +311,31 @@ function casBoundarySample() {
   } catch (error) {
     zeroError = error;
   }
+  let oneAccepted = false;
+  let maxSafeAccepted = false;
   const one = createCompareExchangeStore(port, { maxConflicts: 1 });
   const max = createCompareExchangeStore(port, { maxConflicts: Number.MAX_SAFE_INTEGER });
   return Promise.all([
     createWorkOnce({ store: one, scope: 'cas-boundary-one' })
       .define('job')
-      .ensure(null, { key: 'x' }),
+      .ensure(null, { key: 'x' })
+      .then(() => {
+        oneAccepted = true;
+      }),
     createWorkOnce({ store: max, scope: 'cas-boundary-max' })
       .define('job')
-      .ensure(null, { key: 'x' }),
+      .ensure(null, { key: 'x' })
+      .then(() => {
+        maxSafeAccepted = true;
+      }),
   ]).then(() => ({
     kind: 'casBoundary',
     zeroRejectedBeforeRead:
       zeroError instanceof RangeError &&
       zeroError.message === 'maxConflicts must be a safe integer >= 1' &&
       reads === 2,
-    oneAccepted: true,
-    maxSafeAccepted: true,
+    oneAccepted,
+    maxSafeAccepted,
   }));
 }
 

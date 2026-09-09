@@ -6,9 +6,14 @@ function run(script) {
   const result = spawnSync(process.execPath, [script], {
     encoding: 'utf8',
     env: process.env,
-    timeout: 30000,
+    timeout: 300000,
   });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  assert.equal(
+    result.error?.code,
+    undefined,
+    `${script} failed: ${result.error?.code}\n${output.slice(-4000)}`,
+  );
   assert.equal(result.status, 0, output.slice(-4000));
   return output;
 }

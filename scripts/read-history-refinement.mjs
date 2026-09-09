@@ -350,36 +350,42 @@ async function casMixedRaceSample() {
   const queue = createWorkOnce({ store, scope: 'read-race-cas-mixed' }).define('job', {
     limits: { leaseMs: 50, maxAttempts: 4, maxElapsedMs: 1000, maxDeferrals: 4 },
   });
-  await seedWaiting(queue, 'a');
-  await seedWaiting(queue, 'b');
-  const before = await queue.inspectMany(['a', 'b']);
-  armed = true;
-  const reading = queue.inspectMany(['a', 'b']);
-  await firstRead.promise;
-  const bBefore = await queue.inspect('b');
-  const bAfter = await queue.wake({
-    key: 'b',
-    generation: bBefore.generation,
-    revision: bBefore.revision,
-  });
-  release.resolve();
-  const observed = await reading;
-  const after = await queue.inspectMany(['a', 'b']);
-  return {
-    kind: 'inspectManyRace',
-    adapter: 'cas',
-    mode: 'mixed',
-    callerOrderExact: observed[0].key === 'a' && observed[1].key === 'b',
-    perIdRealState:
-      stable(observed[0]) === stable(before[0]) &&
-      stable(observed[1]) === stable(bAfter) &&
-      stable(observed[1]) === stable(after[1]),
-    expectedEndpoint: true,
-    mixedRevision: observed[0].revision !== observed[1].revision,
-    oneStorageClock: observed[0].observedAt === observed[1].observedAt,
-    perIdContractPreserved: true,
-    crossIdAtomicSnapshotRequired: false,
-  };
+  let reading;
+  try {
+    await seedWaiting(queue, 'a');
+    await seedWaiting(queue, 'b');
+    const before = await queue.inspectMany(['a', 'b']);
+    armed = true;
+    reading = queue.inspectMany(['a', 'b']);
+    await firstRead.promise;
+    const bBefore = await queue.inspect('b');
+    const bAfter = await queue.wake({
+      key: 'b',
+      generation: bBefore.generation,
+      revision: bBefore.revision,
+    });
+    release.resolve();
+    const observed = await reading;
+    const after = await queue.inspectMany(['a', 'b']);
+    return {
+      kind: 'inspectManyRace',
+      adapter: 'cas',
+      mode: 'mixed',
+      callerOrderExact: observed[0].key === 'a' && observed[1].key === 'b',
+      perIdRealState:
+        stable(observed[0]) === stable(before[0]) &&
+        stable(observed[1]) === stable(bAfter) &&
+        stable(observed[1]) === stable(after[1]),
+      expectedEndpoint: true,
+      mixedRevision: observed[0].revision !== observed[1].revision,
+      oneStorageClock: observed[0].observedAt === observed[1].observedAt,
+      perIdContractPreserved: true,
+      crossIdAtomicSnapshotRequired: false,
+    };
+  } finally {
+    release.resolve();
+    if (reading) await Promise.allSettled([reading]);
+  }
 }
 
 export async function runReadHistorySamples() {

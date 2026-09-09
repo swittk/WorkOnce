@@ -30,6 +30,15 @@ function npmParallelEntry(label, args) {
 }
 async function runParallel(entries) {
   const started = performance.now();
+  const children = new Set();
+  let failed = false;
+  const terminateSiblings = (failedChild) => {
+    if (failed) return;
+    failed = true;
+    for (const child of children)
+      if (child !== failedChild && child.exitCode === null && child.signalCode === null)
+        child.kill();
+  };
   await Promise.all(
     entries.map(
       ([label, command, args]) =>
@@ -41,13 +50,20 @@ async function runParallel(entries) {
             stdio: 'inherit',
             shell: false,
           });
-          child.once('error', rejectPromise);
+          children.add(child);
+          child.once('error', (error) => {
+            terminateSiblings(child);
+            rejectPromise(error);
+          });
           child.once('exit', (code, signal) => {
+            children.delete(child);
             if (signal) {
+              terminateSiblings(child);
               rejectPromise(new Error(`${label} terminated by ${signal}`));
               return;
             }
             if (code !== 0) {
+              terminateSiblings(child);
               rejectPromise(new Error(`${label} exited with status ${String(code)}`));
               return;
             }

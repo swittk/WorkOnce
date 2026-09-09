@@ -32,7 +32,13 @@ function createCasStore() {
 
 function sqliteFixture() {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-read-proof-'));
-  const store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => 100 });
+  let store;
+  try {
+    store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => 100 });
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw error;
+  }
   return {
     store,
     cleanup() {

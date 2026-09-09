@@ -42,4 +42,6 @@ test('bounded outbox cursor advances to the next parent before wrapping', async 
     undefined,
     'partially drained first parent must wait until cursor wrap',
   );
+  assert.equal(await work.dispatch({ limit: 1 }), 1);
+  assert.ok(await child.inspect('a2'), 'cursor wrap must drain the deferred follow-up');
 });

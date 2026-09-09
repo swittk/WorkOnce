@@ -17,9 +17,14 @@ async function nextMessage(child) {
   return (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];
 }
 async function kill(child) {
-  const exited = once(child, 'exit');
+  if (child.exitCode !== null || child.signalCode !== null) {
+    assert.equal(child.signalCode, 'SIGKILL');
+    return;
+  }
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
   child.kill('SIGKILL');
-  await exited;
+  const [, signal] = await exited;
+  assert.equal(signal, 'SIGKILL');
 }
 async function seed(path, count) {
   const store = createSqliteStore(path);

@@ -30,7 +30,13 @@ function fixture(adapter) {
   if (adapter === 'memory') return { store: createMemoryStore({ now }) };
   if (adapter === 'cas') return { store: casFixture(now) };
   const directory = mkdtempSync(join(tmpdir(), 'workonce-read-contract-'));
-  const store = createSqliteStore(join(directory, 'queue.sqlite'), { now });
+  let store;
+  try {
+    store = createSqliteStore(join(directory, 'queue.sqlite'), { now });
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw error;
+  }
   return {
     store,
     close() {

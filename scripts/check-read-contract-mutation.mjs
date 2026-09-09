@@ -13,6 +13,7 @@ function runReadContract() {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
+    timeout: 15_000,
   });
 }
 function requireRed(label, mutant, pattern) {

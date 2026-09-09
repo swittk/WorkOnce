@@ -24,6 +24,9 @@ function runExpectedFailure(label, pattern) {
     timeout: 15_000,
   });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  assert.equal(result.error, undefined, `${label} failed to execute: ${String(result.error)}`);
+  assert.equal(result.signal, null, `${label} terminated by ${String(result.signal)}`);
+  assert.equal(typeof result.status, 'number', `${label} did not produce an exit status`);
   assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
   assert.match(output, pattern, `${label} failed for an unrelated reason`);
   console.log(`Policy implementation mutation guard rejects ${label}.`);
