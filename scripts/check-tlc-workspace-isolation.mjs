@@ -53,6 +53,16 @@ for (const runner of [
   );
   assert.match(
     source,
+    /const javaTmp = resolve\(tlcWorkspace, 'java-tmp'\)/u,
+    `${runner} does not allocate a private Java temporary directory`,
+  );
+  assert.match(
+    source,
+    /-Djava\.io\.tmpdir=\$\{javaTmp\}/u,
+    `${runner} does not isolate TLA+ standard-module extraction from process-global temp`,
+  );
+  assert.match(
+    source,
     /resolve\(tlcWorkspace,/u,
     `${runner} does not isolate TLC metadirs/generated files`,
   );
@@ -76,5 +86,5 @@ const parentShardModes = [...parentShardModesMatch[1].matchAll(/'(--[a-z-]+)'/gu
 assert.deepEqual(parentShardModes, ['--non-runtime-only', '--runtime-only']);
 
 console.log(
-  'TLC runners and both formal shards use disjoint per-invocation generated-module workspaces.',
+  'TLC runners and both formal shards isolate generated modules, metadirs, and Java temporary standard-module extraction.',
 );

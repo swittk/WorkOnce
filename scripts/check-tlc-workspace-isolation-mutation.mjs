@@ -58,6 +58,13 @@ mutate(
   /process-global generated TLC directory|acquire a private TLC workspace/u,
 );
 mutate(
+  'scripts/formal.mjs',
+  '    `-Djava.io.tmpdir=${javaTmp}`,',
+  '    `-Djava.io.tmpdir=/tmp`,',
+  'formal shard process-global Java temporary directory regression',
+  /standard-module extraction from process-global temp/u,
+);
+mutate(
   'scripts/tlc-workspace.mjs',
   '    if (code === 0) rmSync(workspace, { recursive: true, force: true });',
   '    rmSync(workspace, { recursive: true, force: true });',

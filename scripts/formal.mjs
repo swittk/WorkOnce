@@ -25,6 +25,8 @@ const shardMode = ['--runtime-only', '--non-runtime-only', '--external-only'].so
 );
 const tlcWorkspace = acquireTlcWorkspace(shardMode ? 'formal-shard' : 'formal-parent');
 cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
+const javaTmp = resolve(tlcWorkspace, 'java-tmp');
+mkdirSync(javaTmp, { recursive: true });
 const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
 const workers = String(
   Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
@@ -39,6 +41,7 @@ function tlcArgs(model, config, modulePath, options = {}) {
   return [
     `-Xmx${heapMb}m`,
     '-XX:+UseParallelGC',
+    `-Djava.io.tmpdir=${javaTmp}`,
     `-DTLA-Library=${[resolve('formal'), tlcWorkspace].join(delimiter)}`,
     '-cp',
     jar,

@@ -13,6 +13,8 @@ const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar)) throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar.');
 const tlcWorkspace = acquireTlcWorkspace('storage-formal');
 cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
+const javaTmp = resolve(tlcWorkspace, 'java-tmp');
+mkdirSync(javaTmp, { recursive: true });
 const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
 const workers = String(
   Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
@@ -35,6 +37,7 @@ function tlc(model, config, modulePath, capture = false) {
     [
       '-Xmx512m',
       '-XX:+UseParallelGC',
+      `-Djava.io.tmpdir=${javaTmp}`,
       `-DTLA-Library=${[resolve('formal'), tlcWorkspace].join(delimiter)}`,
       '-cp',
       jar,
