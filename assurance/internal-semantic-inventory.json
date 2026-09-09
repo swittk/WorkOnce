@@ -4,12 +4,12 @@
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "entries": [
     {
-      "id": "src/cas.ts:atomic:for_loop:c0350eba7e9d234c:1",
+      "id": "src/cas.ts:atomic:for_loop:d60f797c32e9f677:1",
       "path": "src/cas.ts",
       "context": "atomic",
       "kind": "for_loop",
-      "excerpt": "for (let conflicts = 0; conflicts < maxConflicts; conflicts++) { const observed = await port.getMany([id]); const current = observed.rows[0]; const expectedRevision = current?.revision; const change = decide(current === undefined ? undefine",
-      "textDigest": "88b9c06a757dcd95",
+      "excerpt": "for (let conflicts = 0; conflicts < maxConflicts; conflicts++) {\n        const observed = await port.getMany([id]);\n        const current = observed.rows[0];\n        const expectedRevision = current?.revision;\n        const change = decide(",
+      "textDigest": "597e2b610a59b7b8",
       "families": [
         "G"
       ],
@@ -17,12 +17,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.all:8e3494b3cef9e449:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.all:26348155841eb356:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.all",
-      "excerpt": "Promise.all( Array.from({ length: 50 }, (_, i) => q.claim({ workerId: String(i) })), )",
-      "textDigest": "ddd70344ae6d0c38",
+      "excerpt": "Promise.all(\n      Array.from({ length: 50 }, (_, i) => q.claim({ workerId: String(i) })),\n    )",
+      "textDigest": "59c352d63b0c376d",
       "families": [
         "G",
         "I"
@@ -45,12 +45,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:77d0fe64521a0e64:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:9c6a627a80b7c64a:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.allSettled",
-      "excerpt": "Promise.allSettled([ q.retry({ key: 'job', generation: 1 }), q.retry({ key: 'job', generation: 1 }), ])",
-      "textDigest": "95060c8f4f1ad5a3",
+      "excerpt": "Promise.allSettled([\n      q.retry({ key: 'job', generation: 1 }),\n      q.retry({ key: 'job', generation: 1 }),\n    ])",
+      "textDigest": "5401566debd125de",
       "families": [
         "G",
         "I"
@@ -59,12 +59,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:32d2bc680bb184ed:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:758cd9744e0f389d:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.allSettled",
-      "excerpt": "Promise.allSettled([ q.cancel({ key: 'job', generation: 1 }), a!.settle(a!.succeed()), ])",
-      "textDigest": "abcf97eb82d8f3b2",
+      "excerpt": "Promise.allSettled([\n      q.cancel({ key: 'job', generation: 1 }),\n      a!.settle(a!.succeed()),\n    ])",
+      "textDigest": "56f11d230cc6559f",
       "families": [
         "G",
         "I"
@@ -73,12 +73,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:for_of_loop:14e9708911dfc5a2:1",
+      "id": "src/conformance.ts:<callback>:for_of_loop:73c24ba9d9d05d7e:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "for_of_loop",
-      "excerpt": "for (const out of [ a!.succeed(), a!.retry('busy'), a!.defer('wait', { afterMs: 1 }), a!.fail('bad'), ]) await rejects(a!.settle(out), 'stale_attempt');",
-      "textDigest": "a965bf3a7042aebb",
+      "excerpt": "for (const out of [\n      a!.succeed(),\n      a!.retry('busy'),\n      a!.defer('wait', { afterMs: 1 }),\n      a!.fail('bad'),\n    ])\n      await rejects(a!.settle(out), 'stale_attempt');",
+      "textDigest": "74c11f348c45023b",
       "families": [
         "G",
         "I"
@@ -407,12 +407,12 @@
       "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
     },
     {
-      "id": "src/external.ts:runExternal:for_of_loop:5b91c12fef302a99:1",
+      "id": "src/external.ts:runExternal:for_of_loop:3121da2c0be9c687:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "for_of_loop",
-      "excerpt": "for (const lease of leases) { const pending = processLease(transport, lease, options, handler, claimStartedAt) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.on",
-      "textDigest": "a6c0d9e566997cd1",
+      "excerpt": "for (const lease of leases) {\n      const pending = processLease(transport, lease, options, handler, claimStartedAt)\n        .then(async (result) => {\n          if (result.status === 'interrupted' && !options.signal.aborted) {\n            i",
+      "textDigest": "f9e2660e86af32c9",
       "families": [
         "D"
       ],
@@ -472,12 +472,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:while_loop:3405b82e0627cc4e:1",
+      "id": "src/external.ts:runExternal:while_loop:b943b14792d0657b:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "while_loop",
-      "excerpt": "while (!options.signal.aborted && fatal === undefined) { const available = capacity - active.size; if (!available) { await Promise.race(active); continue; } let leases: LeasedWork<I>[]; const claimStartedAt = performance.now(); try { leases",
-      "textDigest": "9a59d082c8706ce8",
+      "excerpt": "while (!options.signal.aborted && fatal === undefined) {\n    const available = capacity - active.size;\n    if (!available) {\n      await Promise.race(active);\n      continue;\n    }\n    let leases: LeasedWork<I>[];\n    const claimStartedAt =",
+      "textDigest": "edc9b465ae200b92",
       "families": [
         "D"
       ],
@@ -485,12 +485,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternalAvailable:call_Promise.all:52d8a4b5d4e2bfab:1",
+      "id": "src/external.ts:runExternalAvailable:call_Promise.all:0a276b791852ae59:1",
       "path": "src/external.ts",
       "context": "runExternalAvailable",
       "kind": "call_Promise.all",
-      "excerpt": "Promise.all( leases.map((lease) => processLease(transport, lease, options, handler, claimStartedAt)), )",
-      "textDigest": "d69dee34640e5efc",
+      "excerpt": "Promise.all(\n    leases.map((lease) => processLease(transport, lease, options, handler, claimStartedAt)),\n  )",
+      "textDigest": "be43a8f483b7781e",
       "families": [
         "D"
       ],
@@ -511,12 +511,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:1594035fc8e742f2:1",
+      "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:9db87824efe2a857:1",
       "path": "src/kernel.ts",
       "context": "canonical",
       "kind": "call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort",
-      "excerpt": "Object.keys(row) .filter((key) => row[key] !== undefined) .sort()",
-      "textDigest": "f6c733f08fb40f51",
+      "excerpt": "Object.keys(row)\n        .filter((key) => row[key] !== undefined)\n        .sort()",
+      "textDigest": "850e9947aa6556d7",
       "families": [
         "A"
       ],
@@ -538,12 +538,12 @@
       "reason": "Lifecycle revision/history retention is durable A state and directly observable through E history reads."
     },
     {
-      "id": "src/kernel.ts:changed:property_assignment:7d2a9d41022042b5:1",
+      "id": "src/kernel.ts:changed:property_assignment:b0faf6f9d05064b4:1",
       "path": "src/kernel.ts",
       "context": "changed",
       "kind": "property_assignment",
-      "excerpt": "next.history = [ ...row.history.slice(-127), { at: now, generation: row.generation, fence: row.fence, action, state: phase.state, ...('reason' in phase ? { reason: phase.reason } : {}), ...(phase.state === 'running' ? { workerId: phase.atte",
-      "textDigest": "a1f14716e35268e3",
+      "excerpt": "next.history = [\n      ...row.history.slice(-127),\n      {\n        at: now,\n        generation: row.generation,\n        fence: row.fence,\n        action,\n        state: phase.state,\n        ...('reason' in phase ? { reason: phase.reason } :",
+      "textDigest": "9d8e3fa517d6733d",
       "families": [
         "A",
         "E"
@@ -591,12 +591,12 @@
       "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
     },
     {
-      "id": "src/kernel.ts:settleRecord:for_of_loop:9774750b122d378f:1",
+      "id": "src/kernel.ts:settleRecord:for_of_loop:ace35be104c7d7dc:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "for_of_loop",
-      "excerpt": "for (const request of outcome.next) { if ( request.scope !== row.scope || request.id === row.id || request.id !== workId(request.scope, request.kind, request.key) || ids.has(request.id) ) throw new WorkConflict('key_conflict'); createRecord",
-      "textDigest": "524c29f994f47483",
+      "excerpt": "for (const request of outcome.next) {\n        if (\n          request.scope !== row.scope ||\n          request.id === row.id ||\n          request.id !== workId(request.scope, request.kind, request.key) ||\n          ids.has(request.id)\n      ",
+      "textDigest": "46e9179a203aebff",
       "families": [
         "A",
         "B",
@@ -606,12 +606,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:for_of_loop:9774750b122d378f:2",
+      "id": "src/kernel.ts:settleRecord:for_of_loop:ace35be104c7d7dc:2",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "for_of_loop",
-      "excerpt": "for (const request of outcome.next) { if ( request.scope !== row.scope || request.id === row.id || request.id !== workId(request.scope, request.kind, request.key) || ids.has(request.id) ) throw new WorkConflict('key_conflict'); createRecord",
-      "textDigest": "524c29f994f47483",
+      "excerpt": "for (const request of outcome.next) {\n        if (\n          request.scope !== row.scope ||\n          request.id === row.id ||\n          request.id !== workId(request.scope, request.kind, request.key) ||\n          ids.has(request.id)\n      ",
+      "textDigest": "46e9179a203aebff",
       "families": [
         "A",
         "B",
@@ -709,12 +709,12 @@
       "reason": "Settlement publishes the durable follow-up outbox atomically with terminal state; family B owns parent/child continuation state."
     },
     {
-      "id": "src/kernel.ts:settleRecord:property_assignment:c591e4761fb89da7:1",
+      "id": "src/kernel.ts:settleRecord:property_assignment:cf55293547f99b4a:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "property_assignment",
-      "excerpt": "next.receipt = { attempt: { workId: row.id, generation: ref.generation, fence: ref.fence }, submissionHash, ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}), }",
-      "textDigest": "067d0fae32e47a57",
+      "excerpt": "next.receipt = {\n    attempt: { workId: row.id, generation: ref.generation, fence: ref.fence },\n    submissionHash,\n    ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}),\n  }",
+      "textDigest": "5431550f3a4e7d93",
       "families": [
         "A",
         "F"
@@ -762,12 +762,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/memory.ts:query:call_selected.sort:49ddca26094f7906:1",
+      "id": "src/memory.ts:query:call_selected.sort:05d8161dd52adfb3:1",
       "path": "src/memory.ts",
       "context": "query",
       "kind": "call_selected.sort",
-      "excerpt": "selected.sort((a, b) => query.select === 'due' ? dueAt(a)! - dueAt(b)! || compareUtf8Text(a.id, b.id) : compareUtf8Text(a.id, b.id), )",
-      "textDigest": "7b38aa973ab30a05",
+      "excerpt": "selected.sort((a, b) =>\n        query.select === 'due'\n          ? dueAt(a)! - dueAt(b)! || compareUtf8Text(a.id, b.id)\n          : compareUtf8Text(a.id, b.id),\n      )",
+      "textDigest": "fe4a37f45f42a247",
       "families": [
         "G"
       ],
@@ -775,12 +775,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/memory.ts:query:mutable_let:38fceddc0b33590c:1",
+      "id": "src/memory.ts:query:mutable_let:bad78c9051f95bc2:1",
       "path": "src/memory.ts",
       "context": "query",
       "kind": "mutable_let",
-      "excerpt": "let selected = [...rows.values()].filter( (row) => row.scope === query.scope && (query.kind === undefined || row.kind === query.kind) && (query.definition === undefined || row.definition === query.definition), );",
-      "textDigest": "8258f99869eff44c",
+      "excerpt": "let selected = [...rows.values()].filter(\n        (row) =>\n          row.scope === query.scope &&\n          (query.kind === undefined || row.kind === query.kind) &&\n          (query.definition === undefined || row.definition === query.defin",
+      "textDigest": "d1e6176a580aa8d5",
       "families": [
         "G"
       ],
@@ -957,12 +957,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:retryStartupBusy:for_loop:efdb5f869d3071f9:1",
+      "id": "src/sqlite.ts:retryStartupBusy:for_loop:b8c499b3d1891564:1",
       "path": "src/sqlite.ts",
       "context": "retryStartupBusy",
       "kind": "for_loop",
-      "excerpt": "for (;;) { try { return action(); } catch (error) { const remaining = deadline - Date.now(); if (!isSqliteBusy(error) || remaining <= 0) throw error; sleepSync(Math.min(delay, remaining)); delay = Math.min(delay * 2, 25); } }",
-      "textDigest": "e13a928980265e98",
+      "excerpt": "for (;;) {\n    try {\n      return action();\n    } catch (error) {\n      const remaining = deadline - Date.now();\n      if (!isSqliteBusy(error) || remaining <= 0) throw error;\n      sleepSync(Math.min(delay, remaining));\n      delay = Math.",
+      "textDigest": "e8b00724724579ec",
       "families": [
         "G"
       ],
@@ -983,12 +983,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:<module>:new_Set:b85827e295ed84b0:1",
+      "id": "src/storage-validation.ts:<module>:new_Set:fe1a21b07cf9b9c7:1",
       "path": "src/storage-validation.ts",
       "context": "<module>",
       "kind": "new_Set",
-      "excerpt": "new Set([ 'reported_failure', 'retry_not_allowed', 'retry_budget_exhausted', 'attempt_budget_exhausted', 'deadline_exceeded', 'deferral_budget_exhausted', ])",
-      "textDigest": "9df539c034bdd0b0",
+      "excerpt": "new Set([\n  'reported_failure',\n  'retry_not_allowed',\n  'retry_budget_exhausted',\n  'attempt_budget_exhausted',\n  'deadline_exceeded',\n  'deferral_budget_exhausted',\n])",
+      "textDigest": "47b395eb7bf1c31e",
       "families": [
         "G"
       ],
@@ -996,12 +996,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:compareUtf8Text:for_loop:d92286017cdf0db6:1",
+      "id": "src/storage-validation.ts:compareUtf8Text:for_loop:ac625e69f7085482:1",
       "path": "src/storage-validation.ts",
       "context": "compareUtf8Text",
       "kind": "for_loop",
-      "excerpt": "for (let index = 0; index < length; index++) { const delta = a[index]! - b[index]!; if (delta !== 0) return delta < 0 ? -1 : 1; }",
-      "textDigest": "639162d491b8bfd6",
+      "excerpt": "for (let index = 0; index < length; index++) {\n    const delta = a[index]! - b[index]!;\n    if (delta !== 0) return delta < 0 ? -1 : 1;\n  }",
+      "textDigest": "8d5fe92a762cd541",
       "families": [
         "G"
       ],
@@ -1076,12 +1076,12 @@
       "reason": "Claim result accumulation preserves the concrete order/cardinality of successfully claimed durable attempts; family A owns durable claim semantics."
     },
     {
-      "id": "src/work.ts:claim:for_of_loop:a426406257a34d2b:1",
+      "id": "src/work.ts:claim:for_of_loop:464e06c7a4802c80:1",
       "path": "src/work.ts",
       "context": "claim",
       "kind": "for_of_loop",
-      "excerpt": "for (const candidate of candidates.rows) { if (runs.length === limit) break; const claimStartedAt = performance.now(); const claimed = await this.store.atomic(candidate.id, (row, now) => { if (!row) return { value: null }; this.assertDefini",
-      "textDigest": "d3ed1d8ae78fd8d2",
+      "excerpt": "for (const candidate of candidates.rows) {\n      if (runs.length === limit) break;\n      const claimStartedAt = performance.now();\n      const claimed = await this.store.atomic(candidate.id, (row, now) => {\n        if (!row) return { value:",
+      "textDigest": "278d63bcd22d9fe3",
       "families": [
         "A",
         "G"
@@ -1129,12 +1129,12 @@
       "reason": "Dispatch failure accumulation controls the bounded durable-follow-up result/error surface; family B owns retained failure and continuation semantics."
     },
     {
-      "id": "src/work.ts:dispatch:for_of_loop:a8aa0df3d3ee69bc:1",
+      "id": "src/work.ts:dispatch:for_of_loop:1536ad0afda45851:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "for_of_loop",
-      "excerpt": "for (const request of parent.outbox) { if (attempted >= limit) break; attempted++; try { if (request.scope !== scope) throw new WorkConflict('key_conflict'); await store.atomic(request.id, (row, now) => { if (row) { if (!sameRequest(row, re",
-      "textDigest": "38fdcbf60f32d1e8",
+      "excerpt": "for (const request of parent.outbox) {\n          if (attempted >= limit) break;\n          attempted++;\n          try {\n            if (request.scope !== scope) throw new WorkConflict('key_conflict');\n            await store.atomic(request.i",
+      "textDigest": "72e4eeb19b6af56f",
       "families": [
         "B"
       ],
@@ -1142,12 +1142,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:for_of_loop:33edbb1a8ce37505:1",
+      "id": "src/work.ts:dispatch:for_of_loop:56ad37e09fc782fe:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "for_of_loop",
-      "excerpt": "for (const parent of result.rows) { outboxAfterId = parent.id; for (const request of parent.outbox) { if (attempted >= limit) break; attempted++; try { if (request.scope !== scope) throw new WorkConflict('key_conflict'); await store.atomic(",
-      "textDigest": "6bd534aca2e69243",
+      "excerpt": "for (const parent of result.rows) {\n        outboxAfterId = parent.id;\n        for (const request of parent.outbox) {\n          if (attempted >= limit) break;\n          attempted++;\n          try {\n            if (request.scope !== scope) t",
+      "textDigest": "75376b1ad812adff",
       "families": [
         "B"
       ],
@@ -1155,12 +1155,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:mutable_let:9e51ff8697c67879:1",
+      "id": "src/work.ts:dispatch:mutable_let:20bde721567bda7b:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "mutable_let",
-      "excerpt": "let result = await store.query({ scope, select: 'outbox', limit, ...(outboxAfterId === undefined ? {} : { afterId: outboxAfterId }), });",
-      "textDigest": "7f80f3423ffeab9c",
+      "excerpt": "let result = await store.query({\n        scope,\n        select: 'outbox',\n        limit,\n        ...(outboxAfterId === undefined ? {} : { afterId: outboxAfterId }),\n      });",
+      "textDigest": "88304c2430075853",
       "families": [
         "B"
       ],
@@ -1194,12 +1194,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:handoff:call_mutator_push:d62f3a8e00c96296:1",
+      "id": "src/work.ts:handoff:call_mutator_push:63eb2085237c26ce:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "call_mutator_push",
-      "excerpt": "leases.push({ input: prepared.input, attempt: run.ref, leaseUntil: renewed.attempt.leaseUntil, observedAt: renewed.observedAt, })",
-      "textDigest": "d52406ce651fab24",
+      "excerpt": "leases.push({\n          input: prepared.input,\n          attempt: run.ref,\n          leaseUntil: renewed.attempt.leaseUntil,\n          observedAt: renewed.observedAt,\n        })",
+      "textDigest": "04c725633a141c85",
       "families": [
         "D"
       ],
@@ -1207,12 +1207,12 @@
       "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it."
     },
     {
-      "id": "src/work.ts:handoff:for_of_loop:3dd7ca1a13dc83a8:1",
+      "id": "src/work.ts:handoff:for_of_loop:4e5e7d5e33813b02:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "for_of_loop",
-      "excerpt": "for (const run of await this.claim(options)) { try { const prepared = await prepare(run); if (prepared.type !== 'handoff') { await run.settle(prepared); continue; } const renewed = await run.heartbeat(); leases.push({ input: prepared.input,",
-      "textDigest": "e3efd278c9adbdd4",
+      "excerpt": "for (const run of await this.claim(options)) {\n      try {\n        const prepared = await prepare(run);\n        if (prepared.type !== 'handoff') {\n          await run.settle(prepared);\n          continue;\n        }\n        const renewed = a",
+      "textDigest": "e513a8da126c58da",
       "families": [
         "D"
       ],
@@ -1262,12 +1262,12 @@
       "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
     },
     {
-      "id": "src/work.ts:runDispatcher:while_loop:abb08c2eaeff7c7d:1",
+      "id": "src/work.ts:runDispatcher:while_loop:e2dc279211bf3d3c:1",
       "path": "src/work.ts",
       "context": "runDispatcher",
       "kind": "while_loop",
-      "excerpt": "while (!options.signal.aborted) { try { await work.dispatch(options.limit === undefined ? {} : { limit: options.limit }); } catch (error) { if (!options.onError) throw error; await options.onError(error); } await waitForPoll(interval, optio",
-      "textDigest": "c7ad97c1676db61b",
+      "excerpt": "while (!options.signal.aborted) {\n        try {\n          await work.dispatch(options.limit === undefined ? {} : { limit: options.limit });\n        } catch (error) {\n          if (!options.onError) throw error;\n          await options.onErr",
+      "textDigest": "1e1944b26a66f617",
       "families": [
         "B"
       ],
@@ -1383,12 +1383,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:heartbeat:call_setTimeout:c0bfea548e34fdf8:1",
+      "id": "src/worker.ts:heartbeat:call_setTimeout:8e582c99cc68d296:1",
       "path": "src/worker.ts",
       "context": "heartbeat",
       "kind": "call_setTimeout",
-      "excerpt": "setTimeout(() => { void heartbeat(); }, heartbeatMs)",
-      "textDigest": "41eb65cdb7a7dd56",
+      "excerpt": "setTimeout(() => {\n            void heartbeat();\n          }, heartbeatMs)",
+      "textDigest": "86634f3ede676263",
       "families": [
         "C"
       ],
@@ -1409,12 +1409,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:processClaim:call_setTimeout:de312d80bd6de7a5:1",
+      "id": "src/worker.ts:processClaim:call_setTimeout:7bb93c72a2bf7fff:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "call_setTimeout",
-      "excerpt": "setTimeout(() => { void heartbeat(); }, heartbeatMs)",
-      "textDigest": "41eb65cdb7a7dd56",
+      "excerpt": "setTimeout(() => {\n        void heartbeat();\n      }, heartbeatMs)",
+      "textDigest": "e5fb440c00ec8299",
       "families": [
         "C"
       ],
@@ -1552,12 +1552,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:runWorker:for_of_loop:75c2a423918c3f7a:1",
+      "id": "src/worker.ts:runWorker:for_of_loop:1373d7843b89399a:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "for_of_loop",
-      "excerpt": "for (const claim of claims) { const pending = processClaim(claim, options, handler) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.onError(result.error); else r",
-      "textDigest": "33eddf06cf5d87ff",
+      "excerpt": "for (const claim of claims) {\n      const pending = processClaim(claim, options, handler)\n        .then(async (result) => {\n          if (result.status === 'interrupted' && !options.signal.aborted) {\n            if (options.onError) await o",
+      "textDigest": "0becef1b6cde3f6e",
       "families": [
         "C"
       ],
@@ -1617,12 +1617,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:while_loop:4b929231ceaace5b:1",
+      "id": "src/worker.ts:runWorker:while_loop:413c4e0640380f60:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "while_loop",
-      "excerpt": "while (!options.signal.aborted && fatal === undefined) { const available = capacity - active.size; if (!available) { await Promise.race(active); continue; } let claims: WorkRun<I, O, R>[]; try { claims = await queue.claim({ workerId: option",
-      "textDigest": "0d547c16cf4a15d5",
+      "excerpt": "while (!options.signal.aborted && fatal === undefined) {\n    const available = capacity - active.size;\n    if (!available) {\n      await Promise.race(active);\n      continue;\n    }\n    let claims: WorkRun<I, O, R>[];\n    try {\n      claims ",
+      "textDigest": "4a5a91decb322194",
       "families": [
         "C"
       ],

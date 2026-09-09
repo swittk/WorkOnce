@@ -10,9 +10,10 @@ const target = path.join(root, 'dist/work.js');
 const original = fs.readFileSync(target, 'utf8');
 const pattern = /    assertDefinition\(row\) \{\n[\s\S]*?\n    \}\n    snapshot\(row, now\) \{/u;
 const replacement = `    assertDefinition(row) {\n        return;\n    }\n    snapshot(row, now) {`;
+const matches = [...original.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))];
+assert.equal(matches.length, 1, 'read-definition mutant must match exactly one compiled WorkQueue');
 const mutant = original.replace(pattern, replacement);
 assert.notEqual(mutant, original, 'read-definition mutant did not match compiled WorkQueue');
-assert.equal((original.match(pattern) ?? []).length > 0, true);
 try {
   fs.writeFileSync(target, mutant);
   const result = spawnSync(

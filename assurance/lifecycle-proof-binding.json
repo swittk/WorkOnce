@@ -24,6 +24,8 @@
     "scripts/lifecycle-refinement.mjs",
     "scripts/refinement-sample-schema.mjs",
     "scripts/lifecycle-formal.mjs",
+    "scripts/build-source-binding.mjs",
+    "scripts/tlc-outcome.mjs",
     "scripts/tlc-workspace.mjs",
     "test/tlc-workspace.test.mjs",
     "scripts/check-lifecycle-proof-binding.mjs",
@@ -39,5 +41,5 @@
   ],
   "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
   "modelDigest": "7b5eca7457641ff8860912db846f925c2f6eddcc74bfa339a82a96223c44f7ed",
-  "evidenceDigest": "400e8aa9bad364563eed799559390acafae7522000214e9463c27910b8867195"
+  "evidenceDigest": "1a2b41224330ef09ed8fa2f472d75173257ecd1df2a97f41bfcb9bc47eff2374"
 }

@@ -17,7 +17,13 @@ function runReadContract() {
     timeout: 15_000,
   });
 }
-function requireRed(label, mutant, pattern) {
+function requireRed(label, anchor, replacement, pattern) {
+  assert.equal(
+    original.split(anchor).length,
+    2,
+    `${label} mutation anchor must match exactly once`,
+  );
+  const mutant = original.replace(anchor, replacement);
   assert.notEqual(mutant, original, `${label} mutation anchor did not match`);
   fs.writeFileSync(target, mutant);
   const result = runReadContract();
@@ -28,40 +34,29 @@ function requireRed(label, mutant, pattern) {
 try {
   requireRed(
     'inspectId definition fence',
-    original.replace(
-      '        this.assertDefinition(row);\n        return this.snapshot(row, result.now);',
-      '        return this.snapshot(row, result.now);',
-    ),
+    '        this.assertDefinition(row);\n        return this.snapshot(row, result.now);',
+    '        return this.snapshot(row, result.now);',
     /definition_changed/u,
   );
 
   requireRed(
     'inspectMany definition fence',
-    original.replace(
-      '            this.assertDefinition(row);\n            return this.snapshot(row, result.now);',
-      '            return this.snapshot(row, result.now);',
-    ),
+    '            this.assertDefinition(row);\n            return this.snapshot(row, result.now);',
+    '            return this.snapshot(row, result.now);',
     /definition_changed/u,
   );
 
   requireRed(
     'history definition fence',
-    original.replace(
-      "    requireRow(row) {\n        if (!row)\n            throw new WorkConflict('not_found');\n        this.assertDefinition(row);\n    }",
-      "    requireRow(row) {\n        if (!row)\n            throw new WorkConflict('not_found');\n    }",
-    ),
+    "    requireRow(row) {\n        if (!row)\n            throw new WorkConflict('not_found');\n        this.assertDefinition(row);\n    }",
+    "    requireRow(row) {\n        if (!row)\n            throw new WorkConflict('not_found');\n    }",
     /definition_changed/u,
   );
 
-  const orderAnchor = '        return result.rows.map((row) => {';
-  assert.equal(
-    original.split(orderAnchor).length,
-    2,
-    'inspectMany caller-order preservation anchor is not unique',
-  );
   requireRed(
     'inspectMany caller-order preservation',
-    original.replace(orderAnchor, '        return [...result.rows].reverse().map((row) => {'),
+    '        return result.rows.map((row) => {',
+    '        return [...result.rows].reverse().map((row) => {',
     /deepStrictEqual|Expected values to be strictly deep-equal/u,
   );
 

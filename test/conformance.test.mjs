@@ -11,17 +11,26 @@ for (const adapter of ['memory', 'sqlite'])
     const passed = await runConformance(() => {
       let clock = 100_000;
       const directory = adapter === 'sqlite' ? mkdtempSync(join(tmpdir(), 'workonce-')) : undefined;
-      const store = directory
-        ? createSqliteStore(join(directory, 'queue.sqlite'), { now: () => clock })
-        : createMemoryStore({ now: () => clock });
+      let store;
+      try {
+        store = directory
+          ? createSqliteStore(join(directory, 'queue.sqlite'), { now: () => clock })
+          : createMemoryStore({ now: () => clock });
+      } catch (error) {
+        if (directory) rmSync(directory, { recursive: true, force: true });
+        throw error;
+      }
       return {
         store,
         advance(ms) {
           clock += ms;
         },
         close() {
-          store.close?.();
-          if (directory) rmSync(directory, { recursive: true });
+          try {
+            store.close?.();
+          } finally {
+            if (directory) rmSync(directory, { recursive: true, force: true });
+          }
         },
       };
     });

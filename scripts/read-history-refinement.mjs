@@ -460,11 +460,17 @@ export function assertReadHistorySamples(samples) {
       );
       assert.equal(sample.retainedEvents, 128, 'historyTruncation.retainedEvents');
     } else if (sample.kind === 'inspectManyRace') {
-      assert.equal(sample.callerOrderExact, true, name);
-      assert.equal(sample.perIdRealState, true, name);
-      assert.equal(sample.expectedEndpoint, true, name);
-      assert.equal(sample.oneStorageClock, true, name);
-      assert.equal(sample.perIdContractPreserved, true, name);
+      assertExactBooleanSample(
+        sample,
+        [
+          'callerOrderExact',
+          'perIdRealState',
+          'expectedEndpoint',
+          'oneStorageClock',
+          'perIdContractPreserved',
+        ],
+        ['adapter', 'mode', 'mixedRevision', 'crossIdAtomicSnapshotRequired'],
+      );
       assert.equal(sample.crossIdAtomicSnapshotRequired, false, name);
       if (sample.mode === 'mixed') assert.equal(sample.mixedRevision, true, name);
       if (sample.mode === 'readerFirst') assert.equal(sample.mixedRevision, false, name);

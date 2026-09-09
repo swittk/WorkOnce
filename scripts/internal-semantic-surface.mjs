@@ -6,8 +6,11 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function normalize(text) {
+function normalizeName(text) {
   return text.replace(/\s+/gu, ' ').trim();
+}
+export function semanticTextDigest(text) {
+  return digest(text.replace(/\r\n?/gu, '\n').trim());
 }
 function digest(text) {
   return crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
@@ -31,11 +34,11 @@ function contextName(node) {
 }
 function callName(node) {
   if (!ts.isCallExpression(node)) return undefined;
-  return normalize(node.expression.getText());
+  return normalizeName(node.expression.getText());
 }
 function newName(node) {
   if (!ts.isNewExpression(node)) return undefined;
-  return normalize(node.expression.getText());
+  return normalizeName(node.expression.getText());
 }
 const mutatingMethodNames = new Set([
   'add',
@@ -126,9 +129,9 @@ export function discoverInternalSemanticSurface() {
     function visit(node) {
       const kind = constructKind(node);
       if (kind) {
-        const full = normalize(node.getText(source));
+        const full = node.getText(source).replace(/\r\n?/gu, '\n').trim();
         const excerpt = full.slice(0, 240);
-        const textDigest = digest(full);
+        const textDigest = semanticTextDigest(full);
         const context = contextName(node);
         const key = `${relative}\0${context}\0${kind}\0${textDigest}`;
         const occurrence = (occurrences.get(key) ?? 0) + 1;

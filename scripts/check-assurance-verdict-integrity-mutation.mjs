@@ -120,7 +120,7 @@ mutate(
   '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
   '          await sleep(35);',
   'local heartbeat cause witness returns to scheduler-delay synchronization',
-  /heartbeat attempts|scheduler delay|heartbeat-loss witness/u,
+  /local runner cause-precision witnesses must synchronize on both defined and undefined heartbeat attempts/u,
 );
 mutate(
   'scripts/external-transport-refinement.mjs',
@@ -211,7 +211,7 @@ mutate(
   '  let specSwapped = false;',
   '  let specSwapped = true;',
   'mutation witness config no longer fails closed on missing specification substitution',
-  /specSwapped|SPECIFICATION Spec/u,
+  /lifecycle TLC mutation witness must initialize specSwapped to false/u,
 );
 mutate(
   'scripts/external-transport-refinement.mjs',
@@ -225,7 +225,7 @@ mutate(
   's.oneTickHeartbeatCompatible',
   's.oneTickAccepted',
   'external model restores unconditional one-tick acceptance claim',
-  /oneTickHeartbeatCompatible|oneTickAccepted/u,
+  /external TLA contract must require oneTickHeartbeatCompatible/u,
 );
 mutate(
   'scripts/external-transport-refinement.mjs',

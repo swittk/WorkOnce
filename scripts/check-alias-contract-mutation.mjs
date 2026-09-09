@@ -74,7 +74,7 @@ for (const [relative, anchor, replacement, label] of [
       requireRed(
         label,
         result,
-        /aliases execute the same hardened operations|process\/runAvailable semantics|processExternal\/runExternalAvailable semantics/u,
+        /process\/runAvailable semantics|processExternal\/runExternalAvailable semantics/u,
       );
     },
   );

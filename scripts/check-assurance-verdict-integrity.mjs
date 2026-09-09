@@ -481,7 +481,11 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(lifecycleFormal, /requireExpectedInvariantViolation\(result, invariant\)/u);
   assert.doesNotMatch(lifecycleFormal, /const semanticFailure\s*=/u);
-  assert.match(lifecycleFormal, /let specSwapped = false/u);
+  assert.match(
+    lifecycleFormal,
+    /let specSwapped = false/u,
+    'lifecycle TLC mutation witness must initialize specSwapped to false',
+  );
   assert.match(lifecycleFormal, /specSwapped = true/u);
   assert.match(lifecycleFormal, /if \(!specSwapped\)[\s\S]{0,160}?SPECIFICATION Spec/u);
 
@@ -561,7 +565,11 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(leaseSample, /Confirmed external lease deadline passed/u);
   assert.match(leaseSample, /delayedOneTick\.heartbeatCalls === 0/u);
   const externalModel = read('formal/WorkOnceExternal.tla');
-  assert.match(externalModel, /s\.oneTickHeartbeatCompatible/u);
+  assert.match(
+    externalModel,
+    /s\.oneTickHeartbeatCompatible/u,
+    'external TLA contract must require oneTickHeartbeatCompatible',
+  );
   assert.doesNotMatch(externalModel, /s\.oneTickAccepted/u);
 
   const localRunnerRefinement = read('scripts/local-runner-refinement.mjs');

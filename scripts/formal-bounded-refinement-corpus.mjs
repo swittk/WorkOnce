@@ -505,7 +505,7 @@ async function replayAndDynamicPolicies(coverage) {
       external.claim({ workerId: 'external', limit: 1 }),
     ]);
     assert.equal(local.length + leased.length, 1);
-    assert.ok(localExecutions === 0 || localExecutions === 1);
+    assert.equal(localExecutions, local.length);
     if (leased.length) {
       await external.settle(leased[0].attempt, {
         type: 'succeed',

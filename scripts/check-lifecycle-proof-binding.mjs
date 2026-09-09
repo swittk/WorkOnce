@@ -30,6 +30,8 @@ const evidenceFiles = [
   'scripts/lifecycle-refinement.mjs',
   'scripts/refinement-sample-schema.mjs',
   'scripts/lifecycle-formal.mjs',
+  'scripts/build-source-binding.mjs',
+  'scripts/tlc-outcome.mjs',
   'scripts/tlc-workspace.mjs',
   'test/tlc-workspace.test.mjs',
   'scripts/check-lifecycle-proof-binding.mjs',

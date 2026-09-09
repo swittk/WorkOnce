@@ -482,14 +482,20 @@ async function stopSignalSample() {
   const running = runExternal(transport, { workerId: 'relay', signal: stop.signal }, async (run) =>
     run.succeed(),
   );
-  await within(
-    (async () => {
-      while (!claimEntered) await sleep(1);
-    })(),
-    'external stop-signal claim entry',
-  );
-  stop.abort(new Error('shutdown'));
-  const managed = await observe(running);
+  const observedRunning = observe(running);
+  let managed;
+  try {
+    await within(
+      (async () => {
+        while (!claimEntered) await sleep(1);
+      })(),
+      'external stop-signal claim entry',
+    );
+    stop.abort(new Error('shutdown'));
+    managed = await within(observedRunning, 'external stop-signal completion');
+  } finally {
+    if (!stop.signal.aborted) stop.abort(new Error('external stop-signal proof cleanup'));
+  }
   return {
     kind: 'stopSignal',
     preAbortedNoClaim: preResult.length === 0 && preClaims === 0,
