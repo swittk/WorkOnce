@@ -42,8 +42,9 @@ const store =
         },
       }
     : base;
+const leaseMs = mode === 'multi-active' ? 2000 : 200;
 const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
-  limits: { leaseMs: 200, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
+  limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
 });
 process.send?.({ ready: true });
 

@@ -14,7 +14,33 @@ function start(path, mode) {
   return fork(childUrl, [path, mode], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
 }
 async function nextMessage(child) {
-  return (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(
+      () => finish(reject, new Error('Timed out waiting for local-runner child IPC message')),
+      15000,
+    );
+    const onMessage = (message) => finish(resolve, message);
+    const onExit = (code, signal) =>
+      finish(
+        reject,
+        new Error(
+          `Local-runner child exited before its next IPC message: code=${String(code)} signal=${String(signal)}`,
+        ),
+      );
+    const onError = (error) => finish(reject, error);
+    function finish(settle, value) {
+      clearTimeout(timeout);
+      child.off('message', onMessage);
+      child.off('exit', onExit);
+      child.off('error', onError);
+      settle(value);
+    }
+    child.once('message', onMessage);
+    child.once('exit', onExit);
+    child.once('error', onError);
+    if (child.exitCode !== null || child.signalCode !== null)
+      onExit(child.exitCode, child.signalCode);
+  });
 }
 async function kill(child) {
   if (child.exitCode !== null || child.signalCode !== null) {
@@ -26,11 +52,11 @@ async function kill(child) {
   const [, signal] = await exited;
   assert.equal(signal, 'SIGKILL');
 }
-async function seed(path, count) {
+async function seed(path, count, leaseMs = 200) {
   const store = createSqliteStore(path);
   try {
     const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
-      limits: { leaseMs: 200, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
+      limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
     });
     for (let index = 0; index < count; index++)
       await queue.ensure({ key: String(index) }, { key: String(index) });
@@ -38,10 +64,10 @@ async function seed(path, count) {
     store.close();
   }
 }
-function reopen(path) {
+function reopen(path, leaseMs = 200) {
   const store = createSqliteStore(path);
   const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
-    limits: { leaseMs: 200, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
+    limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
   });
   return { store, queue };
 }
@@ -50,7 +76,7 @@ test('SIGKILL with three active local attempts leaves all durable leases reclaim
   const directory = mkdtempSync(join(tmpdir(), 'workonce-local-runner-multi-'));
   const path = join(directory, 'queue.sqlite');
   try {
-    await seed(path, 3);
+    await seed(path, 3, 2000);
     const child = start(path, 'multi-active');
     try {
       assert.equal((await nextMessage(child)).ready, true);
@@ -60,8 +86,8 @@ test('SIGKILL with three active local attempts leaves all durable leases reclaim
         if (message.stage === 'started') refs.push(message.ref);
       }
       await kill(child);
-      await sleep(250);
-      const opened = reopen(path);
+      await sleep(2050);
+      const opened = reopen(path, 2000);
       try {
         const reclaimed = await opened.queue.claim({ workerId: 'restart', limit: 3 });
         assert.equal(reclaimed.length, 3);

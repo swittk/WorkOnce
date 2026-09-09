@@ -97,7 +97,7 @@
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
 - Bound proof/checker files: **114**
-- Content digest: `b40c11f4e13db8f95f78778a79497e1df6b158739dfd01bfa5dcf5c5d9d445a9`
+- Content digest: `e852ead1c097dc8f8decd49a0d0e37d572721ec4888a16fd62cdf0069ee086ec`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 

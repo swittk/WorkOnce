@@ -79,6 +79,20 @@ mutate(
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
+  "    child.once('exit', onExit);",
+  '    void onExit;',
+  'IPC wait ignores early child exit',
+  /child\.once|next IPC message/u,
+);
+mutate(
+  'test/process/local-runner-child.mjs',
+  "const leaseMs = mode === 'multi-active' ? 2000 : 200;",
+  'const leaseMs = 200;',
+  'scheduler-sensitive multi-active crash lease',
+  /multi-active|2000/u,
+);
+mutate(
+  'test/process/local-runner-process.test.mjs',
   "  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
   "  const exited = once(child, 'exit');",
   'unbounded process exit wait',

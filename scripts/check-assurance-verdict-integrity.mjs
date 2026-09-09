@@ -124,6 +124,25 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(mixedSample, /Promise\.allSettled\(\[reading\]\)/u);
 
   const processTest = read('test/process/local-runner-process.test.mjs');
+  const messageStart = processTest.indexOf('async function nextMessage(child)');
+  const messageEnd = processTest.indexOf('\nasync function kill(child)', messageStart + 1);
+  const messageHelper = processTest.slice(messageStart, messageEnd);
+  assert.match(messageHelper, /child\.once\('message', onMessage\)/u);
+  assert.match(messageHelper, /child\.once\('exit', onExit\)/u);
+  assert.match(messageHelper, /child\.once\('error', onError\)/u);
+  assert.match(messageHelper, /child\.exitCode !== null \|\| child\.signalCode !== null/u);
+  assert.match(messageHelper, /Local-runner child exited before its next IPC message/u);
+  assert.doesNotMatch(messageHelper, /once\(child, 'message', \{ signal: AbortSignal\.timeout/u);
+
+  const multiStart = processTest.indexOf("test('SIGKILL with three active local attempts");
+  const multiEnd = processTest.indexOf("\ntest('SIGKILL after heartbeat", multiStart + 1);
+  const multiFixture = processTest.slice(multiStart, multiEnd);
+  assert.match(multiFixture, /seed\(path, 3, 2000\)/u);
+  assert.match(multiFixture, /sleep\(2050\)/u);
+  assert.match(multiFixture, /reopen\(path, 2000\)/u);
+  const processChild = read('test/process/local-runner-child.mjs');
+  assert.match(processChild, /mode === 'multi-active' \? 2000 : 200/u);
+
   const killStart = processTest.indexOf('async function kill(child)');
   const killEnd = processTest.indexOf('\nasync function ', killStart + 1);
   const killHelper = processTest.slice(killStart, killEnd);
