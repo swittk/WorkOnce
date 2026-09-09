@@ -280,6 +280,14 @@ mutate(
   /re-emit captured TLC stdout/u,
 );
 
+mutate(
+  'scripts/formal-bounded-refinement-corpus.mjs',
+  "{ id: 'bad', leaseMs: 30_000, maxElapsedMs: 60_000 }",
+  "{ id: 'bad', leaseMs: 30_000 }",
+  'worker-isolation proof loses its generation elapsed deadline margin',
+  /both lease and generation elapsed deadline/u,
+);
+
 console.log(
   'Assurance verdict integrity mutation guard rejects all reviewed false-green and hang regressions.',
 );

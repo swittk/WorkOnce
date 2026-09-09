@@ -659,8 +659,8 @@ async function replayAndDynamicPolicies(coverage) {
     // This scenario proves per-job handler isolation, not lease-expiry behavior. Keep the
     // real-time ownership window well outside CI scheduler stalls so expiry cannot become
     // a second, unrelated interruption of the healthy neighbor.
-    await f.queue.item({ id: 'bad', leaseMs: 30_000 }).ensure();
-    await f.queue.item({ id: 'good', leaseMs: 30_000 }).ensure();
+    await f.queue.item({ id: 'bad', leaseMs: 30_000, maxElapsedMs: 60_000 }).ensure();
+    await f.queue.item({ id: 'good', leaseMs: 30_000, maxElapsedMs: 60_000 }).ensure();
     const results = await f.queue.runAvailable(
       { workerId: 'batch', concurrency: 2 },
       async (run) => {

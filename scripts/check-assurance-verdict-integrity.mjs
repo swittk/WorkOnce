@@ -165,6 +165,11 @@ export function assertAssuranceVerdictIntegrity() {
   );
 
   const boundedCorpus = read('scripts/formal-bounded-refinement-corpus.mjs');
+  assert.match(
+    boundedCorpus,
+    /worker-isolation[\s\S]{0,500}?leaseMs: 30_000, maxElapsedMs: 60_000[\s\S]{0,180}?leaseMs: 30_000, maxElapsedMs: 60_000/u,
+    'worker-isolation proof must keep both lease and generation elapsed deadline outside CI scheduler stalls',
+  );
   assert.doesNotMatch(
     boundedCorpus,
     /while\s*\([^)]*claimCalls[^)]*\)\s*(?:\{)?[\s\S]{0,180}?setTimeout/u,
