@@ -99,7 +99,8 @@ BoundedCompareMisses == compareMisses <= MaxConflicts
 StorageSampleOK(s) ==
   CASE s.kind = "detached" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
-       /\ s.getManyDetached /\ s.queryDetached /\ s.orderExact /\ s.cursorExact
+       /\ s.getManyDetached /\ s.duplicateSlotsExact /\ s.duplicateSlotsDetached
+       /\ s.queryDetached /\ s.orderExact /\ s.cursorExact
     [] s.kind = "adapterHistoryCongruence" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.materiallyDifferentHistory /\ s.sameDurableProjection /\ s.sameFuture

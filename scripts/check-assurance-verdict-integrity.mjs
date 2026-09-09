@@ -6,6 +6,13 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const scriptsRoot = path.join(root, 'scripts');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+function boundedSection(source, startAnchor, endAnchor, label) {
+  const start = source.indexOf(startAnchor);
+  assert.notEqual(start, -1, `${label} start anchor is missing`);
+  const end = source.indexOf(endAnchor, start + startAnchor.length);
+  assert.ok(end > start, `${label} end anchor is missing or precedes its start`);
+  return source.slice(start, end);
+}
 
 export function assertAssuranceVerdictIntegrity() {
   const mutationFiles = fs
@@ -69,6 +76,9 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(lifecycleFormal, /classifyTlcOutcome/u);
   assert.match(lifecycleFormal, /requireExpectedInvariantViolation\(result, invariant\)/u);
   assert.doesNotMatch(lifecycleFormal, /const semanticFailure\s*=/u);
+  assert.match(lifecycleFormal, /let specSwapped = false/u);
+  assert.match(lifecycleFormal, /specSwapped = true/u);
+  assert.match(lifecycleFormal, /if \(!specSwapped\)[\s\S]{0,160}?SPECIFICATION Spec/u);
 
   const storageFormal = read('scripts/storage-formal.mjs');
   assert.match(storageFormal, /classifyTlcOutcome/u);
@@ -80,13 +90,12 @@ export function assertAssuranceVerdictIntegrity() {
   assert.doesNotMatch(storageRefinement, /maxSafeAccepted\s*:\s*true/u);
   assert.match(storageRefinement, /oneAccepted\s*=\s*true/u);
   assert.match(storageRefinement, /maxSafeAccepted\s*=\s*true/u);
-  const historyStart = storageRefinement.indexOf('materiallyDifferentHistory:');
-  const historyEnd = storageRefinement.indexOf('sameDurableProjection:', historyStart);
-  assert.ok(
-    historyStart >= 0 && historyEnd > historyStart,
-    'storage history provenance field is missing',
+  const historyWitness = boundedSection(
+    storageRefinement,
+    'materiallyDifferentHistory:',
+    'sameDurableProjection:',
+    'storage history provenance',
   );
-  const historyWitness = storageRefinement.slice(historyStart, historyEnd);
   for (const required of ['completedRequests', 'before.revision', 'future.history.length'])
     assert.ok(
       historyWitness.includes(required),
@@ -94,9 +103,12 @@ export function assertAssuranceVerdictIntegrity() {
     );
 
   const lifecycleRefinement = read('scripts/lifecycle-refinement.mjs');
-  const resetStart = lifecycleRefinement.indexOf('async function resetCheckRaceSample');
-  const resetEnd = lifecycleRefinement.indexOf('\nasync function ', resetStart + 1);
-  const resetSample = lifecycleRefinement.slice(resetStart, resetEnd);
+  const resetSample = boundedSection(
+    lifecycleRefinement,
+    'async function resetCheckRaceSample',
+    '\nasync function ',
+    'reset-check race sample',
+  );
   assert.ok(
     resetSample.indexOf('entered.resolve();') >= 0,
     'reset race no longer signals callback entry',
@@ -107,21 +119,24 @@ export function assertAssuranceVerdictIntegrity() {
     'reset race signals entry after assertions and can strand the outer waiter',
   );
   assert.match(resetSample, /Promise\.race\(\[entered\.promise, pending\]\)/u);
-  const drainStart = lifecycleRefinement.indexOf('async function finiteDrainSample');
-  const drainEnd = lifecycleRefinement.indexOf('\nasync function ', drainStart + 1);
-  const drainSample = lifecycleRefinement.slice(drainStart, drainEnd);
+  const drainSample = boundedSection(
+    lifecycleRefinement,
+    'async function finiteDrainSample',
+    '\nasync function ',
+    'finite-drain sample',
+  );
   assert.match(drainSample, /const maxPasses\s*=\s*\d+/u);
   assert.match(drainSample, /for \(; passes < maxPasses; passes\+\+\)/u);
   assert.match(drainSample, /boundedPasses:\s*passes < maxPasses/u);
   assert.doesNotMatch(drainSample, /for \(;;\)/u);
 
   const externalRefinement = read('scripts/external-transport-refinement.mjs');
-  const leaseStart = externalRefinement.indexOf('async function leaseBoundarySample');
-  const leaseEnd = externalRefinement.indexOf(
+  const leaseSample = boundedSection(
+    externalRefinement,
+    'async function leaseBoundarySample',
     '\nasync function heartbeatFailureSample',
-    leaseStart + 1,
+    'external lease-boundary sample',
   );
-  const leaseSample = externalRefinement.slice(leaseStart, leaseEnd);
   assert.match(leaseSample, /async function one\(lease, claimDelayMs = 0\)/u);
   assert.match(leaseSample, /if \(claimDelayMs > 0\) await sleep\(claimDelayMs\)/u);
   assert.match(leaseSample, /delayedOneTick = await one\([\s\S]*?,\s*5,\s*\)/u);
@@ -132,28 +147,43 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(externalModel, /s\.oneTickHeartbeatCompatible/u);
   assert.doesNotMatch(externalModel, /s\.oneTickAccepted/u);
 
+  const localRunnerRefinement = read('scripts/local-runner-refinement.mjs');
+  assert.match(localRunnerRefinement, /function within\(promise, label, timeoutMs = 3000\)/u);
+  assert.match(localRunnerRefinement, /local runner refinement timed out waiting for/u);
+  assert.doesNotMatch(localRunnerRefinement, /await [A-Za-z_$][A-Za-z0-9_$.[\]]*\.promise;/u);
+  assert.match(
+    localRunnerRefinement,
+    /Object\.prototype\.hasOwnProperty\.call\(result, 'error'\)/u,
+  );
+
   const readHistory = read('scripts/read-history-refinement.mjs');
-  const mixedStart = readHistory.indexOf('async function casMixedRaceSample');
-  const mixedEnd = readHistory.indexOf('\nexport async function ', mixedStart + 1);
-  const mixedSample = readHistory.slice(mixedStart, mixedEnd);
+  const mixedSample = boundedSection(
+    readHistory,
+    'async function casMixedRaceSample',
+    '\nexport async function ',
+    'CAS mixed-race sample',
+  );
   assert.match(mixedSample, /finally\s*\{/u);
   assert.match(mixedSample, /release\.resolve\(\)/u);
   assert.match(mixedSample, /Promise\.allSettled\(\[reading\]\)/u);
 
-  const ackStart = externalRefinement.indexOf('async function unknownAckHistorySample');
-  const ackEnd = externalRefinement.indexOf(
+  const ackSample = boundedSection(
+    externalRefinement,
+    'async function unknownAckHistorySample',
     '\nexport async function runExternalTransportSamples',
-    ackStart + 1,
+    'unknown-ACK history sample',
   );
-  const ackSample = externalRefinement.slice(ackStart, ackEnd);
   assert.match(ackSample, /async heartbeat\(\) \{/u);
   assert.match(ackSample, /return \{ observedAt: 100, leaseUntil: 120 \}/u);
   assert.doesNotMatch(ackSample, /heartbeat: service\.heartbeat/u);
 
   const processTest = read('test/process/local-runner-process.test.mjs');
-  const startHelperStart = processTest.indexOf('function start(path, mode)');
-  const messageEnd = processTest.indexOf('\nasync function kill(child)', startHelperStart + 1);
-  const messageHelper = processTest.slice(startHelperStart, messageEnd);
+  const messageHelper = boundedSection(
+    processTest,
+    'function start(path, mode)',
+    '\nasync function kill(child)',
+    'local-runner buffered IPC helper',
+  );
   assert.match(processTest, /const childInboxes = new WeakMap\(\)/u);
   assert.match(messageHelper, /child\.on\('message'/u);
   assert.match(messageHelper, /inbox\.messages\.push\(message\)/u);
@@ -164,9 +194,12 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(messageHelper, /Local-runner child exited before its next IPC message/u);
   assert.doesNotMatch(messageHelper, /child\.once\('message'/u);
 
-  const multiStart = processTest.indexOf("test('SIGKILL with three active local attempts");
-  const multiEnd = processTest.indexOf("\ntest('SIGKILL after heartbeat", multiStart + 1);
-  const multiFixture = processTest.slice(multiStart, multiEnd);
+  const multiFixture = boundedSection(
+    processTest,
+    "test('SIGKILL with three active local attempts",
+    "\ntest('SIGKILL after heartbeat",
+    'multi-active crash fixture',
+  );
   assert.match(multiFixture, /seed\(path, 3, 2000\)/u);
   assert.match(multiFixture, /inspectMany\(\['0', '1', '2'\]\)/u);
   assert.match(multiFixture, /snapshot\?\.phase\.state === 'running'/u);
@@ -177,9 +210,12 @@ export function assertAssuranceVerdictIntegrity() {
   const processChild = read('test/process/local-runner-child.mjs');
   assert.match(processChild, /mode === 'multi-active' \? 2000 : 200/u);
 
-  const killStart = processTest.indexOf('async function kill(child)');
-  const killEnd = processTest.indexOf('\nasync function ', killStart + 1);
-  const killHelper = processTest.slice(killStart, killEnd);
+  const killHelper = boundedSection(
+    processTest,
+    'async function kill(child)',
+    '\nasync function ',
+    'local-runner kill helper',
+  );
   assert.match(killHelper, /child\.exitCode !== null \|\| child\.signalCode !== null/u);
   assert.match(killHelper, /AbortSignal\.timeout\(15000\)/u);
   assert.match(killHelper, /assert\.equal\(signal, 'SIGKILL'\)/u);

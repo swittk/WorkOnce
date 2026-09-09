@@ -205,3 +205,34 @@ requireRejects(
   sampleModule,
   'StorageSamplesConform',
 );
+
+const duplicateSlotMutantSamples = samples.map((sample) =>
+  sample.kind === 'detached' && sample.adapter === 'memory'
+    ? { ...sample, duplicateSlotsExact: false }
+    : sample,
+);
+const duplicateSlotModule = resolve(
+  tlcWorkspace,
+  'WorkOnceStorageMutant_DuplicateSlotsConform.tla',
+);
+const duplicateSlotConfig = resolve(
+  tlcWorkspace,
+  'WorkOnceStorageMutant_DuplicateSlotsConform.cfg',
+);
+writeFileSync(
+  duplicateSlotModule,
+  embeddedStorageModule(
+    'WorkOnceStorageMutant_DuplicateSlotsConform',
+    `ObservedSamples == {\n${duplicateSlotMutantSamples.map(tlaValue).join(',\n')}\n}`,
+  ),
+);
+writeFileSync(
+  duplicateSlotConfig,
+  `SPECIFICATION Spec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
+);
+requireRejects(
+  'WorkOnceStorageMutant_DuplicateSlotsConform',
+  duplicateSlotConfig,
+  duplicateSlotModule,
+  'StorageSamplesConform',
+);

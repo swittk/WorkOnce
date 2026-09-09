@@ -29,9 +29,14 @@ async function killAfterStage(path, mode, detail, expectedStage) {
       stage = await nextMessage(child);
     }
     assert.equal(stage.stage, expectedStage);
-    const exited = once(child, 'exit');
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error(
+        `Lifecycle child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+      );
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
     child.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
     return { ready, stage };
   } finally {
     if (!child.killed) child.kill('SIGKILL');
@@ -40,7 +45,7 @@ async function killAfterStage(path, mode, detail, expectedStage) {
 function open(path) {
   const store = createSqliteStore(path);
   const queue = createWorkOnce({ store, scope: 'lifecycle-process' }).define('job', {
-    limits: { leaseMs: 10000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
+    limits: { leaseMs: 30000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
   });
   return { store, queue };
 }

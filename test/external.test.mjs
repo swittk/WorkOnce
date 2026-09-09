@@ -562,7 +562,7 @@ test('local run and external service compete through one claim/fence authority',
     service.claim({ workerId: 'outside', limit: 1 }),
   ]);
   assert.equal(local.length + external.length, 1);
-  assert.ok(localExecutions === 0 || localExecutions === 1);
+  assert.equal(localExecutions, local.length);
   if (external.length) {
     await service.settle(external[0].attempt, { type: 'succeed', result: 'external', next: [] });
   }

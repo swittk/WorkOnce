@@ -85,6 +85,18 @@ async function waitUntil(check, timeoutMs = 3000) {
     await sleep(2);
   }
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`local runner refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 function semanticSnapshot(snapshot) {
   if (!snapshot) return null;
   const phase = { ...snapshot.phase };
@@ -136,12 +148,12 @@ async function stopReclaimSample(adapter, mode) {
           failHeartbeat = true;
           await sleep(35);
         } else {
-          await release.promise;
+          await within(release.promise, `${adapter}-${mode} handler release`);
         }
         return run.succeed();
       },
     );
-    const oldRef = await entered.promise;
+    const oldRef = await within(entered.promise, `${adapter}-${mode} handler entry`);
     if (mode === 'caller') {
       stop.abort(callerStop);
       release.resolve();
@@ -193,7 +205,10 @@ async function undefinedHeartbeatSample(adapter) {
       kind: 'undefinedHeartbeat',
       adapter,
       interrupted: result.status === 'interrupted',
-      exactUndefined: result.status === 'interrupted' && result.error === undefined,
+      exactUndefined:
+        result.status === 'interrupted' &&
+        Object.prototype.hasOwnProperty.call(result, 'error') &&
+        result.error === undefined,
     };
   } finally {
     fixture.close();
@@ -349,7 +364,7 @@ async function competingRunnersSample(adapter) {
       if (blocked < 2) {
         blocked++;
         if (blocked === 2) firstWave.resolve();
-        await release.promise;
+        await within(release.promise, `competing runner release ${input.index}`);
       }
       return run.succeed();
     };
@@ -361,7 +376,7 @@ async function competingRunnersSample(adapter) {
       { workerId: 'B', concurrency: 1, idleMs: 1, heartbeatMs: 50, signal: stopB.signal },
       handler,
     );
-    await firstWave.promise;
+    await within(firstWave.promise, 'competing runners first wave');
     release.resolve();
     await waitUntil(async () => {
       const snapshots = await first.inspectMany(['0', '1', '2', '3']);
@@ -392,10 +407,10 @@ async function completionOrderLane(reverse) {
   const release = { a: deferred(), b: deferred() };
   const running = queue.runAvailable({ workerId: 'order', concurrency: 2 }, async (run, input) => {
     entered[input].resolve();
-    await release[input].promise;
+    await within(release[input].promise, `completion-order ${input} release`);
     return run.succeed(input);
   });
-  await Promise.all([entered.a.promise, entered.b.promise]);
+  await within(Promise.all([entered.a.promise, entered.b.promise]), 'completion-order entries');
   const order = reverse ? ['b', 'a'] : ['a', 'b'];
   release[order[0]].resolve();
   await nextTurn();
@@ -501,7 +516,7 @@ async function backoffLane(mode) {
       },
     },
     async (run) => {
-      await release.promise;
+      await within(release.promise, 'observer-backoff handler release');
       return run.succeed();
     },
   );
@@ -542,7 +557,7 @@ async function lateClaimStopSample() {
     claimCalls++;
     if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
     secondClaimEntered.resolve();
-    await releaseSecondClaim.promise;
+    await within(releaseSecondClaim.promise, 'late second claim release');
     return originalClaim({ ...options, limit: 1 });
   };
   const firstHandlerEntered = deferred();
@@ -555,12 +570,15 @@ async function lateClaimStopSample() {
       started.push(input.id);
       if (input.id === 'a') {
         firstHandlerEntered.resolve();
-        await releaseFirstHandler.promise;
+        await within(releaseFirstHandler.promise, 'late first handler release');
       }
       return run.succeed();
     },
   );
-  await Promise.all([firstHandlerEntered.promise, secondClaimEntered.promise]);
+  await within(
+    Promise.all([firstHandlerEntered.promise, secondClaimEntered.promise]),
+    'late claim/handler entries',
+  );
   stop.abort(new Error('late-claim-stop'));
   releaseFirstHandler.resolve();
   await nextTurn();

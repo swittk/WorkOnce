@@ -88,6 +88,7 @@ function mutationWitnessConfig(configText) {
   const output = [];
   let skipping = false;
   let inserted = false;
+  let specSwapped = false;
   for (const line of configText.replace(/\r\n?/gu, '\n').split('\n')) {
     if (line.trim() === 'INVARIANTS') {
       skipping = true;
@@ -99,6 +100,7 @@ function mutationWitnessConfig(configText) {
     }
     if (line.trim() === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION BatchSpec');
+      specSwapped = true;
       continue;
     }
     if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
@@ -108,6 +110,8 @@ function mutationWitnessConfig(configText) {
     output.push(line);
   }
   if (!inserted) output.push('INVARIANT MutationWitnesses');
+  if (!specSwapped)
+    throw new Error('Mutation witness config found no "SPECIFICATION Spec" line to rebind');
   return `${output.join('\n').trimEnd()}\n`;
 }
 

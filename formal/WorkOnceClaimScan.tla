@@ -1,6 +1,7 @@
 ------------------------- MODULE WorkOnceClaimScan -------------------------
 EXTENDS Naturals
 CONSTANTS ScanWidth, ClaimLimit, InitialFront, InitialHealthy
+ASSUME InitialFront <= ScanWidth
 VARIABLES pc, pass, frontRemaining, healthyRemaining, pageFront, pageHealthy,
           claimedThisPass, healthyClaimed, exhaustedTerminalized
 vars == <<pc, pass, frontRemaining, healthyRemaining, pageFront, pageHealthy,

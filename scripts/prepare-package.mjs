@@ -4,7 +4,13 @@ import { assertBuildSourceBinding } from './build-source-binding.mjs';
 if (process.env.WORKONCE_REUSE_BOUND_BUILD === '1') {
   assertBuildSourceBinding();
 } else {
-  const result = spawnSync('npm', ['run', 'build'], {
+  const command =
+    process.platform === 'win32'
+      ? (process.env.ComSpec ?? process.env.COMSPEC ?? 'cmd.exe')
+      : 'npm';
+  const args =
+    process.platform === 'win32' ? ['/d', '/s', '/c', 'npm.cmd run build'] : ['run', 'build'];
+  const result = spawnSync(command, args, {
     cwd: new URL('..', import.meta.url),
     env: process.env,
     stdio: 'inherit',

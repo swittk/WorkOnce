@@ -14,6 +14,11 @@ assert.match(
   'TLC child shards must accept a private parent workspace',
 );
 assert.match(helper, /rmSync\(workspace, \{ recursive: true, force: true \}\)/u);
+assert.match(
+  helper,
+  /if \(code === 0\) rmSync\(workspace,/u,
+  'TLC workspaces must be removed only after a successful invocation',
+);
 
 for (const runner of [
   'scripts/formal.mjs',

@@ -38,5 +38,12 @@ mutate(
   'lifecycle global TLC workspace regression',
   /process-global generated TLC directory|acquire a private TLC workspace/u,
 );
+mutate(
+  'scripts/tlc-workspace.mjs',
+  '    if (code === 0) rmSync(workspace, { recursive: true, force: true });',
+  '    rmSync(workspace, { recursive: true, force: true });',
+  'failed TLC workspace diagnostics are deleted',
+  /successful invocation/u,
+);
 
 console.log('TLC workspace isolation mutation guard rejects shared generated-module namespaces.');

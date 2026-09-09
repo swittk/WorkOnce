@@ -36,9 +36,12 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     assert.deepEqual(first, again);
     await rejects(q.ensure({ a: 2 }, { key: 'same' }), 'key_conflict');
     const batch = await q.inspectMany(['missing', 'same', 'same']);
+    assert.equal(batch.length, 3, 'getMany must preserve requested slots including duplicate ids');
     assert.equal(batch[0], undefined);
     assert.equal(batch[1]!.input.a, 1);
+    assert.equal(batch[2]!.input.a, 1);
     batch[1]!.input.a = 9;
+    assert.equal(batch[2]!.input.a, 1);
     assert.equal((await q.inspect('same'))!.input.a, 1);
   });
   await test('50 competing claimers produce one current owner', async ({ store }) => {

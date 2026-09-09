@@ -78,6 +78,27 @@ mutate(
   /for \(;;\)|maxPasses/u,
 );
 mutate(
+  'scripts/lifecycle-refinement.mjs',
+  'async function finiteDrainSample',
+  'async function renamedFiniteDrainSample',
+  'scoped assurance section loses its start anchor',
+  /start anchor is missing/u,
+);
+mutate(
+  'scripts/lifecycle-formal.mjs',
+  '  let specSwapped = false;',
+  '  let specSwapped = true;',
+  'mutation witness config no longer fails closed on missing specification substitution',
+  /specSwapped|SPECIFICATION Spec/u,
+);
+mutate(
+  'scripts/local-runner-refinement.mjs',
+  "    await within(firstWave.promise, 'competing runners first wave');",
+  '    await firstWave.promise;',
+  'local-runner refinement restores an unbounded deferred wait',
+  /within|timed out waiting/u,
+);
+mutate(
   'scripts/external-transport-refinement.mjs',
   '        if (claimDelayMs > 0) await sleep(claimDelayMs);',
   '        void claimDelayMs;',

@@ -45,7 +45,7 @@ const store = {
 };
 
 const queue = createWorkOnce({ store, scope: 'lifecycle-process' }).define('job', {
-  limits: { leaseMs: 10000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
+  limits: { leaseMs: 30000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
 });
 
 if (mode === 'ensure-after-commit') {

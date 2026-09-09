@@ -36,6 +36,7 @@ function reopen(path) {
   const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', {
     retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
     wait: { afterMs: 0 },
+    limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 4 },
   });
   return { store, queue };
 }
@@ -49,9 +50,14 @@ async function killAt(path, mode, outcomeKind, expectedStage) {
     assert.equal(stage.ref.workId, ready.ref.workId);
     assert.equal(stage.ref.generation, ready.ref.generation);
     assert.equal(stage.ref.fence, ready.ref.fence);
-    const exited = once(child, 'exit');
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error(
+        `Policy child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+      );
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
     child.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
     return ready.ref;
   } finally {
     if (!child.killed) child.kill('SIGKILL');

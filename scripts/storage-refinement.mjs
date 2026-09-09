@@ -69,6 +69,14 @@ async function detachedSample(adapter) {
     batch.rows[0].input.nested.key = 'MUTATED';
     const getManyDetached =
       (await fixture.store.getMany([ids[0]])).rows[0].input.nested.key === 'delta';
+    const duplicate = await fixture.store.getMany([ids[0], ids[1], ids[1]]);
+    const duplicateSlotsExact =
+      duplicate.rows.length === 3 &&
+      duplicate.rows[0]?.id === ids[0] &&
+      duplicate.rows[1]?.id === ids[1] &&
+      duplicate.rows[2]?.id === ids[1];
+    if (duplicate.rows[1]) duplicate.rows[1].input.nested.key = 'DUPLICATE-MUTATED';
+    const duplicateSlotsDetached = duplicate.rows[2]?.input.nested.key === 'alpha';
     const all = await fixture.store.query({ scope, select: 'all', limit: 20 });
     const ordered = all.rows.map((row) => row.id);
     const orderExact = JSON.stringify(ordered) === JSON.stringify([...ordered].sort());
@@ -89,7 +97,16 @@ async function detachedSample(adapter) {
       )
         cursorExact = false;
     }
-    return { kind: 'detached', adapter, getManyDetached, queryDetached, orderExact, cursorExact };
+    return {
+      kind: 'detached',
+      adapter,
+      getManyDetached,
+      duplicateSlotsExact,
+      duplicateSlotsDetached,
+      queryDetached,
+      orderExact,
+      cursorExact,
+    };
   } finally {
     fixture.close();
   }
@@ -176,7 +193,14 @@ async function queryBoundarySample(adapter) {
       kind: 'job',
       definition: '1',
       select: 'due',
-      limit: 3,
+      limit: 10,
+    });
+    const dueLimited = await fixture.store.query({
+      scope,
+      kind: 'job',
+      definition: '1',
+      select: 'due',
+      limit: 1,
     });
     const expectedDue = created
       .filter((snapshot) => snapshot.phase.state === 'queued' && snapshot.phase.availableAt <= 100)
@@ -201,7 +225,10 @@ async function queryBoundarySample(adapter) {
       kind: 'queryBoundary',
       adapter,
       dueOrderExact: JSON.stringify(due.rows.map((row) => row.id)) === JSON.stringify(expectedDue),
-      dueLimitExact: due.rows.length === 2,
+      dueLimitExact:
+        expectedDue.length > 1 &&
+        dueLimited.rows.length === 1 &&
+        dueLimited.rows[0]?.id === expectedDue[0],
       dueCursorExactError:
         dueCursorError instanceof RangeError &&
         dueCursorError.message === 'afterId is not supported for due queries',

@@ -29,6 +29,27 @@ for (const adapter of ['memory', 'sqlite'])
     console.log(adapter, passed);
   });
 
+test('shared conformance rejects adapters that deduplicate duplicate getMany ids', async () => {
+  await assert.rejects(
+    runConformance(() => {
+      let clock = 100_000;
+      const base = createMemoryStore({ now: () => clock });
+      return {
+        store: {
+          ...base,
+          async getMany(ids) {
+            return base.getMany([...new Set(ids)]);
+          },
+        },
+        advance(ms) {
+          clock += ms;
+        },
+      };
+    }),
+    /getMany must preserve requested slots including duplicate ids/u,
+  );
+});
+
 test('a conforming store may linearize completion before an earlier invoked cancellation', async () => {
   const passed = await runConformance(() => {
     let clock = 100_000;

@@ -12,9 +12,20 @@ async function lock(path, holdMs) {
   const child = fork(childUrl, [path, String(holdMs)], {
     stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
   });
-  const [message] = await once(child, 'message', { signal: AbortSignal.timeout(5000) });
-  assert.equal(message.locked, true);
-  return child;
+  try {
+    const [message] = await once(child, 'message', { signal: AbortSignal.timeout(5000) });
+    assert.equal(message.locked, true);
+    return child;
+  } catch (error) {
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
+    throw error;
+  }
 }
 
 test('SQLite startup retries a real write lock and succeeds after the lock clears', async () => {

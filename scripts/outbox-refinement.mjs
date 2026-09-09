@@ -780,14 +780,19 @@ async function runDispatcherPoisonSample() {
     },
   });
   const deadline = performance.now() + 2000;
+  let observedWithinDeadline = false;
   while (performance.now() < deadline) {
-    if ((await child.inspect('healthy')) && (await child.inspect('neighbor'))) break;
+    if ((await child.inspect('healthy')) && (await child.inspect('neighbor'))) {
+      observedWithinDeadline = true;
+      break;
+    }
     await new Promise((resolve) => setTimeout(resolve, 2));
   }
   controller.abort();
   await pumping;
   return {
     kind: 'runDispatcher',
+    observedWithinDeadline,
     exactPoisonObserved: errors[0] === 'key_conflict',
     neighborDelivered: (await child.inspect('neighbor')) !== undefined,
     healthySiblingDelivered: (await child.inspect('healthy')) !== undefined,
@@ -1180,6 +1185,7 @@ async function limitBoundarySample() {
     }
   }
   const controller = new AbortController();
+  controller.abort();
   let dispatcherError;
   try {
     await work.runDispatcher({ signal: controller.signal, intervalMs: 0 });

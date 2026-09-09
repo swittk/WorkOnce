@@ -51,9 +51,10 @@ export interface WorkStore {
     decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,
   ): Promise<T>;
   /**
-   * Read exact ids in caller order together with one storage-time observation. Rows must each
-   * be a valid detached value, but the contract does not require one cross-id transactional
-   * snapshot while concurrent writers run; an adapter may document a stronger guarantee.
+   * Read exact ids in caller order together with one storage-time observation. The result has
+   * exactly one slot per requested id, including repeated ids. Rows must each be a valid detached
+   * value, but the contract does not require one cross-id transactional snapshot while concurrent
+   * writers run; an adapter may document a stronger guarantee.
    */
   getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
   /** Query a bounded indexed work view; candidate discovery never grants ownership by itself. */

@@ -10858,14 +10858,14 @@
         "StorageTypeOK",
         "UnknownOutcomeStopsRetry"
       ],
-      "modelDigest": "fc2977b662adbb57ca3225141607b5d1e88d331f3f27c42fe7b8b0cc3af81459",
+      "modelDigest": "9ebafd1bf50da415547d2ccf29f69c61ad0413563c1eb52ef5ebb77d612b6a6b",
       "modelFiles": [
         "formal/WorkOnceStorage.tla",
         "formal/WorkOnceStorage.cfg"
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "ab3bbef57c82868fdd397f96cb8ca738d802633253ec3dc70f81b5859c8aac5f",
+      "sourceDigest": "c6441fcbab42766c6b5e1c52ce8ff0678677b33fdf10bbb25e76a2697131f6f4",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -10879,7 +10879,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "cad57b2b018c78be22cc5f61f10bbbe6429c26351eac1a8270c0772e31bf6045",
+    "assuranceInfrastructureDigest": "f6eba90c1a8e5dd52f32ff83bbd12df5e4d34991b8d744af67fa2c967964d303",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10899,10 +10899,8 @@
       "scripts/check-source-path-portability-mutation.mjs",
       "assurance/red-before/manifest-worktree-source-path-portability.json",
       "scripts/check-assurance-scheduling-mutation.mjs",
-      "scripts/check-lifecycle-proof-binding.mjs",
-      "scripts/check-lifecycle-source-model-mutation.mjs",
-      "scripts/check-lifecycle-implementation-mutations.mjs",
       "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
+      "assurance/red-before/review-5149212380-conformance-batch.json",
       "assurance/red-before/mutation-guard-cross-contamination.json",
       "assurance/red-before/process-fault-test-concurrency.json",
       "assurance/red-before/unbound-assurance-runner.json",
@@ -10997,7 +10995,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "85dc48b2b51513e5bda9ce72b5a5e70edbad74b23a4cc586af01f61a3f6ae9bb",
+    "modelDigest": "b75b887ea10d788a4df56156c9c0e8f74eded6f644159b1792767daa45f52cdc",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -11028,7 +11026,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "928a4c8c5ff467761a2812b64d362d87668cdee3e89895a04c06d968ac6a3544",
+    "sourceDigest": "7dbe674399927b4ee4ee8ef9d82ccd9a1e52fa64fbcea022b43ae1c0a9ac84ac",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

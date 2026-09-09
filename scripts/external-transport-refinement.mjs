@@ -330,26 +330,36 @@ async function syntheticCapacitySample() {
       return { state: 'succeeded', result: null };
     },
   };
-  await runExternal(
-    transport,
-    {
-      workerId: 'relay',
-      concurrency: 2,
-      idleMs: 1,
-      signal: stop.signal,
-      onError(error) {
-        observedExact ||= error === sentinel;
+  let observedWithinDeadline = true;
+  const deadline = setTimeout(() => {
+    observedWithinDeadline = false;
+    stop.abort(new Error('capacity sample deadline'));
+  }, 3000);
+  try {
+    await runExternal(
+      transport,
+      {
+        workerId: 'relay',
+        concurrency: 2,
+        idleMs: 1,
+        signal: stop.signal,
+        onError(error) {
+          observedExact ||= error === sentinel;
+        },
       },
-    },
-    async (run, input) => {
-      starts.push(input.id);
-      if (input.id === 'bad') throw sentinel;
-      if (input.id === 'healthy-1') await sleep(40);
-      return run.succeed();
-    },
-  );
+      async (run, input) => {
+        starts.push(input.id);
+        if (input.id === 'bad') throw sentinel;
+        if (input.id === 'healthy-1') await sleep(40);
+        return run.succeed();
+      },
+    );
+  } finally {
+    clearTimeout(deadline);
+  }
   return {
     kind: 'capacityFairness',
+    observedWithinDeadline,
     exactHandledFailure: observedExact,
     laterHealthyAdmitted: starts.includes('healthy-2'),
     healthySettled: settled.includes('healthy-1') && settled.includes('healthy-2'),
