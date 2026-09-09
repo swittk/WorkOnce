@@ -26,3 +26,18 @@ test('local runner refinement rejects adapter substitution without a count chang
     /settleCause adapter coverage drifted/u,
   );
 });
+
+test('local runner refinement rejects standalone kind substitution without a count change', async () => {
+  const samples = await runLocalRunnerRefinementSamples();
+  const dynamicIndex = samples.findIndex((sample) => sample.kind === 'dynamicArrival');
+  const wakePoll = samples.find((sample) => sample.kind === 'wakePoll');
+  assert.notEqual(dynamicIndex, -1);
+  assert.ok(wakePoll);
+  const mutant = samples.map((sample, index) =>
+    index === dynamicIndex ? { ...wakePoll } : sample,
+  );
+  assert.throws(
+    () => assertLocalRunnerRefinementSamples(mutant),
+    /local runner refinement kind coverage drifted/u,
+  );
+});

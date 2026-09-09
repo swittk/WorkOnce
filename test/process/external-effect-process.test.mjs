@@ -29,7 +29,7 @@ async function setup(dbPath) {
     const work = createWorkOnce({ store, scope: 'external-effect-process' });
     const queue = work.define('job', {
       key: (input) => input.id,
-      limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 5000 },
+      limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 60_000 },
     });
     await queue.ensure({ id: 'x' });
   } finally {
@@ -41,7 +41,7 @@ function reopen(dbPath) {
   const work = createWorkOnce({ store, scope: 'external-effect-process' });
   const queue = work.define('job', {
     key: (input) => input.id,
-    limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 5000 },
+    limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 60_000 },
   });
   const service = queue.serveExternal({
     prepare: (run) => run.handoff(run.input),

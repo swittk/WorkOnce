@@ -46,6 +46,41 @@ mutate(
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.copyFileSync(stampPath, path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'copyFileSync destination hides a tracked mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.renameSync(stampPath, path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'renameSync destination hides a tracked mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.rmSync(path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'rmSync hides a tracked mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  '  fs.writeSync(1, originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  'writeSync file descriptor cannot be proven generated-only',
+  /mutation target cannot be statically resolved/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.promises.writeFile(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'fs.promises.writeFile hides a tracked mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
   'requireExpectedProcessFailure(result, `${label} mutant`, pattern);',
   'assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',
@@ -216,7 +251,7 @@ mutate(
 
 mutate(
   'scripts/check-bounded-trace-domain.mjs',
-  "    historyLimit: readHistorySamples.find((sample) => sample.kind === 'historyTruncation')\n      ?.retainedEvents,",
+  '    historyLimit: historyTruncationSample.retainedEvents,',
   '    historyLimit: 128,',
   'bounded-domain coverage returns to an unobserved literal',
   /history limit must come from the observed truncation sample/u,

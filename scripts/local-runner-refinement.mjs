@@ -831,6 +831,36 @@ export async function runLocalRunnerRefinementSamples() {
 export function assertLocalRunnerRefinementSamples(samples) {
   assert.equal(samples.length, 24, 'local runner refinement sample family unexpectedly changed');
   assert.deepEqual(
+    samples.map((sample) => sample.kind).sort(),
+    [
+      'backoffHistory',
+      'competingRunners',
+      'competingRunners',
+      'competingRunners',
+      'completionOrder',
+      'dynamicArrival',
+      'firstFatal',
+      'handledAbortHistory',
+      'handledRecovery',
+      'lateClaimStop',
+      'settleCause',
+      'settleCause',
+      'settleCause',
+      'stopReclaim',
+      'stopReclaim',
+      'stopReclaim',
+      'stopReclaim',
+      'stopReclaim',
+      'stopReclaim',
+      'timerBoundary',
+      'undefinedHeartbeat',
+      'undefinedHeartbeat',
+      'undefinedHeartbeat',
+      'wakePoll',
+    ],
+    'local runner refinement kind coverage drifted',
+  );
+  assert.deepEqual(
     samples
       .filter((sample) => sample.kind === 'stopReclaim')
       .map((sample) => `${sample.adapter}:${sample.mode}`)

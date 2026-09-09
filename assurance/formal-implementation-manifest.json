@@ -11352,7 +11352,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "52ece8ddd93e7b745269f6361fe3e9d6189597e6736efa429dd21bbdb07904e2",
+    "assuranceInfrastructureDigest": "269a4f6c17881046ba2d52fe532e75c7b21339e50103eb3c0f6327fe028f3163",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",

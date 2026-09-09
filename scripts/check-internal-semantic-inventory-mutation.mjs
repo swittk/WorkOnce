@@ -11,9 +11,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutationFiles = createMutationFileGuard();
 const sourcePath = path.join(root, 'src/worker.ts');
 const workSourcePath = path.join(root, 'src/work.ts');
+const externalSourcePath = path.join(root, 'src/external.ts');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
 const source = fs.readFileSync(sourcePath, 'utf8');
 const workSource = fs.readFileSync(workSourcePath, 'utf8');
+const externalSource = fs.readFileSync(externalSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
 function run() {
@@ -71,6 +73,27 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /call_mutator_(?:set|push)/u);
   assert.match(sourceOutput, /property_assignment/u);
   assert.match(sourceOutput, /mutable_property/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
+  const suffixAnchor = '          active.delete(pending);';
+  assert.equal(
+    externalSource.split(suffixAnchor).length,
+    2,
+    'long internal-semantic construct suffix anchor must be unique',
+  );
+  mutationFiles.writeFileSync(
+    externalSourcePath,
+    externalSource.replace(suffixAnchor, `${suffixAnchor} // full-text-digest-mutant`),
+  );
+  const suffixMutant = run();
+  requireExpectedProcessFailure(
+    suffixMutant,
+    'semantic edit beyond the human-readable excerpt unexpectedly passed inventory',
+  );
+  assert.match(output(suffixMutant), /Internal semantic inventory drifted/u);
 } finally {
   mutationFiles.restoreAll();
 }

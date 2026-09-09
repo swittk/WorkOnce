@@ -33,7 +33,7 @@ async function seed(path, count, leaseMs = 200) {
   const store = createSqliteStore(path);
   try {
     const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
-      limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
+      limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000, maxDeferrals: 2 },
     });
     for (let index = 0; index < count; index++)
       await queue.ensure({ key: String(index) }, { key: String(index) });
@@ -44,7 +44,7 @@ async function seed(path, count, leaseMs = 200) {
 function reopen(path, leaseMs = 200) {
   const store = createSqliteStore(path);
   const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
-    limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 5000, maxDeferrals: 2 },
+    limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000, maxDeferrals: 2 },
   });
   return { store, queue };
 }

@@ -15,6 +15,11 @@ const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
 const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');
 try {
   const pkg = JSON.parse(original);
+  assert.equal(
+    pkg.scripts['test:process'],
+    'node scripts/build-source-binding.mjs && node --test --test-concurrency=1 test/process/*.test.mjs',
+    'test:process mutation anchor is stale',
+  );
   pkg.scripts['test:process'] = 'node --test test/process/*.test.mjs';
   mutationFiles.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
   const result = spawnSync(process.execPath, ['scripts/check-emitted-artifact-entrypoints.mjs'], {

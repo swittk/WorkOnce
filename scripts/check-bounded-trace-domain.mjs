@@ -176,6 +176,16 @@ const policySamples = await runPolicyRefinementSamples();
 assertPolicyRefinementSamples(policySamples);
 const readHistorySamples = await runReadHistorySamples();
 assertReadHistorySamples(readHistorySamples);
+const historyTruncationSample = readHistorySamples.find(
+  (sample) => sample.kind === 'historyTruncation',
+);
+const historyCongruenceSample = readHistorySamples.find(
+  (sample) => sample.kind === 'historyCongruence',
+);
+if (!Number.isInteger(historyTruncationSample?.retainedEvents))
+  throw new Error('Read-history bounded trace is missing historyTruncation.retainedEvents.');
+if (!Number.isInteger(historyCongruenceSample?.futureTraceCount))
+  throw new Error('Read-history bounded trace is missing historyCongruence.futureTraceCount.');
 const storageSamples = await runStorageRefinementSamples();
 assertStorageRefinementSamples(storageSamples);
 const current = {
@@ -210,10 +220,8 @@ const current = {
       .createHash('sha256')
       .update(JSON.stringify(readHistorySamples))
       .digest('hex'),
-    historyLimit: readHistorySamples.find((sample) => sample.kind === 'historyTruncation')
-      ?.retainedEvents,
-    futureCongruenceTraces: readHistorySamples.find((sample) => sample.kind === 'historyCongruence')
-      ?.futureTraceCount,
+    historyLimit: historyTruncationSample.retainedEvents,
+    futureCongruenceTraces: historyCongruenceSample.futureTraceCount,
   },
   localRunnerBoundary: {
     samples: localRunnerSamples.length,

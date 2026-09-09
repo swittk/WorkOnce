@@ -43,8 +43,9 @@ for (const [signal, expectedCode] of [
     const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-guard-'));
     const target = join(directory, 'tracked.txt');
     writeFileSync(target, 'original\n');
+    const guardModule = new URL('../scripts/mutation-file-guard.mjs', import.meta.url).href;
     const code = `
-      import { createMutationFileGuard } from './scripts/mutation-file-guard.mjs';
+      import { createMutationFileGuard } from ${JSON.stringify(guardModule)};
       const guard = createMutationFileGuard();
       guard.writeFileSync(process.env.WORKONCE_MUTATION_TARGET, 'mutated\\n');
       process.stdout.write('ready\\n');

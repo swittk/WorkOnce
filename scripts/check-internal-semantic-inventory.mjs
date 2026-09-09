@@ -38,7 +38,7 @@ const mismatches = [];
 for (const entry of observed) {
   const expected = reviewed.get(entry.id);
   if (!expected) continue;
-  for (const field of ['path', 'context', 'kind', 'excerpt']) {
+  for (const field of ['path', 'context', 'kind', 'excerpt', 'textDigest']) {
     if (expected[field] !== entry[field]) mismatches.push(`${entry.id}:${field}`);
   }
 }

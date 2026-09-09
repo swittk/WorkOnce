@@ -37,7 +37,11 @@ try {
         `if (ownershipLoss !== undefined)\n                throw new Error('Worker ownership lost');`,
       ),
     );
-    runExpectedFailure('ownership-cause erasure', 'ownershipCause', /ownershipCause/u);
+    runExpectedFailure(
+      'ownership-cause erasure',
+      'ownershipCause',
+      /ownershipCause:[^\n]*"exactCause":false/u,
+    );
     fs.writeFileSync(target, original);
   }
   {
@@ -60,7 +64,7 @@ try {
     runExpectedFailure(
       'dual post-stop handler admission fences',
       'lateClaimStop',
-      /lateClaimStop/u,
+      /lateClaimStop:[^\n]*"oneHandler":false/u,
     );
     fs.writeFileSync(target, original);
   }
@@ -69,14 +73,22 @@ try {
             fatal = { error };`;
     assert.equal(original.split(needle).length, 2, 'first-fatal mutation anchor must be unique');
     fs.writeFileSync(target, original.replace(needle, 'fatal = { error };'));
-    runExpectedFailure('first fatal overwrite', 'firstFatal', /firstFatal/u);
+    runExpectedFailure(
+      'first fatal overwrite',
+      'firstFatal',
+      /firstFatal:[^\n]*"exactFirst":false/u,
+    );
     fs.writeFileSync(target, original);
   }
   {
     const needle = 'wakePoll === null || wakePoll === void 0 ? void 0 : wakePoll();';
     assert.equal(original.split(needle).length, 2, 'wakePoll mutation anchor must be unique');
     fs.writeFileSync(target, original.replace(needle, 'void wakePoll;'));
-    runExpectedFailure('lost active-fatal poll wakeup', 'wakePoll', /wakePoll/u);
+    runExpectedFailure(
+      'lost active-fatal poll wakeup',
+      'wakePoll',
+      /wakePoll:[^\n]*"promptlyWoken":false/u,
+    );
     fs.writeFileSync(target, original);
   }
 } finally {

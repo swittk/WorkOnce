@@ -239,7 +239,42 @@ export function assertAssuranceVerdictIntegrity() {
     const domains = new Map();
     const functions = new Map();
     const calls = [];
-    const writes = [];
+    const mutations = [];
+    const directMutationPathArguments = new Map([
+      ['writeFileSync', [0]],
+      ['appendFileSync', [0]],
+      ['copyFileSync', [1]],
+      ['cpSync', [1]],
+      ['renameSync', [0, 1]],
+      ['rmSync', [0]],
+      ['unlinkSync', [0]],
+      ['truncateSync', [0]],
+      ['writeSync', [0]],
+    ]);
+    const promiseMutationPathArguments = new Map([
+      ['writeFile', [0]],
+      ['appendFile', [0]],
+      ['copyFile', [1]],
+      ['cp', [1]],
+      ['rename', [0, 1]],
+      ['rm', [0]],
+      ['unlink', [0]],
+      ['truncate', [0]],
+    ]);
+    function mutationTargetIndexes(call) {
+      const expression = call.expression;
+      if (ts.isIdentifier(expression))
+        return directMutationPathArguments.get(expression.text) ?? [];
+      if (!ts.isPropertyAccessExpression(expression)) return [];
+      const direct = directMutationPathArguments.get(expression.name.text);
+      if (direct) return direct;
+      if (
+        ts.isPropertyAccessExpression(expression.expression) &&
+        expression.expression.name.text === 'promises'
+      )
+        return promiseMutationPathArguments.get(expression.name.text) ?? [];
+      return [];
+    }
     const add = (map, key, value) => {
       const values = map.get(key) ?? [];
       values.push(value);
@@ -261,12 +296,8 @@ export function assertAssuranceVerdictIntegrity() {
       }
       if (ts.isCallExpression(node)) {
         calls.push(node);
-        const callee = ts.isPropertyAccessExpression(node.expression)
-          ? node.expression.name.text
-          : ts.isIdentifier(node.expression)
-            ? node.expression.text
-            : undefined;
-        if (callee === 'writeFileSync' || callee === 'appendFileSync') writes.push(node);
+        for (const targetIndex of mutationTargetIndexes(node))
+          mutations.push({ call: node, targetIndex });
       }
       ts.forEachChild(node, discover);
     }
@@ -350,14 +381,14 @@ export function assertAssuranceVerdictIntegrity() {
       }
       return [];
     }
-    assert.ok(writes.length > 0, `${name} write-target audit found no writes to classify`);
+    assert.ok(mutations.length > 0, `${name} mutation-target audit found no writes to classify`);
     const targets = [];
-    for (const write of writes) {
-      const target = write.arguments[0];
+    for (const mutation of mutations) {
+      const target = mutation.call.arguments[mutation.targetIndex];
       const resolved = target ? resolve(target) : [];
       assert.ok(
         resolved.length > 0,
-        `${name} write target cannot be statically resolved before generated-only classification`,
+        `${name} mutation target cannot be statically resolved before generated-only classification`,
       );
       targets.push(...resolved);
     }
@@ -365,7 +396,12 @@ export function assertAssuranceVerdictIntegrity() {
   }
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
-    if (!/(?:writeFileSync|appendFileSync)\(/u.test(source)) continue;
+    if (
+      !/(?:writeFileSync|appendFileSync|copyFileSync|cpSync|renameSync|rmSync|unlinkSync|truncateSync|writeSync|promises\s*\.\s*(?:writeFile|appendFile|copyFile|cp|rename|rm|unlink|truncate))\s*\(/u.test(
+        source,
+      )
+    )
+      continue;
     if (/createMutationFileGuard\(\)/u.test(source)) continue;
     const resolvedTargets = resolvedMutationWriteTargets(source, name);
     const generatedOnly = resolvedTargets.every((target) =>

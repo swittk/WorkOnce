@@ -126,9 +126,11 @@ export function discoverInternalSemanticSurface() {
     function visit(node) {
       const kind = constructKind(node);
       if (kind) {
-        const excerpt = normalize(node.getText(source)).slice(0, 240);
+        const full = normalize(node.getText(source));
+        const excerpt = full.slice(0, 240);
+        const textDigest = digest(full);
         const context = contextName(node);
-        const key = `${relative}\0${context}\0${kind}\0${excerpt}`;
+        const key = `${relative}\0${context}\0${kind}\0${textDigest}`;
         const occurrence = (occurrences.get(key) ?? 0) + 1;
         occurrences.set(key, occurrence);
         entries.push({
@@ -137,6 +139,7 @@ export function discoverInternalSemanticSurface() {
           context,
           kind,
           excerpt,
+          textDigest,
         });
       }
       ts.forEachChild(node, visit);

@@ -4,11 +4,12 @@
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "entries": [
     {
-      "id": "src/cas.ts:atomic:for_loop:a46746f0954c53c3:1",
+      "id": "src/cas.ts:atomic:for_loop:c0350eba7e9d234c:1",
       "path": "src/cas.ts",
       "context": "atomic",
       "kind": "for_loop",
       "excerpt": "for (let conflicts = 0; conflicts < maxConflicts; conflicts++) { const observed = await port.getMany([id]); const current = observed.rows[0]; const expectedRevision = current?.revision; const change = decide(current === undefined ? undefine",
+      "textDigest": "88b9c06a757dcd95",
       "families": [
         "G"
       ],
@@ -16,11 +17,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.all:0e3e26d098fe06db:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.all:8e3494b3cef9e449:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all( Array.from({ length: 50 }, (_, i) => q.claim({ workerId: String(i) })), )",
+      "textDigest": "ddd70344ae6d0c38",
       "families": [
         "G",
         "I"
@@ -29,11 +31,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.all:32107e32266bc04e:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.all:3cb56f529cdd1131:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all([work.dispatch(), work.dispatch()])",
+      "textDigest": "208fb9d93e94b3f5",
       "families": [
         "G",
         "I"
@@ -42,11 +45,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:55c5145c6f5b9a48:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:77d0fe64521a0e64:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.allSettled",
       "excerpt": "Promise.allSettled([ q.retry({ key: 'job', generation: 1 }), q.retry({ key: 'job', generation: 1 }), ])",
+      "textDigest": "95060c8f4f1ad5a3",
       "families": [
         "G",
         "I"
@@ -55,11 +59,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:84a3a3636db6b4b8:1",
+      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:32d2bc680bb184ed:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "call_Promise.allSettled",
       "excerpt": "Promise.allSettled([ q.cancel({ key: 'job', generation: 1 }), a!.settle(a!.succeed()), ])",
+      "textDigest": "abcf97eb82d8f3b2",
       "families": [
         "G",
         "I"
@@ -68,11 +73,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:for_of_loop:d8f50c7a0a4f076e:1",
+      "id": "src/conformance.ts:<callback>:for_of_loop:14e9708911dfc5a2:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "for_of_loop",
       "excerpt": "for (const out of [ a!.succeed(), a!.retry('busy'), a!.defer('wait', { afterMs: 1 }), a!.fail('bad'), ]) await rejects(a!.settle(out), 'stale_attempt');",
+      "textDigest": "a965bf3a7042aebb",
       "families": [
         "G",
         "I"
@@ -81,11 +87,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:mutable_let:567dface5a2ed8fb:1",
+      "id": "src/conformance.ts:<callback>:mutable_let:fc90bbf8f6198482:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let entered!: () => void;",
+      "textDigest": "3caa83a8d2620136",
       "families": [
         "G",
         "I"
@@ -94,11 +101,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:mutable_let:a26d3ea2ff88d0c3:1",
+      "id": "src/conformance.ts:<callback>:mutable_let:2be6f0741fb320eb:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let release!: () => void;",
+      "textDigest": "1ed34a65c4d8a79b",
       "families": [
         "G",
         "I"
@@ -107,11 +115,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:mutable_let:a5e9d9a875705781:1",
+      "id": "src/conformance.ts:<callback>:mutable_let:a5ae334642ca92f3:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let calls = 0;",
+      "textDigest": "cd90d35d2a2095e2",
       "families": [
         "G",
         "I"
@@ -120,11 +129,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:mutable_let:ca5ece5e77306fbc:1",
+      "id": "src/conformance.ts:<callback>:mutable_let:3a994d02bfff35a7:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let [run] = await q.claim({ workerId: 'A' });",
+      "textDigest": "5160ae8408420e90",
       "families": [
         "G",
         "I"
@@ -133,11 +143,12 @@
       "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
     },
     {
-      "id": "src/conformance.ts:<callback>:property_assignment:0bfd95e35fd1a3d4:1",
+      "id": "src/conformance.ts:<callback>:property_assignment:d40783147d1d5d9a:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "property_assignment",
       "excerpt": "input.a = 99",
+      "textDigest": "a0a0f6282932a938",
       "families": [
         "G",
         "I"
@@ -146,11 +157,12 @@
       "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
     },
     {
-      "id": "src/conformance.ts:<callback>:property_assignment:3d4dc390e9d9dfd3:1",
+      "id": "src/conformance.ts:<callback>:property_assignment:f5f7d4ed21a56deb:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "property_assignment",
       "excerpt": "row!.generation = 500",
+      "textDigest": "04488f35ef7d5bd8",
       "families": [
         "G",
         "I"
@@ -159,11 +171,12 @@
       "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
     },
     {
-      "id": "src/conformance.ts:<callback>:property_assignment:6482e9e1506f3c2d:1",
+      "id": "src/conformance.ts:<callback>:property_assignment:56fb15fe0ff456ae:1",
       "path": "src/conformance.ts",
       "context": "<callback>",
       "kind": "property_assignment",
       "excerpt": "batch[1]!.input.a = 9",
+      "textDigest": "af2b2225e5c13f6d",
       "families": [
         "G",
         "I"
@@ -172,11 +185,12 @@
       "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
     },
     {
-      "id": "src/conformance.ts:test:call_mutator_push:3bff53101c1c5637:1",
+      "id": "src/conformance.ts:test:call_mutator_push:a5d10d33675b044d:1",
       "path": "src/conformance.ts",
       "context": "test",
       "kind": "call_mutator_push",
       "excerpt": "completed.push(name)",
+      "textDigest": "d119575b775cc5c2",
       "families": [
         "G",
         "I"
@@ -185,11 +199,12 @@
       "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
     },
     {
-      "id": "src/external.ts:<callback>:call_mutator_delete:e61e26964f85bc38:1",
+      "id": "src/external.ts:<callback>:call_mutator_delete:808e652ab4e75ae0:1",
       "path": "src/external.ts",
       "context": "<callback>",
       "kind": "call_mutator_delete",
       "excerpt": "active.delete(pending)",
+      "textDigest": "95c3e944b49947dd",
       "families": [
         "D"
       ],
@@ -197,11 +212,12 @@
       "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
     },
     {
-      "id": "src/external.ts:<callback>:call_setTimeout:74ddfe9b0521c9f2:1",
+      "id": "src/external.ts:<callback>:call_setTimeout:765ee100244afa2b:1",
       "path": "src/external.ts",
       "context": "<callback>",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(stop, Math.min(idleMs, 2_147_483_647))",
+      "textDigest": "cf0177c428a73d23",
       "families": [
         "D"
       ],
@@ -209,11 +225,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:<callback>:mutable_let:ec63542cd0aaabe4:1",
+      "id": "src/external.ts:<callback>:mutable_let:90c7f36fdfffe363:1",
       "path": "src/external.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let settled = false;",
+      "textDigest": "b5888624265e1a3f",
       "families": [
         "D"
       ],
@@ -221,11 +238,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:<module>:mutable_property:0291ad8d13fad89d:1",
+      "id": "src/external.ts:<module>:mutable_property:d36afba0af915803:1",
       "path": "src/external.ts",
       "context": "<module>",
       "kind": "mutable_property",
       "excerpt": "signal: AbortSignal = new AbortController().signal;",
+      "textDigest": "efc8db7924b2ce97",
       "families": [
         "D"
       ],
@@ -233,11 +251,12 @@
       "classification": "APPLICABLE"
     },
     {
-      "id": "src/external.ts:<module>:new_AbortController:882681f1617e5dcb:1",
+      "id": "src/external.ts:<module>:new_AbortController:80f884b72c81f91b:1",
       "path": "src/external.ts",
       "context": "<module>",
       "kind": "new_AbortController",
       "excerpt": "new AbortController()",
+      "textDigest": "cf9a9e6f32f8dddc",
       "families": [
         "D"
       ],
@@ -245,11 +264,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:armExpiry:call_setTimeout:c6295a0ba9c87dea:1",
+      "id": "src/external.ts:armExpiry:call_setTimeout:6a3ec1a2d2f218fb:1",
       "path": "src/external.ts",
       "context": "armExpiry",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647))",
+      "textDigest": "e464da7783dfd223",
       "families": [
         "D"
       ],
@@ -257,11 +277,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:heartbeat:call_setTimeout:84bc3369f3d84c65:1",
+      "id": "src/external.ts:heartbeat:call_setTimeout:b5b93ff9d513e2a0:1",
       "path": "src/external.ts",
       "context": "heartbeat",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => void heartbeat(), heartbeatMs)",
+      "textDigest": "9e9f44f4916e6ce2",
       "families": [
         "D"
       ],
@@ -269,11 +290,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:call_setTimeout:b513b8969f498933:1",
+      "id": "src/external.ts:processLease:call_setTimeout:8a2af25fa769ede4:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => void heartbeat(), heartbeatMs)",
+      "textDigest": "9e9f44f4916e6ce2",
       "families": [
         "D"
       ],
@@ -281,11 +303,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:mutable_let:30b6d53171048340:1",
+      "id": "src/external.ts:processLease:mutable_let:b0df23f8bab5f7f3:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "mutable_let",
       "excerpt": "let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;",
+      "textDigest": "77d571299665f520",
       "families": [
         "D"
       ],
@@ -293,11 +316,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:mutable_let:451239e7c2178eae:1",
+      "id": "src/external.ts:processLease:mutable_let:b25899df20ce8245:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "mutable_let",
       "excerpt": "let expiryTimer: ReturnType<typeof setTimeout> | undefined;",
+      "textDigest": "186f892e5cf1f15a",
       "families": [
         "D"
       ],
@@ -305,11 +329,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:mutable_let:ca271f0163bc4ea0:1",
+      "id": "src/external.ts:processLease:mutable_let:b68d204455e81908:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "mutable_let",
       "excerpt": "let stopped = false;",
+      "textDigest": "ef325804b898a869",
       "families": [
         "D"
       ],
@@ -317,11 +342,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:new_AbortController:16a01d17a9ddfe66:1",
+      "id": "src/external.ts:processLease:new_AbortController:843114dfa8bf523a:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "new_AbortController",
       "excerpt": "new AbortController()",
+      "textDigest": "cf9a9e6f32f8dddc",
       "families": [
         "D"
       ],
@@ -329,11 +355,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:processLease:property_assignment:e24d917738564b53:1",
+      "id": "src/external.ts:processLease:property_assignment:7d580c9a02fd772f:1",
       "path": "src/external.ts",
       "context": "processLease",
       "kind": "property_assignment",
       "excerpt": "run.signal = controller.signal",
+      "textDigest": "31f3b4d975854cef",
       "families": [
         "D"
       ],
@@ -341,11 +368,12 @@
       "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
     },
     {
-      "id": "src/external.ts:runExternal:call_Promise.all:450d45cbb5b62294:1",
+      "id": "src/external.ts:runExternal:call_Promise.all:92dcbed48501015a:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all(active)",
+      "textDigest": "aaa61da468cf4eb2",
       "families": [
         "D"
       ],
@@ -353,11 +381,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:call_Promise.race:64bb909ca5e64009:1",
+      "id": "src/external.ts:runExternal:call_Promise.race:ee206f34b81ecf16:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "call_Promise.race",
       "excerpt": "Promise.race(active)",
+      "textDigest": "f240f974ca9bcbd0",
       "families": [
         "D"
       ],
@@ -365,11 +394,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:call_mutator_add:9d64ec3594156691:1",
+      "id": "src/external.ts:runExternal:call_mutator_add:4ccfbb5637f2b0e4:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "call_mutator_add",
       "excerpt": "active.add(pending)",
+      "textDigest": "d369e64ae3f07ebf",
       "families": [
         "D"
       ],
@@ -377,11 +407,12 @@
       "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
     },
     {
-      "id": "src/external.ts:runExternal:for_of_loop:d33e4359b01feec0:1",
+      "id": "src/external.ts:runExternal:for_of_loop:5b91c12fef302a99:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "for_of_loop",
       "excerpt": "for (const lease of leases) { const pending = processLease(transport, lease, options, handler, claimStartedAt) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.on",
+      "textDigest": "a6c0d9e566997cd1",
       "families": [
         "D"
       ],
@@ -389,11 +420,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:mutable_let:948573fd32e994d8:1",
+      "id": "src/external.ts:runExternal:mutable_let:76c47a223c41d658:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "mutable_let",
       "excerpt": "let leases: LeasedWork<I>[];",
+      "textDigest": "b5c42f96683a65d1",
       "families": [
         "D"
       ],
@@ -401,11 +433,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:mutable_let:aaba2b6d3d3bc85c:1",
+      "id": "src/external.ts:runExternal:mutable_let:a1a54a0eca4a637d:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "mutable_let",
       "excerpt": "let wakePoll: (() => void) | undefined;",
+      "textDigest": "3fa6cb0904540f1b",
       "families": [
         "D"
       ],
@@ -413,11 +446,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:mutable_let:c50cb2a30c463e9b:1",
+      "id": "src/external.ts:runExternal:mutable_let:c418ede857c42a1b:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "mutable_let",
       "excerpt": "let fatal: { error: unknown } | undefined;",
+      "textDigest": "043c0da209355209",
       "families": [
         "D"
       ],
@@ -425,11 +459,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:new_Set:b5c73732a7f811ab:1",
+      "id": "src/external.ts:runExternal:new_Set:dcb0bc8c1a403a2e:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "new_Set",
       "excerpt": "new Set<Promise<void>>()",
+      "textDigest": "e19eb9602f20f498",
       "families": [
         "D"
       ],
@@ -437,11 +472,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:while_loop:15775a2fdbe3d958:1",
+      "id": "src/external.ts:runExternal:while_loop:3405b82e0627cc4e:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "while_loop",
       "excerpt": "while (!options.signal.aborted && fatal === undefined) { const available = capacity - active.size; if (!available) { await Promise.race(active); continue; } let leases: LeasedWork<I>[]; const claimStartedAt = performance.now(); try { leases",
+      "textDigest": "9a59d082c8706ce8",
       "families": [
         "D"
       ],
@@ -449,11 +485,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternalAvailable:call_Promise.all:4de213d332ff49ef:1",
+      "id": "src/external.ts:runExternalAvailable:call_Promise.all:52d8a4b5d4e2bfab:1",
       "path": "src/external.ts",
       "context": "runExternalAvailable",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all( leases.map((lease) => processLease(transport, lease, options, handler, claimStartedAt)), )",
+      "textDigest": "d69dee34640e5efc",
       "families": [
         "D"
       ],
@@ -461,11 +498,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternalAvailable:mutable_let:e4beb8fc6c4fd95a:1",
+      "id": "src/external.ts:runExternalAvailable:mutable_let:a500c78a180385f8:1",
       "path": "src/external.ts",
       "context": "runExternalAvailable",
       "kind": "mutable_let",
       "excerpt": "let leases: LeasedWork<I>[];",
+      "textDigest": "b5c42f96683a65d1",
       "families": [
         "D"
       ],
@@ -473,11 +511,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:aab6dabc66d3e614:1",
+      "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:1594035fc8e742f2:1",
       "path": "src/kernel.ts",
       "context": "canonical",
       "kind": "call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort",
       "excerpt": "Object.keys(row) .filter((key) => row[key] !== undefined) .sort()",
+      "textDigest": "f6c733f08fb40f51",
       "families": [
         "A"
       ],
@@ -485,11 +524,12 @@
       "reason": "Canonical request/receipt identity contributes to durable lifecycle replay and conflict semantics."
     },
     {
-      "id": "src/kernel.ts:changed:call_row.history.slice:98ce1aee071a851a:1",
+      "id": "src/kernel.ts:changed:call_row.history.slice:e0829416145438db:1",
       "path": "src/kernel.ts",
       "context": "changed",
       "kind": "call_row.history.slice",
       "excerpt": "row.history.slice(-127)",
+      "textDigest": "436a5bdcd6a6ebb6",
       "families": [
         "A",
         "E"
@@ -498,11 +538,12 @@
       "reason": "Lifecycle revision/history retention is durable A state and directly observable through E history reads."
     },
     {
-      "id": "src/kernel.ts:changed:property_assignment:cb70158483ca29a4:1",
+      "id": "src/kernel.ts:changed:property_assignment:7d2a9d41022042b5:1",
       "path": "src/kernel.ts",
       "context": "changed",
       "kind": "property_assignment",
       "excerpt": "next.history = [ ...row.history.slice(-127), { at: now, generation: row.generation, fence: row.fence, action, state: phase.state, ...('reason' in phase ? { reason: phase.reason } : {}), ...(phase.state === 'running' ? { workerId: phase.atte",
+      "textDigest": "a1f14716e35268e3",
       "families": [
         "A",
         "E"
@@ -511,11 +552,12 @@
       "reason": "Durable history replacement/truncation is lifecycle truth observed by history reads; A owns the transition history and E owns exact typed/history inspection semantics."
     },
     {
-      "id": "src/kernel.ts:constructor:property_assignment:28d7990fcb0546cc:1",
+      "id": "src/kernel.ts:constructor:property_assignment:685bad246c189fe1:1",
       "path": "src/kernel.ts",
       "context": "constructor",
       "kind": "property_assignment",
       "excerpt": "this.name = 'WorkConflict'",
+      "textDigest": "d99757a0b370b2db",
       "families": [
         "H"
       ],
@@ -523,11 +565,12 @@
       "reason": "WorkConflict.name is consumer-visible exported conflict identity rather than durable state; family H owns public error/export identity."
     },
     {
-      "id": "src/kernel.ts:settleRecord:call_mutator_add:47d337218de50ef3:1",
+      "id": "src/kernel.ts:settleRecord:call_mutator_add:ced73b718c16c62e:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "call_mutator_add",
       "excerpt": "ids.add(request.id)",
+      "textDigest": "97bfc13e55bf4ae2",
       "families": [
         "B"
       ],
@@ -535,11 +578,12 @@
       "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
     },
     {
-      "id": "src/kernel.ts:settleRecord:call_mutator_add:47d337218de50ef3:2",
+      "id": "src/kernel.ts:settleRecord:call_mutator_add:ced73b718c16c62e:2",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "call_mutator_add",
       "excerpt": "ids.add(request.id)",
+      "textDigest": "97bfc13e55bf4ae2",
       "families": [
         "B"
       ],
@@ -547,11 +591,12 @@
       "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
     },
     {
-      "id": "src/kernel.ts:settleRecord:for_of_loop:fcc843c4ee1b62db:1",
+      "id": "src/kernel.ts:settleRecord:for_of_loop:9774750b122d378f:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "for_of_loop",
       "excerpt": "for (const request of outcome.next) { if ( request.scope !== row.scope || request.id === row.id || request.id !== workId(request.scope, request.kind, request.key) || ids.has(request.id) ) throw new WorkConflict('key_conflict'); createRecord",
+      "textDigest": "524c29f994f47483",
       "families": [
         "A",
         "B",
@@ -561,11 +606,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:for_of_loop:fcc843c4ee1b62db:2",
+      "id": "src/kernel.ts:settleRecord:for_of_loop:9774750b122d378f:2",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "for_of_loop",
       "excerpt": "for (const request of outcome.next) { if ( request.scope !== row.scope || request.id === row.id || request.id !== workId(request.scope, request.kind, request.key) || ids.has(request.id) ) throw new WorkConflict('key_conflict'); createRecord",
+      "textDigest": "524c29f994f47483",
       "families": [
         "A",
         "B",
@@ -575,11 +621,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:mutable_let:3a106a7d720f4f83:1",
+      "id": "src/kernel.ts:settleRecord:mutable_let:30d7666547db2d8c:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "mutable_let",
       "excerpt": "let phase: WorkPhase;",
+      "textDigest": "d9e3f70b78206fef",
       "families": [
         "A",
         "B",
@@ -589,11 +636,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:mutable_let:c1afa42273193ce4:1",
+      "id": "src/kernel.ts:settleRecord:mutable_let:87129533b9d9f780:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "mutable_let",
       "excerpt": "let deferrals = row.deferrals;",
+      "textDigest": "69c9e20674b243d5",
       "families": [
         "A",
         "B",
@@ -603,11 +651,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:mutable_let:da303f75f9cb33b3:1",
+      "id": "src/kernel.ts:settleRecord:mutable_let:335b8168e2210c99:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "mutable_let",
       "excerpt": "let retries = row.retries;",
+      "textDigest": "c43fe1609f27df00",
       "families": [
         "A",
         "B",
@@ -617,11 +666,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:new_Set:759836d7fd01f5af:1",
+      "id": "src/kernel.ts:settleRecord:new_Set:bdda45f587054335:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "new_Set",
       "excerpt": "new Set<string>()",
+      "textDigest": "962245ec0235402e",
       "families": [
         "A",
         "B",
@@ -631,11 +681,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:new_Set:759836d7fd01f5af:2",
+      "id": "src/kernel.ts:settleRecord:new_Set:bdda45f587054335:2",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "new_Set",
       "excerpt": "new Set<string>()",
+      "textDigest": "962245ec0235402e",
       "families": [
         "A",
         "B",
@@ -645,11 +696,12 @@
       "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
     },
     {
-      "id": "src/kernel.ts:settleRecord:property_assignment:21cf5371d1ed2a39:1",
+      "id": "src/kernel.ts:settleRecord:property_assignment:daaab46462a89777:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "property_assignment",
       "excerpt": "next.outbox = copy(outcome.next)",
+      "textDigest": "fc186380f4e60eb5",
       "families": [
         "B"
       ],
@@ -657,11 +709,12 @@
       "reason": "Settlement publishes the durable follow-up outbox atomically with terminal state; family B owns parent/child continuation state."
     },
     {
-      "id": "src/kernel.ts:settleRecord:property_assignment:8ee23ab696502cba:1",
+      "id": "src/kernel.ts:settleRecord:property_assignment:c591e4761fb89da7:1",
       "path": "src/kernel.ts",
       "context": "settleRecord",
       "kind": "property_assignment",
       "excerpt": "next.receipt = { attempt: { workId: row.id, generation: ref.generation, fence: ref.fence }, submissionHash, ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}), }",
+      "textDigest": "067d0fae32e47a57",
       "families": [
         "A",
         "F"
@@ -670,11 +723,12 @@
       "reason": "Settlement receipt mutation binds accepted attempt/submission identity to replay and retry/defer outcomes; lifecycle A and policy F own those semantics."
     },
     {
-      "id": "src/memory.ts:atomic:call_mutator_set:6733b908cd45539e:1",
+      "id": "src/memory.ts:atomic:call_mutator_set:1c105527494e0d42:1",
       "path": "src/memory.ts",
       "context": "atomic",
       "kind": "call_mutator_set",
       "excerpt": "rows.set(id, next)",
+      "textDigest": "22a855b0b39c0892",
       "families": [
         "G"
       ],
@@ -682,11 +736,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/memory.ts:createMemoryStore:new_Map:0af9272e511b01ff:1",
+      "id": "src/memory.ts:createMemoryStore:new_Map:35bcd6d56baa84b9:1",
       "path": "src/memory.ts",
       "context": "createMemoryStore",
       "kind": "new_Map",
       "excerpt": "new Map<string, WorkRecord>()",
+      "textDigest": "1824f9ed15094621",
       "families": [
         "G"
       ],
@@ -694,11 +749,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/memory.ts:query:call_selected.slice:d2deb42dfa5e1f25:1",
+      "id": "src/memory.ts:query:call_selected.slice:85073c3f59a51f5a:1",
       "path": "src/memory.ts",
       "context": "query",
       "kind": "call_selected.slice",
       "excerpt": "selected.slice(0, query.limit)",
+      "textDigest": "a6babe9d7390d63c",
       "families": [
         "G"
       ],
@@ -706,11 +762,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/memory.ts:query:call_selected.sort:d57db4dd318533df:1",
+      "id": "src/memory.ts:query:call_selected.sort:49ddca26094f7906:1",
       "path": "src/memory.ts",
       "context": "query",
       "kind": "call_selected.sort",
       "excerpt": "selected.sort((a, b) => query.select === 'due' ? dueAt(a)! - dueAt(b)! || compareUtf8Text(a.id, b.id) : compareUtf8Text(a.id, b.id), )",
+      "textDigest": "7b38aa973ab30a05",
       "families": [
         "G"
       ],
@@ -718,11 +775,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/memory.ts:query:mutable_let:e85a2f662eda4793:1",
+      "id": "src/memory.ts:query:mutable_let:38fceddc0b33590c:1",
       "path": "src/memory.ts",
       "context": "query",
       "kind": "mutable_let",
       "excerpt": "let selected = [...rows.values()].filter( (row) => row.scope === query.scope && (query.kind === undefined || row.kind === query.kind) && (query.definition === undefined || row.definition === query.definition), );",
+      "textDigest": "8258f99869eff44c",
       "families": [
         "G"
       ],
@@ -730,11 +788,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:createSqliteStore:new_Map:a845ff5a84810130:1",
+      "id": "src/sqlite.ts:createSqliteStore:new_Map:c72a5fae96d4654f:1",
       "path": "src/sqlite.ts",
       "context": "createSqliteStore",
       "kind": "new_Map",
       "excerpt": "new Map<string, ReturnType<typeof db.prepare>>()",
+      "textDigest": "d556b74a4f022d86",
       "families": [
         "G"
       ],
@@ -742,11 +801,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:42afc033bfc0181c:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:ba0ef02bfc35a0d0:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "params.push(time)",
+      "textDigest": "7237aadf85c92351",
       "families": [
         "G"
       ],
@@ -754,11 +814,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:52f1a3cbea35f326:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:d9985287082df002:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "clauses.push('due_at IS NOT NULL AND due_at<=?')",
+      "textDigest": "417f4b8a0d6376ee",
       "families": [
         "G"
       ],
@@ -766,11 +827,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:56bd55f60cfcd8db:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:45d6e09b77e49a2d:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "clauses.push('definition=?')",
+      "textDigest": "64df9b56840aa5b2",
       "families": [
         "G"
       ],
@@ -778,11 +840,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:69cfc3e36f3b6aa8:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:b558d01f63ff56e9:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "clauses.push('id>?')",
+      "textDigest": "5f5fafc04ea290ac",
       "families": [
         "G"
       ],
@@ -790,11 +853,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:9398268750df11c2:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:25e9576cc1dc6668:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "params.push(query.afterId)",
+      "textDigest": "5f8ec2006e4f665b",
       "families": [
         "G"
       ],
@@ -802,11 +866,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:95d83483691ced16:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:6c7da090a5f17845:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "clauses.push('pending_next>0')",
+      "textDigest": "ebba6ad3887213fa",
       "families": [
         "G"
       ],
@@ -814,11 +879,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:b42213725be559f2:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:464bb984273cabab:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "params.push(query.limit)",
+      "textDigest": "36309236acd8a244",
       "families": [
         "G"
       ],
@@ -826,11 +892,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:c31dc22d2be06efb:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:fb358318258a9d98:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "clauses.push('kind=?')",
+      "textDigest": "d00aefe38e5ba44a",
       "families": [
         "G"
       ],
@@ -838,11 +905,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:c7808e501eab0e47:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:eefe270be93dcfd8:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "params.push(query.kind)",
+      "textDigest": "4dd4250f766c62cb",
       "families": [
         "G"
       ],
@@ -850,11 +918,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_push:cd3dbf569a3a858b:1",
+      "id": "src/sqlite.ts:query:call_mutator_push:fba45a821125e5b4:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_push",
       "excerpt": "params.push(query.definition)",
+      "textDigest": "b8f7be5ba0e04da6",
       "families": [
         "G"
       ],
@@ -862,11 +931,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:call_mutator_set:7edb498cedbc7936:1",
+      "id": "src/sqlite.ts:query:call_mutator_set:fb726b5f5bad35cd:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "call_mutator_set",
       "excerpt": "queries.set(sql, statement)",
+      "textDigest": "c088bf793faec8ae",
       "families": [
         "G"
       ],
@@ -874,11 +944,12 @@
       "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:query:mutable_let:6d934c164302de97:1",
+      "id": "src/sqlite.ts:query:mutable_let:2f00980dc4f0461b:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "mutable_let",
       "excerpt": "let statement = queries.get(sql);",
+      "textDigest": "22d825e42dc7914e",
       "families": [
         "G"
       ],
@@ -886,11 +957,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:retryStartupBusy:for_loop:c4517064c37efae8:1",
+      "id": "src/sqlite.ts:retryStartupBusy:for_loop:efdb5f869d3071f9:1",
       "path": "src/sqlite.ts",
       "context": "retryStartupBusy",
       "kind": "for_loop",
       "excerpt": "for (;;) { try { return action(); } catch (error) { const remaining = deadline - Date.now(); if (!isSqliteBusy(error) || remaining <= 0) throw error; sleepSync(Math.min(delay, remaining)); delay = Math.min(delay * 2, 25); } }",
+      "textDigest": "e13a928980265e98",
       "families": [
         "G"
       ],
@@ -898,11 +970,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/sqlite.ts:retryStartupBusy:mutable_let:de86b8d970d1acf6:1",
+      "id": "src/sqlite.ts:retryStartupBusy:mutable_let:3b33bd9705d2b9ba:1",
       "path": "src/sqlite.ts",
       "context": "retryStartupBusy",
       "kind": "mutable_let",
       "excerpt": "let delay = 1;",
+      "textDigest": "bdecba8c3004f5e0",
       "families": [
         "G"
       ],
@@ -910,11 +983,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:<module>:new_Set:ef111c02de11993c:1",
+      "id": "src/storage-validation.ts:<module>:new_Set:b85827e295ed84b0:1",
       "path": "src/storage-validation.ts",
       "context": "<module>",
       "kind": "new_Set",
       "excerpt": "new Set([ 'reported_failure', 'retry_not_allowed', 'retry_budget_exhausted', 'attempt_budget_exhausted', 'deadline_exceeded', 'deferral_budget_exhausted', ])",
+      "textDigest": "9df539c034bdd0b0",
       "families": [
         "G"
       ],
@@ -922,11 +996,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:compareUtf8Text:for_loop:bc38c9a65def8f6f:1",
+      "id": "src/storage-validation.ts:compareUtf8Text:for_loop:d92286017cdf0db6:1",
       "path": "src/storage-validation.ts",
       "context": "compareUtf8Text",
       "kind": "for_loop",
       "excerpt": "for (let index = 0; index < length; index++) { const delta = a[index]! - b[index]!; if (delta !== 0) return delta < 0 ? -1 : 1; }",
+      "textDigest": "639162d491b8bfd6",
       "families": [
         "G"
       ],
@@ -934,11 +1009,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:8495e71def3908d6:1",
+      "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:64a4195752767913:1",
       "path": "src/storage-validation.ts",
       "context": "validateWorkRecord",
       "kind": "for_of_loop",
       "excerpt": "for (const event of row.history) validateEvent(event);",
+      "textDigest": "44b76ee9b141637b",
       "families": [
         "G"
       ],
@@ -946,11 +1022,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:a5cec547f3e1d91a:1",
+      "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:378a3c8c2e85abdb:1",
       "path": "src/storage-validation.ts",
       "context": "validateWorkRecord",
       "kind": "for_of_loop",
       "excerpt": "for (const request of row.outbox) validateRequest(request);",
+      "textDigest": "9930f70ea03b9de9",
       "families": [
         "G"
       ],
@@ -958,11 +1035,12 @@
       "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
-      "id": "src/work.ts:<module>:mutable_property:394ba9374c731b81:1",
+      "id": "src/work.ts:<module>:mutable_property:733b1ee1b5a9e335:1",
       "path": "src/work.ts",
       "context": "<module>",
       "kind": "mutable_property",
       "excerpt": "signal: AbortSignal = new AbortController().signal;",
+      "textDigest": "efc8db7924b2ce97",
       "families": [
         "C",
         "D"
@@ -971,11 +1049,12 @@
       "classification": "APPLICABLE"
     },
     {
-      "id": "src/work.ts:<module>:new_AbortController:185577ff0996828c:1",
+      "id": "src/work.ts:<module>:new_AbortController:71e6dece3007b872:1",
       "path": "src/work.ts",
       "context": "<module>",
       "kind": "new_AbortController",
       "excerpt": "new AbortController()",
+      "textDigest": "cf9a9e6f32f8dddc",
       "families": [
         "C",
         "D"
@@ -984,11 +1063,12 @@
       "reason": "WorkRun cancellation signal is the runner-facing interruption surface used by local and external execution."
     },
     {
-      "id": "src/work.ts:claim:call_mutator_push:bc7e1311ef08301a:1",
+      "id": "src/work.ts:claim:call_mutator_push:b93c7f1170adbb9a:1",
       "path": "src/work.ts",
       "context": "claim",
       "kind": "call_mutator_push",
       "excerpt": "runs.push(run)",
+      "textDigest": "55be5dacc71049ef",
       "families": [
         "A"
       ],
@@ -996,11 +1076,12 @@
       "reason": "Claim result accumulation preserves the concrete order/cardinality of successfully claimed durable attempts; family A owns durable claim semantics."
     },
     {
-      "id": "src/work.ts:claim:for_of_loop:919f0a1f18de6594:1",
+      "id": "src/work.ts:claim:for_of_loop:a426406257a34d2b:1",
       "path": "src/work.ts",
       "context": "claim",
       "kind": "for_of_loop",
       "excerpt": "for (const candidate of candidates.rows) { if (runs.length === limit) break; const claimStartedAt = performance.now(); const claimed = await this.store.atomic(candidate.id, (row, now) => { if (!row) return { value: null }; this.assertDefini",
+      "textDigest": "d3ed1d8ae78fd8d2",
       "families": [
         "A",
         "G"
@@ -1009,11 +1090,12 @@
       "reason": "Bounded due discovery and per-candidate atomic claim bridge lifecycle A to storage/query semantics G."
     },
     {
-      "id": "src/work.ts:constructor:property_assignment:b2ba08d5ad4f2aba:1",
+      "id": "src/work.ts:constructor:property_assignment:337f2f6fb0cc4a6a:1",
       "path": "src/work.ts",
       "context": "constructor",
       "kind": "property_assignment",
       "excerpt": "this.name = 'WorkDispatchError'",
+      "textDigest": "b7aa9983bfae6e31",
       "families": [
         "H"
       ],
@@ -1021,11 +1103,12 @@
       "reason": "WorkDispatchError.name is consumer-visible exported error identity rather than durable state; family H owns public error/export identity."
     },
     {
-      "id": "src/work.ts:createWorkOnce:mutable_let:d56bc2711304e4c2:1",
+      "id": "src/work.ts:createWorkOnce:mutable_let:f48d5b11e8e029ed:1",
       "path": "src/work.ts",
       "context": "createWorkOnce",
       "kind": "mutable_let",
       "excerpt": "let outboxAfterId: string | undefined;",
+      "textDigest": "7473d491e2b1bfb4",
       "families": [
         "B"
       ],
@@ -1033,11 +1116,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:call_mutator_push:d421463a11f36645:1",
+      "id": "src/work.ts:dispatch:call_mutator_push:ab5ffbcfff698655:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "call_mutator_push",
       "excerpt": "failures.push(error)",
+      "textDigest": "1df9b7bad3b08f75",
       "families": [
         "B"
       ],
@@ -1045,11 +1129,12 @@
       "reason": "Dispatch failure accumulation controls the bounded durable-follow-up result/error surface; family B owns retained failure and continuation semantics."
     },
     {
-      "id": "src/work.ts:dispatch:for_of_loop:769058eeee6f0ee8:1",
+      "id": "src/work.ts:dispatch:for_of_loop:a8aa0df3d3ee69bc:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "for_of_loop",
       "excerpt": "for (const request of parent.outbox) { if (attempted >= limit) break; attempted++; try { if (request.scope !== scope) throw new WorkConflict('key_conflict'); await store.atomic(request.id, (row, now) => { if (row) { if (!sameRequest(row, re",
+      "textDigest": "38fdcbf60f32d1e8",
       "families": [
         "B"
       ],
@@ -1057,11 +1142,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:for_of_loop:b4d54e21ca2ea64f:1",
+      "id": "src/work.ts:dispatch:for_of_loop:33edbb1a8ce37505:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "for_of_loop",
       "excerpt": "for (const parent of result.rows) { outboxAfterId = parent.id; for (const request of parent.outbox) { if (attempted >= limit) break; attempted++; try { if (request.scope !== scope) throw new WorkConflict('key_conflict'); await store.atomic(",
+      "textDigest": "6bd534aca2e69243",
       "families": [
         "B"
       ],
@@ -1069,11 +1155,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:mutable_let:30e2f2a86fede8d6:1",
+      "id": "src/work.ts:dispatch:mutable_let:9e51ff8697c67879:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "mutable_let",
       "excerpt": "let result = await store.query({ scope, select: 'outbox', limit, ...(outboxAfterId === undefined ? {} : { afterId: outboxAfterId }), });",
+      "textDigest": "7f80f3423ffeab9c",
       "families": [
         "B"
       ],
@@ -1081,11 +1168,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:mutable_let:3565c2c23e20f6d0:1",
+      "id": "src/work.ts:dispatch:mutable_let:f3afdaeba4c53644:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "mutable_let",
       "excerpt": "let sent = 0;",
+      "textDigest": "d9307468f5bd0094",
       "families": [
         "B"
       ],
@@ -1093,11 +1181,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:dispatch:mutable_let:4b6980e53c296286:1",
+      "id": "src/work.ts:dispatch:mutable_let:f02290a596bce024:1",
       "path": "src/work.ts",
       "context": "dispatch",
       "kind": "mutable_let",
       "excerpt": "let attempted = 0;",
+      "textDigest": "2077c68fa27a26c2",
       "families": [
         "B"
       ],
@@ -1105,11 +1194,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:handoff:call_mutator_push:a089fa7a54025767:1",
+      "id": "src/work.ts:handoff:call_mutator_push:d62f3a8e00c96296:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "call_mutator_push",
       "excerpt": "leases.push({ input: prepared.input, attempt: run.ref, leaseUntil: renewed.attempt.leaseUntil, observedAt: renewed.observedAt, })",
+      "textDigest": "d52406ce651fab24",
       "families": [
         "D"
       ],
@@ -1117,11 +1207,12 @@
       "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it."
     },
     {
-      "id": "src/work.ts:handoff:for_of_loop:4cfe2e4bf0bbe109:1",
+      "id": "src/work.ts:handoff:for_of_loop:3dd7ca1a13dc83a8:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "for_of_loop",
       "excerpt": "for (const run of await this.claim(options)) { try { const prepared = await prepare(run); if (prepared.type !== 'handoff') { await run.settle(prepared); continue; } const renewed = await run.heartbeat(); leases.push({ input: prepared.input,",
+      "textDigest": "e3efd278c9adbdd4",
       "families": [
         "D"
       ],
@@ -1129,11 +1220,12 @@
       "reason": "Foreign handoff preparation/export and per-lease iteration belongs to D."
     },
     {
-      "id": "src/work.ts:rerun:mutable_let:13f75e62c2d57652:1",
+      "id": "src/work.ts:rerun:mutable_let:34c618e3b1a2836e:1",
       "path": "src/work.ts",
       "context": "rerun",
       "kind": "mutable_let",
       "excerpt": "let expectedRevision: number | undefined;",
+      "textDigest": "0b7fd92dc1997c97",
       "families": [
         "A",
         "F"
@@ -1142,11 +1234,12 @@
       "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
     },
     {
-      "id": "src/work.ts:restart:mutable_let:7537b83de1fd19d2:1",
+      "id": "src/work.ts:restart:mutable_let:241c040925bb06c5:1",
       "path": "src/work.ts",
       "context": "restart",
       "kind": "mutable_let",
       "excerpt": "let expectedRevision: number | undefined;",
+      "textDigest": "0b7fd92dc1997c97",
       "families": [
         "A",
         "F"
@@ -1155,11 +1248,12 @@
       "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
     },
     {
-      "id": "src/work.ts:retry:mutable_let:f40bd59a25779836:1",
+      "id": "src/work.ts:retry:mutable_let:1ea13d3072bffaff:1",
       "path": "src/work.ts",
       "context": "retry",
       "kind": "mutable_let",
       "excerpt": "let expectedRevision: number | undefined;",
+      "textDigest": "0b7fd92dc1997c97",
       "families": [
         "A",
         "F"
@@ -1168,11 +1262,12 @@
       "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
     },
     {
-      "id": "src/work.ts:runDispatcher:while_loop:24e67ec7ff8a6f5a:1",
+      "id": "src/work.ts:runDispatcher:while_loop:abb08c2eaeff7c7d:1",
       "path": "src/work.ts",
       "context": "runDispatcher",
       "kind": "while_loop",
       "excerpt": "while (!options.signal.aborted) { try { await work.dispatch(options.limit === undefined ? {} : { limit: options.limit }); } catch (error) { if (!options.onError) throw error; await options.onError(error); } await waitForPoll(interval, optio",
+      "textDigest": "c7ad97c1676db61b",
       "families": [
         "B"
       ],
@@ -1180,11 +1275,12 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:settle:mutable_let:c7402005c5493ff5:1",
+      "id": "src/work.ts:settle:mutable_let:6cadf50b439a0cc3:1",
       "path": "src/work.ts",
       "context": "settle",
       "kind": "mutable_let",
       "excerpt": "let submitted = copy(outcome);",
+      "textDigest": "b9b18e671a98495f",
       "families": [
         "A",
         "B",
@@ -1194,11 +1290,12 @@
       "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics."
     },
     {
-      "id": "src/work.ts:settle:mutable_let:e526588cbb6f9e51:1",
+      "id": "src/work.ts:settle:mutable_let:720ab1806ab79a70:1",
       "path": "src/work.ts",
       "context": "settle",
       "kind": "mutable_let",
       "excerpt": "let decision: RetryDecision | undefined;",
+      "textDigest": "737670a198641c3e",
       "families": [
         "A",
         "B",
@@ -1208,11 +1305,12 @@
       "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics."
     },
     {
-      "id": "src/worker.ts:<callback>:call_mutator_delete:a4b156d256cb65da:1",
+      "id": "src/worker.ts:<callback>:call_mutator_delete:2f5a9aa17ea01672:1",
       "path": "src/worker.ts",
       "context": "<callback>",
       "kind": "call_mutator_delete",
       "excerpt": "active.delete(pending)",
+      "textDigest": "95c3e944b49947dd",
       "families": [
         "C"
       ],
@@ -1220,11 +1318,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:<callback>:call_setTimeout:48022834247d5344:1",
+      "id": "src/worker.ts:<callback>:call_setTimeout:14f12c7c7e4b2bc4:1",
       "path": "src/worker.ts",
       "context": "<callback>",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(stop, Math.min(ms, 2_147_483_647))",
+      "textDigest": "89a575f35c3683a9",
       "families": [
         "C"
       ],
@@ -1232,11 +1331,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:<callback>:call_setTimeout:6f49d0235941dcad:1",
+      "id": "src/worker.ts:<callback>:call_setTimeout:c750f896f1a7ca93:1",
       "path": "src/worker.ts",
       "context": "<callback>",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(stop, Math.min(idleMs, 2_147_483_647))",
+      "textDigest": "cf0177c428a73d23",
       "families": [
         "C"
       ],
@@ -1244,11 +1344,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:<callback>:mutable_let:ecb25dba7c745a58:1",
+      "id": "src/worker.ts:<callback>:mutable_let:1d816ed33791bf91:1",
       "path": "src/worker.ts",
       "context": "<callback>",
       "kind": "mutable_let",
       "excerpt": "let settled = false;",
+      "textDigest": "b5888624265e1a3f",
       "families": [
         "C"
       ],
@@ -1256,11 +1357,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:<module>:new_WeakMap:f8ed16a459dcbe35:1",
+      "id": "src/worker.ts:<module>:new_WeakMap:7d4d4bb19766c784:1",
       "path": "src/worker.ts",
       "context": "<module>",
       "kind": "new_WeakMap",
       "excerpt": "new WeakMap<object, number>()",
+      "textDigest": "f561d9742275da74",
       "families": [
         "C"
       ],
@@ -1268,11 +1370,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:armExpiry:call_setTimeout:8361aa1811e37716:1",
+      "id": "src/worker.ts:armExpiry:call_setTimeout:c114ef178cc923f7:1",
       "path": "src/worker.ts",
       "context": "armExpiry",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647))",
+      "textDigest": "e464da7783dfd223",
       "families": [
         "C"
       ],
@@ -1280,11 +1383,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:heartbeat:call_setTimeout:51a414125c5291fb:1",
+      "id": "src/worker.ts:heartbeat:call_setTimeout:c0bfea548e34fdf8:1",
       "path": "src/worker.ts",
       "context": "heartbeat",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => { void heartbeat(); }, heartbeatMs)",
+      "textDigest": "41eb65cdb7a7dd56",
       "families": [
         "C"
       ],
@@ -1292,11 +1396,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:markLocalClaimStartedAt:call_mutator_set:13c22c3e1590afc2:1",
+      "id": "src/worker.ts:markLocalClaimStartedAt:call_mutator_set:291b94679a168397:1",
       "path": "src/worker.ts",
       "context": "markLocalClaimStartedAt",
       "kind": "call_mutator_set",
       "excerpt": "localClaimStartedAt.set(run, startedAt)",
+      "textDigest": "944e43905d556657",
       "families": [
         "C"
       ],
@@ -1304,11 +1409,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:processClaim:call_setTimeout:dfac167a601af518:1",
+      "id": "src/worker.ts:processClaim:call_setTimeout:de312d80bd6de7a5:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "call_setTimeout",
       "excerpt": "setTimeout(() => { void heartbeat(); }, heartbeatMs)",
+      "textDigest": "41eb65cdb7a7dd56",
       "families": [
         "C"
       ],
@@ -1316,11 +1422,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:mutable_let:05d49f75b29fe423:1",
+      "id": "src/worker.ts:processClaim:mutable_let:be3cf2ba54b41817:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "mutable_let",
       "excerpt": "let expiryTimer: ReturnType<typeof setTimeout> | undefined;",
+      "textDigest": "186f892e5cf1f15a",
       "families": [
         "C"
       ],
@@ -1328,11 +1435,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:mutable_let:0f63faeff00838fd:1",
+      "id": "src/worker.ts:processClaim:mutable_let:093addb73c572bc2:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "mutable_let",
       "excerpt": "let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;",
+      "textDigest": "77d571299665f520",
       "families": [
         "C"
       ],
@@ -1340,11 +1448,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:mutable_let:440b66be8a4b9f6e:1",
+      "id": "src/worker.ts:processClaim:mutable_let:20f09ed442489592:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "mutable_let",
       "excerpt": "let stopped = false;",
+      "textDigest": "ef325804b898a869",
       "families": [
         "C"
       ],
@@ -1352,11 +1461,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:mutable_let:fb575b006c410532:1",
+      "id": "src/worker.ts:processClaim:mutable_let:c7eaed52eeb10863:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "mutable_let",
       "excerpt": "let ownershipLoss: { error: unknown } | undefined;",
+      "textDigest": "b13ccb382f13092d",
       "families": [
         "C"
       ],
@@ -1364,11 +1474,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:new_AbortController:0383eae75c865f4d:1",
+      "id": "src/worker.ts:processClaim:new_AbortController:96543281a52dcb9e:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "new_AbortController",
       "excerpt": "new AbortController()",
+      "textDigest": "cf9a9e6f32f8dddc",
       "families": [
         "C"
       ],
@@ -1376,11 +1487,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:processClaim:property_assignment:93b33be682faeeed:1",
+      "id": "src/worker.ts:processClaim:property_assignment:124d425eae512b76:1",
       "path": "src/worker.ts",
       "context": "processClaim",
       "kind": "property_assignment",
       "excerpt": "run.signal = controller.signal",
+      "textDigest": "31f3b4d975854cef",
       "families": [
         "C"
       ],
@@ -1388,11 +1500,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:processClaims:call_Promise.all:c263396efd05df23:1",
+      "id": "src/worker.ts:processClaims:call_Promise.all:cc914af4d65f4ca5:1",
       "path": "src/worker.ts",
       "context": "processClaims",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all(claims.map((run) => processClaim(run, options, handler)))",
+      "textDigest": "4443c1009678b241",
       "families": [
         "C"
       ],
@@ -1400,11 +1513,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:call_Promise.all:f26dd78cf7d10c38:1",
+      "id": "src/worker.ts:runWorker:call_Promise.all:d3fcb590a2633d6f:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "call_Promise.all",
       "excerpt": "Promise.all(active)",
+      "textDigest": "aaa61da468cf4eb2",
       "families": [
         "C"
       ],
@@ -1412,11 +1526,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:call_Promise.race:212704185913f7b7:1",
+      "id": "src/worker.ts:runWorker:call_Promise.race:713a682f6df724c9:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "call_Promise.race",
       "excerpt": "Promise.race(active)",
+      "textDigest": "f240f974ca9bcbd0",
       "families": [
         "C"
       ],
@@ -1424,11 +1539,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:call_mutator_add:2ba3cad21e40fa42:1",
+      "id": "src/worker.ts:runWorker:call_mutator_add:8d32c39198615faa:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "call_mutator_add",
       "excerpt": "active.add(pending)",
+      "textDigest": "d369e64ae3f07ebf",
       "families": [
         "C"
       ],
@@ -1436,11 +1552,12 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:runWorker:for_of_loop:c819751946bf04f0:1",
+      "id": "src/worker.ts:runWorker:for_of_loop:75c2a423918c3f7a:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "for_of_loop",
       "excerpt": "for (const claim of claims) { const pending = processClaim(claim, options, handler) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.onError(result.error); else r",
+      "textDigest": "33eddf06cf5d87ff",
       "families": [
         "C"
       ],
@@ -1448,11 +1565,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:mutable_let:0448b3dd56a8523c:1",
+      "id": "src/worker.ts:runWorker:mutable_let:912b9786c6238007:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "mutable_let",
       "excerpt": "let fatal: { error: unknown } | undefined;",
+      "textDigest": "043c0da209355209",
       "families": [
         "C"
       ],
@@ -1460,11 +1578,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:mutable_let:413c8d9c66a1b17d:1",
+      "id": "src/worker.ts:runWorker:mutable_let:ad141b70be907357:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "mutable_let",
       "excerpt": "let wakePoll: (() => void) | undefined;",
+      "textDigest": "3fa6cb0904540f1b",
       "families": [
         "C"
       ],
@@ -1472,11 +1591,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:mutable_let:ebbeeaaf55ca1d0e:1",
+      "id": "src/worker.ts:runWorker:mutable_let:cf0220ba99512aaa:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "mutable_let",
       "excerpt": "let claims: WorkRun<I, O, R>[];",
+      "textDigest": "03599cb599437267",
       "families": [
         "C"
       ],
@@ -1484,11 +1604,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:new_Set:e83ab3cd0218feb6:1",
+      "id": "src/worker.ts:runWorker:new_Set:031f0b563b7aca4b:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "new_Set",
       "excerpt": "new Set<Promise<void>>()",
+      "textDigest": "e19eb9602f20f498",
       "families": [
         "C"
       ],
@@ -1496,11 +1617,12 @@
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
     },
     {
-      "id": "src/worker.ts:runWorker:while_loop:98f2c36fcf73841f:1",
+      "id": "src/worker.ts:runWorker:while_loop:4b929231ceaace5b:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "while_loop",
       "excerpt": "while (!options.signal.aborted && fatal === undefined) { const available = capacity - active.size; if (!available) { await Promise.race(active); continue; } let claims: WorkRun<I, O, R>[]; try { claims = await queue.claim({ workerId: option",
+      "textDigest": "0d547c16cf4a15d5",
       "families": [
         "C"
       ],
