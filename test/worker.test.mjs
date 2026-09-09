@@ -194,7 +194,11 @@ test('managed runner does not start claims returned after an active claim become
       return run.succeed();
     },
   );
-  while (started.length < 1 || claimCalls < 2) await sleep(1);
+  const secondClaimDeadline = performance.now() + 5000;
+  while (started.length < 1 || claimCalls < 2) {
+    assert.ok(performance.now() < secondClaimDeadline, 'runner did not reach the second claim');
+    await sleep(1);
+  }
   await q.cancelCurrent({ key: 'a', reason: 'revoked' });
   releaseHandler();
   await sleep(20);

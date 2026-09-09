@@ -5,12 +5,19 @@ import type { WorkOutcome, WorkRequest } from './model.js';
 export type WorkTiming = { afterMs: number; at?: never } | { at: number; afterMs?: never };
 
 /** Durable follow-up work requested after this terminal result commits. */
-export interface FollowUpOptions {
-  /** Preferred readable name for durable work that should be created after this result commits. */
-  thenDo?: WorkRequest[];
-  /** Conventional follow-up spelling; resolves to the same durable list as `thenDo`. */
-  next?: WorkRequest[];
-}
+export type FollowUpOptions =
+  | {
+      /** Preferred readable name for durable work that should be created after this result commits. */
+      thenDo?: WorkRequest[];
+      /** Do not supply both follow-up spellings. */
+      next?: never;
+    }
+  | {
+      /** Conventional follow-up spelling; resolves to the same durable list as `thenDo`. */
+      next?: WorkRequest[];
+      /** Do not supply both follow-up spellings. */
+      thenDo?: never;
+    };
 
 /** Resolve equivalent follow-up spellings without permitting two competing lists. */
 function followUps(options: FollowUpOptions): WorkRequest[] {

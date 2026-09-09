@@ -41,6 +41,8 @@ const readableDefinition: WorkDefinition<null, string> = {
 };
 const conventionalFollowups: FollowUpOptions = { next: [] };
 const readableFollowups: FollowUpOptions = { thenDo: [] };
+// @ts-expect-error thenDo and next are mutually exclusive spellings for one durable list.
+const conflictingFollowups: FollowUpOptions = { thenDo: [], next: [] };
 void [
   conventionalBounds,
   readableBounds,
@@ -48,4 +50,5 @@ void [
   readableDefinition,
   conventionalFollowups,
   readableFollowups,
+  conflictingFollowups,
 ];

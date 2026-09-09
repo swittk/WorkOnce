@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-/** Return bounded stdout/stderr context for a synchronous child-process result. */
+/** Return the combined stdout and stderr text of a synchronous child-process result. */
 export function processOutput(result) {
   return `${result?.stdout ?? ''}\n${result?.stderr ?? ''}`;
 }
@@ -31,7 +31,7 @@ export function requireCompletedProcess(result, context = 'subprocess') {
 /** Accept only a completed numeric nonzero exit as a mutation kill, optionally for an intended witness. */
 export function requireExpectedProcessFailure(result, context, pattern) {
   const output = requireCompletedProcess(result, context);
-  assert.notEqual(result.status, 0, `${context} unexpectedly passed`);
+  assert.notEqual(result.status, 0, `${context} unexpectedly passed\n${tail(output)}`);
   if (pattern) assert.match(output, pattern, `${context} failed for an unrelated reason`);
   return output;
 }

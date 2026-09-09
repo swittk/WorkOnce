@@ -156,6 +156,10 @@ const temporalMutants = {
   /\ lastBeforeRevision' = 1 /\ lastExpectedRevision' = 2 /\ revision' = 2
   /\ UNCHANGED <<phase, generation, fence, receiptGeneration, receiptFence, receiptHash,
                  lastBeforePhase, lastRefGeneration, lastRefFence, lastHash>>`,
+  AcceptedDeferProducesWaiting: String.raw`  /\ lastOp' = "defer" /\ lastResult' = "ok"
+  /\ lastBeforeRevision' = 1 /\ lastBeforePhase' = "running" /\ revision' = 2 /\ phase' = "running"
+  /\ UNCHANGED <<generation, fence, receiptGeneration, receiptFence, receiptHash,
+                 lastExpectedRevision, lastRefGeneration, lastRefFence, lastHash>>`,
   RejectedWakeDoesNotWrite: String.raw`  /\ lastOp' = "wake" /\ lastResult' = "generation_conflict"
   /\ lastBeforeRevision' = 1 /\ revision' = 2 /\ phase' = "queued"
   /\ lastBeforePhase' = "queued" /\ lastExpectedRevision' = 2

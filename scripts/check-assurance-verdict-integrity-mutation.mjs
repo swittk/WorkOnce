@@ -36,6 +36,13 @@ mutate(
   /bare child exit-status verdict/u,
 );
 mutate(
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  "import { spawnSync } from 'node:child_process';",
+  "import { spawn } from 'node:child_process';",
+  'mutation checker bypasses bounded spawnSync controls',
+  /must (?:import|use) spawnSync/u,
+);
+mutate(
   'scripts/storage-refinement.mjs',
   '    oneAccepted,\n    maxSafeAccepted,',
   '    oneAccepted: true,\n    maxSafeAccepted: true,',

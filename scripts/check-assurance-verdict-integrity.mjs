@@ -26,8 +26,18 @@ export function assertAssuranceVerdictIntegrity() {
   ];
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
-    if (!source.includes('spawnSync')) continue;
-    assert.match(source, /timeout:\s*\d/u, `${name} has an unbounded mutation subprocess`);
+    if (!/node:child_process/u.test(source)) continue;
+    assert.match(
+      source,
+      /import\s*\{[^}]*\bspawnSync\b[^}]*\}\s*from ['"]node:child_process['"]/u,
+      `${name} must import spawnSync so the shared bounded/fail-closed subprocess controls apply`,
+    );
+    assert.match(
+      source,
+      /\bspawnSync\(/u,
+      `${name} must use spawnSync so the shared bounded/fail-closed subprocess controls apply`,
+    );
+    assert.match(source, /\btimeout\s*(?::|,)/u, `${name} has an unbounded mutation subprocess`);
     for (const pattern of bareStatusPatterns) {
       pattern.lastIndex = 0;
       assert.equal(

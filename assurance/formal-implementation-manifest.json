@@ -31,6 +31,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -60,6 +61,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -89,6 +91,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -115,6 +118,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -144,6 +148,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -173,6 +178,7 @@
       "callable": true,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -210,6 +216,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -240,6 +247,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -269,6 +277,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -298,6 +307,7 @@
       "callable": true,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -1473,10 +1483,255 @@
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs"
       ],
+      "key": "root.ExternalWorkService.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "90ac631a8b95b9364a16e18e1feb4a287fba01572785a8487f1e8f4ec7627d04"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.ExternalWorkService.ensure",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "26cf6222e890277370928dbb051ab780deab5185d1cc4d02e2535dad1e6ec9f6"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.ExternalWorkService.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
+      ],
+      "key": "root.ExternalWorkService.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.ExternalWorkTransport.claim",
+      "modelActions": [
+        "Claim",
+        "ExhaustAttempts",
+        "ExhaustDeadline"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "86a90d0054b712acf25cfd80f4622f72931084e969f9c81aba85c97ba157ae84"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.ExternalWorkTransport.heartbeat",
+      "modelActions": [
+        "Renew"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "e8b77e24548619cab9d65053c2ad456ef579651a65dc534dc89622f7f138b179"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs",
+        "test/policy-refinement.test.mjs"
+      ],
+      "key": "root.ExternalWorkTransport.settle",
+      "modelActions": [
+        "Success",
+        "Fail",
+        "Retry",
+        "Defer"
+      ],
+      "runtimeContracts": [],
+      "signatureHash": "8aa1014e692be8cd7a2a6bf87cf78d6255759be53cc62a8b3325d620356f7330"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.ExternalWorkerOptions.onError",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
       "key": "root.WorkConflict",
       "modelActions": [],
       "runtimeContracts": [],
       "signatureHash": "2d4d12750cb0548b999e6fbaecf55969b40213088fb53dd32cda987150fc96aa"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.defer",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "8f6a5b418b4ba5c925993d04e3ef54b76dd29f819c01d10fd4feb5c394a0c61b"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.executionLimits",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "1659e68cf75b1248d94b282c6e19a2725ce4a9408eab58047e3be1b88c999201"
+    },
+    {
+      "classification": "observational",
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.key",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "0f01e9a8cd59e724dabba79dc5149360702398fdcd641bbe496daa8b275c10c4"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.limits",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "1659e68cf75b1248d94b282c6e19a2725ce4a9408eab58047e3be1b88c999201"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.next",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "bc7a5560d33b3e6b6e99376b2db0cccd3c4c28e9d9500521bae694fbc9465258"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.perform",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "1bb4a801e407e268fb835aa647fee2f375bbdaa52fb904a09412e547c4349c13"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.retry",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "60701239592cbccea3b149e08edee0c13164c6e86e1ebd8de4a8f59089ce1fab"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.thenDo",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "bc7a5560d33b3e6b6e99376b2db0cccd3c4c28e9d9500521bae694fbc9465258"
+    },
+    {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkDefinition.wait",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "8f6a5b418b4ba5c925993d04e3ef54b76dd29f819c01d10fd4feb5c394a0c61b"
     },
     {
       "classification": "abstract-semantic",
@@ -2234,6 +2489,19 @@
       "signatureHash": "effcbbb20dd6407f1ae91ba7a0a3f03e25670178fb47d2d9c6fffbe375873ccd"
     },
     {
+      "classification": "abstract-semantic",
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "root.WorkerOptions.onError",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "e69283dfceb164bd3d972cb18b682d759f7b95d6445f0843cdd486bb08504ab6"
+    },
+    {
       "classification": "ergonomic-wrapper",
       "evidence": [
         "test/item.test.mjs",
@@ -2583,9 +2851,9 @@
     }
   ],
   "diagnostics": {
-    "maximumTypeDepth": 7,
+    "maximumTypeDepth": 8,
     "recursiveTypeReferences": [
-      "WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09",
+      "WorkQueue<cf1c91e84010>|src/work.ts|0|cf1c91e84010",
       "external:1"
     ],
     "truncatedTypes": []
@@ -2797,6 +3065,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2820,6 +3089,7 @@
       "callable": false,
       "classification": "observational",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2842,6 +3112,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2864,6 +3135,7 @@
       "callable": false,
       "classification": "observational",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2886,7 +3158,8 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -2908,6 +3181,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2930,6 +3204,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2952,6 +3227,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2974,6 +3250,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -2996,6 +3273,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -3381,7 +3659,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "input"
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3404,7 +3682,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "input"
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3427,6 +3705,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3450,6 +3729,7 @@
       "callable": false,
       "classification": "opaque-payload",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3472,6 +3752,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3494,6 +3775,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3516,6 +3798,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3543,6 +3826,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3565,7 +3849,8 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3588,7 +3873,8 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3610,7 +3896,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3633,7 +3920,8 @@
       "callable": false,
       "classification": "opaque-payload",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/terminal-receipt.test.mjs",
@@ -3655,7 +3943,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3678,7 +3967,8 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3700,7 +3990,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3722,7 +4013,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -3744,6 +4036,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -3771,6 +4064,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4180,6 +4474,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4205,6 +4500,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4232,6 +4528,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4256,6 +4553,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4283,6 +4581,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4308,6 +4607,7 @@
       "callable": true,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4336,6 +4636,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4362,6 +4663,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4387,6 +4689,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4410,6 +4713,7 @@
       "callable": true,
       "classification": "policy-callback",
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -4609,6 +4913,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-result",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4632,6 +4937,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4654,6 +4960,7 @@
       "callable": false,
       "classification": "opaque-payload",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4676,6 +4983,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4698,6 +5006,7 @@
       "callable": false,
       "classification": "observational",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -4822,6 +5131,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -5074,7 +5384,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument",
+        "exported-type",
         "input",
         "output"
       ],
@@ -5098,7 +5408,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument",
+        "exported-type",
         "input",
         "output"
       ],
@@ -5122,7 +5432,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
-        "callback-argument",
+        "exported-type",
         "input",
         "output"
       ],
@@ -5146,7 +5456,7 @@
       "callable": false,
       "classification": "storage-boundary",
       "directions": [
-        "callback-argument",
+        "exported-type",
         "input",
         "output"
       ],
@@ -5883,6 +6193,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5906,6 +6217,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5928,6 +6240,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5950,6 +6263,7 @@
       "callable": false,
       "classification": "opaque-payload",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5972,6 +6286,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -5994,6 +6309,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6016,6 +6332,7 @@
       "callable": false,
       "classification": "observational",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6038,6 +6355,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6061,6 +6379,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6085,6 +6404,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6108,6 +6428,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6131,6 +6452,7 @@
       "classification": "observational",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6154,6 +6476,7 @@
       "classification": "observational",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6177,6 +6500,7 @@
       "classification": "worker-runtime",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6205,6 +6529,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6228,6 +6553,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6251,6 +6577,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6274,6 +6601,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6297,6 +6625,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6320,6 +6649,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6343,6 +6673,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6366,6 +6697,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6390,6 +6722,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6413,6 +6746,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6436,6 +6770,7 @@
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -6458,7 +6793,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -6482,7 +6818,8 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
@@ -6506,6 +6843,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6533,6 +6871,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6560,6 +6899,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6587,6 +6927,7 @@
       "callable": true,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6614,6 +6955,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6641,6 +6983,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
@@ -6961,6 +7304,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -6985,6 +7329,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7009,6 +7354,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7035,6 +7381,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7059,6 +7406,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7083,6 +7431,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7889,6 +8238,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7914,6 +8264,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -7938,6 +8289,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8189,6 +8541,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8215,6 +8568,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8241,6 +8595,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8266,6 +8621,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8383,6 +8739,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8409,6 +8766,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8435,6 +8793,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8460,6 +8819,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8596,6 +8956,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8620,6 +8981,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8645,6 +9007,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8670,6 +9033,7 @@
       "classification": "opaque-payload",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8694,6 +9058,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8718,6 +9083,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8744,6 +9110,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8769,7 +9136,52 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "manualRetry",
+      "key": "anonymous@src/outcomes.ts#10|src/outcomes.ts|10|a70685abc349#manualRetry",
+      "modelConcepts": [
+        "manualRetryAllowed"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
+      "typeName": "anonymous@src/outcomes.ts#10"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "opaque-payload",
+      "directions": [
+        "input"
+      ],
+      "evidence": [
+        "test/terminal-receipt.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "result",
+      "key": "anonymous@src/outcomes.ts#10|src/outcomes.ts|10|a70685abc349#result",
+      "modelConcepts": [
+        "opaquePayload"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
+      "typeName": "anonymous@src/outcomes.ts#10"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8796,6 +9208,7 @@
       "classification": "abstract-semantic",
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -8821,43 +9234,95 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
         "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "field": "manualRetry",
-      "key": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349#manualRetry",
+      "field": "next",
+      "key": "anonymous@src/outcomes.ts#2|src/outcomes.ts|2|5ad940315e37#next",
       "modelConcepts": [
-        "manualRetryAllowed"
+        "pendingNext",
+        "childCreated"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
-      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
-      "typeName": "anonymous@src/outcomes.ts#8"
+      "typeHash": "6497e4b3d7bed16979a343a7db4efa6d57725529f5ac3cec45c1f08fabcbdafc",
+      "typeName": "anonymous@src/outcomes.ts#2"
     },
     {
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "opaque-payload",
+      "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "input"
       ],
       "evidence": [
-        "test/terminal-receipt.test.mjs",
+        "test/formal-bounded-refinement.test.mjs",
         "test/conformance.test.mjs"
       ],
-      "field": "result",
-      "key": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349#result",
+      "field": "thenDo",
+      "key": "anonymous@src/outcomes.ts#2|src/outcomes.ts|2|5ad940315e37#thenDo",
       "modelConcepts": [
-        "opaquePayload"
+        "pendingNext",
+        "childCreated"
       ],
       "optional": true,
       "source": "src/outcomes.ts",
-      "typeHash": "c4694f2e93d5c4e7d51f9c5deb75e6cc8be5e1114178c6a45b6fc2c566a0aa8c",
-      "typeName": "anonymous@src/outcomes.ts#8"
+      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
+      "typeName": "anonymous@src/outcomes.ts#2"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "next",
+      "key": "anonymous@src/outcomes.ts#3|src/outcomes.ts|3|fc5ead708b72#next",
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "7529a7e6c2e86a2858363b6f0c56c2db3fb74b73e1e9e098666cc7f27f343ed6",
+      "typeName": "anonymous@src/outcomes.ts#3"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "abstract-semantic",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/formal-bounded-refinement.test.mjs",
+        "test/conformance.test.mjs"
+      ],
+      "field": "thenDo",
+      "key": "anonymous@src/outcomes.ts#3|src/outcomes.ts|3|fc5ead708b72#thenDo",
+      "modelConcepts": [
+        "pendingNext",
+        "childCreated"
+      ],
+      "optional": true,
+      "source": "src/outcomes.ts",
+      "typeHash": "6497e4b3d7bed16979a343a7db4efa6d57725529f5ac3cec45c1f08fabcbdafc",
+      "typeName": "anonymous@src/outcomes.ts#3"
     },
     {
       "allowsNull": false,
@@ -10386,6 +10851,7 @@
       "callable": false,
       "classification": "abstract-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10408,6 +10874,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10435,6 +10902,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10457,6 +10925,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10484,6 +10953,7 @@
       "callable": false,
       "classification": "worker-runtime",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10511,6 +10981,7 @@
       "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
+        "exported-type",
         "output"
       ],
       "evidence": [
@@ -10879,7 +11350,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "f6eba90c1a8e5dd52f32ff83bbd12df5e4d34991b8d744af67fa2c967964d303",
+    "assuranceInfrastructureDigest": "073f6c2e1087fb0a08ec3b0b248de71d13c1eb1ace6d2a293068075852e3d352",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -10901,6 +11372,7 @@
       "scripts/check-assurance-scheduling-mutation.mjs",
       "assurance/red-before/formal-shard-cross-family-tlc-concurrency.json",
       "assurance/red-before/review-5149212380-conformance-batch.json",
+      "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
       "assurance/red-before/mutation-guard-cross-contamination.json",
       "assurance/red-before/process-fault-test-concurrency.json",
       "assurance/red-before/unbound-assurance-runner.json",
@@ -11026,7 +11498,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "7dbe674399927b4ee4ee8ef9d82ccd9a1e52fa64fbcea022b43ae1c0a9ac84ac",
+    "sourceDigest": "6582c092eb40b18c24f7e537c54d4d591c0dc4ac1435fc5e71f876caa5854756",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",
@@ -11098,6 +11570,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input"
       ],
       "identity": "EnsureOptions|src/work.ts|0|ad090f6aab6d",
@@ -11107,7 +11580,8 @@
     },
     {
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "identity": "ExponentialBackoffContext|src/retry-policy.ts|0|372a0b1ffe97",
       "name": "ExponentialBackoffContext",
@@ -11116,6 +11590,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input"
       ],
       "identity": "ExponentialBackoffOptions|src/retry-policy.ts|0|9ddd483b0e44",
@@ -11204,7 +11679,7 @@
     },
     {
       "directions": [
-        "input"
+        "exported-type"
       ],
       "identity": "FollowUpOptions|src/outcomes.ts|0|418d3ab8ec30",
       "name": "FollowUpOptions",
@@ -11213,6 +11688,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "LeasedWork<878fa47a57e8>|src/work.ts|0|878fa47a57e8",
@@ -11222,6 +11698,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "ProcessResult|src/worker.ts|0|98a015ed65fa",
@@ -11231,7 +11708,8 @@
     },
     {
       "directions": [
-        "callback-argument"
+        "callback-argument",
+        "exported-type"
       ],
       "identity": "RetryContext<b44af8c51088>|src/model.ts|0|b44af8c51088",
       "name": "RetryContext<b44af8c51088>",
@@ -11240,7 +11718,8 @@
     },
     {
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "identity": "RetryDecision|src/model.ts|0|1e42e16e96a6",
       "name": "RetryDecision",
@@ -11249,6 +11728,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "RunAvailableResult|src/worker.ts|0|f68e87143aef",
@@ -11300,6 +11780,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -11321,6 +11802,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input",
         "output"
       ],
@@ -11332,6 +11814,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "output"
       ],
       "identity": "WorkHandoff<d13150c28db8>|src/work.ts|0|d13150c28db8",
@@ -11341,6 +11824,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input"
       ],
       "identity": "WorkHandoffErrorHandler|src/work.ts|0|83dcf2e723ef",
@@ -11350,6 +11834,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "WorkItem<ce8aaf16911e>|src/work.ts|0|ce8aaf16911e",
@@ -11372,6 +11857,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11431,7 +11917,7 @@
     },
     {
       "directions": [
-        "callback-argument",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11465,6 +11951,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "WorkRequest<c70827d9dc87>|src/model.ts|0|c70827d9dc87",
@@ -11475,6 +11962,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "WorkRun<fbff81ec80db>|src/work.ts|0|fbff81ec80db",
@@ -11485,6 +11973,7 @@
     {
       "directions": [
         "callback-argument",
+        "exported-type",
         "output"
       ],
       "identity": "WorkSnapshot<9505628265c4>|src/model.ts|0|9505628265c4",
@@ -11494,7 +11983,6 @@
     },
     {
       "directions": [
-        "callback-argument",
         "callback-result",
         "exported-type",
         "input",
@@ -11507,7 +11995,8 @@
     },
     {
       "directions": [
-        "callback-result"
+        "callback-result",
+        "exported-type"
       ],
       "identity": "WorkTiming|src/outcomes.ts|0|9b90216763bc",
       "name": "WorkTiming",
@@ -11516,6 +12005,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "input"
       ],
       "identity": "WorkerOptions|src/worker.ts|0|f567006e9fa3",
@@ -11585,6 +12075,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11596,6 +12087,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11697,6 +12189,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11735,6 +12228,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11755,6 +12249,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11775,6 +12270,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11786,6 +12282,7 @@
     {
       "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11796,7 +12293,17 @@
     },
     {
       "directions": [
+        "input"
+      ],
+      "identity": "anonymous@src/outcomes.ts#10|src/outcomes.ts|10|a70685abc349",
+      "name": "anonymous@src/outcomes.ts#10",
+      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
+      "source": "src/outcomes.ts"
+    },
+    {
+      "directions": [
         "callback-result",
+        "exported-type",
         "input",
         "output"
       ],
@@ -11807,11 +12314,22 @@
     },
     {
       "directions": [
+        "exported-type",
         "input"
       ],
-      "identity": "anonymous@src/outcomes.ts#8|src/outcomes.ts|8|a70685abc349",
-      "name": "anonymous@src/outcomes.ts#8",
-      "shapeHash": "ed81d79555af95ec2bc215ad14deb22c2ba81d306029aa1abd2328f32421d91a",
+      "identity": "anonymous@src/outcomes.ts#2|src/outcomes.ts|2|5ad940315e37",
+      "name": "anonymous@src/outcomes.ts#2",
+      "shapeHash": "7631aaf8d973679386a6039769fc5cd6e5da4d9fbd30432a2b94f648ff604fd8",
+      "source": "src/outcomes.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "anonymous@src/outcomes.ts#3|src/outcomes.ts|3|fc5ead708b72",
+      "name": "anonymous@src/outcomes.ts#3",
+      "shapeHash": "d78f5bfa2c362407a76cfb6be4418024acb4fc5dbb17310f25eca70aef11a3e1",
       "source": "src/outcomes.ts"
     },
     {
@@ -12077,6 +12595,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "anonymous@src/worker.ts#0|src/worker.ts|0|d4f683fe8841",
@@ -12086,6 +12605,7 @@
     },
     {
       "directions": [
+        "exported-type",
         "output"
       ],
       "identity": "anonymous@src/worker.ts#1|src/worker.ts|1|1d6e5489e6b7",

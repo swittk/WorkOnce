@@ -19,9 +19,7 @@ function requireRed(relative, label, mutate, args, pattern) {
       env: process.env,
       timeout: 20_000,
     });
-    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
-    assert.match(output, pattern, `${label} failed for an unrelated reason`);
+    requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   } finally {
     fs.writeFileSync(target, original);
   }

@@ -6,12 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-function runNode(args) {
+function runNode(args, timeout = 15_000) {
   return spawnSync(process.execPath, args, {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
-    timeout: 15_000,
+    timeout,
   });
 }
 function output(result) {
@@ -136,12 +136,10 @@ try {
     typeOriginals.set(target, original);
     fs.writeFileSync(target, changed);
   }
-  const result = runNode([
-    'node_modules/typescript/bin/tsc',
-    '--noEmit',
-    '-p',
-    'tsconfig.tests.json',
-  ]);
+  const result = runNode(
+    ['node_modules/typescript/bin/tsc', '--noEmit', '-p', 'tsconfig.tests.json'],
+    45_000,
+  );
   requireExpectedProcessFailure(result, 'type alias mutant batch unexpectedly passed');
   const diagnostics = output(result);
   for (const [, , , diagnostic] of typeMutants)

@@ -31,6 +31,11 @@ try {
   const preparePath = path.join(root, 'scripts/prepare-package.mjs');
   const prepareOriginal = fs.readFileSync(preparePath, 'utf8');
   try {
+    assert.equal(
+      prepareOriginal.includes('assertBuildSourceBinding();'),
+      true,
+      'prepare-package binding anchor is stale',
+    );
     fs.writeFileSync(
       preparePath,
       prepareOriginal.replace('assertBuildSourceBinding();', 'void 0;'),

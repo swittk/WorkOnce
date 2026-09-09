@@ -55,12 +55,15 @@ try {
     /definition_changed/u,
   );
 
+  const orderAnchor = '        return result.rows.map((row) => {';
+  assert.equal(
+    original.split(orderAnchor).length,
+    2,
+    'inspectMany caller-order preservation anchor is not unique',
+  );
   requireRed(
     'inspectMany caller-order preservation',
-    original.replace(
-      '        return result.rows.map((row) => {',
-      '        return [...result.rows].reverse().map((row) => {',
-    ),
+    original.replace(orderAnchor, '        return [...result.rows].reverse().map((row) => {'),
     /deepStrictEqual|Expected values to be strictly deep-equal/u,
   );
 

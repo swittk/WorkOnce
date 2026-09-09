@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
 const result = spawnSync(process.execPath, ['scripts/check-lifecycle-proof-binding.mjs'], {
+  cwd: root,
   encoding: 'utf8',
   env: { ...process.env, WORKONCE_LIFECYCLE_BINDING_MUTANT: 'src/work.ts' },
   timeout: 15_000,

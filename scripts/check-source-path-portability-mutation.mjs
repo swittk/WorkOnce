@@ -37,3 +37,28 @@ try {
 } finally {
   fs.writeFileSync(target, original);
 }
+
+try {
+  const aliasAnchor =
+    'return (symbol.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;';
+  assert.equal(
+    original.includes(aliasAnchor),
+    true,
+    'export-alias resolver mutation anchor is stale',
+  );
+  fs.writeFileSync(target, original.replace(aliasAnchor, 'return symbol;'));
+  const result = spawnSync(process.execPath, [target, '--self-test-trivia-ordinals'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+    timeout: 15_000,
+  });
+  requireExpectedProcessFailure(
+    result,
+    'unresolved root-export alias mutant',
+    /Root export alias/u,
+  );
+  console.log('Compiler surface mutation guard rejects unresolved root-export type aliases.');
+} finally {
+  fs.writeFileSync(target, original);
+}

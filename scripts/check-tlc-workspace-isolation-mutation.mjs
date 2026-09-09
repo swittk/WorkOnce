@@ -10,6 +10,24 @@ function mutate(relative, from, to, label, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
   assert.ok(original.includes(from), `${label} mutation anchor is stale`);
+  let restored = false;
+  const restore = () => {
+    if (restored) return;
+    fs.writeFileSync(target, original);
+    restored = true;
+  };
+  const handlers = new Map();
+  for (const [signal, code] of [
+    ['SIGINT', 130],
+    ['SIGTERM', 143],
+  ]) {
+    const handler = () => {
+      restore();
+      process.exit(code);
+    };
+    handlers.set(signal, handler);
+    process.once(signal, handler);
+  }
   try {
     fs.writeFileSync(target, original.replace(from, to));
     const result = spawnSync(process.execPath, ['scripts/check-tlc-workspace-isolation.mjs'], {
@@ -20,7 +38,8 @@ function mutate(relative, from, to, label, pattern) {
     });
     requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   } finally {
-    fs.writeFileSync(target, original);
+    for (const [signal, handler] of handlers) process.off(signal, handler);
+    restore();
   }
 }
 

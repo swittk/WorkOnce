@@ -90,6 +90,9 @@ function sourceFile(relativePath) {
 function declarationOf(symbol, fallback) {
   return symbol.valueDeclaration ?? symbol.declarations?.[0] ?? fallback;
 }
+function resolveExportSymbol(symbol) {
+  return (symbol.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+}
 function typeText(type, node) {
   return checker.typeToString(type, node, formatFlags);
 }
@@ -181,8 +184,9 @@ function moduleSurface(relativePath, entrypoint) {
   if (!moduleSymbol) throw new Error(`Missing module symbol '${relativePath}'.`);
   const callables = [];
   for (const exported of checker.getExportsOfModule(moduleSymbol)) {
-    const declaration = declarationOf(exported, source);
-    const exportedType = checker.getTypeOfSymbolAtLocation(exported, declaration);
+    const resolvedExport = resolveExportSymbol(exported);
+    const declaration = declarationOf(resolvedExport, source);
+    const exportedType = checker.getTypeOfSymbolAtLocation(resolvedExport, declaration);
     const calls = checker
       .getSignaturesOfType(exportedType, ts.SignatureKind.Call)
       .map((signature) => signatureShape(signature, declaration));
@@ -209,7 +213,7 @@ function moduleSurface(relativePath, entrypoint) {
       });
     }
     if (!constructors.length) continue;
-    for (const member of publicClassMembers(exported, exportedType)) {
+    for (const member of publicClassMembers(resolvedExport, exportedType)) {
       const memberDeclaration = declarationOf(member, declaration);
       const flags = ts.getCombinedModifierFlags(memberDeclaration);
       if ((flags & (ts.ModifierFlags.Private | ts.ModifierFlags.Protected)) !== 0) continue;
@@ -301,7 +305,23 @@ type Again = { value: boolean };
       `Declaration ordinal self-test drifted under trivia: ${JSON.stringify({ baseline, withTrivia })}`,
     );
   }
-  console.log('Declaration ordinal trivia self-test passed.');
+  const rootSource = sourceFile('src/index.ts');
+  const rootModule = checker.getSymbolAtLocation(rootSource);
+  if (!rootModule) throw new Error('Root entrypoint module symbol is missing.');
+  const followUpExport = checker
+    .getExportsOfModule(rootModule)
+    .find((symbol) => symbol.name === 'FollowUpOptions');
+  if (!followUpExport || (followUpExport.flags & ts.SymbolFlags.Alias) === 0)
+    throw new Error('FollowUpOptions is no longer a declaration-only root export alias.');
+  const resolvedFollowUp = resolveExportSymbol(followUpExport);
+  const resolvedDeclaration = declarationOf(resolvedFollowUp, rootSource);
+  if (!ts.isTypeAliasDeclaration(resolvedDeclaration))
+    throw new Error(
+      `Root export alias did not resolve to its declared package type: ${ts.SyntaxKind[resolvedDeclaration.kind]}`,
+    );
+  if (portableSourcePath(resolvedDeclaration.getSourceFile().fileName) !== 'src/outcomes.ts')
+    throw new Error('Root export alias resolved outside its package-owned declaration source.');
+  console.log('Declaration ordinal trivia and root export alias resolution self-tests passed.');
   process.exit(0);
 }
 
@@ -448,14 +468,15 @@ function visitEntrypointTypes(relativePath) {
   const moduleSymbol = checker.getSymbolAtLocation(source);
   if (!moduleSymbol) return;
   for (const exported of checker.getExportsOfModule(moduleSymbol)) {
-    const declaration = declarationOf(exported, source);
-    const exportedType = checker.getTypeOfSymbolAtLocation(exported, declaration);
+    const resolvedExport = resolveExportSymbol(exported);
+    const declaration = declarationOf(resolvedExport, source);
+    const exportedType = checker.getTypeOfSymbolAtLocation(resolvedExport, declaration);
     if (
       ts.isInterfaceDeclaration(declaration) ||
       ts.isTypeAliasDeclaration(declaration) ||
       ts.isClassDeclaration(declaration)
     ) {
-      visitType(checker.getDeclaredTypeOfSymbol(exported), 'exported-type');
+      visitType(checker.getDeclaredTypeOfSymbol(resolvedExport), 'exported-type');
     }
     for (const signature of [
       ...checker.getSignaturesOfType(exportedType, ts.SignatureKind.Call),
@@ -468,7 +489,7 @@ function visitEntrypointTypes(relativePath) {
       visitType(checker.getReturnTypeOfSignature(signature), 'output');
     }
     if (!checker.getSignaturesOfType(exportedType, ts.SignatureKind.Construct).length) continue;
-    for (const member of publicClassMembers(exported, exportedType)) {
+    for (const member of publicClassMembers(resolvedExport, exportedType)) {
       const memberDeclaration = declarationOf(member, declaration);
       const flags = ts.getCombinedModifierFlags(memberDeclaration);
       if ((flags & (ts.ModifierFlags.Private | ts.ModifierFlags.Protected)) !== 0) continue;

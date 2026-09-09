@@ -201,6 +201,7 @@ const assuranceInfrastructureFiles = [
   'scripts/check-assurance-scheduling-mutation.mjs',
   'assurance/red-before/formal-shard-cross-family-tlc-concurrency.json',
   'assurance/red-before/review-5149212380-conformance-batch.json',
+  'assurance/red-before/review-a5a23d8-formal-surface-gaps.json',
   'assurance/red-before/mutation-guard-cross-contamination.json',
   'assurance/red-before/process-fault-test-concurrency.json',
   'assurance/red-before/unbound-assurance-runner.json',

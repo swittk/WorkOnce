@@ -12,7 +12,7 @@ vars == <<phase, revision, generation, fence,
 Hashes == {"none", "h1", "h2"}
 Phases == {"queued", "running", "waiting", "succeeded", "failed", "cancelled"}
 Results == {"none", "ok", "replay", "conflict", "stale", "generation_conflict"}
-Ops == {"none", "claim", "renew", "settle", "wake", "cancel", "cancel_terminal", "reset", "replay"}
+Ops == {"none", "claim", "renew", "settle", "defer", "wake", "cancel", "cancel_terminal", "reset", "replay"}
 Terminal == phase \in {"succeeded", "failed", "cancelled"}
 
 Init ==
@@ -53,6 +53,13 @@ Settle(kind, hash) ==
   /\ receiptGeneration' = generation /\ receiptFence' = fence /\ receiptHash' = hash
   /\ lastHash' = hash
   /\ UNCHANGED <<generation, fence, lastExpectedRevision, lastRefGeneration, lastRefFence>>
+
+Defer ==
+  /\ phase = "running" /\ revision < MaxRevision
+  /\ Record("defer", "ok")
+  /\ phase' = "waiting" /\ revision' = revision + 1
+  /\ UNCHANGED <<generation, fence, receiptGeneration, receiptFence, receiptHash,
+                 lastExpectedRevision, lastRefGeneration, lastRefFence, lastHash>>
 
 Wake(expectedRevision) ==
   /\ phase \in {"queued", "waiting"}
@@ -101,6 +108,7 @@ Replay(refGeneration, refFence, hash) ==
 
 Next == Claim \/ Renew
         \/ (\E kind \in {"succeeded", "failed"}, hash \in {"h1", "h2"} : Settle(kind, hash))
+        \/ Defer
         \/ (\E expectedRevision \in 1..MaxRevision : Wake(expectedRevision))
         \/ Cancel \/ CancelTerminal \/ Reset
         \/ (\E refGeneration \in 1..MaxGeneration, refFence \in 1..MaxFence,
@@ -120,6 +128,12 @@ LifecycleTemporalTypeOK ==
 AcceptedWakeUsesCurrentRevision ==
   lastOp = "wake" /\ lastResult = "ok" =>
     /\ lastExpectedRevision = lastBeforeRevision
+    /\ revision = lastBeforeRevision + 1
+
+AcceptedDeferProducesWaiting ==
+  lastOp = "defer" /\ lastResult = "ok" =>
+    /\ lastBeforePhase = "running"
+    /\ phase = "waiting"
     /\ revision = lastBeforeRevision + 1
 
 RejectedWakeDoesNotWrite ==

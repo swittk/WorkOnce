@@ -10,7 +10,7 @@ test('lifecycle temporal and bounded claim-scan formal gate is green', () => {
     timeout: 300000,
   });
   const output = requireSuccessfulProcess(result, 'lifecycle formal child');
-  assert.match(output, /proves 7 configured invariants.*WorkOnceLifecycleTemporal/u);
+  assert.match(output, /proves 8 configured invariants.*WorkOnceLifecycleTemporal/u);
   assert.match(output, /proves 6 configured invariants.*WorkOnceClaimScan/u);
   assert.match(output, /24 fresh compiled implementation observations/u);
   assert.match(output, /Lifecycle sample mutation guard/u);
