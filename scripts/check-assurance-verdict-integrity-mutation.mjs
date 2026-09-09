@@ -92,11 +92,25 @@ mutate(
   /oneTickHeartbeatCompatible|oneTickAccepted/u,
 );
 mutate(
+  'scripts/external-transport-refinement.mjs',
+  '        async heartbeat() {\n          return { observedAt: 100, leaseUntil: 120 };\n        },',
+  '        heartbeat: service.heartbeat,',
+  'unknown-ACK witness allows scheduler-dependent durable heartbeat history',
+  /heartbeat|unknownAckHistory/u,
+);
+mutate(
   'test/process/local-runner-process.test.mjs',
-  "    child.once('exit', onExit);",
-  '    void onExit;',
-  'IPC wait ignores early child exit',
-  /child\.once|next IPC message/u,
+  "  child.on('message', (message) => {",
+  "  child.once('message', (message) => {",
+  'IPC inbox loses messages between awaits',
+  /child\.on|childInboxes|messages/u,
+);
+mutate(
+  'test/process/local-runner-process.test.mjs',
+  "          const snapshots = await observing.queue.inspectMany(['0', '1', '2']);",
+  '          const snapshots = [];',
+  'multi-active crash synchronization stops observing durable WorkOnce state',
+  /inspectMany|durable WorkOnce/u,
 );
 mutate(
   'test/process/local-runner-child.mjs',

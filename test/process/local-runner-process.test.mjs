@@ -10,36 +10,52 @@ import { createWorkOnce, succeed } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./local-runner-child.mjs', import.meta.url);
+const childInboxes = new WeakMap();
 function start(path, mode) {
-  return fork(childUrl, [path, mode], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
+  const child = fork(childUrl, [path, mode], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
+  const inbox = { messages: [], waiters: [], ended: undefined };
+  childInboxes.set(child, inbox);
+  child.on('message', (message) => {
+    const waiter = inbox.waiters.shift();
+    if (waiter) waiter.resolve(message);
+    else inbox.messages.push(message);
+  });
+  const end = (error) => {
+    inbox.ended = error;
+    for (const waiter of inbox.waiters.splice(0)) waiter.reject(error);
+  };
+  child.once('exit', (code, signal) =>
+    end(
+      new Error(
+        `Local-runner child exited before its next IPC message: code=${String(code)} signal=${String(signal)}`,
+      ),
+    ),
+  );
+  child.once('error', end);
+  return child;
 }
 async function nextMessage(child) {
+  const inbox = childInboxes.get(child);
+  assert.ok(inbox, 'Local-runner child inbox was not initialized');
+  if (inbox.messages.length) return inbox.messages.shift();
+  if (inbox.ended) throw inbox.ended;
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(
-      () => finish(reject, new Error('Timed out waiting for local-runner child IPC message')),
-      15000,
-    );
-    const onMessage = (message) => finish(resolve, message);
-    const onExit = (code, signal) =>
-      finish(
-        reject,
-        new Error(
-          `Local-runner child exited before its next IPC message: code=${String(code)} signal=${String(signal)}`,
-        ),
-      );
-    const onError = (error) => finish(reject, error);
-    function finish(settle, value) {
-      clearTimeout(timeout);
-      child.off('message', onMessage);
-      child.off('exit', onExit);
-      child.off('error', onError);
-      settle(value);
-    }
-    child.once('message', onMessage);
-    child.once('exit', onExit);
-    child.once('error', onError);
-    if (child.exitCode !== null || child.signalCode !== null)
-      onExit(child.exitCode, child.signalCode);
+    const waiter = {
+      resolve(value) {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      reject(error) {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    };
+    const timeout = setTimeout(() => {
+      const index = inbox.waiters.indexOf(waiter);
+      if (index >= 0) inbox.waiters.splice(index, 1);
+      reject(new Error('Timed out waiting for local-runner child IPC message'));
+    }, 15000);
+    inbox.waiters.push(waiter);
   });
 }
 async function kill(child) {
@@ -79,11 +95,24 @@ test('SIGKILL with three active local attempts leaves all durable leases reclaim
     await seed(path, 3, 2000);
     const child = start(path, 'multi-active');
     try {
-      assert.equal((await nextMessage(child)).ready, true);
-      const refs = [];
-      while (refs.length < 3) {
-        const message = await nextMessage(child);
-        if (message.stage === 'started') refs.push(message.ref);
+      const observing = reopen(path, 2000);
+      let refs;
+      try {
+        const deadline = Date.now() + 15000;
+        while (refs === undefined) {
+          if (child.exitCode !== null || child.signalCode !== null)
+            throw new Error(
+              `Local-runner child exited before three durable running attempts were observed: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+            );
+          const snapshots = await observing.queue.inspectMany(['0', '1', '2']);
+          if (snapshots.every((snapshot) => snapshot?.phase.state === 'running'))
+            refs = snapshots.map((snapshot) => snapshot.phase.attempt);
+          else if (Date.now() >= deadline)
+            throw new Error('Timed out waiting for three durable WorkOnce running attempts');
+          else await sleep(10);
+        }
+      } finally {
+        observing.store.close();
       }
       await kill(child);
       await sleep(2050);

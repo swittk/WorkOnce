@@ -709,6 +709,9 @@ async function unknownAckHistorySample() {
       let lose = loseAck;
       const transport = {
         ...service,
+        async heartbeat() {
+          return { observedAt: 100, leaseUntil: 120 };
+        },
         async settle(attempt, outcome) {
           firstAttempt = attempt;
           firstOutcome = outcome;

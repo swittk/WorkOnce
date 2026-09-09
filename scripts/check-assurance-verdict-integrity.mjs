@@ -140,21 +140,38 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(mixedSample, /release\.resolve\(\)/u);
   assert.match(mixedSample, /Promise\.allSettled\(\[reading\]\)/u);
 
+  const ackStart = externalRefinement.indexOf('async function unknownAckHistorySample');
+  const ackEnd = externalRefinement.indexOf(
+    '\nexport async function runExternalTransportSamples',
+    ackStart + 1,
+  );
+  const ackSample = externalRefinement.slice(ackStart, ackEnd);
+  assert.match(ackSample, /async heartbeat\(\) \{/u);
+  assert.match(ackSample, /return \{ observedAt: 100, leaseUntil: 120 \}/u);
+  assert.doesNotMatch(ackSample, /heartbeat: service\.heartbeat/u);
+
   const processTest = read('test/process/local-runner-process.test.mjs');
-  const messageStart = processTest.indexOf('async function nextMessage(child)');
-  const messageEnd = processTest.indexOf('\nasync function kill(child)', messageStart + 1);
-  const messageHelper = processTest.slice(messageStart, messageEnd);
-  assert.match(messageHelper, /child\.once\('message', onMessage\)/u);
-  assert.match(messageHelper, /child\.once\('exit', onExit\)/u);
-  assert.match(messageHelper, /child\.once\('error', onError\)/u);
-  assert.match(messageHelper, /child\.exitCode !== null \|\| child\.signalCode !== null/u);
+  const startHelperStart = processTest.indexOf('function start(path, mode)');
+  const messageEnd = processTest.indexOf('\nasync function kill(child)', startHelperStart + 1);
+  const messageHelper = processTest.slice(startHelperStart, messageEnd);
+  assert.match(processTest, /const childInboxes = new WeakMap\(\)/u);
+  assert.match(messageHelper, /child\.on\('message'/u);
+  assert.match(messageHelper, /inbox\.messages\.push\(message\)/u);
+  assert.match(messageHelper, /inbox\.messages\.shift\(\)/u);
+  assert.match(messageHelper, /inbox\.waiters\.push\(waiter\)/u);
+  assert.match(messageHelper, /child\.once\('exit'/u);
+  assert.match(messageHelper, /child\.once\('error'/u);
   assert.match(messageHelper, /Local-runner child exited before its next IPC message/u);
-  assert.doesNotMatch(messageHelper, /once\(child, 'message', \{ signal: AbortSignal\.timeout/u);
+  assert.doesNotMatch(messageHelper, /child\.once\('message'/u);
 
   const multiStart = processTest.indexOf("test('SIGKILL with three active local attempts");
   const multiEnd = processTest.indexOf("\ntest('SIGKILL after heartbeat", multiStart + 1);
   const multiFixture = processTest.slice(multiStart, multiEnd);
   assert.match(multiFixture, /seed\(path, 3, 2000\)/u);
+  assert.match(multiFixture, /inspectMany\(\['0', '1', '2'\]\)/u);
+  assert.match(multiFixture, /snapshot\?\.phase\.state === 'running'/u);
+  assert.match(multiFixture, /snapshots\.map\(\(snapshot\) => snapshot\.phase\.attempt\)/u);
+  assert.doesNotMatch(multiFixture, /nextMessage\(child\)/u);
   assert.match(multiFixture, /sleep\(2050\)/u);
   assert.match(multiFixture, /reopen\(path, 2000\)/u);
   const processChild = read('test/process/local-runner-child.mjs');
