@@ -6,6 +6,19 @@ import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
 
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`outbox refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
+
 function tracedStore(base) {
   const outboxQueries = [];
   return {
@@ -669,7 +682,7 @@ async function staleParentRaceSample() {
   await terminal(parent, 'first', [child.request(null, { key: 'c' })]);
   holdParentAck = true;
   const delayed = firstWork.dispatch({ limit: 1 });
-  await parentAckEntered;
+  await within(parentAckEntered, 'stale-parent held acknowledgement');
   const winner = await secondWork.dispatch({ limit: 1 });
   const drained = (await parent.inspect('p')).pendingFollowups === 0;
   const rerun = await parent2.rerun({ key: 'p', generation: 1 });

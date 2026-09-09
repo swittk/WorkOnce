@@ -737,7 +737,15 @@ export async function runPolicyRefinementSamples() {
 }
 
 export function assertPolicyRefinementSamples(samples) {
-  assert.ok(samples.length >= 30, 'policy refinement sample family unexpectedly shrank');
+  assert.equal(samples.length, 45, 'policy refinement sample family unexpectedly changed');
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'wakeCompetition')
+      .map((sample) => sample.adapter)
+      .sort(),
+    ['cas', 'memory', 'sqlite'],
+    'wakeCompetition adapter coverage drifted',
+  );
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     if (sample.kind === 'retryBoundary' || sample.kind === 'deferBoundary') {

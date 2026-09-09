@@ -57,6 +57,31 @@ try {
     restore();
   }
   {
+    const needle = `if (fatal === undefined)
+            fatal = { error };`;
+    assert.equal(
+      externalOriginal.includes(needle),
+      true,
+      'external first-fatal mutation anchor is stale',
+    );
+    fs.writeFileSync(externalPath, externalOriginal.replace(needle, 'fatal = { error };'));
+    requireInlineRed(
+      'external first fatal overwrite',
+      `import assert from 'node:assert/strict';
+       import { runExternal } from '${importRoot}/external.js';
+       import { setTimeout as sleep } from 'node:timers/promises';
+       const first=new Error('first-fatal-A'); const second=new Error('second-fatal-B');
+       let claimed=false;
+       const lease=id=>({input:{id},attempt:{workId:id,generation:1,fence:1},observedAt:0,leaseUntil:5000});
+       const transport={async claim(){if(claimed)return []; claimed=true; return [lease('a'),lease('b')]},async heartbeat(lease){return lease},async settle(){throw new Error('unexpected settle')}};
+       const stop=new AbortController(); let caught;
+       try {await runExternal(transport,{workerId:'r',concurrency:2,heartbeatMs:100,idleMs:1000,signal:stop.signal},async (_run,input)=>{if(input.id==='a')throw first; await sleep(20); throw second;});} catch(error){caught=error;} finally {stop.abort();}
+       assert.equal(caught,first,'external managed runner must preserve its first fatal failure');`,
+      /external managed runner must preserve its first fatal failure/u,
+    );
+    restore();
+  }
+  {
     const needle =
       "        if (leases.length > limit)\n            throw new RangeError('External claim returned more leases than requested');";
     assert.equal(

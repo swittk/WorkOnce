@@ -42,14 +42,18 @@ function sqliteFixture() {
   return {
     store,
     cleanup() {
-      store.close();
-      rmSync(directory, { recursive: true, force: true });
+      try {
+        store.close();
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
     },
   };
 }
 
 async function adapterSample(adapter, store, cleanup = () => {}) {
   const scope = `typed-read-${adapter}`;
+  let primaryFailed = false;
   try {
     const v1 = createWorkOnce({ store, scope }).define('job', { version: '1' });
     const v2 = createWorkOnce({ store, scope }).define('job', { version: '2' });
@@ -99,8 +103,15 @@ async function adapterSample(adapter, store, cleanup = () => {}) {
       wrongScopeNotFound: wrongScopeId.rejected && wrongScopeId.error?.code === 'not_found',
       currentIdExact: JSON.stringify(currentById) === JSON.stringify(newSnapshot),
     };
+  } catch (error) {
+    primaryFailed = true;
+    throw error;
   } finally {
-    cleanup();
+    try {
+      cleanup();
+    } catch (cleanupError) {
+      if (!primaryFailed) throw cleanupError;
+    }
   }
 }
 
@@ -119,8 +130,17 @@ export function assertTypedReadBoundarySamples(samples) {
   const adapters = samples.map((sample) => sample.adapter).sort();
   if (JSON.stringify(adapters) !== JSON.stringify(['cas', 'memory', 'sqlite']))
     throw new Error(`Unexpected read adapter set: ${JSON.stringify(adapters)}`);
+  const requiredFields = [
+    'definitionFenceExact',
+    'batchOrderExact',
+    'missingReadsExact',
+    'missingHistoryNotFound',
+    'wrongKindNotFound',
+    'wrongScopeNotFound',
+    'currentIdExact',
+  ];
   for (const sample of samples)
-    for (const [field, value] of Object.entries(sample))
-      if (field !== 'kind' && field !== 'adapter' && value !== true)
+    for (const field of requiredFields)
+      if (sample[field] !== true)
         throw new Error(`Typed read refinement failed: ${sample.adapter}.${field}`);
 }

@@ -183,14 +183,14 @@ mutate(
   '        async heartbeat() {\n          return { observedAt: 100, leaseUntil: 120 };\n        },',
   '        heartbeat: service.heartbeat,',
   'unknown-ACK witness allows scheduler-dependent durable heartbeat history',
-  /heartbeat|unknownAckHistory/u,
+  /AssertionError: unknown-ACK history sample must use deterministic heartbeat stub/u,
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
   "  child.on('message', (message) => {",
   "  child.once('message', (message) => {",
   'IPC inbox loses messages between awaits',
-  /child\.on|childInboxes|messages/u,
+  /AssertionError: local-runner buffered IPC helper must retain a persistent message listener/u,
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
@@ -222,6 +222,13 @@ mutate(
   /history limit must come from the observed truncation sample/u,
 );
 mutate(
+  'scripts/outbox-refinement.mjs',
+  "  await within(parentAckEntered, 'stale-parent held acknowledgement');",
+  '  await parentAckEntered;',
+  'outbox stale-parent refinement restores unbounded held-ack wait',
+  /outbox stale-parent refinement must bound its held-acknowledgement wait/u,
+);
+mutate(
   'scripts/storage-formal.mjs',
   'CONSTANT MaxConflicts = ${maxConflicts}',
   'CONSTANT MaxConflicts = 3',
@@ -234,6 +241,14 @@ mutate(
   '        void child;',
   'parallel sibling leak',
   /parallel assurance failure paths must kill surviving siblings/u,
+);
+
+mutate(
+  'scripts/storage-formal.mjs',
+  '      maxBuffer: 16 * 1024 * 1024,',
+  '      maxBuffer: 1024,',
+  'storage formal loses bounded TLC output capacity',
+  /storage formal wrapper must bound captured TLC output explicitly/u,
 );
 
 console.log(

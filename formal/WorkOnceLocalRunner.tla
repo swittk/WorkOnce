@@ -1,9 +1,9 @@
 ------------------------ MODULE WorkOnceLocalRunner ------------------------
 EXTENDS Naturals, FiniteSets
 CONSTANT Samples
-VARIABLES pc, active, stopped, fatalPresent, lossPresent, lossValue,
+VARIABLES pc, active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
           returnPresent, returnValue, stopActive
-vars == <<pc, active, stopped, fatalPresent, lossPresent, lossValue,
+vars == <<pc, active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
           returnPresent, returnValue, stopActive>>
 LossValues == {"none", "undefined", "errorA", "errorB", "abort"}
 Stopped == stopped \/ fatalPresent
@@ -15,6 +15,7 @@ Init ==
   /\ fatalPresent = FALSE
   /\ lossPresent = FALSE
   /\ lossValue = "none"
+  /\ firstLossValue = "none"
   /\ returnPresent = FALSE
   /\ returnValue = "none"
   /\ stopActive = 0
@@ -24,7 +25,7 @@ ClaimBegin ==
   /\ ~Stopped
   /\ active < 3
   /\ pc' = "claim"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>
 
 ClaimReply(hasWork) ==
@@ -35,28 +36,30 @@ ClaimReply(hasWork) ==
        ELSE IF hasWork
          THEN /\ pc' = "ready" /\ active' = active + 1 /\ UNCHANGED stopActive
          ELSE /\ pc' = "backoff" /\ UNCHANGED <<active, stopActive>>
-  /\ UNCHANGED <<stopped, fatalPresent, lossPresent, lossValue, returnPresent, returnValue>>
+  /\ UNCHANGED <<stopped, fatalPresent, lossPresent, lossValue, firstLossValue, returnPresent, returnValue>>
 
 ClaimFault ==
   /\ pc = "claim"
   /\ pc' = "observer"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>
 
 ObserveHandled ==
   /\ pc = "observer"
   /\ pc' = IF Stopped THEN "draining" ELSE "backoff"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>
 
 ObserveFatal(value) ==
   /\ pc = "observer"
   /\ value \in LossValues \ {"none"}
-  /\ fatalPresent' = TRUE
-  /\ lossPresent' = TRUE
-  /\ lossValue' = value
+  /\ LET fatalNow == ~fatalPresent IN
+       /\ fatalPresent' = TRUE
+       /\ lossPresent' = TRUE
+       /\ lossValue' = IF fatalNow THEN value ELSE lossValue
+       /\ firstLossValue' = IF fatalNow THEN value ELSE firstLossValue
+       /\ stopActive' = IF fatalNow /\ ~Stopped THEN active ELSE stopActive
   /\ pc' = "draining"
-  /\ stopActive' = IF Stopped THEN stopActive ELSE active
   /\ UNCHANGED <<active, stopped, returnPresent, returnValue>>
 
 ActiveDone(failed, handled, value) ==
@@ -65,10 +68,11 @@ ActiveDone(failed, handled, value) ==
   /\ handled \in BOOLEAN
   /\ value \in LossValues \ {"none"}
   /\ active' = active - 1
-  /\ LET fatalNow == failed /\ ~handled /\ ~stopped IN
+  /\ LET fatalNow == failed /\ ~handled /\ ~stopped /\ ~fatalPresent IN
        /\ fatalPresent' = (fatalPresent \/ fatalNow)
        /\ lossPresent' = (lossPresent \/ fatalNow)
        /\ lossValue' = IF fatalNow THEN value ELSE lossValue
+       /\ firstLossValue' = IF fatalNow THEN value ELSE firstLossValue
        /\ stopActive' = IF fatalNow /\ ~Stopped THEN active - 1 ELSE stopActive
        /\ pc' = IF pc = "backoff"
                  THEN IF fatalPresent' \/ stopped THEN "draining" ELSE "ready"
@@ -81,20 +85,20 @@ CallerStop ==
   /\ stopped' = TRUE
   /\ pc' = IF pc \in {"ready", "backoff"} THEN "draining" ELSE pc
   /\ stopActive' = IF Stopped THEN stopActive ELSE active
-  /\ UNCHANGED <<active, fatalPresent, lossPresent, lossValue, returnPresent, returnValue>>
+  /\ UNCHANGED <<active, fatalPresent, lossPresent, lossValue, firstLossValue, returnPresent, returnValue>>
 
 PollTimeout ==
   /\ pc = "backoff"
   /\ ~Stopped
   /\ pc' = "ready"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>
 
 Drain ==
   /\ pc = "ready"
   /\ Stopped
   /\ pc' = "draining"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>
 
 Finish ==
@@ -103,7 +107,7 @@ Finish ==
   /\ pc' = "done"
   /\ returnPresent' = fatalPresent
   /\ returnValue' = IF fatalPresent THEN lossValue ELSE "none"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, stopActive>>
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue, stopActive>>
 
 Next == ClaimBegin
         \/ (\E hasWork \in BOOLEAN : ClaimReply(hasWork))
@@ -122,6 +126,7 @@ LocalTypeOK ==
   /\ fatalPresent \in BOOLEAN
   /\ lossPresent \in BOOLEAN
   /\ lossValue \in LossValues
+  /\ firstLossValue \in LossValues
   /\ returnPresent \in BOOLEAN
   /\ returnValue \in LossValues
   /\ stopActive \in 0..3
@@ -130,6 +135,9 @@ LossPresenceExact ==
   /\ fatalPresent = lossPresent
   /\ (fatalPresent => lossValue # "none")
   /\ (~fatalPresent => lossValue = "none")
+LocalFirstFatalValuePreserved ==
+  /\ (fatalPresent => /\ firstLossValue # "none" /\ lossValue = firstLossValue)
+  /\ (~fatalPresent => firstLossValue = "none")
 
 LocalNoAdmissionAfterStop == Stopped => active <= stopActive
 LocalDrainedBeforeReturn == pc = "done" => active = 0
@@ -153,6 +161,7 @@ LocalRunnerSampleOK(s) ==
     [] s.kind = "competingRunners" ->
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.bothOwners /\ s.exactlyOnce
+    [] s.kind = "firstFatal" -> s.bothActive /\ s.exactFirst
     [] s.kind = "dynamicArrival" ->
        /\ s.allTen /\ s.boundedCapacity /\ s.refilledAroundSlow
     [] s.kind = "handledRecovery" -> s.exactErrors /\ s.eventuallyRanOnce
@@ -170,7 +179,7 @@ LocalRunnerSamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
        "stopReclaim", "undefinedHeartbeat", "settleCause", "competingRunners",
-       "dynamicArrival", "handledRecovery", "completionOrder", "handledAbortHistory",
+       "firstFatal", "dynamicArrival", "handledRecovery", "completionOrder", "handledAbortHistory",
        "backoffHistory", "lateClaimStop", "timerBoundary", "wakePoll"
      }
   /\ \A s \in Samples : LocalRunnerSampleOK(s)

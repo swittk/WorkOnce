@@ -61,6 +61,14 @@ try {
     fs.writeFileSync(target, original);
   }
   {
+    const needle = `if (fatal === undefined)
+            fatal = { error };`;
+    assert.equal(original.includes(needle), true, 'first-fatal mutation anchor is stale');
+    fs.writeFileSync(target, original.replace(needle, 'fatal = { error };'));
+    runExpectedFailure('first fatal overwrite', 'firstFatal', /firstFatal/u);
+    fs.writeFileSync(target, original);
+  }
+  {
     const needle = 'wakePoll === null || wakePoll === void 0 ? void 0 : wakePoll();';
     assert.equal(original.includes(needle), true, 'wakePoll mutation anchor is stale');
     fs.writeFileSync(target, original.replace(needle, 'void wakePoll;'));

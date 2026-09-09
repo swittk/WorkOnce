@@ -31,7 +31,7 @@
 
 - Spec: `formal/WorkOnceRuntime.tla`
 - Fresh compiled observations: `scripts/runtime-boundary-refinement.mjs` via `scripts/formal.mjs`
-- Checked invariants: `DrainedBeforeReturn`, `FailurePresenceIndependent`, `FatalReturnRejects`, `FatalValuePreserved`, `NoAdmissionAfterStop`, `NoFatalBackoff`, `RuntimeSamplesConform`, `RuntimeTypeOK`
+- Checked invariants: `DrainedBeforeReturn`, `FailurePresenceIndependent`, `FatalReturnRejects`, `FatalValuePreserved`, `FirstFatalValuePreserved`, `NoAdmissionAfterStop`, `NoFatalBackoff`, `RuntimeSamplesConform`, `RuntimeTypeOK`
 - Bound runner source: `src/worker.ts`, `src/work.ts`
 
 - `conformance.runConformance`: `BoundarySampleOK`
@@ -49,7 +49,7 @@
 
 - Spec: `formal/WorkOnceLocalRunner.tla`
 - Fresh compiled observations: `scripts/local-runner-refinement.mjs` via `scripts/formal.mjs`
-- Checked invariants: `LocalDrainedBeforeReturn`, `LocalFatalReturnPreserves`, `LocalNoAdmissionAfterStop`, `LocalNoFatalBackoff`, `LocalTypeOK`, `LossPresenceExact`
+- Checked invariants: `LocalDrainedBeforeReturn`, `LocalFatalReturnPreserves`, `LocalFirstFatalValuePreserved`, `LocalNoAdmissionAfterStop`, `LocalNoFatalBackoff`, `LocalTypeOK`, `LossPresenceExact`
 - Bound local-runner source symbols: `src/work.ts:WorkQueue.claim`, `src/work.ts:WorkQueue.runAvailable`, `src/work.ts:WorkQueue.process`, `src/work.ts:WorkQueue.run`, `src/worker.ts:markLocalClaimStartedAt`, `src/worker.ts:validateWorkerOptions`, `src/worker.ts:waitForPoll`, `src/worker.ts:processClaim`, `src/worker.ts:processClaims`, `src/worker.ts:runWorker`
 
 ## Typed-read boundary
@@ -97,7 +97,7 @@
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
 - Bound proof/checker files: **114**
-- Content digest: `01d5056b0bd0231fe3cd62b4db98664a902fce7f3c1bef9b4f06f171bdadc34d`
+- Content digest: `eb112e07dcd205db76622efc47df96a0dbbf5d30954c250e54731e18cb24c3c6`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 

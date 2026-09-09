@@ -141,6 +141,16 @@ export function assertAssuranceVerdictIntegrity() {
     /while\s*\([^)]*claimCalls[^)]*\)\s*(?:\{)?[\s\S]{0,180}?setTimeout/u,
     'formal bounded refinement corpus contains an unbounded claim-count spin wait',
   );
+  assert.ok(
+    storageFormalSource.includes(['max', 'Buffer: 16 * 1024 * 1024,'].join('')),
+    'storage formal wrapper must bound captured TLC output explicitly',
+  );
+  const outboxRefinement = read('scripts/outbox-refinement.mjs');
+  assert.match(
+    outboxRefinement,
+    /await within\(parentAckEntered, 'stale-parent held acknowledgement'\)/u,
+    'outbox stale-parent refinement must bound its held-acknowledgement wait',
+  );
   const lifecycleFormalTest = read('test/lifecycle-formal.test.mjs');
   assert.match(
     lifecycleFormalTest,
@@ -309,7 +319,11 @@ export function assertAssuranceVerdictIntegrity() {
     '\nexport async function runExternalTransportSamples',
     'unknown-ACK history sample',
   );
-  assert.match(ackSample, /async heartbeat\(\) \{/u);
+  assert.match(
+    ackSample,
+    /async heartbeat\(\) \{/u,
+    'unknown-ACK history sample must use deterministic heartbeat stub',
+  );
   assert.match(ackSample, /return \{ observedAt: 100, leaseUntil: 120 \}/u);
   assert.doesNotMatch(ackSample, /heartbeat: service\.heartbeat/u);
 
@@ -321,7 +335,11 @@ export function assertAssuranceVerdictIntegrity() {
     'local-runner buffered IPC helper',
   );
   assert.match(processTest, /const childInboxes = new WeakMap\(\)/u);
-  assert.match(messageHelper, /child\.on\('message'/u);
+  assert.match(
+    messageHelper,
+    /child\.on\('message'/u,
+    'local-runner buffered IPC helper must retain a persistent message listener',
+  );
   assert.match(messageHelper, /inbox\.messages\.push\(message\)/u);
   assert.match(messageHelper, /inbox\.messages\.shift\(\)/u);
   assert.match(messageHelper, /inbox\.waiters\.push\(waiter\)/u);

@@ -725,7 +725,17 @@ export async function runLifecycleRefinementSamples() {
 }
 
 export function assertLifecycleRefinementSamples(samples) {
-  assert.ok(samples.length >= 19, 'lifecycle refinement sample family unexpectedly shrank');
+  assert.equal(samples.length, 24, 'lifecycle refinement sample family unexpectedly changed');
+  for (const kind of ['claimScanContinuation', 'claimLimit', 'finiteClaimDrain']) {
+    assert.deepEqual(
+      samples
+        .filter((sample) => sample.kind === kind)
+        .map((sample) => sample.adapter)
+        .sort(),
+      ['cas', 'memory', 'sqlite'],
+      `${kind} adapter coverage drifted`,
+    );
+  }
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     if (sample.kind === 'revisionHistorySplit') {

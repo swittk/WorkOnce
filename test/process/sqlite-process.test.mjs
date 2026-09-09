@@ -121,6 +121,7 @@ test('SIGKILL after durable claim, restart and late callback preserve fencing', 
       limits: { leaseMs: 3000 },
     });
     const [replacement] = await q.claim({ workerId: 'B' });
+    assert.ok(replacement, 'Expected the expired attempt to be reclaimable after lease expiry');
     assert.ok(replacement.ref.fence > claim.fence);
     late = start(path, 'late', 'old-A');
     await message(late);

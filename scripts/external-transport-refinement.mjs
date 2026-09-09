@@ -155,6 +155,7 @@ async function prepareRaceSample(race) {
   const entered = deferred();
   const release = deferred();
   let onErrorCalls = 0;
+  let claiming;
   try {
     const { queue, service } = serviceFor(fixture, `external-prepare-${race}`, {
       leaseMs: 5,
@@ -169,7 +170,7 @@ async function prepareRaceSample(race) {
       },
     });
     await queue.ensure({ id: 'x' });
-    const claiming = service.claim({ workerId: 'relay', limit: 1 });
+    claiming = service.claim({ workerId: 'relay', limit: 1 });
     await within(entered.promise, 'external prepare-race entry');
     let winner;
     if (race === 'cancel') {
@@ -196,6 +197,7 @@ async function prepareRaceSample(race) {
     };
   } finally {
     release.resolve();
+    if (claiming) await Promise.allSettled([claiming]);
     fixture.close();
   }
 }

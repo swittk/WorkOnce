@@ -294,20 +294,23 @@ const lifecycleMutants = {
 
 const runtimeMutants = {
   RuntimeTypeOK: String.raw`  /\ pc' = "invalid"
-  /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>`,
-  FailurePresenceIndependent: String.raw`  /\ fatalPresent' = TRUE /\ failureKind' = "none" /\ failureValue' = "none"
+  /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue, stopActive>>`,
+  FailurePresenceIndependent: String.raw`  /\ fatalPresent' = TRUE /\ failureKind' = "none" /\ failureValue' = "none" /\ firstFatalValue' = "none"
   /\ UNCHANGED <<pc, active, aborted, result, returnValue, stopActive>>`,
-  NoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ fatalPresent' = TRUE /\ failureKind' = "defined" /\ failureValue' = "errorA"
+  FirstFatalValuePreserved: String.raw`  /\ fatalPresent' = TRUE /\ failureKind' = "defined"
+  /\ failureValue' = "errorB" /\ firstFatalValue' = "errorA"
+  /\ UNCHANGED <<pc, active, aborted, result, returnValue, stopActive>>`,
+  NoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ fatalPresent' = TRUE /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ firstFatalValue' = "errorA"
   /\ UNCHANGED <<active, aborted, result, returnValue, stopActive>>`,
   NoAdmissionAfterStop: String.raw`  /\ pc' = "draining" /\ active' = 1 /\ aborted' = TRUE /\ stopActive' = 0
-  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, result, returnValue>>`,
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, firstFatalValue, result, returnValue>>`,
   DrainedBeforeReturn: String.raw`  /\ pc' = "done" /\ active' = 1
-  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>`,
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue, stopActive>>`,
   FatalReturnRejects: String.raw`  /\ pc' = "done" /\ active' = 0 /\ fatalPresent' = TRUE
-  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ result' = "fulfilled" /\ returnValue' = "errorA"
+  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ firstFatalValue' = "errorA" /\ result' = "fulfilled" /\ returnValue' = "errorA"
   /\ UNCHANGED <<aborted, stopActive>>`,
   FatalValuePreserved: String.raw`  /\ pc' = "done" /\ active' = 0 /\ fatalPresent' = TRUE
-  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ result' = "rejected" /\ returnValue' = "errorB"
+  /\ failureKind' = "defined" /\ failureValue' = "errorA" /\ firstFatalValue' = "errorA" /\ result' = "rejected" /\ returnValue' = "errorB"
   /\ UNCHANGED <<aborted, stopActive>>`,
 };
 
@@ -340,22 +343,25 @@ const readHistoryMutants = {
 
 const localRunnerMutants = {
   LocalTypeOK: String.raw`  /\ pc' = "invalid"
-  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue,
+  /\ UNCHANGED <<active, stopped, fatalPresent, lossPresent, lossValue, firstLossValue,
                  returnPresent, returnValue, stopActive>>`,
   LossPresenceExact: String.raw`  /\ pc' = "ready" /\ active' = 0 /\ stopped' = FALSE
-  /\ fatalPresent' = TRUE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ fatalPresent' = TRUE /\ lossPresent' = FALSE /\ lossValue' = "none" /\ firstLossValue' = "none"
+  /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
+  LocalFirstFatalValuePreserved: String.raw`  /\ pc' = "draining" /\ active' = 0 /\ stopped' = FALSE
+  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorB" /\ firstLossValue' = "errorA"
   /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
   LocalNoAdmissionAfterStop: String.raw`  /\ pc' = "draining" /\ active' = 1 /\ stopped' = TRUE
-  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none" /\ firstLossValue' = "none"
   /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
   LocalDrainedBeforeReturn: String.raw`  /\ pc' = "done" /\ active' = 1 /\ stopped' = TRUE
-  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none"
+  /\ fatalPresent' = FALSE /\ lossPresent' = FALSE /\ lossValue' = "none" /\ firstLossValue' = "none"
   /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 1`,
   LocalNoFatalBackoff: String.raw`  /\ pc' = "backoff" /\ active' = 0 /\ stopped' = FALSE
-  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA"
+  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA" /\ firstLossValue' = "errorA"
   /\ returnPresent' = FALSE /\ returnValue' = "none" /\ stopActive' = 0`,
   LocalFatalReturnPreserves: String.raw`  /\ pc' = "done" /\ active' = 0 /\ stopped' = FALSE
-  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA"
+  /\ fatalPresent' = TRUE /\ lossPresent' = TRUE /\ lossValue' = "errorA" /\ firstLossValue' = "errorA"
   /\ returnPresent' = TRUE /\ returnValue' = "errorB" /\ stopActive' = 0`,
 };
 
@@ -635,7 +641,7 @@ EXTENDS WorkOnceRuntimeObserved
 UnsafeLateAdmission ==
   /\ pc = "claim" /\ Stopped /\ active < 2
   /\ pc' = "draining" /\ active' = active + 1
-  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue, stopActive>>
 MutantNext == Next \/ UnsafeLateAdmission
 MutantSpec == Init /\ [][MutantNext]_vars
 ====

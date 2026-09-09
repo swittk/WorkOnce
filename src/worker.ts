@@ -150,6 +150,9 @@ export async function runWorker<I, O, R extends string>(
   const idleMs = integer(options.idleMs ?? 250, 'idleMs', 1);
   const active = new Set<Promise<void>>();
   let fatal: { error: unknown } | undefined;
+  const recordFatal = (error: unknown) => {
+    if (fatal === undefined) fatal = { error };
+  };
   let wakePoll: (() => void) | undefined;
   const waitForWakeablePoll = async () => {
     if (!active.size) {
@@ -183,13 +186,13 @@ export async function runWorker<I, O, R extends string>(
       claims = await queue.claim({ workerId: options.workerId, limit: available });
     } catch (error) {
       if (!options.onError) {
-        fatal = { error };
+        recordFatal(error);
         break;
       }
       try {
         await options.onError(error);
       } catch (observerError) {
-        fatal = { error: observerError };
+        recordFatal(observerError);
         break;
       }
       if (fatal !== undefined || options.signal.aborted) break;
@@ -202,11 +205,11 @@ export async function runWorker<I, O, R extends string>(
         .then(async (result) => {
           if (result.status === 'interrupted' && !options.signal.aborted) {
             if (options.onError) await options.onError(result.error);
-            else fatal = { error: result.error };
+            else recordFatal(result.error);
           }
         })
         .catch((error) => {
-          fatal = { error };
+          recordFatal(error);
         })
         .finally(() => {
           active.delete(pending);

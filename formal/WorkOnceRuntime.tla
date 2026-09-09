@@ -1,20 +1,20 @@
 --------------------------- MODULE WorkOnceRuntime ---------------------------
 EXTENDS Naturals, FiniteSets, WorkOnceContract
 CONSTANT Samples
-VARIABLES pc, active, fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive
-vars == <<pc, active, fatalPresent, failureKind, failureValue, aborted, result, returnValue, stopActive>>
+VARIABLES pc, active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue, stopActive
+vars == <<pc, active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue, stopActive>>
 Stopped == fatalPresent \/ aborted
 FailureKind(value) ==
   IF value = "none" THEN "none"
   ELSE IF value = "undefined" THEN "undefined"
   ELSE "defined"
 Init == /\ pc = "ready" /\ active = 0 /\ fatalPresent = FALSE
-        /\ failureKind = "none" /\ failureValue = "none"
+        /\ failureKind = "none" /\ failureValue = "none" /\ firstFatalValue = "none"
         /\ aborted = FALSE /\ result = "pending" /\ returnValue = "none"
         /\ stopActive = 0
 
 ClaimBegin == /\ pc = "ready" /\ ~Stopped /\ active < 2 /\ pc' = "claim"
-              /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result,
+              /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result,
                              returnValue, stopActive>>
 ClaimReply(hasWork) ==
   /\ pc = "claim" /\ hasWork \in BOOLEAN
@@ -23,26 +23,31 @@ ClaimReply(hasWork) ==
        ELSE IF hasWork
          THEN /\ pc' = "ready" /\ active' = active + 1 /\ UNCHANGED stopActive
          ELSE /\ pc' = "backoff" /\ UNCHANGED <<active, stopActive>>
-  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, aborted, result, returnValue>>
+  /\ UNCHANGED <<fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result, returnValue>>
 ClaimFault == /\ pc = "claim" /\ pc' = "observer"
-              /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result,
+              /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result,
                              returnValue, stopActive>>
 ObserveHandled ==
   /\ pc = "observer" /\ pc' = (IF Stopped THEN "draining" ELSE "backoff")
-  /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result,
+  /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result,
                  returnValue, stopActive>>
 ObserveFatal(value) ==
   /\ pc = "observer" /\ value \in RunnerFailureValues
-  /\ fatalPresent' = TRUE /\ failureValue' = value /\ failureKind' = FailureKind(value)
+  /\ LET fatalNow == ~fatalPresent IN
+       /\ fatalPresent' = TRUE
+       /\ failureValue' = IF fatalNow THEN value ELSE failureValue
+       /\ firstFatalValue' = IF fatalNow THEN value ELSE firstFatalValue
+       /\ failureKind' = FailureKind(failureValue')
+       /\ stopActive' = IF fatalNow /\ ~Stopped THEN active ELSE stopActive
   /\ pc' = "draining"
-  /\ stopActive' = IF Stopped THEN stopActive ELSE active
   /\ UNCHANGED <<active, aborted, result, returnValue>>
 ActiveDone(failed, handled, value) ==
   /\ active > 0 /\ failed \in BOOLEAN /\ handled \in BOOLEAN
   /\ value \in RunnerFailureValues /\ active' = active - 1
-  /\ LET fatalNow == failed /\ ~handled /\ ~aborted IN
+  /\ LET fatalNow == failed /\ ~handled /\ ~aborted /\ ~fatalPresent IN
        /\ fatalPresent' = (fatalPresent \/ fatalNow)
        /\ failureValue' = IF fatalNow THEN value ELSE failureValue
+       /\ firstFatalValue' = IF fatalNow THEN value ELSE firstFatalValue
        /\ failureKind' = FailureKind(failureValue')
        /\ stopActive' = IF fatalNow /\ ~Stopped THEN active - 1 ELSE stopActive
        /\ pc' = IF pc = "backoff"
@@ -50,19 +55,19 @@ ActiveDone(failed, handled, value) ==
                  ELSE pc
   /\ UNCHANGED <<aborted, result, returnValue>>
 PollTimeout == /\ pc = "backoff" /\ pc' = "ready"
-               /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result,
+               /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result,
                               returnValue, stopActive>>
 Abort == /\ ~aborted /\ pc # "done" /\ aborted' = TRUE
          /\ pc' = IF pc \in {"ready", "backoff"} THEN "draining" ELSE pc
          /\ stopActive' = IF Stopped THEN stopActive ELSE active
-         /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, result, returnValue>>
+         /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, result, returnValue>>
 Drain == /\ pc = "ready" /\ Stopped /\ pc' = "draining"
-         /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, result,
+         /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, result,
                         returnValue, stopActive>>
 Finish == /\ pc = "draining" /\ active = 0 /\ pc' = "done"
           /\ result' = IF RunnerRejects(fatalPresent) THEN "rejected" ELSE "fulfilled"
           /\ returnValue' = IF fatalPresent THEN failureValue ELSE "none"
-          /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, aborted, stopActive>>
+          /\ UNCHANGED <<active, fatalPresent, failureKind, failureValue, firstFatalValue, aborted, stopActive>>
 Next == ClaimBegin \/ (\E hasWork \in BOOLEAN : ClaimReply(hasWork)) \/ ClaimFault
         \/ ObserveHandled \/ (\E value \in RunnerFailureValues : ObserveFatal(value))
         \/ (\E failed \in BOOLEAN, handled \in BOOLEAN, value \in RunnerFailureValues : ActiveDone(failed, handled, value))
@@ -72,11 +77,14 @@ Spec == Init /\ [][Next]_vars
 RuntimeTypeOK == /\ pc \in {"ready", "claim", "observer", "backoff", "draining", "done"}
                  /\ active \in 0..2 /\ fatalPresent \in BOOLEAN /\ aborted \in BOOLEAN
                  /\ failureKind \in {"none", "undefined", "defined"}
-                 /\ failureValue \in RunnerFailureDomain /\ returnValue \in RunnerFailureDomain
+                 /\ failureValue \in RunnerFailureDomain /\ firstFatalValue \in RunnerFailureDomain /\ returnValue \in RunnerFailureDomain
                  /\ result \in {"pending", "rejected", "fulfilled"} /\ stopActive \in 0..2
 FailurePresenceIndependent ==
   /\ fatalPresent = (failureValue # "none")
   /\ failureKind = FailureKind(failureValue)
+FirstFatalValuePreserved ==
+  /\ (fatalPresent => /\ firstFatalValue # "none" /\ failureValue = firstFatalValue)
+  /\ (~fatalPresent => firstFatalValue = "none")
 NoFatalBackoff == fatalPresent => pc # "backoff"
 NoAdmissionAfterStop == Stopped => active <= stopActive
 DrainedBeforeReturn == pc = "done" => active = 0

@@ -264,6 +264,52 @@ async function settleCauseSample(adapter) {
   }
 }
 
+async function firstFatalPreservationSample() {
+  const queue = createWorkOnce({ store: createMemoryStore(), scope: 'local-first-fatal' }).define(
+    'job',
+    { key: (input) => input.id, limits: { leaseMs: 5000 } },
+  );
+  await queue.ensure({ id: 'a' });
+  await queue.ensure({ id: 'b' });
+  const first = new Error('local first fatal A');
+  const second = new Error('local second fatal B');
+  const bothStarted = deferred();
+  let started = 0;
+  const stop = new AbortController();
+  let result;
+  try {
+    result = await within(
+      observe(
+        queue.run(
+          {
+            workerId: 'local-first-fatal',
+            concurrency: 2,
+            heartbeatMs: 100,
+            idleMs: 1000,
+            signal: stop.signal,
+          },
+          async (_run, input) => {
+            started++;
+            if (started === 2) bothStarted.resolve();
+            await within(bothStarted.promise, 'local first-fatal both-active');
+            if (input.id === 'a') throw first;
+            await sleep(20);
+            throw second;
+          },
+        ),
+      ),
+      'local first-fatal runner exit',
+    );
+  } finally {
+    stop.abort();
+  }
+  return {
+    kind: 'firstFatal',
+    bothActive: started === 2,
+    exactFirst: result.rejected && result.error === first,
+  };
+}
+
 async function dynamicArrivalSample() {
   const store = createMemoryStore();
   const queue = createWorkOnce({ store, scope: 'runner-dynamic' }).define('job', {
@@ -734,6 +780,12 @@ async function wakePollSample() {
 }
 
 export async function assertLocalRunnerMutationWitness(kind) {
+  if (kind === 'firstFatal') {
+    const sample = await firstFatalPreservationSample();
+    assert.equal(sample.bothActive, true, `firstFatal:${JSON.stringify(sample)}`);
+    assert.equal(sample.exactFirst, true, `firstFatal:${JSON.stringify(sample)}`);
+    return;
+  }
   if (kind === 'ownershipCause') {
     const sample = await stopReclaimSample('memory', 'heartbeat');
     assert.equal(sample.exactCause, true, `ownershipCause:${JSON.stringify(sample)}`);
@@ -763,6 +815,7 @@ export async function runLocalRunnerRefinementSamples() {
     samples.push(await settleCauseSample(adapter));
     samples.push(await competingRunnersSample(adapter));
   }
+  samples.push(await firstFatalPreservationSample());
   samples.push(await dynamicArrivalSample());
   samples.push(await handledClaimRecoverySample());
   samples.push(await completionOrderSample());
@@ -775,7 +828,7 @@ export async function runLocalRunnerRefinementSamples() {
 }
 
 export function assertLocalRunnerRefinementSamples(samples) {
-  assert.equal(samples.length, 23, 'local runner refinement sample family unexpectedly changed');
+  assert.equal(samples.length, 24, 'local runner refinement sample family unexpectedly changed');
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     switch (sample.kind) {
@@ -795,6 +848,10 @@ export function assertLocalRunnerRefinementSamples(samples) {
       case 'competingRunners':
         assert.equal(sample.bothOwners, true, name);
         assert.equal(sample.exactlyOnce, true, name);
+        break;
+      case 'firstFatal':
+        assert.equal(sample.bothActive, true, name);
+        assert.equal(sample.exactFirst, true, name);
         break;
       case 'dynamicArrival':
         assert.equal(sample.allTen, true, name);

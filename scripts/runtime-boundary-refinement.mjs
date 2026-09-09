@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { setImmediate as nextTurn } from 'node:timers/promises';
+import { setImmediate as nextTurn, setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce, runExternal, exponentialBackoff } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import {
@@ -156,6 +156,77 @@ async function runnerSample(mode, site, error, errorValue = runnerFailureValue(e
     preserved: handled ? observedError === error : result.error === error,
     drained: claimFails || handlerFinished,
     timedOut,
+  };
+}
+
+async function firstFatalSample(mode) {
+  const queue = createWorkOnce({ store: createMemoryStore(), scope: `first-fatal-${mode}` }).define(
+    'job',
+    { key: (input) => input.id, limits: { leaseMs: 5000 } },
+  );
+  await queue.ensure({ id: 'a' });
+  await queue.ensure({ id: 'b' });
+  const first = new Error('first fatal A');
+  const second = new Error('second fatal B');
+  const bothStarted = deferred();
+  let started = 0;
+  const stop = new AbortController();
+  const handler = async (_run, input) => {
+    started++;
+    if (started === 2) bothStarted.resolve();
+    await within(bothStarted.promise, `${mode} first-fatal both-active`);
+    if (input.id === 'a') throw first;
+    await sleep(20);
+    throw second;
+  };
+  const service = queue.serveExternal({
+    prepare: (run) => run.handoff(run.input),
+    onPrepareError: (run) => run.fail('prepare'),
+  });
+  let result;
+  try {
+    result = await within(
+      observe(
+        mode === 'local'
+          ? queue.run(
+              {
+                workerId: mode,
+                concurrency: 2,
+                heartbeatMs: 100,
+                idleMs: 1000,
+                signal: stop.signal,
+              },
+              handler,
+            )
+          : runExternal(
+              service,
+              {
+                workerId: mode,
+                concurrency: 2,
+                heartbeatMs: 100,
+                idleMs: 1000,
+                signal: stop.signal,
+              },
+              handler,
+            ),
+      ),
+      `${mode} first-fatal runner exit`,
+    );
+  } finally {
+    stop.abort();
+  }
+  return {
+    kind: 'runner',
+    mode,
+    site: 'firstFatal',
+    errorKind: 'defined',
+    failureValue: 'errorA',
+    returnedValue: result.rejected ? runnerFailureValue(result.error) : 'none',
+    handled: false,
+    rejected: result.rejected,
+    preserved: result.error === first,
+    drained: started === 2,
+    timedOut: false,
   };
 }
 
@@ -338,7 +409,7 @@ async function abortClaimReplySample() {
   await within(entered.promise, 'runtime-boundary entry');
   stop.abort();
   release.resolve();
-  const result = await running;
+  const result = await within(running, 'abort-claim-reply runner exit');
   const stranded = await queue.inspect('job');
   now = 111;
   const [reclaimed] = await queue.runAvailable({ workerId: 'reclaimer' }, async (run) =>
@@ -397,7 +468,7 @@ async function abortActiveSample() {
   await within(entered.promise, 'runtime-boundary entry');
   stop.abort();
   release.resolve();
-  const result = await running;
+  const result = await within(running, 'abort-active runner exit');
   const stranded = await queue.inspect('job');
   now = 1101;
   const [reclaimed] = await queue.runAvailable({ workerId: 'reclaimer' }, async (run) =>
@@ -458,6 +529,7 @@ export async function runRuntimeBoundarySamples() {
     [new Error('original failure B'), 'errorB'],
   ];
   for (const mode of ['local', 'external']) {
+    samples.push(await firstFatalSample(mode));
     for (const [error, errorValue] of fatalCases)
       for (const site of ['claim', 'claimObserver', 'active', 'activeObserver'])
         samples.push(await runnerSample(mode, site, error, errorValue));

@@ -52,6 +52,7 @@ function tlc(model, config, modulePath, capture = false) {
       encoding: 'utf8',
       timeout: timeoutMs,
       killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
     },
   );
   if (!capture) {

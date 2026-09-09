@@ -1436,11 +1436,11 @@
       "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
     },
     {
-      "id": "src/worker.ts:runWorker:for_of_loop:73e9f029234e402e:1",
+      "id": "src/worker.ts:runWorker:for_of_loop:c819751946bf04f0:1",
       "path": "src/worker.ts",
       "context": "runWorker",
       "kind": "for_of_loop",
-      "excerpt": "for (const claim of claims) { const pending = processClaim(claim, options, handler) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.onError(result.error); else f",
+      "excerpt": "for (const claim of claims) { const pending = processClaim(claim, options, handler) .then(async (result) => { if (result.status === 'interrupted' && !options.signal.aborted) { if (options.onError) await options.onError(result.error); else r",
       "families": [
         "C"
       ],

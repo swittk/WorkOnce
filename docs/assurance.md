@@ -214,8 +214,9 @@ are not established directly by the read contract.
 
 The local runner abstraction no longer collapses every defined JavaScript rejection into one
 formal value. `WorkOnceRuntime.tla` carries a bounded representative failure identity and the
-`FatalValuePreserved` invariant requires the terminal rejection value to match the first fatal
-value exactly. Fresh compiled observations still use strict object/value identity in JavaScript;
+`FirstFatalValuePreserved` invariant remembers the first fatal value and forbids a later concurrent
+failure from replacing it; `FatalValuePreserved` then requires the terminal rejection to return that
+stored value exactly. Fresh compiled observations still use strict object/value identity in JavaScript;
 the finite TLA values stand for representative equivalence classes rather than claiming an
 exhaustive universe of arbitrary application error objects.
 

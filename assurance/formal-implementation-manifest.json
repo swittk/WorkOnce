@@ -11049,7 +11049,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/external-transport-refinement.mjs",
-      "sourceDigest": "328ff2caaad1728071e43bf20616206a505627cf7d7cb30ec04b40959476c53f",
+      "sourceDigest": "b9479780498a31834c4d79560eddca203c13aa42c9d3999fb93c441f14cb0769",
       "sourceFiles": [
         "src/external.ts",
         "src/work.ts",
@@ -11089,19 +11089,20 @@
       "configuredChecks": [
         "LocalDrainedBeforeReturn",
         "LocalFatalReturnPreserves",
+        "LocalFirstFatalValuePreserved",
         "LocalNoAdmissionAfterStop",
         "LocalNoFatalBackoff",
         "LocalTypeOK",
         "LossPresenceExact"
       ],
-      "modelDigest": "2959fab39694a06793482abc91e6b6b7043ba4ec32dfd8282e21496f2f5cc017",
+      "modelDigest": "c75a02f53bfd7d23fc19efe029a62b9510520aeb08209c2b0f362e02ee06e1e2",
       "modelFiles": [
         "formal/WorkOnceLocalRunner.tla",
         "formal/WorkOnceLocalRunner.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/local-runner-refinement.mjs",
-      "sourceDigest": "7ab1317da4f6b2405ae7f6dc5af5d7e044be453302b0d6c5f4c07a908abe75c3",
+      "sourceDigest": "6166cc0206d3d91651842fac19965dfdb1b6e207b3bca4ef8d71c825d0b7564f",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -11290,13 +11291,14 @@
         "FailurePresenceIndependent",
         "FatalReturnRejects",
         "FatalValuePreserved",
+        "FirstFatalValuePreserved",
         "NoAdmissionAfterStop",
         "NoFatalBackoff",
         "RuntimeSamplesConform",
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "bc733642590f25429db6a58fd0a30d6a8ca366688a3342f7d6e992eb9f460ab1",
+      "modelDigest": "c55ea8304a6a13995c6b5ddc5b6c1c2b765cec6b63a68cf2b50e30ddf7e39739",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -11306,7 +11308,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "2dff848738a41676f4ec114e56d2b6e1221587cceb4e6288bfa03c43085d78c0",
+      "sourceDigest": "139c0b8c819ab98bc5e7f5f4f8e1cf751cd54c85098569e55efc59ed42ceb6d0",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -11350,7 +11352,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "01d5056b0bd0231fe3cd62b4db98664a902fce7f3c1bef9b4f06f171bdadc34d",
+    "assuranceInfrastructureDigest": "eb112e07dcd205db76622efc47df96a0dbbf5d30954c250e54731e18cb24c3c6",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -11468,7 +11470,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "0e3b3764801bf1d0898491c0242e16dccf5dfd5673c924a38882217e54b15072",
+    "modelDigest": "f840b80c11400a76ec6e84377a0cd67fd8bbc7d46e5a679228b5e95ba9a3f496",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -11499,7 +11501,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "6582c092eb40b18c24f7e537c54d4d591c0dc4ac1435fc5e71f876caa5854756",
+    "sourceDigest": "fd86b0cb6730b06ab0e8a1102a18e99e51a436b45e68ed791d12169243044fca",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

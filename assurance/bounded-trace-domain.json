@@ -109,7 +109,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "f8d6a6f0f1d37e46e1ef9aaa3984306e85e5f3222217c443671eb512e9980321",
+  "evidenceDigest": "24870f0ad6fe681723e32e9ce255f0cba7e6c55090f120e5f8a27676651673e2",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -170,9 +170,9 @@
     "workerErrorIsolation": true
   },
   "runtimeBoundary": {
-    "samples": 233,
+    "samples": 235,
     "counts": {
-      "runner": 86,
+      "runner": 88,
       "runnerHistory": 2,
       "read": 80,
       "readAdapter": 3,
@@ -180,7 +180,7 @@
       "budget": 24,
       "cancel": 2
     },
-    "observationDigest": "2310d8c2b04c744e72e6e5dd3558a02ae075be2cc1d303c61aa93c43932dac4d"
+    "observationDigest": "a0d45c94ffd0cdb5b26901d32202852f0dbf85819c431876e084b38612a55626"
   },
   "readHistoryBoundary": {
     "samples": 7,
@@ -194,12 +194,13 @@
     "futureCongruenceTraces": 6
   },
   "localRunnerBoundary": {
-    "samples": 23,
+    "samples": 24,
     "counts": {
       "backoffHistory": 1,
       "competingRunners": 3,
       "completionOrder": 1,
       "dynamicArrival": 1,
+      "firstFatal": 1,
       "handledAbortHistory": 1,
       "handledRecovery": 1,
       "lateClaimStop": 1,
@@ -209,7 +210,7 @@
       "undefinedHeartbeat": 3,
       "wakePoll": 1
     },
-    "observationDigest": "7a0be865716be211c0b5eea0cae27874e68c86e6df38314ee88563206d2f5ecc"
+    "observationDigest": "637720812f6617d2fedb0a649cdf98781ad563981f92dc256cb6b47bf8c2d838"
   },
   "policyBoundary": {
     "samples": 45,

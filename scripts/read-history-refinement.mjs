@@ -275,6 +275,7 @@ async function endpointRaceSample(adapter, mode) {
   const entered = deferred();
   const release = deferred();
   let armed = false;
+  let reading;
   try {
     const wrapped = {
       ...fixture.store,
@@ -300,7 +301,7 @@ async function endpointRaceSample(adapter, mode) {
     await seedWaiting(queue, 'b');
     const before = await queue.inspectMany(['a', 'b']);
     armed = true;
-    const reading = queue.inspectMany(['a', 'b']);
+    reading = queue.inspectMany(['a', 'b']);
     await within(entered.promise, 'read-history race entry');
     const bBefore = await queue.inspect('b');
     const bAfter = await queue.wake({
@@ -333,6 +334,7 @@ async function endpointRaceSample(adapter, mode) {
     };
   } finally {
     release.resolve();
+    if (reading) await Promise.allSettled([reading]);
     fixture.close();
   }
 }
