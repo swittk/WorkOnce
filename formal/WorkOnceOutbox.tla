@@ -1,6 +1,7 @@
 ---------------------------- MODULE WorkOnceOutbox ----------------------------
 EXTENDS Naturals, Sequences, FiniteSets, WorkOnceContract
 CONSTANTS AllowCrash, MaxCrashes, MaxPasses
+ASSUME MaxCrashes <= 1
 VARIABLES aQueue, bQueue, cursor, attempts, delivered, passCount, crashes
 vars == <<aQueue, bQueue, cursor, attempts, delivered, passCount, crashes>>
 
@@ -54,12 +55,10 @@ AttemptB ==
        /\ delivered' = delivered \cup {child}
   /\ UNCHANGED <<aQueue, crashes>>
 
-EmptyDispatch ==
-  /\ passCount < MaxPasses
-  /\ NextParent = "none"
-  /\ cursor' = "none"
-  /\ passCount' = passCount + 1
-  /\ UNCHANGED <<aQueue, bQueue, attempts, delivered, crashes>>
+\* This finite poison-retention lane never reaches an all-queues-drained page:
+\* a1 remains durable by construction. The production empty-page cursor reset is
+\* represented by the bounded-page wrap in WorkOnceOutboxBudget and executable
+\* outbox refinement rather than by an unreachable transition in this module.
 
 \* A fresh createWorkOnce() process loses only the in-memory cursor. Durable
 \* parent queues and delivered children are unchanged.
@@ -71,7 +70,7 @@ CrashRestart ==
   /\ crashes' = crashes + 1
   /\ UNCHANGED <<aQueue, bQueue, attempts, delivered, passCount>>
 
-OutboxDispatch == AttemptA \/ AttemptB \/ EmptyDispatch
+OutboxDispatch == AttemptA \/ AttemptB
 Next == OutboxDispatch \/ CrashRestart
 Spec == Init /\ [][Next]_vars
 

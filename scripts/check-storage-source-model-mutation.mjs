@@ -10,6 +10,23 @@ const target = path.join(root, 'src/cas.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = 'for (let conflicts = 0; conflicts < maxConflicts; conflicts++)';
 const replacement = 'for (let conflicts = 0; conflicts <= maxConflicts; conflicts++)';
+let restored = false;
+function restore() {
+  if (restored) return;
+  fs.writeFileSync(target, original);
+  restored = true;
+}
+function terminateAfterRestore(code) {
+  try {
+    restore();
+  } finally {
+    process.exit(code);
+  }
+}
+const onSigint = () => terminateAfterRestore(130);
+const onSigterm = () => terminateAfterRestore(143);
+process.once('SIGINT', onSigint);
+process.once('SIGTERM', onSigterm);
 assert.equal(original.includes(needle), true, 'storage source semantic mutation anchor is stale');
 try {
   fs.writeFileSync(target, original.replace(needle, replacement));
@@ -25,5 +42,7 @@ try {
     'Storage source/model mutation guard rejects a semantic CAS retry-bound change with unchanged storage formal semantics.',
   );
 } finally {
-  fs.writeFileSync(target, original);
+  restore();
+  process.off('SIGINT', onSigint);
+  process.off('SIGTERM', onSigterm);
 }

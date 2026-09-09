@@ -206,10 +206,15 @@ requireRejects(
   'StorageSamplesConform',
 );
 
+const duplicateSlotTarget = samples.find(
+  (sample) => sample.kind === 'detached' && sample.adapter === 'memory',
+);
+if (!duplicateSlotTarget || !Object.hasOwn(duplicateSlotTarget, 'duplicateSlotsExact'))
+  throw new Error(
+    'Storage mutation guard target missing: detached/memory sample has no duplicateSlotsExact observation.',
+  );
 const duplicateSlotMutantSamples = samples.map((sample) =>
-  sample.kind === 'detached' && sample.adapter === 'memory'
-    ? { ...sample, duplicateSlotsExact: false }
-    : sample,
+  sample === duplicateSlotTarget ? { ...sample, duplicateSlotsExact: false } : sample,
 );
 const duplicateSlotModule = resolve(
   tlcWorkspace,

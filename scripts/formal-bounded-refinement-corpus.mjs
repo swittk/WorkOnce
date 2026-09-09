@@ -68,6 +68,13 @@ function newCoverage() {
 function hit(coverage, ...keys) {
   for (const key of keys) coverage[key] += 1;
 }
+async function waitUntil(condition, label, timeoutMs = 5000) {
+  const deadline = performance.now() + timeoutMs;
+  while (!condition()) {
+    assert.ok(performance.now() < deadline, `${label} timed out`);
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+}
 function snapshotCoverage(coverage, snapshot) {
   if (!snapshot) return;
   if (snapshot.phase.state === 'queued') hit(coverage, 'queued');
@@ -885,8 +892,7 @@ async function replayAndDynamicPolicies(coverage) {
         return run.succeed();
       },
     );
-    while (started.length < 1 || claimCalls < 2)
-      await new Promise((resolve) => setTimeout(resolve, 1));
+    await waitUntil(() => started.length >= 1 && claimCalls >= 2, 'local second claim');
     await queue.cancelCurrent({ key: 'a', reason: 'revoked' });
     releaseHandler();
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -936,7 +942,7 @@ async function replayAndDynamicPolicies(coverage) {
         return run.succeed();
       },
     );
-    while (claimCalls < 2) await new Promise((resolve) => setTimeout(resolve, 1));
+    await waitUntil(() => claimCalls >= 2, 'external second claim');
     await new Promise((resolve) => setTimeout(resolve, 120));
     releaseSecondClaim();
     await assert.rejects(running, /external renewal down/);

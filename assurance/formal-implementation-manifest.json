@@ -11135,7 +11135,7 @@
         "PoisonIntentRetained"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "b1575fa18a6b4bbe897e254d7910861b04768344b090467372c3064ca357cf20",
+      "modelDigest": "9f6912dcd47851009f8c9005b5c054f245f7336861fbf8a8d9c8c705b5d46c69",
       "modelFiles": [
         "formal/WorkOnceOutbox.tla",
         "formal/WorkOnceOutbox.cfg",
@@ -11350,7 +11350,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "08c2d2e17199cc9fbdff7d4057e3b0b8802867f00243f7a4a661ce0d8f405bc6",
+    "assuranceInfrastructureDigest": "b11781d6dc00a13a3dead6e762895b2038ebf402e79f017bb04ecfa8bd101024",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -11467,7 +11467,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "b75b887ea10d788a4df56156c9c0e8f74eded6f644159b1792767daa45f52cdc",
+    "modelDigest": "0e3b3764801bf1d0898491c0242e16dccf5dfd5673c924a38882217e54b15072",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

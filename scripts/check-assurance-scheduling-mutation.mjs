@@ -82,6 +82,15 @@ try {
     /dedicated type-contract test compile/u,
   );
   expectSchedulingFailure(
+    'overcommitted two-core implementation traces',
+    (text) =>
+      text.replace(
+        'logicalCpus <= 2\n    ? Math.max(1, logicalCpus)\n    : Math.max(4,',
+        'logicalCpus <= 2\n    ? 4\n    : Math.max(4,',
+      ),
+    /Two-core CI must not overcommit implementation-trace test concurrency/u,
+  );
+  expectSchedulingFailure(
     'lost load-aware TLC worker budget',
     (text) => text.replace('process.env.WORKONCE_TLC_WORKERS = tlcWorkers;', ''),
     /load-aware TLC worker budget/u,

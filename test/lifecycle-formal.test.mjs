@@ -8,6 +8,7 @@ test('lifecycle temporal and bounded claim-scan formal gate is green', () => {
     encoding: 'utf8',
     env: process.env,
     timeout: 300000,
+    maxBuffer: 64 * 1024 * 1024,
   });
   const output = requireSuccessfulProcess(result, 'lifecycle formal child');
   assert.match(output, /proves 8 configured invariants.*WorkOnceLifecycleTemporal/u);

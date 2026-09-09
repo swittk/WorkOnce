@@ -24,6 +24,7 @@ function outputOf(result) {
 const originalStamp = fs.readFileSync(stampPath, 'utf8');
 try {
   const mutant = JSON.parse(originalStamp);
+  assert.equal(typeof mutant.sourceDigest, 'string', 'build/source binding stamp anchor is stale');
   mutant.sourceDigest = '0'.repeat(64);
   fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\n`);
   const result = bindingCheck();

@@ -50,6 +50,27 @@ mutate(
   /bare deferred await/u,
 );
 mutate(
+  'scripts/check-storage-source-model-mutation.mjs',
+  "process.once('SIGTERM', onSigterm);",
+  'void onSigterm;',
+  'source-mutating storage guard loses termination cleanup',
+  /SIGTERM/u,
+);
+mutate(
+  'scripts/formal-bounded-refinement-corpus.mjs',
+  "    await waitUntil(() => claimCalls >= 2, 'external second claim');",
+  '    while (claimCalls < 2) await new Promise((resolve) => setTimeout(resolve, 1));',
+  'unbounded formal-corpus claim wait',
+  /unbounded claim-count spin wait/u,
+);
+mutate(
+  'test/lifecycle-formal.test.mjs',
+  '    maxBuffer: 64 * 1024 * 1024,\n',
+  '',
+  'lifecycle formal wrapper loses explicit output budget',
+  /bound captured TLC output/u,
+);
+mutate(
   'test/process/lifecycle-process.test.mjs',
   "    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
   "    const exited = once(child, 'exit');",

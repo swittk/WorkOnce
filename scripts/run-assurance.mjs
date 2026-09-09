@@ -9,7 +9,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const logicalCpus = availableParallelism();
 const currentLoad = loadavg()[0];
 const availableTestCpus = Math.floor(logicalCpus - currentLoad);
-const unitTestConcurrency = String(Math.max(4, Math.min(8, logicalCpus, availableTestCpus)));
+const unitTestConcurrency = String(
+  logicalCpus <= 2
+    ? Math.max(1, logicalCpus)
+    : Math.max(4, Math.min(8, logicalCpus, availableTestCpus)),
+);
 const tlcWorkers = String(
   logicalCpus >= 16
     ? 12

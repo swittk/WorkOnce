@@ -201,6 +201,11 @@ assert.match(
 );
 assert.match(
   text,
+  /logicalCpus <= 2[\s\S]{0,80}\? Math\.max\(1, logicalCpus\)[\s\S]{0,80}: Math\.max\(4,/u,
+  'Two-core CI must not overcommit implementation-trace test concurrency beyond available CPUs.',
+);
+assert.match(
+  text,
   /process\.env\.WORKONCE_TLC_WORKERS = tlcWorkers/u,
   'Full assurance must publish its load-aware TLC worker budget to every proof child.',
 );

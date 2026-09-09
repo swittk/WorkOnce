@@ -69,6 +69,22 @@ export function assertAssuranceVerdictIntegrity() {
       `${name} contains a bare deferred await instead of a bounded refinement wait`,
     );
   }
+  const boundedCorpus = read('scripts/formal-bounded-refinement-corpus.mjs');
+  assert.doesNotMatch(
+    boundedCorpus,
+    /while\s*\([^)]*claimCalls[^)]*\)\s*(?:\{)?[\s\S]{0,180}?setTimeout/u,
+    'formal bounded refinement corpus contains an unbounded claim-count spin wait',
+  );
+  const lifecycleFormalTest = read('test/lifecycle-formal.test.mjs');
+  assert.match(
+    lifecycleFormalTest,
+    /maxBuffer:\s*64 \* 1024 \* 1024/u,
+    'lifecycle formal wrapper must bound captured TLC output explicitly',
+  );
+  const storageSourceModelMutation = read('scripts/check-storage-source-model-mutation.mjs');
+  assert.match(storageSourceModelMutation, /process\.once\('SIGINT'/u);
+  assert.match(storageSourceModelMutation, /process\.once\('SIGTERM'/u);
+
   for (const name of fs
     .readdirSync(path.join(root, 'test/process'))
     .filter((name) => name.endsWith('.mjs'))) {
