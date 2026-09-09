@@ -5,6 +5,7 @@ import { createMemoryStore } from '../dist/memory.js';
 import {
   assertTypedReadBoundarySamples,
   runTypedReadBoundarySamples,
+  typedReadAdapterEvidenceFields,
 } from './read-boundary-refinement.mjs';
 
 export const auditPhases = [
@@ -704,8 +705,8 @@ export function assertRuntimeBoundarySamples(samples) {
         assert.equal(s.errorCause, 'definition_changed', name);
       }
     } else if (s.kind === 'readAdapter') {
-      for (const [field, value] of Object.entries(s))
-        if (field !== 'kind' && field !== 'adapter') assert.equal(value, true, name);
+      for (const field of typedReadAdapterEvidenceFields)
+        assert.equal(s[field], true, `${name} missing or false: ${field}`);
     } else if (s.kind === 'backoff') {
       assert.equal(s.delay, Math.min(64, s.initial * s.factor ** s.steps), name);
     } else if (s.kind === 'budget') {

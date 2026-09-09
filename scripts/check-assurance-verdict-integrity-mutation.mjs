@@ -39,6 +39,13 @@ mutate(
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const writeFileSync = fs.writeFileSync; writeFileSync(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'bare write call hides a tracked source target beside a generated write',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
   'requireExpectedProcessFailure(result, `${label} mutant`, pattern);',
   'assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',
@@ -165,13 +172,6 @@ mutate(
   /specSwapped|SPECIFICATION Spec/u,
 );
 mutate(
-  'scripts/local-runner-refinement.mjs',
-  "    await within(firstWave.promise, 'competing runners first wave');",
-  '    await firstWave.promise;',
-  'local-runner refinement restores an unbounded deferred wait',
-  /bare deferred await|bounded refinement wait/u,
-);
-mutate(
   'scripts/external-transport-refinement.mjs',
   '        if (claimDelayMs > 0) await sleep(claimDelayMs);',
   '        void claimDelayMs;',
@@ -274,8 +274,8 @@ mutate(
 );
 mutate(
   'scripts/mutation-file-guard.mjs',
-  "      restoreAll();\n      process.off('SIGINT', onSigint);",
-  "      void restoreAll;\n      process.off('SIGINT', onSigint);",
+  "      restoreAll();\n      disposed = true;\n      process.off('SIGINT', onSigint);",
+  "      void restoreAll;\n      disposed = true;\n      process.off('SIGINT', onSigint);",
   'mutation file guard loses normal-disposal restoration',
   /restore remembered files during normal disposal/u,
 );

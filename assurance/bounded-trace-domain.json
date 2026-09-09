@@ -26,6 +26,7 @@
     "scripts/check-local-runner-implementation-mutations.mjs",
     "scripts/check-local-runner-source-model-mutation.mjs",
     "assurance/red-before/local-runner-heartbeat-cause.json",
+    "assurance/red-before/review-5150143046-first-fatal.json",
     "assurance/red-before/tlc-infrastructure-classification.json",
     "assurance/red-before/internal-mutable-property-topology.json",
     "assurance/red-before/internal-mutable-container-updates.json",
@@ -109,7 +110,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "3cfd093c76280f174f09f60e065d4dbb6e9e5151b57a4fcf27dbfb6313b31fe3",
+  "evidenceDigest": "c856f64936ce52c7aef12107cb247bc244b8f6bbe78b41f7ee1b5ca9ef37b277",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

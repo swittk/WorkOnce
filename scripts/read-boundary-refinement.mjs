@@ -124,23 +124,24 @@ export async function runTypedReadBoundarySamples() {
   ]);
 }
 
+export const typedReadAdapterEvidenceFields = [
+  'definitionFenceExact',
+  'batchOrderExact',
+  'missingReadsExact',
+  'missingHistoryNotFound',
+  'wrongKindNotFound',
+  'wrongScopeNotFound',
+  'currentIdExact',
+];
+
 export function assertTypedReadBoundarySamples(samples) {
   if (samples.length !== 3)
     throw new Error(`Expected 3 read adapter samples, got ${samples.length}`);
   const adapters = samples.map((sample) => sample.adapter).sort();
   if (JSON.stringify(adapters) !== JSON.stringify(['cas', 'memory', 'sqlite']))
     throw new Error(`Unexpected read adapter set: ${JSON.stringify(adapters)}`);
-  const requiredFields = [
-    'definitionFenceExact',
-    'batchOrderExact',
-    'missingReadsExact',
-    'missingHistoryNotFound',
-    'wrongKindNotFound',
-    'wrongScopeNotFound',
-    'currentIdExact',
-  ];
   for (const sample of samples)
-    for (const field of requiredFields)
+    for (const field of typedReadAdapterEvidenceFields)
       if (sample[field] !== true)
         throw new Error(`Typed read refinement failed: ${sample.adapter}.${field}`);
 }

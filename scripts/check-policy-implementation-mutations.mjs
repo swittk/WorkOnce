@@ -33,7 +33,7 @@ try {
     const needle =
       'const scaled = initialDelayMs === 0 ? 0 : initialDelayMs * multiplier ** retries;';
     const replacement = 'const scaled = initialDelayMs * multiplier ** retries;';
-    assert.equal(original.includes(needle), true, 'zero-delay mutation anchor is stale');
+    assert.equal(original.split(needle).length, 2, 'zero-delay mutation anchor must be unique');
     fs.writeFileSync(retryPath, original.replace(needle, replacement));
     runExpectedFailure('zero-delay overflow mutation', /zeroOverflow/u);
     restore();
@@ -42,7 +42,11 @@ try {
     const original = originals.get(kernelPath);
     const needle = `: row.attempts >= row.limits.maxAttempts\n                            ? 'attempt_budget_exhausted'\n                            : availableAt >= deadline\n                                ? 'deadline_exceeded'\n                                : 'deferral_budget_exhausted';`;
     const replacement = `: availableAt >= deadline\n                            ? 'deadline_exceeded'\n                            : row.attempts >= row.limits.maxAttempts\n                                ? 'attempt_budget_exhausted'\n                                : 'deferral_budget_exhausted';`;
-    assert.equal(original.includes(needle), true, 'stop-precedence mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'stop-precedence mutation anchor must be unique',
+    );
     fs.writeFileSync(kernelPath, original.replace(needle, replacement));
     runExpectedFailure('retry/defer stop-precedence mutation', /attempt_budget_exhausted/u);
     restore();
@@ -52,7 +56,7 @@ try {
     const needle =
       'if (row.generation !== options.generation || row.revision !== options.revision)';
     const replacement = 'if (row.generation !== options.generation)';
-    assert.equal(original.includes(needle), true, 'wake revision mutation anchor is stale');
+    assert.equal(original.split(needle).length, 2, 'wake revision mutation anchor must be unique');
     fs.writeFileSync(workPath, original.replace(needle, replacement));
     runExpectedFailure('wake revision-fence mutation', /wakeCompetition/u);
     restore();

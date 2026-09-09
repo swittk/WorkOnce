@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -88,6 +88,35 @@ test('mutation file guard restores remembered files during normal disposal', () 
     assert.equal(existsSync(created), false);
   } finally {
     guard.dispose();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('mutation file guard restores later files even when an earlier restore fails', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-partial-restore-'));
+  const blocked = join(directory, 'blocked.txt');
+  const later = join(directory, 'later.txt');
+  writeFileSync(blocked, 'blocked-original\n');
+  writeFileSync(later, 'later-original\n');
+  const guard = createMutationFileGuard();
+  try {
+    guard.writeFileSync(blocked, 'blocked-mutated\n');
+    guard.writeFileSync(later, 'later-mutated\n');
+    rmSync(blocked);
+    mkdirSync(blocked);
+    assert.throws(
+      () => guard.restoreAll(),
+      (error) =>
+        error instanceof AggregateError && /could not restore every target/u.test(error.message),
+    );
+    assert.equal(readFileSync(later, 'utf8'), 'later-original\n');
+    rmSync(blocked, { recursive: true, force: true });
+    writeFileSync(blocked, 'blocked-original\n');
+    guard.dispose();
+  } finally {
+    try {
+      guard.dispose();
+    } catch {}
     rmSync(directory, { recursive: true, force: true });
   }
 });

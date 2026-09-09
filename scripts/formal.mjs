@@ -216,11 +216,12 @@ function mutationWitnessConfig(configText) {
     }
     if (trimmed === 'CHECK_DEADLOCK FALSE' && !inserted) {
       output.push('INVARIANT MutationWitnesses');
+      output.push('INVARIANT MutationBranchesEnabled');
       inserted = true;
     }
     output.push(line);
   }
-  if (!inserted) output.push('INVARIANT MutationWitnesses');
+  if (!inserted) output.push('INVARIANT MutationWitnesses', 'INVARIANT MutationBranchesEnabled');
   return `${output.join('\n').trimEnd()}\n`;
 }
 
@@ -228,21 +229,26 @@ function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {
   const { mutants } = plan;
   const modulePath = resolve(tlcWorkspace, `${model}.tla`);
   const configPath = resolve(tlcWorkspace, `${model}.cfg`);
-  const branches = Object.entries(mutants)
+  const mutationEntries = Object.entries(mutants);
+  const branchDefinitions = mutationEntries
     .map(([invariant, action]) => {
       const rawLines = action.replace(/^\n+|\n+$/gu, '').split('\n');
       const nonEmpty = rawLines.filter((line) => line.trim().length > 0);
       const commonIndent = Math.min(...nonEmpty.map((line) => /^\s*/u.exec(line)?.[0].length ?? 0));
-      const body = rawLines.map((line) => `     ${line.slice(commonIndent)}`).join('\n');
-      return `  \\/ /\\ mutantId = "none"\n${body}\n     /\\ mutantId' = ${JSON.stringify(invariant)}`;
+      const body = rawLines.map((line) => `  ${line.slice(commonIndent)}`).join('\n');
+      return `Mutant_${invariant} ==\n  /\\ mutantId = "none"\n${body}\n  /\\ mutantId' = ${JSON.stringify(invariant)}`;
     })
+    .join('\n\n');
+  const branches = mutationEntries.map(([invariant]) => `  \\/ Mutant_${invariant}`).join('\n');
+  const enabledBranches = mutationEntries
+    .map(([invariant]) => `    /\\ ENABLED Mutant_${invariant}`)
     .join('\n');
   const witnesses = Object.keys(mutants)
     .map((invariant) => `  \\/ /\\ mutantId = ${JSON.stringify(invariant)} /\\ ~${invariant}`)
     .join('\n');
   writeFileSync(
     modulePath,
-    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
+    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\n${branchDefinitions}\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nMutationBranchesEnabled ==\n  \\/ mutantId # "none"\n  \\/ /\\ mutantId = "none"\n${enabledBranches}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
   );
   writeFileSync(configPath, mutationWitnessConfig(baseConfig));
   runModel(model, configPath, modulePath);
@@ -410,11 +416,12 @@ const externalMutants = {
 
 const policyMutants = {
   PolicyTypeOK: String.raw`  /\ pc' = "invalid"
-  /\ UNCHANGED <<phase, revision, snapRevision, fence, receiptFence, receipt,
+  /\ UNCHANGED <<phase, revision, snapRevision, fence, oldReferenceFence, receiptFence, receipt,
                  snapReceiptFence, snapReceipt, faultRevision, faultPhase,
                  faultReceiptFence, faultReceipt, submission, reply>>`,
   StalePolicyCannotPublish: String.raw`  /\ pc' = "done" /\ phase' = "running"
   /\ revision' = 1 /\ snapRevision' = 1 /\ fence' = 1
+  /\ oldReferenceFence' = 0
   /\ receiptFence' = 1 /\ receipt' = "implicit"
   /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
   /\ faultRevision' = 0 /\ faultPhase' = "none"
@@ -422,6 +429,7 @@ const policyMutants = {
   /\ submission' = "implicit" /\ reply' = "stale"`,
   PolicyFailureNoWrite: String.raw`  /\ pc' = "done" /\ phase' = "waiting"
   /\ revision' = 2 /\ snapRevision' = 1 /\ fence' = 1
+  /\ oldReferenceFence' = 0
   /\ receiptFence' = 1 /\ receipt' = "implicit"
   /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
   /\ faultRevision' = 1 /\ faultPhase' = "running"
@@ -429,6 +437,7 @@ const policyMutants = {
   /\ submission' = "none" /\ reply' = "callbackError"`,
   ReceiptIdentityControlsReplay: String.raw`  /\ pc' = "running" /\ phase' = "running"
   /\ revision' = 1 /\ snapRevision' = 0 /\ fence' = 1
+  /\ oldReferenceFence' = 0
   /\ receiptFence' = 1 /\ receipt' = "implicit"
   /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
   /\ faultRevision' = 0 /\ faultPhase' = "none"
@@ -436,6 +445,7 @@ const policyMutants = {
   /\ submission' = "explicit" /\ reply' = "replay"`,
   ReceiptFenceTracksPublishedAttempt: String.raw`  /\ pc' = "waiting" /\ phase' = "waiting"
   /\ revision' = 3 /\ snapRevision' = 1 /\ fence' = 2
+  /\ oldReferenceFence' = 0
   /\ receiptFence' = 1 /\ receipt' = "implicit"
   /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
   /\ faultRevision' = 0 /\ faultPhase' = "none"
@@ -443,6 +453,7 @@ const policyMutants = {
   /\ submission' = "none" /\ reply' = "none"`,
   SupersededReceiptRejectsOld: String.raw`  /\ pc' = "waiting" /\ phase' = "waiting"
   /\ revision' = 2 /\ snapRevision' = 1 /\ fence' = 1
+  /\ oldReferenceFence' = 0
   /\ receiptFence' = 1 /\ receipt' = "implicit"
   /\ snapReceiptFence' = 0 /\ snapReceipt' = "none"
   /\ faultRevision' = 0 /\ faultPhase' = "none"

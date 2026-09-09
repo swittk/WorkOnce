@@ -1,11 +1,11 @@
 --------------------------- MODULE WorkOncePolicy ---------------------------
 EXTENDS Naturals, FiniteSets, WorkOnceContract
 CONSTANT Samples
-VARIABLES pc, phase, revision, snapRevision, fence,
+VARIABLES pc, phase, revision, snapRevision, fence, oldReferenceFence,
           receiptFence, receipt, snapReceiptFence, snapReceipt,
           faultRevision, faultPhase, faultReceiptFence, faultReceipt,
           submission, reply
-vars == <<pc, phase, revision, snapRevision, fence,
+vars == <<pc, phase, revision, snapRevision, fence, oldReferenceFence,
           receiptFence, receipt, snapReceiptFence, snapReceipt,
           faultRevision, faultPhase, faultReceiptFence, faultReceipt,
           submission, reply>>
@@ -22,7 +22,7 @@ DeferStopReason(attemptLimit, deadlineLimit, deferralLimit) ==
 
 Init ==
   /\ pc = "running" /\ phase = "running"
-  /\ revision = 1 /\ snapRevision = 0 /\ fence = 1
+  /\ revision = 1 /\ snapRevision = 0 /\ fence = 1 /\ oldReferenceFence = 0
   /\ receiptFence = 0 /\ receipt = "none"
   /\ snapReceiptFence = 0 /\ snapReceipt = "none"
   /\ faultRevision = 0 /\ faultPhase = "none"
@@ -34,7 +34,7 @@ BeginPolicy ==
   /\ pc' = "policy"
   /\ snapRevision' = revision
   /\ snapReceiptFence' = receiptFence /\ snapReceipt' = receipt
-  /\ UNCHANGED <<phase, revision, fence, receiptFence, receipt,
+  /\ UNCHANGED <<phase, revision, fence, oldReferenceFence, receiptFence, receipt,
                  faultRevision, faultPhase, faultReceiptFence, faultReceipt,
                  submission, reply>>
 
@@ -45,20 +45,20 @@ PolicyFault ==
   /\ pc' = "done" /\ reply' = "callbackError"
   /\ faultRevision' = revision /\ faultPhase' = phase
   /\ faultReceiptFence' = receiptFence /\ faultReceipt' = receipt
-  /\ UNCHANGED <<phase, revision, snapRevision, fence,
+  /\ UNCHANGED <<phase, revision, snapRevision, fence, oldReferenceFence,
                  receiptFence, receipt, snapReceiptFence, snapReceipt, submission>>
 
 CancelDuringPolicy ==
   /\ pc = "policy" /\ phase = "running" /\ revision = snapRevision
   /\ phase' = "cancelled" /\ revision' = revision + 1
-  /\ UNCHANGED <<pc, snapRevision, fence, receiptFence, receipt,
+  /\ UNCHANGED <<pc, snapRevision, fence, oldReferenceFence, receiptFence, receipt,
                  snapReceiptFence, snapReceipt, faultRevision, faultPhase,
                  faultReceiptFence, faultReceipt, submission, reply>>
 
 ReclaimDuringPolicy ==
   /\ pc = "policy" /\ phase = "running" /\ revision = snapRevision /\ fence < 2
   /\ phase' = "running" /\ revision' = revision + 1 /\ fence' = fence + 1
-  /\ UNCHANGED <<pc, snapRevision, receiptFence, receipt,
+  /\ UNCHANGED <<pc, snapRevision, oldReferenceFence, receiptFence, receipt,
                  snapReceiptFence, snapReceipt, faultRevision, faultPhase,
                  faultReceiptFence, faultReceipt, submission, reply>>
 
@@ -67,13 +67,13 @@ CommitPolicy(s) ==
   /\ submission' = s
   /\ IF revision # snapRevision \/ phase # "running"
        THEN /\ pc' = "done" /\ reply' = "stale"
-            /\ UNCHANGED <<phase, revision, snapRevision, fence,
+            /\ UNCHANGED <<phase, revision, snapRevision, fence, oldReferenceFence,
                            receiptFence, receipt, snapReceiptFence, snapReceipt,
                            faultRevision, faultPhase, faultReceiptFence, faultReceipt>>
        ELSE /\ pc' = "waiting" /\ phase' = "waiting"
             /\ revision' = revision + 1
             /\ receiptFence' = fence /\ receipt' = s /\ reply' = "waiting"
-            /\ UNCHANGED <<snapRevision, fence, snapReceiptFence, snapReceipt,
+            /\ UNCHANGED <<snapRevision, fence, oldReferenceFence, snapReceiptFence, snapReceipt,
                            faultRevision, faultPhase, faultReceiptFence, faultReceipt>>
 
 \* A waiting row can be claimed again while retaining the previous attempt's
@@ -82,6 +82,7 @@ ClaimNext ==
   /\ pc = "waiting" /\ phase = "waiting" /\ fence < 2
   /\ pc' = "running" /\ phase' = "running"
   /\ revision' = revision + 1 /\ fence' = fence + 1
+  /\ oldReferenceFence' = receiptFence
   /\ submission' = "none" /\ reply' = "none"
   /\ UNCHANGED <<snapRevision, receiptFence, receipt,
                  snapReceiptFence, snapReceipt, faultRevision, faultPhase,
@@ -92,7 +93,7 @@ ReplayReceipt(s) ==
   /\ s \in {"implicit", "explicit"}
   /\ submission' = s
   /\ reply' = IF s = receipt THEN "replay" ELSE "conflict"
-  /\ UNCHANGED <<pc, phase, revision, snapRevision, fence,
+  /\ UNCHANGED <<pc, phase, revision, snapRevision, fence, oldReferenceFence,
                  receiptFence, receipt, snapReceiptFence, snapReceipt,
                  faultRevision, faultPhase, faultReceiptFence, faultReceipt>>
 
@@ -101,7 +102,7 @@ ReplayReceipt(s) ==
 ReplaySupersededOld ==
   /\ phase = "waiting" /\ fence = 2 /\ receiptFence = 2
   /\ reply' = "staleOld" /\ submission' = "implicit"
-  /\ UNCHANGED <<pc, phase, revision, snapRevision, fence,
+  /\ UNCHANGED <<pc, phase, revision, snapRevision, fence, oldReferenceFence,
                  receiptFence, receipt, snapReceiptFence, snapReceipt,
                  faultRevision, faultPhase, faultReceiptFence, faultReceipt>>
 
@@ -114,6 +115,7 @@ PolicyTypeOK ==
   /\ pc \in {"running", "policy", "waiting", "done"}
   /\ phase \in {"running", "waiting", "cancelled"}
   /\ revision \in 1..4 /\ snapRevision \in 0..3 /\ fence \in 1..2
+  /\ oldReferenceFence \in 0..2
   /\ receiptFence \in 0..2 /\ receipt \in {"none", "implicit", "explicit"}
   /\ snapReceiptFence \in 0..2 /\ snapReceipt \in {"none", "implicit", "explicit"}
   /\ faultRevision \in 0..4 /\ faultPhase \in {"none", "running", "waiting", "cancelled"}
@@ -141,7 +143,10 @@ ReceiptFenceTracksPublishedAttempt ==
   /\ (phase = "waiting" => receiptFence = fence)
 
 SupersededReceiptRejectsOld ==
-  reply = "staleOld" => /\ fence = 2 /\ receiptFence = 2 /\ phase = "waiting"
+  reply = "staleOld" =>
+    /\ phase = "waiting" /\ fence = 2
+    /\ oldReferenceFence \in 1..(fence - 1)
+    /\ oldReferenceFence # receiptFence
 
 PolicySampleOK(s) ==
   CASE s.kind = "retryBoundary" ->

@@ -42,12 +42,16 @@ try {
   }
   {
     const block = `if (fatal !== undefined || options.signal.aborted)\n            break;\n        for (const claim of claims) {`;
-    assert.equal(original.includes(block), true, 'post-claim stop-gate mutation anchor is stale');
+    assert.equal(
+      original.split(block).length,
+      2,
+      'post-claim stop-gate mutation anchor must be unique',
+    );
     const inner = `if ((_b = options.signal) === null || _b === void 0 ? void 0 : _b.aborted)\n        stop();`;
     assert.equal(
-      original.includes(inner),
-      true,
-      'processClaim pre-handler stop-gate anchor is stale',
+      original.split(inner).length,
+      2,
+      'processClaim pre-handler stop-gate anchor must be unique',
     );
     const mutant = original
       .replace(block, `if (false)\n            break;\n        for (const claim of claims) {`)
@@ -63,14 +67,14 @@ try {
   {
     const needle = `if (fatal === undefined)
             fatal = { error };`;
-    assert.equal(original.includes(needle), true, 'first-fatal mutation anchor is stale');
+    assert.equal(original.split(needle).length, 2, 'first-fatal mutation anchor must be unique');
     fs.writeFileSync(target, original.replace(needle, 'fatal = { error };'));
     runExpectedFailure('first fatal overwrite', 'firstFatal', /firstFatal/u);
     fs.writeFileSync(target, original);
   }
   {
     const needle = 'wakePoll === null || wakePoll === void 0 ? void 0 : wakePoll();';
-    assert.equal(original.includes(needle), true, 'wakePoll mutation anchor is stale');
+    assert.equal(original.split(needle).length, 2, 'wakePoll mutation anchor must be unique');
     fs.writeFileSync(target, original.replace(needle, 'void wakePoll;'));
     runExpectedFailure('lost active-fatal poll wakeup', 'wakePoll', /wakePoll/u);
     fs.writeFileSync(target, original);

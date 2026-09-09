@@ -180,6 +180,33 @@ const semanticEnvironmentFiles = [
   'package.json',
   'package-lock.json',
 ];
+function assertFirstFatalRedBeforeEvidence() {
+  const evidencePath = path.join(root, 'assurance/red-before/review-5150143046-first-fatal.json');
+  const record = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+  const finding = record.findings?.[0];
+  const red = finding?.redBefore;
+  if (
+    record.schemaVersion !== 1 ||
+    record.family !== 'managed-runner-first-fatal-preservation' ||
+    record.reviewId !== 5150143046 ||
+    record.findings?.length !== 1 ||
+    finding.commentId !== 3964968470 ||
+    finding.streakRelevant !== true ||
+    typeof red?.publicPath !== 'string' ||
+    !red.publicPath.includes('run({concurrency:2}') ||
+    red.firstFailure !== 'first-fatal-A' ||
+    red.secondFailure !== 'second-fatal-B' ||
+    red.returnedFailure !== 'second-fatal-B' ||
+    red.returnedFirst !== false ||
+    red.returnedSecond !== true ||
+    red.probeExitCode !== 17
+  )
+    throw new Error(
+      'First-fatal red-before evidence no longer proves the supported concurrent-run failure-order defect.',
+    );
+}
+assertFirstFatalRedBeforeEvidence();
+
 const assuranceInfrastructureFiles = [
   'scripts/check-formal-implementation-conformance.mjs',
   'test/source-semantic-hash.test.mjs',
@@ -247,6 +274,7 @@ const assuranceInfrastructureFiles = [
   'formal/WorkOnceLocalRunner.tla',
   'formal/WorkOnceLocalRunner.cfg',
   'assurance/red-before/local-runner-heartbeat-cause.json',
+  'assurance/red-before/review-5150143046-first-fatal.json',
   'assurance/red-before/tlc-infrastructure-classification.json',
   'assurance/red-before/internal-mutable-property-topology.json',
   'assurance/red-before/internal-mutable-container-updates.json',

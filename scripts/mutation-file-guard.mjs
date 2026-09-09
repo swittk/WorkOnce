@@ -10,23 +10,43 @@ export function createMutationFileGuard() {
     originals.set(file, fs.existsSync(file) ? fs.readFileSync(file) : undefined);
   };
   const restoreAll = () => {
+    const failures = [];
     for (const [file, original] of originals) {
-      if (original === undefined) fs.rmSync(file, { force: true });
-      else fs.writeFileSync(file, original);
+      try {
+        if (original === undefined) fs.rmSync(file, { force: true });
+        else fs.writeFileSync(file, original);
+      } catch (error) {
+        failures.push(new Error(`Failed to restore mutation target ${file}`, { cause: error }));
+      }
     }
+    if (failures.length)
+      throw new AggregateError(failures, 'Mutation file guard could not restore every target');
+  };
+  const reportRestoreFailure = (error) => {
+    const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
+    process.stderr.write(`${message}\n`);
   };
   const terminate = (code) => {
     if (terminating) return;
     terminating = true;
     try {
       restoreAll();
+    } catch (error) {
+      reportRestoreFailure(error);
     } finally {
       process.exit(code);
     }
   };
   const onSigint = () => terminate(130);
   const onSigterm = () => terminate(143);
-  const onExit = () => restoreAll();
+  const onExit = () => {
+    try {
+      restoreAll();
+    } catch (error) {
+      reportRestoreFailure(error);
+      process.exitCode = process.exitCode || 1;
+    }
+  };
   process.once('SIGINT', onSigint);
   process.once('SIGTERM', onSigterm);
   process.once('exit', onExit);
@@ -42,8 +62,8 @@ export function createMutationFileGuard() {
     restoreAll,
     dispose() {
       if (disposed) return;
-      disposed = true;
       restoreAll();
+      disposed = true;
       process.off('SIGINT', onSigint);
       process.off('SIGTERM', onSigterm);
       process.off('exit', onExit);

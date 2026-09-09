@@ -147,6 +147,17 @@ export function assertAssuranceVerdictIntegrity() {
     /historyLimit:[\s\S]{0,180}?historyTruncation[\s\S]{0,120}?retainedEvents/u,
     'bounded-domain history limit must come from the observed truncation sample',
   );
+  const formalSource = read('scripts/formal.mjs');
+  assert.match(
+    formalSource,
+    /enabledBranches[\s\S]{0,500}?ENABLED Mutant_/u,
+    'formal invariant mutation batches must prove every generated branch is enabled',
+  );
+  assert.match(
+    formalSource,
+    /INVARIANT MutationBranchesEnabled/u,
+    'formal mutation witness configs must check per-branch enabledness',
+  );
   const storageFormalSource = read('scripts/storage-formal.mjs');
   assert.match(
     storageFormalSource,
@@ -250,12 +261,12 @@ export function assertAssuranceVerdictIntegrity() {
       }
       if (ts.isCallExpression(node)) {
         calls.push(node);
-        if (
-          ts.isPropertyAccessExpression(node.expression) &&
-          (node.expression.name.text === 'writeFileSync' ||
-            node.expression.name.text === 'appendFileSync')
-        )
-          writes.push(node);
+        const callee = ts.isPropertyAccessExpression(node.expression)
+          ? node.expression.name.text
+          : ts.isIdentifier(node.expression)
+            ? node.expression.text
+            : undefined;
+        if (callee === 'writeFileSync' || callee === 'appendFileSync') writes.push(node);
       }
       ts.forEachChild(node, discover);
     }

@@ -56,6 +56,7 @@ const evidenceFiles = [
   'scripts/check-local-runner-implementation-mutations.mjs',
   'scripts/check-local-runner-source-model-mutation.mjs',
   'assurance/red-before/local-runner-heartbeat-cause.json',
+  'assurance/red-before/review-5150143046-first-fatal.json',
   'assurance/red-before/tlc-infrastructure-classification.json',
   'assurance/red-before/internal-mutable-property-topology.json',
   'assurance/red-before/internal-mutable-container-updates.json',

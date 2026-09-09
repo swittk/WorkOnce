@@ -11180,7 +11180,7 @@
         "StalePolicyCannotPublish",
         "SupersededReceiptRejectsOld"
       ],
-      "modelDigest": "5b31c33ea4ec59375e1ac1759ca17331f7accac4f8ecb4d5d20aa4eff3315395",
+      "modelDigest": "744c811b803756cdb38c3ae0bd123497e16010a68795ad5179400ba1c1f42a9e",
       "modelFiles": [
         "formal/WorkOncePolicy.tla",
         "formal/WorkOncePolicy.cfg"
@@ -11352,7 +11352,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "7e84ba654a0d545775f6d488d974327ba476354f0f0380cf96d5b6c6411a07b2",
+    "assuranceInfrastructureDigest": "52ece8ddd93e7b745269f6361fe3e9d6189597e6736efa429dd21bbdb07904e2",
     "assuranceInfrastructureFiles": [
       "scripts/check-formal-implementation-conformance.mjs",
       "test/source-semantic-hash.test.mjs",
@@ -11420,6 +11420,7 @@
       "formal/WorkOnceLocalRunner.tla",
       "formal/WorkOnceLocalRunner.cfg",
       "assurance/red-before/local-runner-heartbeat-cause.json",
+      "assurance/red-before/review-5150143046-first-fatal.json",
       "assurance/red-before/tlc-infrastructure-classification.json",
       "assurance/red-before/internal-mutable-property-topology.json",
       "assurance/red-before/internal-mutable-container-updates.json",
@@ -11473,7 +11474,7 @@
       "assurance/red-before/compiler-config-semantic-binding.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "f807a06cde1c99f28fbc891e350cb49cf53d3e090e0dfb642dd287f5a6a6458e",
+    "modelDigest": "517bd84d79423968616bd407f7e0687489db8cd7f23c99e24ff4b44c93c51d2a",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
