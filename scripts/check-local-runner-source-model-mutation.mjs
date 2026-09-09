@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'src/worker.ts');
@@ -18,7 +19,10 @@ try {
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.notEqual(result.status, 0, 'local-runner source/model drift mutant unexpectedly passed');
+  requireExpectedProcessFailure(
+    result,
+    'local-runner source/model drift mutant unexpectedly passed',
+  );
   assert.match(output, /Bound local managed-runner semantics changed/u);
   console.log(
     'Local-runner source/model mutation guard rejects changed worker semantics with an unchanged local-runner model.',

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/work.js');
@@ -24,7 +25,7 @@ try {
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.notEqual(result.status, 0, 'compiled read-definition mutant unexpectedly passed');
+  requireExpectedProcessFailure(result, 'compiled read-definition mutant unexpectedly passed');
   assert.match(output, /definitionFenceExact/u);
   console.log(
     'Typed-read mutation guard rejects a compiled implementation with the definition fence disabled.',

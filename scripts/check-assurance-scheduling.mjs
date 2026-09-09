@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const text = fs.readFileSync(path.join(root, 'scripts/run-assurance.mjs'), 'utf8');
 const formalText = fs.readFileSync(path.join(root, 'scripts/formal.mjs'), 'utf8');
+const lifecycleFormalText = fs.readFileSync(
+  path.join(root, 'scripts/lifecycle-formal.mjs'),
+  'utf8',
+);
+const storageFormalText = fs.readFileSync(path.join(root, 'scripts/storage-formal.mjs'), 'utf8');
 const shardModes = [...formalText.matchAll(/runShard\('(--[a-z-]+)'\)/gu)]
   .map((match) => match[1])
   .sort();
@@ -79,6 +84,34 @@ function parallelBlocks(source) {
 }
 
 const blocks = parallelBlocks(text);
+assert.match(
+  text,
+  /process\.env\.WORKONCE_TLC_WORKERS = tlcWorkers/u,
+  'Full assurance must publish its load-aware TLC worker budget to every proof child.',
+);
+for (const [name, source] of [
+  ['formal', formalText],
+  ['lifecycle-formal', lifecycleFormalText],
+  ['storage-formal', storageFormalText],
+]) {
+  assert.match(
+    source,
+    /Number\(process\.env\.WORKONCE_TLC_WORKERS\)/u,
+    `${name} must consume the bounded TLC worker budget from the assurance runner`,
+  );
+}
+
+assert.match(
+  text,
+  /'type-contract tests'[\s\S]{0,240}?'node_modules\/typescript\/bin\/tsc'[\s\S]{0,160}?'tsconfig\.tests\.json'/u,
+  'Assurance must retain the dedicated type-contract test compile when the main source compile is provided by the build.',
+);
+assert.match(
+  text,
+  /runNpm\('single build', \['run', 'build'\]\)/u,
+  'Assurance must retain the main source build/typecheck exactly once before emitted-artifact consumers.',
+);
+
 const mutatingParallel = blocks.flatMap((block) =>
   [...block.text.matchAll(/scripts\/[A-Za-z0-9._/-]*mutation[A-Za-z0-9._/-]*\.mjs/gu)].map(
     (match) => match[0],
@@ -105,6 +138,17 @@ assert.equal(
   true,
   'formal.mjs must start only after the storage-formal parallel batch has completed',
 );
+const workspaceAudit = text.indexOf("'scripts/check-tlc-workspace-isolation.mjs'");
+assert.notEqual(
+  workspaceAudit,
+  -1,
+  'Expected the TLC workspace isolation audit in full assurance.',
+);
+assert.equal(
+  workspaceAudit < storageBlocks[0].start,
+  true,
+  'TLC workspace isolation must be audited before any formal family runs',
+);
 for (const block of blocks) {
   assert.equal(
     block.text.includes('real process faults'),
@@ -113,5 +157,5 @@ for (const block of blocks) {
   );
 }
 console.log(
-  'Assurance scheduling serializes mutating guards and process-fault suites, and caps TLC overlap at the reviewed two-shard formal runner.',
+  'Assurance scheduling preserves split source/type-contract checks, serializes mutating guards/process faults and cross-family TLC, while private workspaces isolate independent proof invocations.',
 );

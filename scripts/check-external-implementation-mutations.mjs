@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutantRoot = path.join(root, '.artifacts', `external-mutant-dist-${process.pid}`);
@@ -25,7 +26,7 @@ function requireInlineRed(label, code, pattern) {
     timeout: 15_000,
   });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
+  requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
   assert.match(output, pattern, `${label} failed for an unrelated reason`);
   console.log(`External implementation mutation guard rejects ${label}.`);
 }

@@ -8,26 +8,33 @@ import {
   runLifecycleRefinementSamples,
 } from './lifecycle-refinement.mjs';
 import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
+import { acquireTlcWorkspace, cleanupTlcWorkspaceOnSuccess } from './tlc-workspace.mjs';
 
 assertBuildSourceBinding();
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar)) throw new Error('Missing official tla2tools.jar');
-mkdirSync('.artifacts/tlc', { recursive: true });
-const workers = String(Math.max(2, Math.min(8, availableParallelism())));
+const tlcWorkspace = acquireTlcWorkspace('lifecycle-formal');
+cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
+const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
+const workers = String(
+  Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
+    ? Math.min(configuredWorkers, availableParallelism())
+    : Math.max(2, Math.min(8, availableParallelism())),
+);
 const timeoutMs = 30_000;
 
 function tlcArgs(model, config, modulePath, heap = 384) {
   return [
     `-Xmx${heap}m`,
     '-XX:+UseParallelGC',
-    `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
+    `-DTLA-Library=${[resolve('formal'), tlcWorkspace].join(delimiter)}`,
     '-cp',
     jar,
     'tlc2.TLC',
     '-workers',
     workers,
     '-metadir',
-    resolve('.artifacts/tlc', model),
+    resolve(tlcWorkspace, model),
     '-config',
     config,
     modulePath,
@@ -35,7 +42,7 @@ function tlcArgs(model, config, modulePath, heap = 384) {
 }
 
 function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
-  mkdirSync(resolve('.artifacts/tlc', model), { recursive: true });
+  mkdirSync(resolve(tlcWorkspace, model), { recursive: true });
   const result = spawnSync('java', tlcArgs(model, config, modulePath, heap), {
     cwd: 'formal',
     stdio: 'inherit',
@@ -50,7 +57,7 @@ function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
 }
 
 function requireInvariantRejects(model, config, modulePath, invariant) {
-  mkdirSync(resolve('.artifacts/tlc', model), { recursive: true });
+  mkdirSync(resolve(tlcWorkspace, model), { recursive: true });
   const result = spawnSync('java', tlcArgs(model, config, modulePath, 256), {
     cwd: 'formal',
     encoding: 'utf8',
@@ -123,8 +130,8 @@ function runMutationWitnessBatch({ model, baseModule, configPath, mutants }) {
   const witnesses = Object.keys(mutants)
     .map((invariant) => `  \\/ /\\ mutantId = ${JSON.stringify(invariant)} /\\ ~${invariant}`)
     .join('\n');
-  const modulePath = resolve(`.artifacts/tlc/${model}.tla`);
-  const mutantConfig = resolve(`.artifacts/tlc/${model}.cfg`);
+  const modulePath = resolve(tlcWorkspace, `${model}.tla`);
+  const mutantConfig = resolve(tlcWorkspace, `${model}.cfg`);
   writeFileSync(
     modulePath,
     `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
@@ -222,8 +229,8 @@ runMutationWitnessBatch({
 
 const samples = await runLifecycleRefinementSamples();
 assertLifecycleRefinementSamples(samples);
-const observedModule = resolve('.artifacts/tlc/WorkOnceLifecycleObserved.tla');
-const observedConfig = resolve('.artifacts/tlc/WorkOnceLifecycleObserved.cfg');
+const observedModule = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.tla');
+const observedConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.cfg');
 writeFileSync(
   observedModule,
   `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\n====\n`,
@@ -237,8 +244,8 @@ console.log(
 );
 runModel('WorkOnceLifecycleObserved', observedConfig, observedModule, 256);
 
-const badModule = resolve('.artifacts/tlc/WorkOnceLifecycleSamplesMutant.tla');
-const badConfig = resolve('.artifacts/tlc/WorkOnceLifecycleSamplesMutant.cfg');
+const badModule = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesMutant.tla');
+const badConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesMutant.cfg');
 writeFileSync(
   badModule,
   `---- MODULE WorkOnceLifecycleSamplesMutant ----\nEXTENDS WorkOnceLifecycleObserved\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nBadLifecycleSamplesObserved == LifecycleSamplesConform(BadSamples)\n====\n`,

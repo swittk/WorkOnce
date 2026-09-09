@@ -6,11 +6,19 @@ import {
   assertStorageRefinementSamples,
   runStorageRefinementSamples,
 } from './storage-refinement.mjs';
+import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
+import { acquireTlcWorkspace, cleanupTlcWorkspaceOnSuccess } from './tlc-workspace.mjs';
 
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar)) throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar.');
-mkdirSync('.artifacts/tlc', { recursive: true });
-const workers = String(Math.max(2, Math.min(8, availableParallelism())));
+const tlcWorkspace = acquireTlcWorkspace('storage-formal');
+cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
+const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
+const workers = String(
+  Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
+    ? Math.min(configuredWorkers, availableParallelism())
+    : Math.max(2, Math.min(8, availableParallelism())),
+);
 const timeoutMs = 30_000;
 const storageSpec = readFileSync('formal/WorkOnceStorage.tla', 'utf8');
 function embeddedStorageModule(name, extra) {
@@ -20,14 +28,14 @@ function embeddedStorageModule(name, extra) {
   return `${body}\n${extra}\n====\n`;
 }
 function tlc(model, config, modulePath, capture = false) {
-  const directory = resolve('.artifacts/tlc', model);
+  const directory = resolve(tlcWorkspace, model);
   mkdirSync(directory, { recursive: true });
   const result = spawnSync(
     'java',
     [
       '-Xmx512m',
       '-XX:+UseParallelGC',
-      `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
+      `-DTLA-Library=${[resolve('formal'), tlcWorkspace].join(delimiter)}`,
       '-cp',
       jar,
       'tlc2.TLC',
@@ -41,14 +49,20 @@ function tlc(model, config, modulePath, capture = false) {
     ],
     {
       cwd: resolve('.'),
-      encoding: capture ? 'utf8' : undefined,
-      stdio: capture ? undefined : 'inherit',
+      encoding: 'utf8',
       timeout: timeoutMs,
       killSignal: 'SIGKILL',
     },
   );
-  if (result.error) throw result.error;
-  if (result.signal) throw new Error(`TLC storage model terminated by ${result.signal}`);
+  if (!capture) {
+    process.stdout.write(result.stdout ?? '');
+    process.stderr.write(result.stderr ?? '');
+    const outcome = classifyTlcOutcome(result);
+    if (outcome.kind !== 'success')
+      throw new Error(
+        `TLC storage model ${model} failed: ${outcome.reason ?? outcome.kind}\n${outcome.output.slice(-2500)}`,
+      );
+  }
   return result;
 }
 function tlaValue(value) {
@@ -63,19 +77,14 @@ function tlaValue(value) {
 }
 function requireRejects(model, config, modulePath, invariant) {
   const result = tlc(model, config, modulePath, true);
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  const rejectedForInvariant =
-    output.includes(`Invariant ${invariant} is violated`) ||
-    output.includes(`invariant of ${invariant} is equal to FALSE`);
-  if (result.status === 0 || !rejectedForInvariant)
-    throw new Error(`Storage mutation was not rejected by ${invariant}: ${output.slice(-2500)}`);
+  requireExpectedInvariantViolation(result, invariant);
   console.log(`TLC storage mutation guard: ${invariant} rejects its injected violation.`);
 }
 
 const samples = await runStorageRefinementSamples();
 assertStorageRefinementSamples(samples);
-const observedModule = resolve('.artifacts/tlc/WorkOnceStorageObserved.tla');
-const observedConfig = resolve('.artifacts/tlc/WorkOnceStorageObserved.cfg');
+const observedModule = resolve(tlcWorkspace, 'WorkOnceStorageObserved.tla');
+const observedConfig = resolve(tlcWorkspace, 'WorkOnceStorageObserved.cfg');
 writeFileSync(
   observedModule,
   embeddedStorageModule(
@@ -88,8 +97,7 @@ writeFileSync(
   `${readFileSync('formal/WorkOnceStorage.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\n`,
 );
 console.log(`TLC storage model receives ${samples.length} fresh compiled storage observations.`);
-const result = tlc('WorkOnceStorageObserved', observedConfig, observedModule);
-if (result.status !== 0) process.exit(result.status ?? 1);
+tlc('WorkOnceStorageObserved', observedConfig, observedModule);
 
 const mutants = {
   StorageTypeOK: String.raw`  /\ pc' = "invalid" /\ UNCHANGED <<nativeRevision, observedRevision, compareMisses, callerCommits, unknownCommitted, deadlineReached, deadlineExpired>>`,
@@ -141,8 +149,8 @@ const mutationBranches = mutationEntries
 const mutationWitnessCases = mutationEntries
   .map(([invariant], index) => `    [] mutantIndex = ${index + 1} -> ~${invariant}`)
   .join('\n');
-const batchModule = resolve('.artifacts/tlc/WorkOnceStorageInvariantMutationBatch.tla');
-const batchConfig = resolve('.artifacts/tlc/WorkOnceStorageInvariantMutationBatch.cfg');
+const batchModule = resolve(tlcWorkspace, 'WorkOnceStorageInvariantMutationBatch.tla');
+const batchConfig = resolve(tlcWorkspace, 'WorkOnceStorageInvariantMutationBatch.cfg');
 writeFileSync(
   batchModule,
   embeddedStorageModule(
@@ -164,10 +172,10 @@ writeFileSync(
   `SPECIFICATION BatchSpec\nCONSTANT MaxConflicts = 3\nCONSTANT Samples <- ObservedSamples\nINVARIANT MutationWitnesses\nINVARIANT MutationStepEnabled\nCHECK_DEADLOCK FALSE\n`,
 );
 const batchResult = tlc('WorkOnceStorageInvariantMutationBatch', batchConfig, batchModule, true);
-const batchOutput = `${batchResult.stdout ?? ''}\n${batchResult.stderr ?? ''}`;
-if (batchResult.status !== 0)
+const batchOutcome = classifyTlcOutcome(batchResult);
+if (batchOutcome.kind !== 'success')
   throw new Error(
-    `Storage invariant mutation witness batch failed; this is not a mutation kill. ${batchOutput.slice(-2500)}`,
+    `Storage invariant mutation witness batch failed; this is not a mutation kill: ${batchOutcome.reason ?? batchOutcome.kind}\n${batchOutcome.output.slice(-2500)}`,
   );
 process.stdout.write(batchResult.stdout ?? '');
 process.stderr.write(batchResult.stderr ?? '');
@@ -175,8 +183,8 @@ console.log(
   `TLC storage mutation witness batch proves ${mutationEntries.length} configured state invariants are non-vacuous in sequence.`,
 );
 
-const sampleModule = resolve('.artifacts/tlc/WorkOnceStorageMutant_StorageSamplesConform.tla');
-const sampleConfig = resolve('.artifacts/tlc/WorkOnceStorageMutant_StorageSamplesConform.cfg');
+const sampleModule = resolve(tlcWorkspace, 'WorkOnceStorageMutant_StorageSamplesConform.tla');
+const sampleConfig = resolve(tlcWorkspace, 'WorkOnceStorageMutant_StorageSamplesConform.cfg');
 writeFileSync(
   sampleModule,
   embeddedStorageModule(

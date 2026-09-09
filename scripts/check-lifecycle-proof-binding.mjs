@@ -29,6 +29,8 @@ const modelFiles = [
 const evidenceFiles = [
   'scripts/lifecycle-refinement.mjs',
   'scripts/lifecycle-formal.mjs',
+  'scripts/tlc-workspace.mjs',
+  'test/tlc-workspace.test.mjs',
   'scripts/check-lifecycle-proof-binding.mjs',
   'scripts/check-lifecycle-source-model-mutation.mjs',
   'scripts/check-lifecycle-implementation-mutations.mjs',

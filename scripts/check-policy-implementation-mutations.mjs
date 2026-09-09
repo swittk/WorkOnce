@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const retryPath = path.join(root, 'dist/retry-policy.js');
@@ -23,12 +24,7 @@ function runExpectedFailure(label, pattern) {
     env: process.env,
     timeout: 15_000,
   });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.equal(result.error, undefined, `${label} failed to execute: ${String(result.error)}`);
-  assert.equal(result.signal, null, `${label} terminated by ${String(result.signal)}`);
-  assert.equal(typeof result.status, 'number', `${label} did not produce an exit status`);
-  assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
-  assert.match(output, pattern, `${label} failed for an unrelated reason`);
+  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   console.log(`Policy implementation mutation guard rejects ${label}.`);
 }
 try {

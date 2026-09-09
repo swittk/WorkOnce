@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sourcePath = path.join(root, 'src/worker.ts');
@@ -17,6 +18,7 @@ function run() {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
+    timeout: 15_000,
   });
 }
 function output(result) {
@@ -36,7 +38,10 @@ try {
     `${source.slice(0, brace + 1)}\n  let internalSemanticInventoryMutant = 0;\n  internalSemanticInventoryMutant += 1;\n  const internalSemanticWeakMapMutant = new WeakMap<object, number>();\n  internalSemanticWeakMapMutant.set({}, 1);\n  const internalSemanticQueueMutant: number[] = [];\n  internalSemanticQueueMutant.push(1);\n  const internalSemanticPropertyMutant = { value: 0 };\n  internalSemanticPropertyMutant.value = 1;\n${source.slice(brace + 1)}`,
   );
   const sourceMutant = run();
-  assert.notEqual(sourceMutant.status, 0, 'new mutable runner state unexpectedly passed inventory');
+  requireExpectedProcessFailure(
+    sourceMutant,
+    'new mutable runner state unexpectedly passed inventory',
+  );
   const sourceOutput = output(sourceMutant);
   assert.match(sourceOutput, /Internal semantic inventory drifted/u);
   assert.match(sourceOutput, /mutable_let/u);
@@ -55,9 +60,8 @@ try {
     workSource.replace(classAnchor, `${classAnchor}\n  internalSemanticMutablePropertyMutant = 0;`),
   );
   const propertyMutant = run();
-  assert.notEqual(
-    propertyMutant.status,
-    0,
+  requireExpectedProcessFailure(
+    propertyMutant,
     'new mutable class property unexpectedly passed inventory',
   );
   assert.match(output(propertyMutant), /Internal semantic inventory drifted/u);
@@ -70,9 +74,8 @@ try {
   inventory.entries[0].families = [];
   fs.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
   const classificationMutant = run();
-  assert.notEqual(
-    classificationMutant.status,
-    0,
+  requireExpectedProcessFailure(
+    classificationMutant,
     'unclassified inventory cell unexpectedly passed',
   );
   assert.match(output(classificationMutant), /has no proof family/u);

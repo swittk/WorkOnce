@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const result = spawnSync(process.execPath, ['scripts/check-lifecycle-proof-binding.mjs'], {
   encoding: 'utf8',
@@ -7,7 +8,7 @@ const result = spawnSync(process.execPath, ['scripts/check-lifecycle-proof-bindi
   timeout: 15_000,
 });
 const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-assert.notEqual(result.status, 0, 'lifecycle source/model drift mutant unexpectedly passed');
+requireExpectedProcessFailure(result, 'lifecycle source/model drift mutant unexpectedly passed');
 assert.match(output, /Lifecycle source\/model binding drifted/u);
 console.log(
   'Lifecycle source/model mutation guard rejects changed claim scanning with unchanged A model.',

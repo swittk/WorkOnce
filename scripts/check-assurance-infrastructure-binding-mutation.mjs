@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'scripts/formal.mjs');
@@ -17,6 +18,7 @@ function run(script, ...args) {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
+    timeout: 15_000,
   });
 }
 function output(result) {
@@ -30,11 +32,11 @@ try {
     'scripts/check-formal-implementation-conformance.mjs',
     '--check-infrastructure-binding-only',
   );
-  assert.notEqual(manifest.status, 0, 'formal manifest accepted a changed proof runner');
+  requireExpectedProcessFailure(manifest, 'formal manifest accepted a changed proof runner');
   assert.match(output(manifest), /Assurance infrastructure digest drifted/u);
 
   const bounded = run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only');
-  assert.notEqual(bounded.status, 0, 'bounded trace report accepted a changed proof runner');
+  requireExpectedProcessFailure(bounded, 'bounded trace report accepted a changed proof runner');
   assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
 
   fs.writeFileSync(target, original);
@@ -48,17 +50,22 @@ try {
     'scripts/check-formal-implementation-conformance.mjs',
     '--check-infrastructure-binding-only',
   );
-  assert.notEqual(runnerBinding.status, 0, 'formal manifest accepted an unbound assurance runner');
+  requireExpectedProcessFailure(
+    runnerBinding,
+    'formal manifest accepted an unbound assurance runner',
+  );
   assert.match(output(runnerBinding), /Full assurance invokes unbound proof\/checker scripts/u);
 
   fs.writeFileSync(runnerTarget, runnerOriginal);
   const configMutant = configOriginal.replace('\"target\": \"ES2018\"', '\"target\": \"ES2020\"');
   assert.notEqual(configMutant, configOriginal, 'compiler target mutation anchor is missing');
   fs.writeFileSync(configTarget, configMutant);
-  const configBinding = run('scripts/check-formal-implementation-conformance.mjs', '--write');
-  assert.notEqual(
-    configBinding.status,
-    0,
+  const configBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-semantic-environment-binding-only',
+  );
+  requireExpectedProcessFailure(
+    configBinding,
     'ordinary manifest update accepted compiler-config drift',
   );
   assert.match(

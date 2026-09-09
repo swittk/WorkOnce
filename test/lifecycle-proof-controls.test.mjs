@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { requireSuccessfulProcess } from '../scripts/subprocess-outcome.mjs';
 
 function run(script) {
   const result = spawnSync(process.execPath, [script], {
@@ -8,14 +9,7 @@ function run(script) {
     env: process.env,
     timeout: 300000,
   });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.equal(
-    result.error?.code,
-    undefined,
-    `${script} failed: ${result.error?.code}\n${output.slice(-4000)}`,
-  );
-  assert.equal(result.status, 0, output.slice(-4000));
-  return output;
+  return requireSuccessfulProcess(result, `${script} child`);
 }
 
 test('lifecycle proof is source/model bound and critical compiled mutants are killed', () => {

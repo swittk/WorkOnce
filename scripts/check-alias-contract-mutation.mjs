@@ -3,18 +3,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const typeBuildInfo = path.join(root, '.artifacts/alias-mutation.tsbuildinfo');
 
 function runNode(args) {
-  return spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', env: process.env });
+  return spawnSync(process.execPath, args, {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+    timeout: 15_000,
+  });
 }
 function output(result) {
   return `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
 }
 function requireRed(label, result, pattern) {
-  assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
+  requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
   assert.match(output(result), pattern);
 }
 function mutateFile(relative, mutate, check) {
@@ -60,7 +66,11 @@ for (const [relative, anchor, replacement, label] of [
     relative,
     (text) => text.replace(anchor, replacement),
     () => {
-      const result = runNode(['--test', 'test/alias-contract.test.mjs']);
+      const result = runNode([
+        '--test',
+        '--test-name-pattern=ESM and CommonJS aliases execute the same hardened operations',
+        'test/alias-contract.test.mjs',
+      ]);
       requireRed(
         label,
         result,
@@ -88,7 +98,11 @@ for (const [relative, anchor, replacement, label] of [
     relative,
     (text) => text.replace(anchor, replacement),
     () => {
-      const result = runNode(['--test', 'test/alias-contract.test.mjs']);
+      const result = runNode([
+        '--test',
+        '--test-name-pattern=restart preserves exact ergonomic-dispatch semantics',
+        'test/alias-contract.test.mjs',
+      ]);
       requireRed(label, result, /restart preserves exact ergonomic-dispatch semantics/u);
     },
   );

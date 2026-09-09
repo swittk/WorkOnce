@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireSuccessfulProcess } from './subprocess-outcome.mjs';
 import { createRequire } from 'node:module';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -200,6 +201,16 @@ const assuranceInfrastructureFiles = [
   'assurance/red-before/process-fault-test-concurrency.json',
   'assurance/red-before/unbound-assurance-runner.json',
   'scripts/tlc-outcome.mjs',
+  'scripts/subprocess-outcome.mjs',
+  'test/subprocess-outcome.test.mjs',
+  'scripts/check-assurance-verdict-integrity.mjs',
+  'scripts/check-assurance-verdict-integrity-mutation.mjs',
+  'assurance/red-before/review-5148224210-assurance-verdict-integrity.json',
+  'scripts/tlc-workspace.mjs',
+  'test/tlc-workspace.test.mjs',
+  'scripts/check-tlc-workspace-isolation.mjs',
+  'scripts/check-tlc-workspace-isolation-mutation.mjs',
+  'assurance/red-before/tlc-cross-invocation-workspace-collision.json',
   'scripts/check-tlc-outcome-classification.mjs',
   'scripts/check-formal-config-coverage-mutation.mjs',
   'scripts/internal-semantic-surface.mjs',
@@ -850,10 +861,9 @@ function surface() {
     cwd: root,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
+    timeout: 30_000,
   });
-  if (result.error) throw result.error;
-  if (result.status !== 0)
-    throw new Error(result.stderr || `surface extractor exited ${result.status}`);
+  requireSuccessfulProcess(result, 'formal implementation surface extractor');
   return JSON.parse(result.stdout);
 }
 function readConfiguredChecksFromText(cfg) {
@@ -1538,6 +1548,27 @@ function assertSourceModelPairing(previousBinding, currentBinding, message) {
     !acknowledgePairing
   )
     throw new Error(message);
+}
+
+if (process.argv.includes('--check-semantic-environment-binding-only')) {
+  if (!fs.existsSync(manifestPath))
+    throw new Error(
+      'Missing assurance/formal-implementation-manifest.json. Run npm run assurance:update and review it.',
+    );
+  const previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const previousFiles = previous.stateMachineBinding?.semanticEnvironmentFiles ?? [];
+  const previousDigest = previous.stateMachineBinding?.semanticEnvironmentDigest;
+  const currentDigest = contentDigest(semanticEnvironmentFiles);
+  if (
+    (previousDigest !== currentDigest ||
+      canonicalText(previousFiles) !== canonicalText(semanticEnvironmentFiles)) &&
+    !acknowledgePairing
+  )
+    throw new Error(
+      'Bound compiler/toolchain semantics changed without explicit source/model review. Use assurance:update:ack only after reviewing why the formal abstraction deliberately remains unchanged.',
+    );
+  console.log('Semantic compiler/toolchain binding matches the reviewed manifest.');
+  process.exit(0);
 }
 
 if (process.argv.includes('--check-infrastructure-binding-only')) {

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'scripts/run-assurance.mjs');
@@ -19,7 +20,7 @@ function expectSchedulingFailure(label, mutate, pattern) {
       timeout: 15_000,
     });
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    assert.notEqual(result.status, 0, `${label} scheduling mutant unexpectedly passed`);
+    requireExpectedProcessFailure(result, `${label} scheduling mutant unexpectedly passed`);
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
@@ -36,7 +37,7 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
       timeout: 15_000,
     });
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    assert.notEqual(result.status, 0, `${label} scheduling mutant unexpectedly passed`);
+    requireExpectedProcessFailure(result, `${label} scheduling mutant unexpectedly passed`);
     assert.match(output, pattern, `${label} scheduling mutant failed for an unrelated reason`);
     console.log(`Assurance scheduling mutation guard rejects ${label}.`);
   } finally {
@@ -45,6 +46,25 @@ function expectFormalSchedulingFailure(label, mutate, pattern) {
 }
 
 try {
+  expectSchedulingFailure(
+    'lost dedicated type-contract compile',
+    (text) => text.replace("'tsconfig.tests.json'", "'tsconfig.json'"),
+    /dedicated type-contract test compile/u,
+  );
+  expectSchedulingFailure(
+    'lost load-aware TLC worker budget',
+    (text) => text.replace('process.env.WORKONCE_TLC_WORKERS = tlcWorkers;', ''),
+    /load-aware TLC worker budget/u,
+  );
+  expectSchedulingFailure(
+    'lost TLC workspace isolation preflight',
+    (text) =>
+      text.replace(
+        "'scripts/check-tlc-workspace-isolation.mjs'",
+        "'scripts/check-assurance-verdict-integrity.mjs'",
+      ),
+    /TLC workspace isolation audit/u,
+  );
   expectSchedulingFailure(
     'cross-family TLC concurrency',
     (text) =>

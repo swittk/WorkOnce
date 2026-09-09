@@ -5,6 +5,11 @@ import { delimiter, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertBuildSourceBinding } from './build-source-binding.mjs';
 import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
+import {
+  acquireTlcWorkspace,
+  cleanupTlcWorkspaceOnSuccess,
+  createTlcWorkspace,
+} from './tlc-workspace.mjs';
 
 assertBuildSourceBinding();
 if (process.argv.includes('--binding-check-only')) {
@@ -15,11 +20,17 @@ if (process.argv.includes('--binding-check-only')) {
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
   throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar. See docs/assurance.md.');
-mkdirSync('.artifacts/tlc', { recursive: true });
 const shardMode = ['--runtime-only', '--non-runtime-only', '--external-only'].some((flag) =>
   process.argv.includes(flag),
 );
-const workers = String(Math.max(2, Math.min(shardMode ? 8 : 16, availableParallelism())));
+const tlcWorkspace = acquireTlcWorkspace(shardMode ? 'formal-shard' : 'formal-parent');
+cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
+const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
+const workers = String(
+  Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
+    ? Math.min(configuredWorkers, availableParallelism())
+    : Math.max(2, Math.min(8, availableParallelism())),
+);
 const timeoutMs = 30_000;
 
 function tlcArgs(model, config, modulePath, options = {}) {
@@ -28,14 +39,14 @@ function tlcArgs(model, config, modulePath, options = {}) {
   return [
     `-Xmx${heapMb}m`,
     '-XX:+UseParallelGC',
-    `-DTLA-Library=${[resolve('formal'), resolve('.artifacts/tlc')].join(delimiter)}`,
+    `-DTLA-Library=${[resolve('formal'), tlcWorkspace].join(delimiter)}`,
     '-cp',
     jar,
     'tlc2.TLC',
     '-workers',
     workerCount,
     '-metadir',
-    resolve('.artifacts/tlc', model),
+    resolve(tlcWorkspace, model),
     '-config',
     config,
     modulePath,
@@ -43,7 +54,7 @@ function tlcArgs(model, config, modulePath, options = {}) {
 }
 
 function runModel(model, config, modulePath = `${model}.tla`) {
-  const directory = resolve('.artifacts/tlc', model);
+  const directory = resolve(tlcWorkspace, model);
   mkdirSync(directory, { recursive: true });
   const result = spawnSync('java', tlcArgs(model, config, modulePath), {
     cwd: 'formal',
@@ -65,7 +76,7 @@ function runModel(model, config, modulePath = `${model}.tla`) {
 }
 
 function requireInvariantRejects(model, config, modulePath, invariant) {
-  const directory = resolve('.artifacts/tlc', model);
+  const directory = resolve(tlcWorkspace, model);
   mkdirSync(directory, { recursive: true });
   const result = spawnSync(
     'java',
@@ -212,8 +223,8 @@ function mutationWitnessConfig(configText) {
 
 function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {
   const { mutants } = plan;
-  const modulePath = resolve(`.artifacts/tlc/${model}.tla`);
-  const configPath = resolve(`.artifacts/tlc/${model}.cfg`);
+  const modulePath = resolve(tlcWorkspace, `${model}.tla`);
+  const configPath = resolve(tlcWorkspace, `${model}.cfg`);
   const branches = Object.entries(mutants)
     .map(([invariant, action]) => {
       const rawLines = action.replace(/^\n+|\n+$/gu, '').split('\n');
@@ -483,9 +494,10 @@ if (!runtimeOnly && !nonRuntimeOnly) {
   const script = fileURLToPath(import.meta.url);
   const runShard = (mode) =>
     new Promise((resolveShard, rejectShard) => {
+      const shardWorkspace = createTlcWorkspace(`formal-${mode.slice(2)}`);
       const child = spawn(process.execPath, [script, mode], {
         cwd: process.cwd(),
-        env: process.env,
+        env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: shardWorkspace },
         stdio: 'inherit',
       });
       child.once('error', rejectShard);
@@ -535,8 +547,8 @@ if (runtimeOnly) {
   // in one separate, small control-state graph. The durable graph is not cross-product inflated.
   const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');
   const samples = await runRuntimeBoundarySamples();
-  const config = resolve('.artifacts/tlc/WorkOnceRuntime-observed.cfg');
-  const observedModule = resolve('.artifacts/tlc/WorkOnceRuntimeObserved.tla');
+  const config = resolve(tlcWorkspace, 'WorkOnceRuntime-observed.cfg');
+  const observedModule = resolve(tlcWorkspace, 'WorkOnceRuntimeObserved.tla');
   writeFileSync(
     observedModule,
     `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\n====\n`,
@@ -558,8 +570,8 @@ if (runtimeOnly) {
     plan: runtimeMutationPlan,
   });
 
-  const sampleMutant = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.tla');
-  const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeSamplesMutant.cfg');
+  const sampleMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeSamplesMutant.tla');
+  const sampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeSamplesMutant.cfg');
   writeFileSync(
     sampleMutant,
     String.raw`---- MODULE WorkOnceRuntimeSamplesMutant ----
@@ -584,8 +596,8 @@ MutantSpec == Init /\ [][Next]_vars
   );
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
 
-  const readFenceMutant = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.tla');
-  const readFenceMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeReadFenceMutant.cfg');
+  const readFenceMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.tla');
+  const readFenceMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.cfg');
   writeFileSync(
     readFenceMutant,
     String.raw`---- MODULE WorkOnceRuntimeReadFenceMutant ----
@@ -612,8 +624,8 @@ MutantSpec == Init /\ [][Next]_vars
   );
 
   // Keep the realistic late-admission mutant in addition to the one-step activity check above.
-  const admissionMutant = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.tla');
-  const admissionMutantConfig = resolve('.artifacts/tlc/WorkOnceRuntimeAdmissionMutant.cfg');
+  const admissionMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeAdmissionMutant.tla');
+  const admissionMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeAdmissionMutant.cfg');
   writeFileSync(
     admissionMutant,
     String.raw`---- MODULE WorkOnceRuntimeAdmissionMutant ----
@@ -643,8 +655,8 @@ MutantSpec == Init /\ [][MutantNext]_vars
   );
   const readHistorySamples = await runReadHistorySamples();
   assertReadHistorySamples(readHistorySamples);
-  const readHistoryObserved = resolve('.artifacts/tlc/WorkOnceReadHistoryObserved.tla');
-  const readHistoryConfig = resolve('.artifacts/tlc/WorkOnceReadHistory-observed.cfg');
+  const readHistoryObserved = resolve(tlcWorkspace, 'WorkOnceReadHistoryObserved.tla');
+  const readHistoryConfig = resolve(tlcWorkspace, 'WorkOnceReadHistory-observed.cfg');
   writeFileSync(
     readHistoryObserved,
     `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
@@ -669,9 +681,10 @@ MutantSpec == Init /\ [][MutantNext]_vars
     plan: readHistoryMutationPlan,
   });
 
-  const readHistorySampleMutant = resolve('.artifacts/tlc/WorkOnceReadHistorySamplesMutant.tla');
+  const readHistorySampleMutant = resolve(tlcWorkspace, 'WorkOnceReadHistorySamplesMutant.tla');
   const readHistorySampleMutantConfig = resolve(
-    '.artifacts/tlc/WorkOnceReadHistorySamplesMutant.cfg',
+    tlcWorkspace,
+    'WorkOnceReadHistorySamplesMutant.cfg',
   );
   writeFileSync(
     readHistorySampleMutant,
@@ -701,8 +714,8 @@ MutantSpec == Init /\ [][Next]_vars
   );
   const localRunnerSamples = await runLocalRunnerRefinementSamples();
   assertLocalRunnerRefinementSamples(localRunnerSamples);
-  const localRunnerObserved = resolve('.artifacts/tlc/WorkOnceLocalRunnerObserved.tla');
-  const localRunnerConfig = resolve('.artifacts/tlc/WorkOnceLocalRunner-observed.cfg');
+  const localRunnerObserved = resolve(tlcWorkspace, 'WorkOnceLocalRunnerObserved.tla');
+  const localRunnerConfig = resolve(tlcWorkspace, 'WorkOnceLocalRunner-observed.cfg');
   writeFileSync(
     localRunnerObserved,
     `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
@@ -727,9 +740,10 @@ MutantSpec == Init /\ [][Next]_vars
     plan: localRunnerMutationPlan,
   });
 
-  const localRunnerSampleMutant = resolve('.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.tla');
+  const localRunnerSampleMutant = resolve(tlcWorkspace, 'WorkOnceLocalRunnerSamplesMutant.tla');
   const localRunnerSampleMutantConfig = resolve(
-    '.artifacts/tlc/WorkOnceLocalRunnerSamplesMutant.cfg',
+    tlcWorkspace,
+    'WorkOnceLocalRunnerSamplesMutant.cfg',
   );
   writeFileSync(
     localRunnerSampleMutant,
@@ -761,8 +775,8 @@ if (nonRuntimeOnly) {
   );
   const policySamples = await runPolicyRefinementSamples();
   assertPolicyRefinementSamples(policySamples);
-  const policyObserved = resolve('.artifacts/tlc/WorkOncePolicyObserved.tla');
-  const policyConfig = resolve('.artifacts/tlc/WorkOncePolicy-observed.cfg');
+  const policyObserved = resolve(tlcWorkspace, 'WorkOncePolicyObserved.tla');
+  const policyConfig = resolve(tlcWorkspace, 'WorkOncePolicy-observed.cfg');
   writeFileSync(
     policyObserved,
     `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
@@ -787,8 +801,8 @@ if (nonRuntimeOnly) {
     plan: policyMutationPlan,
   });
 
-  const policySampleMutant = resolve('.artifacts/tlc/WorkOncePolicySamplesMutant.tla');
-  const policySampleMutantConfig = resolve('.artifacts/tlc/WorkOncePolicySamplesMutant.cfg');
+  const policySampleMutant = resolve(tlcWorkspace, 'WorkOncePolicySamplesMutant.tla');
+  const policySampleMutantConfig = resolve(tlcWorkspace, 'WorkOncePolicySamplesMutant.cfg');
   writeFileSync(
     policySampleMutant,
     String.raw`---- MODULE WorkOncePolicySamplesMutant ----
@@ -821,8 +835,8 @@ if (nonRuntimeOnly) {
   runModel('WorkOnceOutboxBudget', 'WorkOnceOutboxBudget.cfg');
   const outboxSamples = await runOutboxRefinementSamples();
   assertOutboxRefinementSamples(outboxSamples);
-  const outboxObserved = resolve('.artifacts/tlc/WorkOnceOutboxObserved.tla');
-  const outboxConfig = resolve('.artifacts/tlc/WorkOnceOutbox-observed.cfg');
+  const outboxObserved = resolve(tlcWorkspace, 'WorkOnceOutboxObserved.tla');
+  const outboxConfig = resolve(tlcWorkspace, 'WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
     `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConform ==\n  /\\ Samples # {}\n  /\\ {s.kind : s \\in Samples} = {"rotation", "poison", "restart", "ackLoss", "casAckLoss", "adapter", "adapterBudget", "adapterFaults", "adapterConcurrent", "budget", "grid", "multiPoison", "dynamic", "finiteArrivals", "concurrent", "limitBoundary", "staleParent", "rotationFailure", "multiError", "runDispatcher", "historyCongruence", "historySplit"}\n  /\\ \\A s \\in Samples : OutboxSampleOK(s)\n====\n`,
@@ -836,8 +850,8 @@ if (nonRuntimeOnly) {
   );
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
 
-  const sampleMutant = resolve('.artifacts/tlc/WorkOnceOutboxSamplesMutant.tla');
-  const sampleMutantConfig = resolve('.artifacts/tlc/WorkOnceOutboxSamplesMutant.cfg');
+  const sampleMutant = resolve(tlcWorkspace, 'WorkOnceOutboxSamplesMutant.tla');
+  const sampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceOutboxSamplesMutant.cfg');
   writeFileSync(
     sampleMutant,
     String.raw`---- MODULE WorkOnceOutboxSamplesMutant ----
@@ -895,8 +909,8 @@ BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
     },
   ];
   for (const mutant of semanticMutants) {
-    const modulePath = resolve(`.artifacts/tlc/${mutant.name}.tla`);
-    const configPath = resolve(`.artifacts/tlc/${mutant.name}.cfg`);
+    const modulePath = resolve(tlcWorkspace, `${mutant.name}.tla`);
+    const configPath = resolve(tlcWorkspace, `${mutant.name}.cfg`);
     writeFileSync(
       modulePath,
       `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceOutbox\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
@@ -916,8 +930,8 @@ if (runtimeOnly) {
   );
   const externalSamples = await runExternalTransportSamples();
   assertExternalTransportSamples(externalSamples);
-  const externalObserved = resolve('.artifacts/tlc/WorkOnceExternalObserved.tla');
-  const externalConfig = resolve('.artifacts/tlc/WorkOnceExternal-observed.cfg');
+  const externalObserved = resolve(tlcWorkspace, 'WorkOnceExternalObserved.tla');
+  const externalConfig = resolve(tlcWorkspace, 'WorkOnceExternal-observed.cfg');
   writeFileSync(
     externalObserved,
     `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
@@ -942,8 +956,8 @@ if (runtimeOnly) {
     plan: externalMutationPlan,
   });
 
-  const externalSampleMutant = resolve('.artifacts/tlc/WorkOnceExternalSamplesMutant.tla');
-  const externalSampleMutantConfig = resolve('.artifacts/tlc/WorkOnceExternalSamplesMutant.cfg');
+  const externalSampleMutant = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.tla');
+  const externalSampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.cfg');
   writeFileSync(
     externalSampleMutant,
     String.raw`---- MODULE WorkOnceExternalSamplesMutant ----
@@ -967,8 +981,8 @@ MutantSpec == Init /\ [][Next]_vars
     'ExternalSamplesConform',
   );
 
-  const duplicateBoundaryModule = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.tla');
-  const duplicateBoundaryConfig = resolve('.artifacts/tlc/WorkOnceExternalDuplicateBoundary.cfg');
+  const duplicateBoundaryModule = resolve(tlcWorkspace, 'WorkOnceExternalDuplicateBoundary.tla');
+  const duplicateBoundaryConfig = resolve(tlcWorkspace, 'WorkOnceExternalDuplicateBoundary.cfg');
   writeFileSync(
     duplicateBoundaryModule,
     String.raw`---- MODULE WorkOnceExternalDuplicateBoundary ----

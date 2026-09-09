@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/worker.js');
@@ -22,12 +23,7 @@ function runExpectedFailure(label, witness, pattern) {
       timeout: 10_000,
     },
   );
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.equal(result.error, undefined, `${label} failed to execute: ${String(result.error)}`);
-  assert.equal(result.signal, null, `${label} terminated by ${String(result.signal)}`);
-  assert.equal(typeof result.status, 'number', `${label} did not produce an exit status`);
-  assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
-  assert.match(output, pattern, `${label} failed for an unrelated reason`);
+  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   console.log(`Local-runner implementation mutation guard rejects ${label}.`);
 }
 try {

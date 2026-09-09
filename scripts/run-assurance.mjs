@@ -1,9 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import { availableParallelism, loadavg } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const logicalCpus = availableParallelism();
+const currentLoad = loadavg()[0];
+const availableTestCpus = Math.floor(logicalCpus - currentLoad);
+const unitTestConcurrency = String(Math.max(4, Math.min(logicalCpus, availableTestCpus)));
+const tlcWorkers = String(
+  Math.max(2, Math.min(8, Math.floor(Math.max(4, logicalCpus - currentLoad) / 2))),
+);
+process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
 function run(label, command, args) {
   const started = performance.now();
   const result = spawnSync(command, args, {
@@ -12,8 +22,7 @@ function run(label, command, args) {
     stdio: 'inherit',
     shell: false,
   });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  requireSuccessfulProcess(result, label);
   console.log(`[assurance] ${label}: ${Math.round(performance.now() - started)} ms`);
 }
 function runNpm(label, args) {
@@ -87,7 +96,11 @@ const processTests = fs
   .map((name) => `test/process/${name}`);
 await runParallel([
   npmParallelEntry('format', ['run', 'format:check']),
-  npmParallelEntry('type surface', ['run', 'check']),
+  [
+    'type-contract tests',
+    process.execPath,
+    ['node_modules/typescript/bin/tsc', '--noEmit', '-p', 'tsconfig.tests.json'],
+  ],
 ]);
 runNpm('single build', ['run', 'build']);
 await runParallel([
@@ -105,6 +118,16 @@ await runParallel([
     'emitted-artifact entrypoint audit',
     process.execPath,
     ['scripts/check-emitted-artifact-entrypoints.mjs'],
+  ],
+  [
+    'assurance verdict integrity audit',
+    process.execPath,
+    ['scripts/check-assurance-verdict-integrity.mjs'],
+  ],
+  [
+    'TLC workspace isolation audit',
+    process.execPath,
+    ['scripts/check-tlc-workspace-isolation.mjs'],
   ],
 ]);
 run('internal semantic topology mutation guard', process.execPath, [
@@ -124,6 +147,12 @@ run('alias runtime/type mutation guard', process.execPath, [
 ]);
 run('compiler source-path portability mutation guard', process.execPath, [
   'scripts/check-source-path-portability-mutation.mjs',
+]);
+run('assurance verdict integrity mutation guard', process.execPath, [
+  'scripts/check-assurance-verdict-integrity-mutation.mjs',
+]);
+run('TLC workspace isolation mutation guard', process.execPath, [
+  'scripts/check-tlc-workspace-isolation-mutation.mjs',
 ]);
 await runParallel([
   npmParallelEntry('ES2018 Web Worker', ['run', 'check:web']),
@@ -145,7 +174,12 @@ await runParallel([
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
 ]);
 run('real process faults', process.execPath, ['--test', ...processTests]);
-run('implementation traces', process.execPath, ['--test', ...unitTests]);
+run('implementation traces', process.execPath, [
+  '--test',
+  '--test-concurrency',
+  unitTestConcurrency,
+  ...unitTests,
+]);
 run('typed-read definition-fence mutation guard', process.execPath, [
   'scripts/check-read-boundary-mutation.mjs',
 ]);

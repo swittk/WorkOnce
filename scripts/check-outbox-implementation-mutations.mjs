@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/work.js');
@@ -19,7 +20,7 @@ try {
     timeout: 15_000,
   });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  assert.notEqual(result.status, 0, 'compiled outbox cursor mutant unexpectedly passed');
+  requireExpectedProcessFailure(result, 'compiled outbox cursor mutant unexpectedly passed');
   assert.match(output, /cursor must advance to the next parent on the second pass/u);
   console.log('Outbox implementation mutation guard rejects a lost cursor advancement.');
 } finally {

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function requireRed(relative, label, mutate, args, pattern) {
@@ -19,7 +20,7 @@ function requireRed(relative, label, mutate, args, pattern) {
       timeout: 20_000,
     });
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);
+    requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
     assert.match(output, pattern, `${label} failed for an unrelated reason`);
   } finally {
     fs.writeFileSync(target, original);

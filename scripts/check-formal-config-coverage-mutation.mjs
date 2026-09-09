@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const baseConfigPath = path.join(root, 'formal/WorkOnce.cfg');
@@ -14,6 +15,7 @@ function runCoveragePlan() {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
+    timeout: 15_000,
   });
 }
 function output(result) {
@@ -22,12 +24,12 @@ ${result.stderr ?? ''}`;
 }
 
 const baseline = runCoveragePlan();
-assert.equal(baseline.status, 0, output(baseline));
+requireSuccessfulProcess(baseline, 'baseline formal mutation coverage plan');
 
 try {
   fs.writeFileSync(extraConfigPath, baseConfig);
   const result = runCoveragePlan();
-  assert.notEqual(result.status, 0, 'unregistered formal config unexpectedly passed');
+  requireExpectedProcessFailure(result, 'unregistered formal config unexpectedly passed');
   assert.match(output(result), /Formal config mutation coverage inventory drifted/u);
   assert.match(output(result), /WorkOnceUnregisteredMutation\.cfg/u);
 } finally {
@@ -42,7 +44,7 @@ try {
   assert.notEqual(mutant, baseConfig, 'WorkOnce.cfg mutation anchor is missing');
   fs.writeFileSync(baseConfigPath, mutant);
   const result = runCoveragePlan();
-  assert.notEqual(result.status, 0, 'uncovered configured invariant unexpectedly passed');
+  requireExpectedProcessFailure(result, 'uncovered configured invariant unexpectedly passed');
   assert.match(output(result), /Formal mutation coverage drifted for formal\/WorkOnce\.cfg/u);
   assert.match(output(result), /UncoveredInvariant/u);
 } finally {

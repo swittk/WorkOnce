@@ -1,0 +1,16 @@
+{
+  "kind": "assurance_infrastructure_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "b9b7304de686e08e92e49a28562a086bcf1bb0fc",
+  "defect": "Independent WorkOnce formal invocations reuse the same .artifacts/tlc generated-module names and metadirs, so one invocation can truncate or replace a module while another TLC process parses it.",
+  "reproduction": {
+    "fullAssuranceExit": 1,
+    "classification": "tool_exception",
+    "expectedWitness": "ExternalSamplesConform",
+    "failedGeneratedModule": "WorkOnceExternalSamplesMutant",
+    "diagnostic": "TLC/SANY threw java.lang.NullPointerException while parsing the generated external sample mutant; the same global mutant path was subsequently rewritten by another active scripts/formal.mjs invocation in the same worktree.",
+    "wallSeconds": 63.68
+  },
+  "requiredFix": "Every lifecycle/storage/formal invocation must allocate a private generated-module/metadir workspace; formal runtime and non-runtime child shards must each receive distinct workspace paths. The normal assurance gate must bind and mutation-test that isolation."
+}
