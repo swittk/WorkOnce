@@ -54,6 +54,32 @@ export function assertAssuranceVerdictIntegrity() {
       );
   }
 
+  for (const name of fs
+    .readdirSync(path.join(root, 'scripts'))
+    .filter((name) => name.endsWith('refinement.mjs'))) {
+    const source = read(`scripts/${name}`);
+    assert.doesNotMatch(
+      source,
+      /\b(?:materiallyDifferentHistory|noFatalEscape|expectedEndpoint|perIdContractPreserved|drained)\s*:\s*true\b/u,
+      `${name} fabricates a proof-result boolean instead of deriving it from observations`,
+    );
+    assert.doesNotMatch(
+      source,
+      /await\s+[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)?\.promise\s*;/u,
+      `${name} contains a bare deferred await instead of a bounded refinement wait`,
+    );
+  }
+  for (const name of fs
+    .readdirSync(path.join(root, 'test/process'))
+    .filter((name) => name.endsWith('.mjs'))) {
+    const source = read(`test/process/${name}`);
+    assert.doesNotMatch(
+      source,
+      /once\([^,]+,\s*['"]exit['"]\s*\)/u,
+      `${name} contains an unbounded child exit wait`,
+    );
+  }
+
   const liveTlcProbe = read('scripts/check-tlc-outcome-classification.mjs');
   assert.match(
     liveTlcProbe,

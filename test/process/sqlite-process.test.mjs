@@ -107,9 +107,14 @@ test('SIGKILL after durable claim, restart and late callback preserve fencing', 
     child = start(path, 'crash', 'A');
     const { claim } = await message(child);
     assert.ok(claim);
-    const exited = once(child, 'exit');
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error(
+        `SQLite child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+      );
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
     child.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
     await sleep(3100);
     store = createSqliteStore(path);
     q = createWorkOnce({ store, scope: 'process-test' }).define('work', {

@@ -56,9 +56,14 @@ async function killAtStage(path, mode, parentId, expectedStage) {
     const stage = message(child);
     child.send('go');
     assert.equal((await stage).stage, expectedStage);
-    const exited = once(child, 'exit');
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error(
+        `Outbox child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+      );
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
     child.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
   } finally {
     if (!child.killed) child.kill('SIGKILL');
   }
@@ -72,9 +77,14 @@ test('SIGKILL before outbox dispatch leaves all durable intent unchanged', async
     const parentId = await setup(path, ['c1', 'c2']);
     childProcess = start(path, 'after-child', parentId);
     assert.equal((await message(childProcess)).ready, true);
-    const exited = once(childProcess, 'exit');
+    if (childProcess.exitCode !== null || childProcess.signalCode !== null)
+      throw new Error(
+        `Outbox child exited before SIGKILL: code=${String(childProcess.exitCode)} signal=${String(childProcess.signalCode)}`,
+      );
+    const exited = once(childProcess, 'exit', { signal: AbortSignal.timeout(15000) });
     childProcess.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
     const store = createSqliteStore(path);
     try {
       const work = createWorkOnce({ store, scope: 'outbox-process' });

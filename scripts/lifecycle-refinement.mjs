@@ -21,6 +21,18 @@ function deferred() {
   });
   return { promise, resolve };
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 
 function adapterFixture(kind) {
   let now = 100;
@@ -308,7 +320,7 @@ async function resetCheckRaceSample(resetKind) {
         entered.resolve();
         assert.equal(snapshot.generation, 1);
         assert.equal(snapshot.phase.state, resetKind === 'retry' ? 'failed' : 'succeeded');
-        await release.promise;
+        await within(release.promise, 'reset-check callback release');
         return true;
       },
     });

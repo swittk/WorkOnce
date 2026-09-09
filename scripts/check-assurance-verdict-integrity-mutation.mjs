@@ -43,6 +43,27 @@ mutate(
   /must (?:import|use) spawnSync/u,
 );
 mutate(
+  'scripts/local-runner-refinement.mjs',
+  "    await within(firstWave.promise, 'competing runners first wave');",
+  '    await firstWave.promise;',
+  'bare deferred refinement wait',
+  /bare deferred await/u,
+);
+mutate(
+  'test/process/lifecycle-process.test.mjs',
+  "    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
+  "    const exited = once(child, 'exit');",
+  'unbounded child exit wait family',
+  /unbounded child exit wait/u,
+);
+mutate(
+  'scripts/external-transport-refinement.mjs',
+  '    noFatalEscape: managed !== undefined && !managed.rejected,',
+  '    noFatalEscape: true,',
+  'fabricated external no-fatal-escape witness',
+  /fabricates a proof-result boolean/u,
+);
+mutate(
   'scripts/storage-refinement.mjs',
   '    oneAccepted,\n    maxSafeAccepted,',
   '    oneAccepted: true,\n    maxSafeAccepted: true,',
@@ -103,7 +124,7 @@ mutate(
   "    await within(firstWave.promise, 'competing runners first wave');",
   '    await firstWave.promise;',
   'local-runner refinement restores an unbounded deferred wait',
-  /within|timed out waiting/u,
+  /bare deferred await|bounded refinement wait/u,
 );
 mutate(
   'scripts/external-transport-refinement.mjs',
@@ -152,7 +173,7 @@ mutate(
   "  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
   "  const exited = once(child, 'exit');",
   'unbounded process exit wait',
-  /The input did not match/u,
+  /unbounded child exit wait/u,
 );
 mutate(
   'scripts/run-assurance.mjs',

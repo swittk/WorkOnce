@@ -51,6 +51,18 @@ function deferred() {
   });
   return { promise, resolve };
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 
 function runnerFailureValue(error) {
   if (error === undefined) return 'undefined';
@@ -113,7 +125,7 @@ async function runnerSample(mode, site, error, errorValue = runnerFailureValue(e
     };
   }
   const handler = async () => {
-    if (backoff) await release.promise;
+    if (backoff) await within(release.promise, 'runtime-boundary release');
     handlerFinished = true;
     throw site === 'activeObserver' ? new Error('handler fault') : error;
   };
@@ -165,7 +177,7 @@ async function drainSample(mode, error) {
   const handler = async (run, input) => {
     if (input === 'bad') throw error;
     entered.resolve();
-    await release.promise;
+    await within(release.promise, 'runtime-boundary release');
     finished = true;
     return run.succeed();
   };
@@ -192,7 +204,7 @@ async function drainSample(mode, error) {
     ended = true;
     return result;
   });
-  await entered.promise;
+  await within(entered.promise, 'runtime-boundary entry');
   await nextTurn();
   const rejectedBeforeDrain = ended;
   release.resolve();
@@ -229,7 +241,7 @@ async function admissionSample(mode, error) {
       queries++;
       if (queries === 2) {
         entered.resolve();
-        await release.promise;
+        await within(release.promise, 'runtime-boundary release');
       }
       const result = await base.query(query);
       return { ...result, rows: result.rows.slice(0, 1) };
@@ -247,7 +259,7 @@ async function admissionSample(mode, error) {
   const handler = async (run, input) => {
     started.push(input);
     if (input === 'a') {
-      await entered.promise;
+      await within(entered.promise, 'runtime-boundary entry');
       throw error;
     }
     stop.abort();
@@ -269,7 +281,7 @@ async function admissionSample(mode, error) {
   const running = observe(
     mode === 'local' ? queue.run(options, handler) : runExternal(service, options, handler),
   );
-  await entered.promise;
+  await within(entered.promise, 'runtime-boundary entry');
   await nextTurn();
   release.resolve();
   const result = await running;
@@ -303,7 +315,7 @@ async function abortClaimReplySample() {
       if (query.select === 'due' && firstDueQuery) {
         firstDueQuery = false;
         entered.resolve();
-        await release.promise;
+        await within(release.promise, 'runtime-boundary release');
       }
       return base.query(query);
     },
@@ -323,7 +335,7 @@ async function abortClaimReplySample() {
       },
     ),
   );
-  await entered.promise;
+  await within(entered.promise, 'runtime-boundary entry');
   stop.abort();
   release.resolve();
   const result = await running;
@@ -342,7 +354,7 @@ async function abortClaimReplySample() {
     handled: true,
     rejected: result.rejected,
     preserved: !result.rejected,
-    drained: true,
+    drained: started === 0 && !result.rejected,
     started,
     reclaimed:
       stranded.phase.state === 'running' &&
@@ -375,14 +387,14 @@ async function abortActiveSample() {
       },
       async (run) => {
         entered.resolve();
-        await release.promise;
+        await within(release.promise, 'runtime-boundary release');
         runSignalAborted = run.signal.aborted;
         handlerFinished = true;
         return run.succeed();
       },
     ),
   );
-  await entered.promise;
+  await within(entered.promise, 'runtime-boundary entry');
   stop.abort();
   release.resolve();
   const result = await running;

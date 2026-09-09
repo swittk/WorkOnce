@@ -14,6 +14,18 @@ function deferred() {
   });
   return { promise, resolve };
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 function stable(value) {
   return JSON.stringify(value);
 }
@@ -270,12 +282,12 @@ async function endpointRaceSample(adapter, mode) {
         armed = false;
         if (mode === 'writerFirst') {
           entered.resolve();
-          await release.promise;
+          await within(release.promise, 'read-history race release');
           return fixture.store.getMany(ids);
         }
         const result = await fixture.store.getMany(ids);
         entered.resolve();
-        await release.promise;
+        await within(release.promise, 'read-history race release');
         return result;
       },
     };
@@ -288,7 +300,7 @@ async function endpointRaceSample(adapter, mode) {
     const before = await queue.inspectMany(['a', 'b']);
     armed = true;
     const reading = queue.inspectMany(['a', 'b']);
-    await entered.promise;
+    await within(entered.promise, 'read-history race entry');
     const bBefore = await queue.inspect('b');
     const bAfter = await queue.wake({
       key: 'b',
@@ -310,7 +322,12 @@ async function endpointRaceSample(adapter, mode) {
       expectedEndpoint: stable(observed) === stable(expected),
       mixedRevision: observed[0].revision !== observed[1].revision,
       oneStorageClock: observed[0].observedAt === observed[1].observedAt,
-      perIdContractPreserved: true,
+      perIdContractPreserved:
+        observed.length === 2 &&
+        observed[0]?.key === 'a' &&
+        observed[1]?.key === 'b' &&
+        (stable(observed[0]) === stable(before[0]) || stable(observed[0]) === stable(after[0])) &&
+        (stable(observed[1]) === stable(before[1]) || stable(observed[1]) === stable(after[1])),
       crossIdAtomicSnapshotRequired: false,
     };
   } finally {
@@ -331,7 +348,7 @@ async function casMixedRaceSample() {
       armed = false;
       const left = await native.getMany([ids[0]]);
       firstRead.resolve();
-      await release.promise;
+      await within(release.promise, 'read-history race release');
       const right = await native.getMany([ids[1]]);
       return { rows: [left.rows[0], right.rows[0]], now: right.now };
     },
@@ -357,7 +374,7 @@ async function casMixedRaceSample() {
     const before = await queue.inspectMany(['a', 'b']);
     armed = true;
     reading = queue.inspectMany(['a', 'b']);
-    await firstRead.promise;
+    await within(firstRead.promise, 'CAS mixed-race first read');
     const bBefore = await queue.inspect('b');
     const bAfter = await queue.wake({
       key: 'b',
@@ -376,10 +393,15 @@ async function casMixedRaceSample() {
         stable(observed[0]) === stable(before[0]) &&
         stable(observed[1]) === stable(bAfter) &&
         stable(observed[1]) === stable(after[1]),
-      expectedEndpoint: true,
+      expectedEndpoint: stable(observed) === stable([before[0], bAfter]),
       mixedRevision: observed[0].revision !== observed[1].revision,
       oneStorageClock: observed[0].observedAt === observed[1].observedAt,
-      perIdContractPreserved: true,
+      perIdContractPreserved:
+        observed.length === 2 &&
+        observed[0]?.key === 'a' &&
+        observed[1]?.key === 'b' &&
+        stable(observed[0]) === stable(before[0]) &&
+        stable(observed[1]) === stable(bAfter),
       crossIdAtomicSnapshotRequired: false,
     };
   } finally {

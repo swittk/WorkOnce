@@ -18,9 +18,14 @@ async function killAt(path, mode, stage) {
     assert.equal((await message(child)).ready, true);
     const seen = await message(child);
     assert.equal(seen.stage, stage);
-    const exited = once(child, 'exit');
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error(
+        `Storage child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+      );
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
     child.kill('SIGKILL');
-    await exited;
+    const [, signal] = await exited;
+    assert.equal(signal, 'SIGKILL');
     return seen;
   } finally {
     if (!child.killed) child.kill('SIGKILL');

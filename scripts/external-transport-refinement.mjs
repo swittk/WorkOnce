@@ -20,6 +20,18 @@ function deferred() {
   });
   return { promise, resolve };
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 function stable(value) {
   return JSON.stringify(value);
 }
@@ -92,21 +104,27 @@ function serviceFor(fixture, scope, options = {}) {
 
 async function handoffHistoryLane(asyncPrepare) {
   const fixture = adapterFixture('memory', 'external-history');
+  const prepareHistory = [];
   try {
     const { queue, service } = serviceFor(fixture, 'external-history', {
       prepare: asyncPrepare
         ? async (run) => {
+            prepareHistory.push('entered');
             await Promise.resolve();
+            prepareHistory.push('resumed');
             return run.handoff(run.input);
           }
-        : (run) => run.handoff(run.input),
+        : (run) => {
+            prepareHistory.push('entered');
+            return run.handoff(run.input);
+          },
     });
     await queue.ensure({ id: 'x', value: 1 });
     const [lease] = await service.claim({ workerId: 'relay', limit: 1 });
     const afterClaim = (await fixture.store.getMany([lease.attempt.workId])).rows[0];
     const heartbeat = await service.heartbeat(lease.attempt);
     const phase = await service.settle(lease.attempt, { type: 'succeed', result: null, next: [] });
-    return { lease, afterClaim, heartbeat, phase, final: await queue.inspect('x') };
+    return { lease, afterClaim, heartbeat, phase, final: await queue.inspect('x'), prepareHistory };
   } finally {
     fixture.close();
   }
@@ -116,7 +134,7 @@ async function handoffHistorySample() {
   const asyncLane = await handoffHistoryLane(true);
   return {
     kind: 'handoffHistory',
-    materiallyDifferentHistory: true,
+    materiallyDifferentHistory: stable(direct.prepareHistory) !== stable(asyncLane.prepareHistory),
     sameLease: stable(direct.lease) === stable(asyncLane.lease),
     sameDurableProjection: stable(direct.afterClaim) === stable(asyncLane.afterClaim),
     sameFuture:
@@ -135,7 +153,7 @@ async function prepareRaceSample(race) {
       leaseMs: 5,
       prepare: async (run) => {
         entered.resolve();
-        await release.promise;
+        await within(release.promise, 'external prepare-race release');
         return run.handoff(run.input);
       },
       onPrepareError: (run) => {
@@ -145,7 +163,7 @@ async function prepareRaceSample(race) {
     });
     await queue.ensure({ id: 'x' });
     const claiming = service.claim({ workerId: 'relay', limit: 1 });
-    await entered.promise;
+    await within(entered.promise, 'external prepare-race entry');
     let winner;
     if (race === 'cancel') {
       winner = await queue.cancel({ key: 'x', generation: 1, reason: 'cancelled' });
@@ -335,24 +353,27 @@ async function syntheticCapacitySample() {
     observedWithinDeadline = false;
     stop.abort(new Error('capacity sample deadline'));
   }, 3000);
+  let managed;
   try {
-    await runExternal(
-      transport,
-      {
-        workerId: 'relay',
-        concurrency: 2,
-        idleMs: 1,
-        signal: stop.signal,
-        onError(error) {
-          observedExact ||= error === sentinel;
+    managed = await observe(
+      runExternal(
+        transport,
+        {
+          workerId: 'relay',
+          concurrency: 2,
+          idleMs: 1,
+          signal: stop.signal,
+          onError(error) {
+            observedExact ||= error === sentinel;
+          },
         },
-      },
-      async (run, input) => {
-        starts.push(input.id);
-        if (input.id === 'bad') throw sentinel;
-        if (input.id === 'healthy-1') await sleep(40);
-        return run.succeed();
-      },
+        async (run, input) => {
+          starts.push(input.id);
+          if (input.id === 'bad') throw sentinel;
+          if (input.id === 'healthy-1') await sleep(40);
+          return run.succeed();
+        },
+      ),
     );
   } finally {
     clearTimeout(deadline);
@@ -364,7 +385,7 @@ async function syntheticCapacitySample() {
     laterHealthyAdmitted: starts.includes('healthy-2'),
     healthySettled: settled.includes('healthy-1') && settled.includes('healthy-2'),
     boundedClaims: claimLimits.every((limit) => limit <= 2) && claimLimits.includes(1),
-    noFatalEscape: true,
+    noFatalEscape: managed !== undefined && !managed.rejected,
   };
 }
 
@@ -451,7 +472,12 @@ async function stopSignalSample() {
   const running = runExternal(transport, { workerId: 'relay', signal: stop.signal }, async (run) =>
     run.succeed(),
   );
-  while (!claimEntered) await sleep(1);
+  await within(
+    (async () => {
+      while (!claimEntered) await sleep(1);
+    })(),
+    'external stop-signal claim entry',
+  );
   stop.abort(new Error('shutdown'));
   const managed = await observe(running);
   return {

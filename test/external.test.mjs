@@ -366,7 +366,14 @@ test('managed external runner does not start leases returned after an active lea
       return run.succeed();
     },
   );
-  while (claimCalls < 2) await sleep(1);
+  const secondClaimDeadline = performance.now() + 5000;
+  while (claimCalls < 2) {
+    assert.ok(
+      performance.now() < secondClaimDeadline,
+      'external runner did not reach second claim',
+    );
+    await sleep(1);
+  }
   await sleep(120);
   releaseSecondClaim();
   await assert.rejects(running, /external renewal down/);

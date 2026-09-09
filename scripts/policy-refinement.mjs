@@ -19,6 +19,18 @@ function deferred() {
   });
   return { promise, resolve };
 }
+function within(promise, label, timeoutMs = 3000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`refinement timed out waiting for ${label}`)),
+        timeoutMs,
+      );
+    }),
+  ]);
+}
 function adapterFixture(kind) {
   let now = 100;
   if (kind === 'memory') {
@@ -251,7 +263,7 @@ async function asyncRaceSample(outcomeKind, race) {
         context.attempt.generation === 1 &&
         context.attempt.fence === 1;
       entered.resolve();
-      await release.promise;
+      await within(release.promise, 'policy async-race release');
       return outcomeKind === 'retry'
         ? { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true }
         : { afterMs: 0 };
@@ -266,7 +278,7 @@ async function asyncRaceSample(outcomeKind, race) {
     await queue.ensure(null, { key: 'job' });
     const run = await claimOne(queue);
     const pending = run.settle(outcomeKind === 'retry' ? run.retry('busy') : run.wait('pending'));
-    await entered.promise;
+    await within(entered.promise, 'policy async-race entry');
     let winner;
     if (race === 'cancel') {
       winner = await queue.cancel({ key: 'job', generation: 1, reason: 'cancel-race' });
