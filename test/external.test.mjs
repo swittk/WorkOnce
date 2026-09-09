@@ -10,6 +10,30 @@ import {
   runExternal,
 } from '../dist/external.js';
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+function within(promise, label, timeoutMs = 5000) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`test timed out waiting for ${label}`)), timeoutMs);
+    }),
+  ]);
+}
+function waitForAbort(signal, label) {
+  if (signal.aborted) return Promise.resolve();
+  return within(
+    new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true })),
+    label,
+  );
+}
+
 function fixture(options = {}) {
   const work = createWorkOnce({ store: createMemoryStore(), scope: options.scope ?? 'external' });
   const queue = work.define('job', { executionLimits: { leaseMs: options.leaseMs ?? 300 } });
@@ -197,15 +221,19 @@ test('external claim response latency cannot extend authoritative ownership', as
 });
 
 test('external heartbeat failure aborts the handler before it can report success', async () => {
-  const { queue, transport: base } = fixture({ leaseMs: 250 });
+  const { queue, transport: base } = fixture({ leaseMs: 500 });
   await queue.ensure(null, { key: 'x' });
   let heartbeatCalls = 0;
   const heartbeatFailure = new Error('network unavailable');
+  const heartbeatAttempted = deferred();
   const transport = {
     ...base,
     async heartbeat(attempt) {
       heartbeatCalls++;
-      if (heartbeatCalls === 1) throw heartbeatFailure;
+      if (heartbeatCalls === 1) {
+        heartbeatAttempted.resolve();
+        throw heartbeatFailure;
+      }
       return base.heartbeat(attempt);
     },
   };
@@ -214,7 +242,8 @@ test('external heartbeat failure aborts the handler before it can report success
     transport,
     { workerId: 'relay', heartbeatMs: 25, signal: new AbortController().signal },
     async (run) => {
-      await sleep(80);
+      await within(heartbeatAttempted.promise, 'external heartbeat attempt');
+      await waitForAbort(run.signal, 'external heartbeat abort');
       sawAbort = run.signal.aborted;
       return run.succeed();
     },

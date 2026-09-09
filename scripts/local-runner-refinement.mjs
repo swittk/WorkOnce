@@ -97,6 +97,13 @@ function within(promise, label, timeoutMs = 3000) {
     }),
   ]);
 }
+function waitForAbort(signal, label) {
+  if (signal.aborted) return Promise.resolve();
+  return within(
+    new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true })),
+    label,
+  );
+}
 function semanticSnapshot(snapshot) {
   if (!snapshot) return null;
   const phase = { ...snapshot.phase };
@@ -121,15 +128,19 @@ function semanticSnapshot(snapshot) {
 
 async function stopReclaimSample(adapter, mode) {
   const fixture = adapterFixture(adapter);
-  const leaseMs = 80;
+  const leaseMs = mode === 'heartbeat' ? 500 : 80;
   const callerStop = new Error(`${adapter}-caller-stop`);
   const heartbeatFailure = new Error(`${adapter}-heartbeat-failure`);
   let failHeartbeat = false;
+  const heartbeatAttempted = deferred();
   try {
     const store = {
       ...fixture.store,
       async atomic(id, decide) {
-        if (failHeartbeat) throw heartbeatFailure;
+        if (failHeartbeat) {
+          heartbeatAttempted.resolve();
+          throw heartbeatFailure;
+        }
         return fixture.store.atomic(id, decide);
       },
     };
@@ -146,7 +157,8 @@ async function stopReclaimSample(adapter, mode) {
         entered.resolve(run.ref);
         if (mode === 'heartbeat') {
           failHeartbeat = true;
-          await sleep(35);
+          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);
+          await waitForAbort(run.signal, `${adapter}-heartbeat ownership abort`);
         } else {
           await within(release.promise, `${adapter}-${mode} handler release`);
         }
@@ -184,21 +196,26 @@ async function stopReclaimSample(adapter, mode) {
 async function undefinedHeartbeatSample(adapter) {
   const fixture = adapterFixture(adapter);
   let failHeartbeat = false;
+  const heartbeatAttempted = deferred();
   try {
     const store = {
       ...fixture.store,
       async atomic(id, decide) {
-        if (failHeartbeat) throw undefined;
+        if (failHeartbeat) {
+          heartbeatAttempted.resolve();
+          throw undefined;
+        }
         return fixture.store.atomic(id, decide);
       },
     };
     const queue = createWorkOnce({ store, scope: `runner-undefined-${adapter}` }).define('job', {
-      limits: { leaseMs: 100, maxAttempts: 3, maxElapsedMs: 1000, maxDeferrals: 2 },
+      limits: { leaseMs: 500, maxAttempts: 3, maxElapsedMs: 1000, maxDeferrals: 2 },
     });
     await queue.ensure(null, { key: 'job' });
     const [result] = await queue.runAvailable({ workerId: 'A', heartbeatMs: 5 }, async (run) => {
       failHeartbeat = true;
-      await sleep(30);
+      await within(heartbeatAttempted.promise, `${adapter}-undefined-heartbeat storage attempt`);
+      await waitForAbort(run.signal, `${adapter}-undefined-heartbeat ownership abort`);
       return run.succeed();
     });
     return {

@@ -69,6 +69,43 @@ export function assertAssuranceVerdictIntegrity() {
       `${name} contains a bare deferred await instead of a bounded refinement wait`,
     );
   }
+  const heartbeatLocalRunnerRefinement = read('scripts/local-runner-refinement.mjs');
+  const localHeartbeatAttempts = [
+    ...heartbeatLocalRunnerRefinement.matchAll(/await within\(heartbeatAttempted\.promise/gu),
+  ].length;
+  assert.equal(
+    localHeartbeatAttempts,
+    2,
+    'local runner cause-precision witnesses must synchronize on both defined and undefined heartbeat attempts',
+  );
+  assert.match(
+    heartbeatLocalRunnerRefinement,
+    /const leaseMs = mode === 'heartbeat' \? 500 : 80/u,
+    'local heartbeat-loss witness must keep expiry well outside the injected heartbeat-failure race',
+  );
+  assert.match(
+    heartbeatLocalRunnerRefinement,
+    /await waitForAbort\(run\.signal, `\$\{adapter\}-heartbeat ownership abort`\)/u,
+    'local heartbeat-loss witness must observe the ownership abort before returning the handler outcome',
+  );
+  assert.doesNotMatch(
+    heartbeatLocalRunnerRefinement,
+    /failHeartbeat = true;[\s\S]{0,140}?await sleep\((?:30|35)\)/u,
+    'local heartbeat cause-precision witness must not use scheduler delay as proof synchronization',
+  );
+  const heartbeatExternalRefinement = read('scripts/external-transport-refinement.mjs');
+  assert.match(
+    heartbeatExternalRefinement,
+    /heartbeatAttempted\.resolve\(\);[\s\S]{0,500}?await within\(heartbeatAttempted\.promise, 'external heartbeat transport attempt'\)[\s\S]{0,220}?await waitForAbort\(run\.signal, 'external heartbeat ownership abort'\)/u,
+    'external heartbeat cause-precision witness must synchronize on the transport attempt and ownership abort',
+  );
+  const externalTest = read('test/external.test.mjs');
+  assert.match(
+    externalTest,
+    /await within\(heartbeatAttempted\.promise, 'external heartbeat attempt'\)[\s\S]{0,160}?await waitForAbort\(run\.signal, 'external heartbeat abort'\)/u,
+    'direct external heartbeat test must synchronize on the attempted heartbeat and abort',
+  );
+
   const boundedCorpus = read('scripts/formal-bounded-refinement-corpus.mjs');
   assert.doesNotMatch(
     boundedCorpus,

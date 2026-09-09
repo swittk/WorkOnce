@@ -57,6 +57,20 @@ mutate(
   /SIGTERM/u,
 );
 mutate(
+  'scripts/local-runner-refinement.mjs',
+  '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
+  '          await sleep(35);',
+  'local heartbeat cause witness returns to scheduler-delay synchronization',
+  /heartbeat attempts|scheduler delay|heartbeat-loss witness/u,
+);
+mutate(
+  'scripts/external-transport-refinement.mjs',
+  "      await within(heartbeatAttempted.promise, 'external heartbeat transport attempt');",
+  '      await sleep(20);',
+  'external heartbeat cause witness returns to scheduler-delay synchronization',
+  /external heartbeat cause-precision witness/u,
+);
+mutate(
   'scripts/formal-bounded-refinement-corpus.mjs',
   "    await waitUntil(() => claimCalls >= 2, 'external second claim');",
   '    while (claimCalls < 2) await new Promise((resolve) => setTimeout(resolve, 1));',

@@ -32,6 +32,13 @@ function within(promise, label, timeoutMs = 3000) {
     }),
   ]);
 }
+function waitForAbort(signal, label) {
+  if (signal.aborted) return Promise.resolve();
+  return within(
+    new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true })),
+    label,
+  );
+}
 function stable(value) {
   return JSON.stringify(value);
 }
@@ -653,6 +660,7 @@ async function leaseBoundarySample() {
 
 async function heartbeatFailureSample() {
   const failure = new Error('heartbeat network failure');
+  const heartbeatAttempted = deferred();
   let settleCalls = 0;
   let sawAbort = false;
   const transport = {
@@ -662,11 +670,12 @@ async function heartbeatFailureSample() {
           input: null,
           attempt: { workId: 'x', generation: 1, fence: 1 },
           observedAt: 0,
-          leaseUntil: 100,
+          leaseUntil: 500,
         },
       ];
     },
     async heartbeat() {
+      heartbeatAttempted.resolve();
       throw failure;
     },
     async settle() {
@@ -678,7 +687,8 @@ async function heartbeatFailureSample() {
     transport,
     { workerId: 'relay', heartbeatMs: 5, signal: new AbortController().signal },
     async (run) => {
-      await sleep(20);
+      await within(heartbeatAttempted.promise, 'external heartbeat transport attempt');
+      await waitForAbort(run.signal, 'external heartbeat ownership abort');
       sawAbort = run.signal.aborted;
       return run.succeed();
     },
