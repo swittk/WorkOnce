@@ -180,6 +180,52 @@ const semanticEnvironmentFiles = [
   'package.json',
   'package-lock.json',
 ];
+const redBeforeEvidenceFiles = fs
+  .readdirSync(path.join(root, 'assurance/red-before'))
+  .filter((name) => name.endsWith('.json'))
+  .map((name) => `assurance/red-before/${name}`)
+  .sort();
+
+function normalizedRedBeforeItems(record) {
+  if (Array.isArray(record.findings)) return record.findings;
+  if (Array.isArray(record.defects)) return record.defects;
+  if (typeof record.defect === 'string')
+    return [{ kind: record.kind ?? record.classification ?? 'defect' }];
+  if (record.runtimeSemanticBug && typeof record.runtimeSemanticBug === 'object')
+    return [record.runtimeSemanticBug];
+  if (typeof record.summary === 'string')
+    return [{ kind: record.kind ?? record.classification ?? 'summary' }];
+  if (typeof record.classification === 'string') return [{ kind: record.classification }];
+  if (Array.isArray(record.classification)) return record.classification.map((kind) => ({ kind }));
+  return [];
+}
+
+function assertRedBeforeEvidenceCorpus() {
+  if (redBeforeEvidenceFiles.length === 0)
+    throw new Error('Red-before evidence corpus is unexpectedly empty.');
+  for (const relative of redBeforeEvidenceFiles) {
+    const record = JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
+    if (!record || typeof record !== 'object' || Array.isArray(record))
+      throw new Error(`Red-before evidence ${relative} must be a JSON object.`);
+    const discriminator =
+      record.family ??
+      record.classification ??
+      record.kind ??
+      (Number.isSafeInteger(record.reviewId) ? 'review' : undefined);
+    if (typeof discriminator !== 'string' || discriminator.length === 0)
+      throw new Error(
+        `Red-before evidence ${relative} lacks a family/classification/kind/review discriminator.`,
+      );
+    const items = normalizedRedBeforeItems(record);
+    if (
+      items.length === 0 ||
+      items.some((item) => !item || typeof item !== 'object' || Array.isArray(item))
+    )
+      throw new Error(`Red-before evidence ${relative} has no normalized evidence items.`);
+  }
+}
+assertRedBeforeEvidenceCorpus();
+
 function assertFirstFatalRedBeforeEvidence() {
   const evidencePath = path.join(root, 'assurance/red-before/review-5150143046-first-fatal.json');
   const record = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
@@ -322,6 +368,10 @@ const assuranceInfrastructureFiles = [
   ...semanticEnvironmentFiles,
   'assurance/red-before/compiler-config-semantic-binding.json',
 ];
+for (const evidenceFile of redBeforeEvidenceFiles)
+  if (!assuranceInfrastructureFiles.includes(evidenceFile))
+    assuranceInfrastructureFiles.push(evidenceFile);
+assuranceInfrastructureFiles.sort();
 
 function assertAssuranceRunnerScriptsBound() {
   const runnerPath = path.join(root, 'scripts/run-assurance.mjs');

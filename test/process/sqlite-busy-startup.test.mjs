@@ -8,6 +8,11 @@ import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./sqlite-busy-child.mjs', import.meta.url);
+async function waitForExit(child, timeoutMs = 5000) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  await once(child, 'exit', { signal: AbortSignal.timeout(timeoutMs) });
+}
+
 async function lock(path, holdMs) {
   const child = forkWithInbox(
     childUrl,
@@ -37,12 +42,19 @@ test('SQLite startup retries a real write lock and succeeds after the lock clear
   let child;
   try {
     child = await lock(path, 250);
-    const started = performance.now();
+    child.send({ startHold: true });
+    const startedAt = Date.now();
     const store = createSqliteStore(path, { busyTimeoutMs: 2000 });
-    const elapsed = performance.now() - started;
+    const completedAt = Date.now();
     store.close();
-    await once(child, 'exit', { signal: AbortSignal.timeout(5000) });
-    assert.ok(elapsed >= 100, `startup did not observe the held lock: ${elapsed}ms`);
+    const unlocking = await nextChildMessage(child, 5000);
+    assert.equal(unlocking.unlocking, true);
+    assert.ok(unlocking.unlockingAt >= startedAt, 'child lock released before startup began');
+    assert.ok(
+      completedAt >= unlocking.unlockingAt,
+      'startup completed before the held lock released',
+    );
+    await waitForExit(child);
   } finally {
     if (child && child.exitCode === null) child.kill('SIGKILL');
     rmSync(dir, { recursive: true, force: true });
@@ -55,6 +67,7 @@ test('SQLite startup busy timeout propagates a native busy/locked failure withou
   let child;
   try {
     child = await lock(path, 500);
+    child.send({ startHold: true });
     let failure;
     try {
       createSqliteStore(path, { busyTimeoutMs: 20 });
@@ -64,7 +77,7 @@ test('SQLite startup busy timeout propagates a native busy/locked failure withou
     assert.ok(failure instanceof Error);
     assert.match(failure.message, /database is (?:locked|busy)/iu);
     assert.equal(typeof failure.code, 'string');
-    await once(child, 'exit', { signal: AbortSignal.timeout(5000) });
+    await waitForExit(child);
     const store = createSqliteStore(path, { busyTimeoutMs: 1000 });
     try {
       const columns = await store.query({ scope: 'none', select: 'all', limit: 1 });

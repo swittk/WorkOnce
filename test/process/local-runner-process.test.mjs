@@ -21,7 +21,11 @@ function start(path, mode) {
 const nextMessage = (child) => nextChildMessage(child, 15000);
 async function kill(child) {
   if (child.exitCode !== null || child.signalCode !== null) {
-    assert.equal(child.signalCode, 'SIGKILL');
+    assert.equal(
+      child.signalCode,
+      'SIGKILL',
+      `Local-runner child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+    );
     return;
   }
   const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });

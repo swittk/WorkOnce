@@ -83,8 +83,10 @@ async function detachedSample(adapter) {
     const ordered = all.rows.map((row) => row.id);
     const orderExact = JSON.stringify(ordered) === JSON.stringify([...ordered].sort());
     all.rows[0].input.nested.key = 'QUERY-MUTATED';
+    const expectedQueryKey = snapshots.find((snapshot) => snapshot.id === ordered[0])?.input.nested
+      .key;
     const queryDetached =
-      (await fixture.store.getMany([ordered[0]])).rows[0].input.nested.key !== 'QUERY-MUTATED';
+      (await fixture.store.getMany([ordered[0]])).rows[0].input.nested.key === expectedQueryKey;
     let cursorExact = true;
     for (let index = 0; index < ordered.length; index++) {
       const page = await fixture.store.query({

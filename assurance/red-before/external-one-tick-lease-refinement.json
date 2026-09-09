@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "family": "D.externalTransportBoundary",
+  "defect": "The executable/TLA lease-boundary witness required every valid one-millisecond lease to settle, even though supported runtime semantics correctly allow claim/scheduling latency to consume that lease before handler admission.",
+  "preFixHead": "9835a6efc7f084d3fbb70f6eca9b3a3cbf4a9dd8",
+  "ciEvidence": {
+    "runId": 34301378509,
+    "jobId": 102308811246,
+    "finding": "leaseBoundary.oneTickAccepted=false while the dedicated runtime contract test remained green"
+  },
+  "runtimeProbe": {
+    "claimDelayMs": 5,
+    "leaseDurationMs": 1,
+    "resultStatus": "interrupted",
+    "error": "Confirmed external lease deadline passed",
+    "handlerCalls": 0,
+    "settleCalls": 0,
+    "heartbeatCalls": 0
+  },
+  "requiredFix": "The proof must accept either successful settlement or exact authoritative lease-expiry interruption for a positive one-tick lease, while proving no automatic heartbeat is scheduled and no heartbeat-configuration rejection is used."
+}

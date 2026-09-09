@@ -8,11 +8,15 @@ const db = new DatabaseSync(path, { timeout: 0 });
 db.exec('PRAGMA journal_mode=WAL;');
 db.exec('BEGIN EXCLUSIVE');
 process.send?.({ locked: true });
-setTimeout(() => {
-  try {
-    db.exec('COMMIT');
-  } finally {
-    db.close();
-    process.disconnect?.();
-  }
-}, holdMs);
+process.once('message', (message) => {
+  if (message?.startHold !== true) throw new Error('expected startHold handshake');
+  setTimeout(() => {
+    try {
+      process.send?.({ unlocking: true, unlockingAt: Date.now() });
+      db.exec('COMMIT');
+    } finally {
+      db.close();
+      process.disconnect?.();
+    }
+  }, holdMs);
+});

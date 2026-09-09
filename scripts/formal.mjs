@@ -20,7 +20,7 @@ if (process.argv.includes('--binding-check-only')) {
 const jar = resolve(process.env.TLA2TOOLS_JAR ?? '.artifacts/tla2tools.jar');
 if (!existsSync(jar))
   throw new Error('Set TLA2TOOLS_JAR to the official tla2tools.jar. See docs/assurance.md.');
-const shardMode = ['--runtime-only', '--non-runtime-only', '--external-only'].some((flag) =>
+const shardMode = ['--runtime-only', '--non-runtime-only'].some((flag) =>
   process.argv.includes(flag),
 );
 const tlcWorkspace = acquireTlcWorkspace(shardMode ? 'formal-shard' : 'formal-parent');

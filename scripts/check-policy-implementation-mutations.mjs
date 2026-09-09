@@ -35,7 +35,10 @@ try {
     const replacement = 'const scaled = initialDelayMs * multiplier ** retries;';
     assert.equal(original.split(needle).length, 2, 'zero-delay mutation anchor must be unique');
     fs.writeFileSync(retryPath, original.replace(needle, replacement));
-    runExpectedFailure('zero-delay overflow mutation', /zeroOverflow/u);
+    runExpectedFailure(
+      'zero-delay overflow mutation',
+      /backoffFinite\.matchesExpected:[^\n]*"category":"zeroOverflow"/u,
+    );
     restore();
   }
   {
@@ -48,7 +51,10 @@ try {
       'stop-precedence mutation anchor must be unique',
     );
     fs.writeFileSync(kernelPath, original.replace(needle, replacement));
-    runExpectedFailure('retry/defer stop-precedence mutation', /attempt_budget_exhausted/u);
+    runExpectedFailure(
+      'retry/defer stop-precedence mutation',
+      /"kind":"retryBoundary"[^\n]*"stop":"deadline_exceeded"[^\n]*"expected":"attempt_budget_exhausted"/u,
+    );
     restore();
   }
   {
@@ -58,7 +64,10 @@ try {
     const replacement = 'if (row.generation !== options.generation)';
     assert.equal(original.split(needle).length, 2, 'wake revision mutation anchor must be unique');
     fs.writeFileSync(workPath, original.replace(needle, replacement));
-    runExpectedFailure('wake revision-fence mutation', /wakeCompetition/u);
+    runExpectedFailure(
+      'wake revision-fence mutation',
+      /wakeCompetition\.(?:exactlyOneWake|exactLoser):[^\n]*false/u,
+    );
     restore();
   }
 } finally {

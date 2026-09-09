@@ -240,6 +240,7 @@ export function assertAssuranceVerdictIntegrity() {
     const functions = new Map();
     const calls = [];
     const mutations = [];
+    const promiseMutationImports = new Map();
     const directMutationPathArguments = new Map([
       ['writeFileSync', [0]],
       ['appendFileSync', [0]],
@@ -263,8 +264,12 @@ export function assertAssuranceVerdictIntegrity() {
     ]);
     function mutationTargetIndexes(call) {
       const expression = call.expression;
-      if (ts.isIdentifier(expression))
-        return directMutationPathArguments.get(expression.text) ?? [];
+      if (ts.isIdentifier(expression)) {
+        const direct = directMutationPathArguments.get(expression.text);
+        if (direct) return direct;
+        const imported = promiseMutationImports.get(expression.text);
+        return imported ? (promiseMutationPathArguments.get(imported) ?? []) : [];
+      }
       if (!ts.isPropertyAccessExpression(expression)) return [];
       const direct = directMutationPathArguments.get(expression.name.text);
       if (direct) return direct;
@@ -281,6 +286,18 @@ export function assertAssuranceVerdictIntegrity() {
       map.set(key, values);
     };
     function discover(node) {
+      if (
+        ts.isImportDeclaration(node) &&
+        ts.isStringLiteralLike(node.moduleSpecifier) &&
+        node.moduleSpecifier.text === 'node:fs/promises' &&
+        node.importClause?.namedBindings &&
+        ts.isNamedImports(node.importClause.namedBindings)
+      )
+        for (const element of node.importClause.namedBindings.elements) {
+          const imported = element.propertyName?.text ?? element.name.text;
+          if (promiseMutationPathArguments.has(imported))
+            promiseMutationImports.set(element.name.text, imported);
+        }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)
         add(declarations, node.name.text, node.initializer);
       if (ts.isFunctionDeclaration(node) && node.name) functions.set(node.name.text, node);
@@ -399,7 +416,8 @@ export function assertAssuranceVerdictIntegrity() {
     if (
       !/(?:writeFileSync|appendFileSync|copyFileSync|cpSync|renameSync|rmSync|unlinkSync|truncateSync|writeSync|promises\s*\.\s*(?:writeFile|appendFile|copyFile|cp|rename|rm|unlink|truncate))\s*\(/u.test(
         source,
-      )
+      ) &&
+      !/from ['"]node:fs\/promises['"]/u.test(source)
     )
       continue;
     if (/createMutationFileGuard\(\)/u.test(source)) continue;

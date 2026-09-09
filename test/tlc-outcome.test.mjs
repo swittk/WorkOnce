@@ -51,7 +51,9 @@ test('temporal-property and deadlock diagnostics are semantic counterexamples', 
 test('timeout, signal, OOM, classpath, parser and unknown exits are infrastructure failures', () => {
   const cases = [
     [result({ error: Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' }) }), 'timeout'],
+    [result({ error: new Error('spawn java ENOENT') }), 'spawn_error'],
     [result({ signal: 'SIGKILL' }), 'signal'],
+    [result({ status: null }), 'missing_exit_status'],
     [result({ stderr: 'java.lang.OutOfMemoryError: Java heap space' }), 'jvm_out_of_memory'],
     [result({ stderr: 'Error: Could not find or load main class tlc2.TLC' }), 'jvm_or_classpath'],
     [result({ stderr: 'TLC encountered an error while parsing module' }), 'model_or_tool_error'],

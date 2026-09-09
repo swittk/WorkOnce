@@ -81,6 +81,13 @@ mutate(
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  "import fs from 'node:fs';",
+  "import fs from 'node:fs';\nimport { writeFile as promiseWriteFile } from 'node:fs/promises';\npromiseWriteFile('src/worker.ts', 'scope-audit-probe');",
+  'destructured fs promises target is classified',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
   'requireExpectedProcessFailure(result, `${label} mutant`, pattern);',
   'assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',

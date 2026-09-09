@@ -10,7 +10,11 @@ const target = path.join(root, 'dist/work.js');
 const original = fs.readFileSync(target, 'utf8');
 const needle = '                outboxAfterId = parent.id;';
 const replacement = '                outboxAfterId = undefined;';
-assert.equal(original.includes(needle), true, 'compiled outbox cursor mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'compiled outbox cursor mutation anchor must be unique',
+);
 try {
   fs.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(process.execPath, ['--test', 'test/outbox-cursor-control.test.mjs'], {

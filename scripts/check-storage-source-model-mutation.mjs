@@ -21,9 +21,11 @@ try {
     ['scripts/check-formal-implementation-conformance.mjs', '--check-storage-binding-only'],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  requireExpectedProcessFailure(result, 'storage source/model mutant unexpectedly passed');
-  assert.match(output, /Bound storage\/conformance semantics changed/u);
+  requireExpectedProcessFailure(
+    result,
+    'storage source/model mutant unexpectedly passed',
+    /Bound storage\/conformance semantics changed/u,
+  );
   console.log(
     'Storage source/model mutation guard rejects a semantic CAS retry-bound change with unchanged storage formal semantics.',
   );

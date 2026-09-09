@@ -431,28 +431,18 @@ export function assertReadHistorySamples(samples) {
   for (const sample of samples) {
     const name = JSON.stringify(sample);
     if (sample.kind === 'historyCongruence') {
-      assert.equal(sample.sameCurrentProjection, true, 'historyCongruence.sameCurrentProjection');
-      assert.equal(sample.differentHistory, true, 'historyCongruence.differentHistory');
-      assert.equal(
-        sample.historyOnlyDurableDifference,
-        true,
-        'historyCongruence.historyOnlyDurableDifference',
-      );
-      assert.equal(
-        sample.allFutureProjectionsSame,
-        true,
-        'historyCongruence.allFutureProjectionsSame',
-      );
-      assert.equal(sample.allFutureResultsSame, true, 'historyCongruence.allFutureResultsSame');
-      assert.equal(
-        sample.allFutureHistoryTailsSame,
-        true,
-        'historyCongruence.allFutureHistoryTailsSame',
-      );
-      assert.equal(
-        sample.allFutureHistoryDifferencePreserved,
-        true,
-        'historyCongruence.allFutureHistoryDifferencePreserved',
+      assertExactBooleanSample(
+        sample,
+        [
+          'sameCurrentProjection',
+          'differentHistory',
+          'historyOnlyDurableDifference',
+          'allFutureProjectionsSame',
+          'allFutureResultsSame',
+          'allFutureHistoryTailsSame',
+          'allFutureHistoryDifferencePreserved',
+        ],
+        ['futureTraceCount'],
       );
       assert.ok(sample.futureTraceCount >= 5, 'historyCongruence.futureTraceCount');
     } else if (sample.kind === 'historyTruncation') {
