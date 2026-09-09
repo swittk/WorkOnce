@@ -277,7 +277,11 @@ test('native CAS unknown acknowledgement propagates and is never retried blindly
   };
   const store = createCompareExchangeStore(port, { maxConflicts: 5 });
   const q = createWorkOnce({ store, scope: 'cas-unknown' }).define('job');
-  await assert.rejects(q.ensure(null, { key: 'x' }), /unknown acknowledgement/);
+  await assert.rejects(
+    q.ensure(null, { key: 'x' }),
+    /unknown acknowledgement/,
+    'unknown acknowledgement must propagate to caller',
+  );
   assert.equal(calls, 1, 'unknown outcome must not enter compare-miss retry loop');
   const rows = await f.native.query({ scope: 'cas-unknown', select: 'all', limit: 10 });
   assert.equal(rows.rows.length, 1, 'the first native write really did commit');

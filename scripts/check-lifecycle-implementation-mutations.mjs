@@ -33,7 +33,11 @@ function requireInlineRed(label, code, pattern) {
 try {
   {
     const needle = '        row.fence !== ref.fence ||\n';
-    assert.equal(original.includes(needle), true, 'stale-fence mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'stale-fence mutation anchor is stale or not unique',
+    );
     fs.writeFileSync(kernelPath, original.replace(needle, ''));
     requireInlineRed(
       'stale-fence acceptance',
@@ -54,7 +58,11 @@ try {
   }
   {
     const needle = '    if (row.receipt.submissionHash !== submissionHash)\n';
-    assert.equal(original.includes(needle), true, 'receipt-hash mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'receipt-hash mutation anchor is stale or not unique',
+    );
     fs.writeFileSync(
       kernelPath,
       original.replace(needle, '    if (false && row.receipt.submissionHash !== submissionHash)\n'),
@@ -78,7 +86,11 @@ try {
       "    if (row.phase.state === 'succeeded' ||\n        row.phase.state === 'failed' ||\n        row.phase.state === 'cancelled')\n        return row;";
     const replacement =
       "    if (row.phase.state === 'failed' || row.phase.state === 'cancelled')\n        return row;";
-    assert.equal(original.includes(needle), true, 'terminal-cancel mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'terminal-cancel mutation anchor is stale or not unique',
+    );
     fs.writeFileSync(kernelPath, original.replace(needle, replacement));
     requireInlineRed(
       'wrong completion-before-cancel rule',
@@ -99,9 +111,9 @@ try {
     const needle = '            limit: Math.min(limit * 4, 1000),';
     const replacement = '            limit,';
     assert.equal(
-      workOriginal.includes(needle),
-      true,
-      'claim-scan widening mutation anchor is stale',
+      workOriginal.split(needle).length,
+      2,
+      'claim-scan widening mutation anchor is stale or not unique',
     );
     fs.writeFileSync(workPath, workOriginal.replace(needle, replacement));
     requireInlineRed(
@@ -126,7 +138,11 @@ try {
   {
     const needle = '            if (runs.length === limit)';
     const replacement = '            if (runs.length > limit)';
-    assert.equal(workOriginal.includes(needle), true, 'claim limit mutation anchor is stale');
+    assert.equal(
+      workOriginal.split(needle).length,
+      2,
+      'claim limit mutation anchor is stale or not unique',
+    );
     fs.writeFileSync(workPath, workOriginal.replace(needle, replacement));
     requireInlineRed(
       'claim limit off-by-one',
@@ -142,13 +158,16 @@ try {
     restore();
   }
   {
-    const needle = '    delete next.receipt;\n    return next;';
+    const needle =
+      "}, { state: 'queued', availableAt: now }, now, 'manual_retry');\n    delete next.firstStartedAt;\n    delete next.receipt;\n    return next;";
+    const replacement =
+      "}, { state: 'queued', availableAt: now }, now, 'manual_retry');\n    delete next.firstStartedAt;\n    return next;";
     assert.equal(
-      original.includes(needle),
-      true,
-      'generation-reset receipt mutation anchor is stale',
+      original.split(needle).length,
+      2,
+      'generation-reset receipt mutation anchor is stale or not unique',
     );
-    fs.writeFileSync(kernelPath, original.replace(needle, '    return next;'));
+    fs.writeFileSync(kernelPath, original.replace(needle, replacement));
     requireInlineRed(
       'retry reset retaining old receipt',
       `import assert from 'node:assert/strict';

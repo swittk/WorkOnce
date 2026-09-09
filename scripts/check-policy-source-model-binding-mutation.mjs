@@ -14,7 +14,11 @@ const original = fs.readFileSync(target, 'utf8');
 const needle = 'const scaled = initialDelayMs === 0 ? 0 : initialDelayMs * multiplier ** retries;';
 const replacement =
   'const scaled = initialDelayMs === 0 ? 0 : initialDelayMs * multiplier ** retries + 0;';
-assert.equal(original.includes(needle), true, 'policy source/model mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'policy source/model mutation anchor is stale or not unique',
+);
 try {
   mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(

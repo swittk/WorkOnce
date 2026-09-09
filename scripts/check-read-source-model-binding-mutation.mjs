@@ -35,7 +35,11 @@ try {
     const original = originals.get(workPath);
     const needle = `  async inspect(key: string): Promise<WorkSnapshot<I, O, R> | undefined> {\n    return (await this.inspectMany([key]))[0];\n  }`;
     const replacement = `  async inspect(key: string): Promise<WorkSnapshot<I, O, R> | undefined> {\n    void key;\n    return (await this.inspectMany([key]))[0];\n  }`;
-    assert.equal(original.includes(needle), true, 'typed-read source mutation anchor is stale');
+    assert.equal(
+      original.split(needle).length,
+      2,
+      'typed-read source mutation anchor is stale or not unique',
+    );
     mutationFiles.writeFileSync(workPath, original.replace(needle, replacement));
     expectBindingFailure('a changed read method with an unchanged read/history model');
     restore();
@@ -44,9 +48,9 @@ try {
     const original = originals.get(kernelPath);
     const needle = '...row.history.slice(-127),';
     assert.equal(
-      original.includes(needle),
-      true,
-      'history retention source mutation anchor is stale',
+      original.split(needle).length,
+      2,
+      'history retention source mutation anchor is stale or not unique',
     );
     mutationFiles.writeFileSync(
       kernelPath,

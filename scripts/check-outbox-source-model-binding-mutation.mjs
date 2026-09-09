@@ -13,7 +13,11 @@ const target = path.join(root, 'src/work.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = '        outboxAfterId = parent.id;';
 const replacement = '        outboxAfterId = undefined;';
-assert.equal(original.includes(needle), true, 'outbox source/model mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'outbox source/model mutation anchor is stale or not unique',
+);
 try {
   mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(

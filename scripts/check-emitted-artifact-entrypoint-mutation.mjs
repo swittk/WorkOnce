@@ -39,9 +39,9 @@ try {
   const prepareOriginal = fs.readFileSync(preparePath, 'utf8');
   try {
     assert.equal(
-      prepareOriginal.includes('assertBuildSourceBinding();'),
-      true,
-      'prepare-package binding anchor is stale',
+      prepareOriginal.split('assertBuildSourceBinding();').length,
+      2,
+      'prepare-package binding anchor is stale or not unique',
     );
     mutationFiles.writeFileSync(
       preparePath,
@@ -63,7 +63,11 @@ try {
   }
 
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
-  assert.equal(assuranceOriginal.includes(buildAnchor), true, 'startup-build anchor is stale');
+  assert.equal(
+    assuranceOriginal.split(buildAnchor).length,
+    2,
+    'startup-build anchor is stale or not unique',
+  );
   mutationFiles.writeFileSync(
     assurancePath,
     assuranceOriginal.replace(

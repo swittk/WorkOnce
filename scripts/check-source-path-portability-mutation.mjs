@@ -15,8 +15,12 @@ const stableReturn = 'return `node_modules/typescript/lib/${tail}`;';
 const legacyReturn = "return path.relative(root, absolute).split(path.sep).join('/');";
 
 try {
+  assert.equal(
+    original.split(stableReturn).length,
+    2,
+    'source-path portability mutation anchor is stale or not unique',
+  );
   const mutant = original.replace(stableReturn, legacyReturn);
-  assert.notEqual(mutant, original, 'source-path portability mutation anchor did not match');
   mutationFiles.writeFileSync(target, mutant);
   const result = spawnSync(process.execPath, [target, '--self-test-source-paths'], {
     cwd: root,
@@ -45,9 +49,9 @@ try {
   const aliasAnchor =
     'return (symbol.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;';
   assert.equal(
-    original.includes(aliasAnchor),
-    true,
-    'export-alias resolver mutation anchor is stale',
+    original.split(aliasAnchor).length,
+    2,
+    'export-alias resolver mutation anchor is stale or not unique',
   );
   mutationFiles.writeFileSync(target, original.replace(aliasAnchor, 'return symbol;'));
   const result = spawnSync(process.execPath, [target, '--self-test-trivia-ordinals'], {

@@ -11019,6 +11019,19 @@
       "OutboxBudgetDispatch",
       "Tick"
     ],
+    "claimScan": {
+      "config": "formal/WorkOnceClaimScan.cfg",
+      "configuredChecks": [
+        "ClaimLimitHonored",
+        "ClaimScanTypeOK",
+        "FirstBoundedPassOnlyTerminalizesFront",
+        "NoExhaustedLoss",
+        "NoHealthyLoss",
+        "SecondInvocationReachesHealthy"
+      ],
+      "observationBinding": "scripts/lifecycle-formal.mjs",
+      "spec": "formal/WorkOnceClaimScan.tla"
+    },
     "config": "formal/WorkOnce.cfg",
     "configuredChecks": [
       "AcceptedFenceIsCurrentOrClear",
@@ -11084,6 +11097,21 @@
       "spec": "formal/WorkOnceExternal.tla"
     },
     "formalDigestSchema": "tla-lexical-string-safe-v2",
+    "lifecycleTemporal": {
+      "config": "formal/WorkOnceLifecycleTemporal.cfg",
+      "configuredChecks": [
+        "AcceptedDeferProducesWaiting",
+        "AcceptedWakeUsesCurrentRevision",
+        "LifecycleTemporalTypeOK",
+        "ReceiptBelongsToCurrentGeneration",
+        "RejectedWakeDoesNotWrite",
+        "ReplayUsesReceiptIdentity",
+        "ResetClearsReceipt",
+        "TerminalCancelDoesNotWrite"
+      ],
+      "observationBinding": "scripts/lifecycle-formal.mjs",
+      "spec": "formal/WorkOnceLifecycleTemporal.tla"
+    },
     "localRunner": {
       "config": "formal/WorkOnceLocalRunner.cfg",
       "configuredChecks": [
@@ -11352,7 +11380,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "c666cd2284637a37753ef09683f844ee02336baf4c79cfa340a665e6e851fa42",
+    "assuranceInfrastructureDigest": "b547a0993deea3fbbaa2303e593d188666a51b947ffa938c0453435c5efc1188",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11400,6 +11428,7 @@
       "scripts/check-assurance-verdict-integrity-mutation.mjs",
       "scripts/check-assurance-verdict-integrity.mjs",
       "scripts/check-bounded-trace-domain.mjs",
+      "scripts/check-build-input-binding-mutation.mjs",
       "scripts/check-build-source-binding-mutation.mjs",
       "scripts/check-emitted-artifact-entrypoint-mutation.mjs",
       "scripts/check-emitted-artifact-entrypoints.mjs",
@@ -11476,7 +11505,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "517bd84d79423968616bd407f7e0687489db8cd7f23c99e24ff4b44c93c51d2a",
+    "modelDigest": "a52034f1dba9745517574e74f0e34a5d72a55dd2303523d4106dfcc7e1e831d0",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -11487,6 +11516,10 @@
       "formal/WorkOncePolicy.cfg",
       "formal/WorkOnceLocalRunner.tla",
       "formal/WorkOnceLocalRunner.cfg",
+      "formal/WorkOnceLifecycleTemporal.tla",
+      "formal/WorkOnceLifecycleTemporal.cfg",
+      "formal/WorkOnceClaimScan.tla",
+      "formal/WorkOnceClaimScan.cfg",
       "formal/WorkOnceReadHistory.tla",
       "formal/WorkOnceReadHistory.cfg",
       "formal/WorkOnceStorage.tla",

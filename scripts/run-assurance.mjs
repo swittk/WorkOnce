@@ -221,6 +221,9 @@ run('formal config mutation coverage inventory guard', process.execPath, [
 run('build/source freshness mutation guard', process.execPath, [
   'scripts/check-build-source-binding-mutation.mjs',
 ]);
+run('package build-input freshness mutation guard', process.execPath, [
+  'scripts/check-build-input-binding-mutation.mjs',
+]);
 run('emitted-artifact entrypoint mutation guard', process.execPath, [
   'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
 ]);

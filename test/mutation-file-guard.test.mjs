@@ -73,6 +73,32 @@ for (const [signal, expectedCode] of [
   });
 }
 
+test('mutation file guard restores original bytes on unhandled exit', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-exit-'));
+  const target = join(directory, 'tracked.txt');
+  writeFileSync(target, 'original\n');
+  const guardModule = new URL('../scripts/mutation-file-guard.mjs', import.meta.url).href;
+  const code = `
+    import { createMutationFileGuard } from ${JSON.stringify(guardModule)};
+    const guard = createMutationFileGuard();
+    guard.writeFileSync(process.env.WORKONCE_MUTATION_TARGET, 'mutated\\n');
+    throw new Error('checker failed before dispose');
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', code], {
+    cwd: process.cwd(),
+    env: { ...process.env, WORKONCE_MUTATION_TARGET: target },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  try {
+    const [exitCode] = await once(child, 'exit', { signal: AbortSignal.timeout(5000) });
+    assert.notEqual(exitCode, 0);
+    assert.equal(readFileSync(target, 'utf8'), 'original\n');
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('mutation file guard restores remembered files during normal disposal', () => {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-dispose-'));
   const existing = join(directory, 'existing.txt');

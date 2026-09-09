@@ -304,6 +304,7 @@ async function resetCheckRaceSample(resetKind) {
   const entered = deferred();
   const release = deferred();
   let checkCalls = 0;
+  let pending;
   try {
     const queue = createWorkOnce({
       store: fixture.store,
@@ -313,7 +314,7 @@ async function resetCheckRaceSample(resetKind) {
     const run = await claimOne(queue);
     if (resetKind === 'retry') await run.settle(run.fail('bad', { manualRetry: true }));
     else await run.settle(run.succeed('done'));
-    const pending = queue[resetKind]({
+    pending = queue[resetKind]({
       key: 'job',
       generation: 1,
       check: async (snapshot) => {
@@ -340,6 +341,7 @@ async function resetCheckRaceSample(resetKind) {
     };
   } finally {
     release.resolve();
+    if (pending) await observe(pending);
     fixture.close();
   }
 }

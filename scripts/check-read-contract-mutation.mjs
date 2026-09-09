@@ -57,7 +57,7 @@ try {
     'inspectMany caller-order preservation',
     '        return result.rows.map((row) => {',
     '        return [...result.rows].reverse().map((row) => {',
-    /deepStrictEqual|Expected values to be strictly deep-equal/u,
+    /inspectMany must preserve caller order, duplicates, and missing slots/u,
   );
 
   console.log(

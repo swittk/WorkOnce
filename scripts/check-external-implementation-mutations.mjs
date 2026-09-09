@@ -60,9 +60,9 @@ try {
     const needle = `if (fatal === undefined)
             fatal = { error };`;
     assert.equal(
-      externalOriginal.includes(needle),
-      true,
-      'external first-fatal mutation anchor is stale',
+      externalOriginal.split(needle).length,
+      2,
+      'external first-fatal mutation anchor is stale or not unique',
     );
     fs.writeFileSync(externalPath, externalOriginal.replace(needle, 'fatal = { error };'));
     requireInlineRed(
@@ -85,9 +85,9 @@ try {
     const needle =
       "        if (leases.length > limit)\n            throw new RangeError('External claim returned more leases than requested');";
     assert.equal(
-      externalOriginal.includes(needle),
-      true,
-      'oversized-claim mutation anchor is stale',
+      externalOriginal.split(needle).length,
+      2,
+      'oversized-claim mutation anchor is stale or not unique',
     );
     fs.writeFileSync(externalPath, externalOriginal.replace(needle, ''));
     requireInlineRed(
@@ -128,9 +128,9 @@ try {
     const replacement =
       '                const renewed = { attempt: run.attempt, observedAt: run.observedAt };';
     assert.equal(
-      workOriginal.includes(needle),
-      true,
-      'final-handoff-heartbeat mutation anchor is stale',
+      workOriginal.split(needle).length,
+      2,
+      'final-handoff-heartbeat mutation anchor is stale or not unique',
     );
     fs.writeFileSync(workPath, workOriginal.replace(needle, replacement));
     requireInlineRed(

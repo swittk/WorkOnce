@@ -13,7 +13,11 @@ const target = path.join(root, 'src/worker.ts');
 const original = fs.readFileSync(target, 'utf8');
 const needle = 'const stop = () => controller.abort(options.signal?.reason);';
 const replacement = 'const stop = () => controller.abort();';
-assert.equal(original.includes(needle), true, 'local-runner source/model mutation anchor is stale');
+assert.equal(
+  original.split(needle).length,
+  2,
+  'local-runner source/model mutation anchor is stale or not unique',
+);
 try {
   mutationFiles.writeFileSync(target, original.replace(needle, replacement));
   const result = spawnSync(

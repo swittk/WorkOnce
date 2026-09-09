@@ -295,22 +295,26 @@ export function assertAssuranceVerdictIntegrity() {
       if (
         ts.isImportDeclaration(node) &&
         ts.isStringLiteralLike(node.moduleSpecifier) &&
-        node.importClause?.namedBindings
+        node.importClause
       ) {
-        if (
-          node.moduleSpecifier.text === 'node:fs/promises' &&
-          ts.isNamedImports(node.importClause.namedBindings)
-        )
-          for (const element of node.importClause.namedBindings.elements) {
-            const imported = element.propertyName?.text ?? element.name.text;
-            if (promiseMutationPathArguments.has(imported))
-              promiseMutationImports.set(element.name.text, imported);
-          }
+        const clause = node.importClause;
+        if (node.moduleSpecifier.text === 'node:fs/promises') {
+          if (clause.name) promiseMutationNamespaces.add(clause.name.text);
+          if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+            promiseMutationNamespaces.add(clause.namedBindings.name.text);
+          if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
+            for (const element of clause.namedBindings.elements) {
+              const imported = element.propertyName?.text ?? element.name.text;
+              if (promiseMutationPathArguments.has(imported))
+                promiseMutationImports.set(element.name.text, imported);
+            }
+        }
         if (
           node.moduleSpecifier.text === 'node:fs' &&
-          ts.isNamedImports(node.importClause.namedBindings)
+          clause.namedBindings &&
+          ts.isNamedImports(clause.namedBindings)
         )
-          for (const element of node.importClause.namedBindings.elements) {
+          for (const element of clause.namedBindings.elements) {
             const imported = element.propertyName?.text ?? element.name.text;
             if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
           }

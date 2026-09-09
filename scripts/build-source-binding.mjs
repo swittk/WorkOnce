@@ -5,7 +5,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stampPath = path.join(root, '.artifacts/build-source-binding.json');
-const configFiles = ['tsconfig.json', 'tsconfig.cjs.json'];
+const buildInputFiles = [
+  'tsconfig.json',
+  'tsconfig.cjs.json',
+  'package.json',
+  'scripts/cjs-package.mjs',
+];
 const artifactRoots = ['dist', 'dist-cjs'];
 
 function recursiveFiles(directory, accept = () => true) {
@@ -25,7 +30,7 @@ function recursiveFiles(directory, accept = () => true) {
 function sourceFiles() {
   return [
     ...recursiveFiles(path.join(root, 'src'), (name) => name.endsWith('.ts')),
-    ...configFiles,
+    ...buildInputFiles,
   ].sort();
 }
 

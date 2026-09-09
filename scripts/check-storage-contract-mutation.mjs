@@ -47,7 +47,7 @@ requireRed(
       `let applied;\n                try {\n                    applied = await port.compareExchange({$1\n                    });\n                } catch {\n                    continue;\n                }`,
     ),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
-  /unknown acknowledgement|unknown outcome/u,
+  /unknown acknowledgement must propagate to caller/u,
 );
 requireRed(
   'dist/cas.js',

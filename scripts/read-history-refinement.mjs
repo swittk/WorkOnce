@@ -444,7 +444,7 @@ export function assertReadHistorySamples(samples) {
         ],
         ['futureTraceCount'],
       );
-      assert.ok(sample.futureTraceCount >= 5, 'historyCongruence.futureTraceCount');
+      assert.equal(sample.futureTraceCount, 6, 'historyCongruence.futureTraceCount');
     } else if (sample.kind === 'historyTruncation') {
       assertExactBooleanSample(
         sample,

@@ -70,7 +70,8 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /Internal semantic inventory drifted/u);
   assert.match(sourceOutput, /mutable_let/u);
   assert.match(sourceOutput, /new_WeakMap/u);
-  assert.match(sourceOutput, /call_mutator_(?:set|push)/u);
+  assert.match(sourceOutput, /call_mutator_set/u);
+  assert.match(sourceOutput, /call_mutator_push/u);
   assert.match(sourceOutput, /property_assignment/u);
   assert.match(sourceOutput, /mutable_property/u);
 } finally {
@@ -100,6 +101,10 @@ try {
 
 try {
   const inventory = JSON.parse(inventoryText);
+  assert.ok(
+    Array.isArray(inventory.entries) && inventory.entries.length > 0,
+    'internal semantic inventory entries anchor is missing',
+  );
   inventory.entries[0].families = [];
   mutationFiles.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
   const classificationMutant = run();

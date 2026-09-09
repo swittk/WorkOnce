@@ -52,6 +52,18 @@
 - Checked invariants: `LocalDrainedBeforeReturn`, `LocalFatalReturnPreserves`, `LocalFirstFatalValuePreserved`, `LocalNoAdmissionAfterStop`, `LocalNoFatalBackoff`, `LocalTypeOK`, `LossPresenceExact`
 - Bound local-runner source symbols: `src/work.ts:WorkQueue.claim`, `src/work.ts:WorkQueue.runAvailable`, `src/work.ts:WorkQueue.process`, `src/work.ts:WorkQueue.run`, `src/worker.ts:markLocalClaimStartedAt`, `src/worker.ts:validateWorkerOptions`, `src/worker.ts:waitForPoll`, `src/worker.ts:processClaim`, `src/worker.ts:processClaims`, `src/worker.ts:runWorker`
 
+## Lifecycle temporal model
+
+- Spec: `formal/WorkOnceLifecycleTemporal.tla`
+- Checked invariants: `AcceptedDeferProducesWaiting`, `AcceptedWakeUsesCurrentRevision`, `LifecycleTemporalTypeOK`, `ReceiptBelongsToCurrentGeneration`, `RejectedWakeDoesNotWrite`, `ReplayUsesReceiptIdentity`, `ResetClearsReceipt`, `TerminalCancelDoesNotWrite`
+- TLC + mutation binding: `scripts/lifecycle-formal.mjs`
+
+## Claim-scan bounded-progress model
+
+- Spec: `formal/WorkOnceClaimScan.tla`
+- Checked invariants: `ClaimLimitHonored`, `ClaimScanTypeOK`, `FirstBoundedPassOnlyTerminalizesFront`, `NoExhaustedLoss`, `NoHealthyLoss`, `SecondInvocationReachesHealthy`
+- TLC + mutation binding: `scripts/lifecycle-formal.mjs`
+
 ## Typed-read boundary
 
 - Contract: `formal/WorkOnceContract.tla`
@@ -96,8 +108,8 @@
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **120**
-- Content digest: `c666cd2284637a37753ef09683f844ee02336baf4c79cfa340a665e6e851fa42`
+- Bound proof/checker files: **121**
+- Content digest: `b547a0993deea3fbbaa2303e593d188666a51b947ffa938c0453435c5efc1188`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 

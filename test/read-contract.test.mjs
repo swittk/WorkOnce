@@ -67,13 +67,11 @@ for (const adapter of ['memory', 'sqlite', 'cas']) {
 
       assert.equal(await current.inspect('missing'), undefined);
       assert.equal(await current.inspectId('missing-id'), undefined);
-      assert.deepEqual(await current.inspectMany(['missing', 'b', 'a', 'missing', 'b']), [
-        undefined,
-        b,
-        a,
-        undefined,
-        b,
-      ]);
+      assert.deepEqual(
+        await current.inspectMany(['missing', 'b', 'a', 'missing', 'b']),
+        [undefined, b, a, undefined, b],
+        'inspectMany must preserve caller order, duplicates, and missing slots',
+      );
       assert.deepEqual(await current.item(null, 'a').inspect(), a);
       assert.deepEqual(await current.inspectId(a.id), a);
       const history = await current.history('a');
