@@ -13,13 +13,25 @@ const lifecycleFormalText = fs.readFileSync(
   'utf8',
 );
 const storageFormalText = fs.readFileSync(path.join(root, 'scripts/storage-formal.mjs'), 'utf8');
-const shardModes = [...formalText.matchAll(/runShard\('(--[a-z-]+)'\)/gu)]
+const shardModesMatch = /const parentShardModes = \[([^\]]+)\]/u.exec(formalText);
+assert.ok(shardModesMatch, 'formal.mjs must declare the reviewed parent shard set.');
+const shardModes = [...shardModesMatch[1].matchAll(/'(--[a-z-]+)'/gu)]
   .map((match) => match[1])
   .sort();
 assert.deepEqual(
   shardModes,
   ['--non-runtime-only', '--runtime-only'],
   `formal.mjs must use exactly the reviewed two shards; got ${shardModes.join(', ')}`,
+);
+assert.match(
+  formalText,
+  /if \(availableParallelism\(\) <= 2\) \{[\s\S]{0,180}for \(const mode of parentShardModes\) await runShard\(mode\)/u,
+  'Two-core CI must serialize formal shards; concurrent TLC/SANY processes can lose standard-library modules.',
+);
+assert.match(
+  formalText,
+  /Promise\.allSettled\(parentShardModes\.map\(\(mode\) => runShard\(mode\)\)\)/u,
+  'Higher-core hosts must retain the reviewed parallel two-shard formal path.',
 );
 assert.equal(
   formalText.includes(

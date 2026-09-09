@@ -63,7 +63,12 @@ assert.match(
   /env: \{ \.\.\.process\.env, WORKONCE_TLC_ARTIFACT_DIR: shardWorkspace \}/u,
   'formal.mjs shards do not receive their distinct generated-module namespaces',
 );
-assert.equal((formal.match(/runShard\('--(?:runtime|non-runtime)-only'\)/gu) ?? []).length, 2);
+const parentShardModesMatch = /const parentShardModes = \[([^\]]+)\]/u.exec(formal);
+assert.ok(parentShardModesMatch, 'formal.mjs no longer declares its parent shard set');
+const parentShardModes = [...parentShardModesMatch[1].matchAll(/'(--[a-z-]+)'/gu)]
+  .map((match) => match[1])
+  .sort();
+assert.deepEqual(parentShardModes, ['--non-runtime-only', '--runtime-only']);
 
 console.log(
   'TLC runners and both formal shards use disjoint per-invocation generated-module workspaces.',

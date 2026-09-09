@@ -507,12 +507,14 @@ if (!runtimeOnly && !nonRuntimeOnly) {
           rejectShard(new Error(`Formal shard ${mode} failed with ${signal ?? `exit ${code}`}.`));
       });
     });
-  const results = await Promise.allSettled([
-    runShard('--runtime-only'),
-    runShard('--non-runtime-only'),
-  ]);
-  const failure = results.find((result) => result.status === 'rejected');
-  if (failure) throw failure.reason;
+  const parentShardModes = ['--runtime-only', '--non-runtime-only'];
+  if (availableParallelism() <= 2) {
+    for (const mode of parentShardModes) await runShard(mode);
+  } else {
+    const results = await Promise.allSettled(parentShardModes.map((mode) => runShard(mode)));
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure) throw failure.reason;
+  }
   process.exit(0);
 }
 

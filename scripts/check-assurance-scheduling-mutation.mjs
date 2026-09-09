@@ -135,10 +135,15 @@ try {
     'a third formal shard',
     (text) =>
       text.replace(
-        "    runShard('--non-runtime-only'),",
-        "    runShard('--non-runtime-only'),\n    runShard('--external-only'),",
+        "const parentShardModes = ['--runtime-only', '--non-runtime-only'];",
+        "const parentShardModes = ['--runtime-only', '--non-runtime-only', '--external-only'];",
       ),
     /formal\.mjs must use exactly the reviewed two shards/u,
+  );
+  expectFormalSchedulingFailure(
+    'parallel formal shards on two-core CI',
+    (text) => text.replace('if (availableParallelism() <= 2) {', 'if (false) {'),
+    /Two-core CI must serialize formal shards/u,
   );
   expectFormalSchedulingFailure(
     'external-family shard imbalance',
