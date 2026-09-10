@@ -206,6 +206,16 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(
     boundedDomain,
+    /'scripts\/mutation-file-guard\.mjs'/u,
+    'bounded-domain evidence must hash the mutation file guard used by mutation witnesses',
+  );
+  assert.match(
+    boundedDomain,
+    /if \(Object\.keys\(current\.domain\)\.length === 0\)/u,
+    'bounded-domain report must fail closed when the corpus reports zero dimensions',
+  );
+  assert.match(
+    boundedDomain,
     /'assurance\/red-before\/mutation-guard-cross-contamination\.json'/u,
     'bounded-domain evidence must hash the mutation-guard scheduling witness',
   );

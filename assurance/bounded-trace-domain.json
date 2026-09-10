@@ -87,6 +87,7 @@
     "test/subprocess-outcome.test.mjs",
     "scripts/check-assurance-verdict-integrity.mjs",
     "scripts/check-assurance-verdict-integrity-mutation.mjs",
+    "scripts/mutation-file-guard.mjs",
     "assurance/red-before/review-5148224210-assurance-verdict-integrity.json",
     "scripts/tlc-workspace.mjs",
     "test/tlc-workspace.test.mjs",
@@ -114,7 +115,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "b8da4d25de056432de1a0b7c414acfcbb2c55ae995d6111162a57d4824f7c523",
+  "evidenceDigest": "dbd1ba51cfe73253da56cdf3e99a652a0326f3409f6c06fb79d1834cb096d51e",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

@@ -32,6 +32,21 @@ function mutate(relative, from, to, label, pattern) {
 }
 
 mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'scripts/mutation-file-guard.mjs',",
+  "  'scripts/mutation-file-guard-omitted.mjs',",
+  'bounded evidence drops mutation file guard provenance',
+  /bounded-domain evidence must hash the mutation file guard used by mutation witnesses/u,
+);
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  'if (Object.keys(current.domain).length === 0)',
+  'if (false && Object.keys(current.domain).length === 0)',
+  'bounded domain accepts zero reviewed dimensions',
+  /bounded-domain report must fail closed when the corpus reports zero dimensions/u,
+);
+
+mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {",
   "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts', 'src/worker.ts']) {",

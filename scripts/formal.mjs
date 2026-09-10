@@ -522,6 +522,7 @@ if (!runtimeOnly && !nonRuntimeOnly) {
   const runShard = (mode) =>
     new Promise((resolveShard, rejectShard) => {
       const shardWorkspace = createTlcWorkspace(`formal-${mode.slice(2)}`);
+      cleanupTlcWorkspaceOnSuccess(shardWorkspace);
       const child = spawn(process.execPath, [script, mode], {
         cwd: process.cwd(),
         env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: shardWorkspace },

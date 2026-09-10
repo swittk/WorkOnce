@@ -6,6 +6,7 @@ import {
 } from '../scripts/local-runner-refinement.mjs';
 
 const samplesOnce = runLocalRunnerRefinementSamples();
+samplesOnce.catch(() => {});
 
 test('compiled local managed-runner observations cover causes, fairness, contention and boundaries', async () => {
   const samples = await samplesOnce;

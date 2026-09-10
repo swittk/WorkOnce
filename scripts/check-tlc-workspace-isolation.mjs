@@ -16,6 +16,11 @@ assert.match(
 assert.match(helper, /rmSync\(workspace, \{ recursive: true, force: true \}\)/u);
 assert.match(
   helper,
+  /if \(!ownedWorkspaces\.has\(workspace\)\) return;/u,
+  'inherited TLC workspaces must not be registered for child-process cleanup',
+);
+assert.match(
+  helper,
   /insideBase\(workspace\)/u,
   'inherited TLC workspace cleanup is not containment-checked',
 );
@@ -83,6 +88,11 @@ assert.match(
   formal,
   /env: \{ \.\.\.process\.env, WORKONCE_TLC_ARTIFACT_DIR: shardWorkspace \}/u,
   'formal.mjs shards do not receive their distinct generated-module namespaces',
+);
+assert.match(
+  formal,
+  /cleanupTlcWorkspaceOnSuccess\(shardWorkspace\);/u,
+  'formal.mjs parent must retain ownership of and clean successful shard workspace roots',
 );
 const parentShardModesMatch = /const parentShardModes = \[([^\]]+)\]/u.exec(formal);
 assert.ok(parentShardModesMatch, 'formal.mjs no longer declares its parent shard set');

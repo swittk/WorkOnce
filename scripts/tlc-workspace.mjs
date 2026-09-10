@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 const baseDirectory = resolve('.artifacts/tlc');
+const ownedWorkspaces = new Set();
 
 function safeLabel(label) {
   return String(label).replace(/[^A-Za-z0-9._-]+/gu, '-');
@@ -10,7 +11,9 @@ function safeLabel(label) {
 /** Create one private generated-module/metadir root for a TLC proof invocation. */
 export function createTlcWorkspace(label = 'tlc') {
   mkdirSync(baseDirectory, { recursive: true });
-  return mkdtempSync(resolve(baseDirectory, `${safeLabel(label)}-`));
+  const workspace = mkdtempSync(resolve(baseDirectory, `${safeLabel(label)}-`));
+  ownedWorkspaces.add(workspace);
+  return workspace;
 }
 
 function insideBase(target) {
@@ -36,6 +39,7 @@ export function acquireTlcWorkspace(label = 'tlc') {
 
 /** Remove only this invocation's workspace on success; retain failed workspaces for diagnosis. */
 export function cleanupTlcWorkspaceOnSuccess(workspace) {
+  if (!ownedWorkspaces.has(workspace)) return;
   process.once('exit', (code) => {
     if (code === 0) rmSync(workspace, { recursive: true, force: true });
   });

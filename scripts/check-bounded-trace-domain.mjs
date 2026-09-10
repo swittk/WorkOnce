@@ -117,6 +117,7 @@ const evidenceFiles = [
   'test/subprocess-outcome.test.mjs',
   'scripts/check-assurance-verdict-integrity.mjs',
   'scripts/check-assurance-verdict-integrity-mutation.mjs',
+  'scripts/mutation-file-guard.mjs',
   'assurance/red-before/review-5148224210-assurance-verdict-integrity.json',
   'scripts/tlc-workspace.mjs',
   'test/tlc-workspace.test.mjs',
@@ -297,6 +298,8 @@ const current = {
     coverageCounts: report.coverage,
   },
 };
+if (Object.keys(current.domain).length === 0)
+  throw new Error('Bounded trace corpus reported no coverage dimensions.');
 if (Object.values(current.domain).some((covered) => !covered))
   throw new Error('Bounded trace domain has uncovered reviewed dimensions.');
 const canonicalCurrent = `${JSON.stringify(current, null, 2)}\n`;

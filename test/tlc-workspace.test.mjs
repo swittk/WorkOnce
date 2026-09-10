@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { acquireTlcWorkspace, createTlcWorkspace } from '../scripts/tlc-workspace.mjs';
 
@@ -47,6 +48,30 @@ test('inherited TLC workspace accepts a parent-created private descendant', () =
   } finally {
     if (previous === undefined) delete process.env.WORKONCE_TLC_ARTIFACT_DIR;
     else process.env.WORKONCE_TLC_ARTIFACT_DIR = previous;
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('successful child preserves an inherited parent-owned TLC workspace', () => {
+  const workspace = createTlcWorkspace('parent-owned');
+  const marker = join(workspace, 'parent-marker.txt');
+  writeFileSync(marker, 'KEEP');
+  try {
+    const helperUrl = new URL('../scripts/tlc-workspace.mjs', import.meta.url).href;
+    const code = `
+      import { acquireTlcWorkspace, cleanupTlcWorkspaceOnSuccess } from ${JSON.stringify(helperUrl)};
+      const workspace = acquireTlcWorkspace('child');
+      cleanupTlcWorkspaceOnSuccess(workspace);
+    `;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: process.cwd(),
+      env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: workspace },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(marker, 'utf8'), 'KEEP');
+    assert.equal(existsSync(workspace), true);
+  } finally {
     rmSync(workspace, { recursive: true, force: true });
   }
 });

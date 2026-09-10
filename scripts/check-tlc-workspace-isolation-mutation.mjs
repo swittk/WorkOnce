@@ -57,6 +57,21 @@ mutate(
 
 mutate(
   'scripts/tlc-workspace.mjs',
+  '  if (!ownedWorkspaces.has(workspace)) return;',
+  '  void workspace;',
+  'inherited TLC workspace ownership guard removal',
+  /inherited TLC workspaces must not be registered for child-process cleanup/u,
+);
+mutate(
+  'scripts/formal.mjs',
+  '      cleanupTlcWorkspaceOnSuccess(shardWorkspace);',
+  '      void shardWorkspace;',
+  'parent-owned formal shard cleanup registration removal',
+  /parent must retain ownership of and clean successful shard workspace roots/u,
+);
+
+mutate(
+  'scripts/tlc-workspace.mjs',
   '  if (!insideBase(workspace))',
   '  if (false)',
   'inherited TLC workspace containment removal',
