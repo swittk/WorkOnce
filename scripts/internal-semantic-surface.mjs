@@ -87,17 +87,19 @@ function constructKind(node) {
   if (
     ts.isBinaryExpression(node) &&
     node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-    node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
-    isPropertyTarget(node.left)
-  )
-    return 'property_assignment';
+    node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+  ) {
+    if (isPropertyTarget(node.left)) return 'property_assignment';
+    if (ts.isIdentifier(node.left)) return 'identifier_assignment';
+  }
   if (
     (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
     (node.operator === ts.SyntaxKind.PlusPlusToken ||
-      node.operator === ts.SyntaxKind.MinusMinusToken) &&
-    isPropertyTarget(node.operand)
-  )
-    return 'property_update';
+      node.operator === ts.SyntaxKind.MinusMinusToken)
+  ) {
+    if (isPropertyTarget(node.operand)) return 'property_update';
+    if (ts.isIdentifier(node.operand)) return 'identifier_update';
+  }
   if (
     ts.isCallExpression(node) &&
     ts.isPropertyAccessExpression(node.expression) &&

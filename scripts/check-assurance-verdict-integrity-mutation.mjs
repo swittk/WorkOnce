@@ -33,6 +33,28 @@ function mutate(relative, from, to, label, pattern) {
 
 mutate(
   'scripts/check-bounded-trace-domain.mjs',
+  "  'formal/WorkOnceRuntime.tla',",
+  "  'formal/WorkOnceRuntime-omitted.tla',",
+  'bounded evidence drops runtime TLA model provenance',
+  /bounded-domain evidence must hash the runtime TLA model consumed by runtime boundary proof/u,
+);
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'formal/WorkOnceRuntime.cfg',",
+  "  'formal/WorkOnceRuntime-omitted.cfg',",
+  'bounded evidence drops runtime TLC config provenance',
+  /bounded-domain evidence must hash the runtime TLC config consumed by runtime boundary proof/u,
+);
+mutate(
+  'scripts/check-formal-implementation-conformance.mjs',
+  "  'test/internal-semantic-surface.test.mjs',",
+  "  'test/internal-semantic-surface-omitted.test.mjs',",
+  'assurance infrastructure drops semantic-surface regression provenance',
+  /assurance infrastructure digest must hash the internal semantic surface regression test/u,
+);
+
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
   "  'scripts/mutation-file-guard.mjs',",
   "  'scripts/mutation-file-guard-omitted.mjs',",
   'bounded evidence drops mutation file guard provenance',

@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "608525bea7e93b31a3b9448d8b45ed3f8c126ed20e79295f5b5418e0c76f1346",
+    "assuranceInfrastructureDigest": "f0817f6381e8458b6f9e75294c8fa39625790bf8ac7ce49afec2a6fa9ecb63ec",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11480,6 +11480,7 @@
       "scripts/tlc-outcome.mjs",
       "scripts/tlc-workspace.mjs",
       "test/external-transport-refinement.test.mjs",
+      "test/internal-semantic-surface.test.mjs",
       "test/local-runner-refinement.test.mjs",
       "test/outbox-cursor-control.test.mjs",
       "test/outbox-refinement.test.mjs",

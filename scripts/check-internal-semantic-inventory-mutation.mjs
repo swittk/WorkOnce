@@ -45,6 +45,7 @@ try {
     `${source.slice(0, brace + 1)}
   let internalSemanticInventoryMutant = 0;
   internalSemanticInventoryMutant += 1;
+  internalSemanticInventoryMutant++;
   queueMicrotask(() => {});
   Object.assign({}, { mutant: true });
   const internalSemanticWeakMapMutant = new WeakMap<object, number>();
@@ -73,6 +74,8 @@ ${source.slice(brace + 1)}`,
   const sourceOutput = output(sourceMutant);
   assert.match(sourceOutput, /Internal semantic inventory drifted/u);
   assert.match(sourceOutput, /mutable_let/u);
+  assert.match(sourceOutput, /identifier_assignment/u);
+  assert.match(sourceOutput, /identifier_update/u);
   assert.match(sourceOutput, /new_WeakMap/u);
   assert.match(sourceOutput, /call_mutator_set/u);
   assert.match(sourceOutput, /call_mutator_push/u);
@@ -80,6 +83,26 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /mutable_property/u);
   assert.match(sourceOutput, /call_queueMicrotask/u);
   assert.match(sourceOutput, /call_mutator_Object\.assign/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
+  assert.equal(
+    source.split('    stopped = true;').length,
+    2,
+    'identifier assignment mutation anchor must be unique',
+  );
+  mutationFiles.writeFileSync(
+    sourcePath,
+    source.replace('    stopped = true;', '    stopped = false;'),
+  );
+  const assignmentMutant = run();
+  requireExpectedProcessFailure(
+    assignmentMutant,
+    'existing identifier assignment semantic edit unexpectedly bypassed internal inventory',
+  );
+  assert.match(output(assignmentMutant), /identifier_assignment/u);
 } finally {
   mutationFiles.restoreAll();
 }

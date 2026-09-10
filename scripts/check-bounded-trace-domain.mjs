@@ -48,6 +48,8 @@ const evidenceFiles = [
   'formal/WorkOnceReadHistory.cfg',
   'assurance/red-before/read-history-future-congruence.json',
   'test/runtime-boundary-refinement.test.mjs',
+  'formal/WorkOnceRuntime.tla',
+  'formal/WorkOnceRuntime.cfg',
   'scripts/local-runner-refinement.mjs',
   'test/local-runner-refinement.test.mjs',
   'test/process/local-runner-child.mjs',

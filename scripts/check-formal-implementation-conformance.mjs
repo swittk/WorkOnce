@@ -301,6 +301,7 @@ const assuranceInfrastructureFiles = [
   'scripts/check-tlc-outcome-classification.mjs',
   'scripts/check-formal-config-coverage-mutation.mjs',
   'scripts/internal-semantic-surface.mjs',
+  'test/internal-semantic-surface.test.mjs',
   'scripts/check-internal-semantic-inventory.mjs',
   'scripts/check-internal-semantic-inventory-mutation.mjs',
   'assurance/internal-semantic-inventory.json',

@@ -2035,6 +2035,669 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/cas.ts:atomic:identifier_update:38c40b20942406d3:1",
+      "path": "src/cas.ts",
+      "context": "atomic",
+      "kind": "identifier_update",
+      "excerpt": "conflicts++",
+      "textDigest": "a7162b132338e892",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:identifier_assignment:151b08aa9e5dce4b:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "identifier_assignment",
+      "excerpt": "entered = resolve",
+      "textDigest": "42b3814ed5c816c1",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:identifier_assignment:cc22b31b98e1c206:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "identifier_assignment",
+      "excerpt": "release = resolve",
+      "textDigest": "0c4a35208226b750",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+    },
+    {
+      "id": "src/conformance.ts:retry:identifier_update:ad6eb65057d8ec1e:1",
+      "path": "src/conformance.ts",
+      "context": "retry",
+      "kind": "identifier_update",
+      "excerpt": "calls++",
+      "textDigest": "8554b78cfdcc6ba0",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+    },
+    {
+      "id": "src/external.ts:<callback>:identifier_assignment:13d7a9b1b606a016:1",
+      "path": "src/external.ts",
+      "context": "<callback>",
+      "kind": "identifier_assignment",
+      "excerpt": "wakePoll = stop",
+      "textDigest": "cb803a958e61cadb",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:armExpiry:identifier_assignment:9762d041c73dff04:1",
+      "path": "src/external.ts",
+      "context": "armExpiry",
+      "kind": "identifier_assignment",
+      "excerpt": "expiryTimer = setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647))",
+      "textDigest": "e318ec4a1192108f",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:heartbeat:identifier_assignment:79250fc793833d95:1",
+      "path": "src/external.ts",
+      "context": "heartbeat",
+      "kind": "identifier_assignment",
+      "excerpt": "heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs)",
+      "textDigest": "f427153e47bc4cdd",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:processLease:identifier_assignment:7db6afe6a2ed907f:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "identifier_assignment",
+      "excerpt": "heartbeatTimer = setTimeout(() => void heartbeat(), heartbeatMs)",
+      "textDigest": "f427153e47bc4cdd",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:processLease:identifier_assignment:94eb80b762d0c263:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "identifier_assignment",
+      "excerpt": "stopped = true",
+      "textDigest": "b7c63a040a4ac252",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:recordFatal:identifier_assignment:8b880cd05fa03576:1",
+      "path": "src/external.ts",
+      "context": "recordFatal",
+      "kind": "identifier_assignment",
+      "excerpt": "fatal = { error }",
+      "textDigest": "5b43858fd542fc45",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:runExternal:identifier_assignment:c8e478f012cfa9fa:1",
+      "path": "src/external.ts",
+      "context": "runExternal",
+      "kind": "identifier_assignment",
+      "excerpt": "leases = await transport.claim({\n        workerId: options.workerId,\n        limit: available,\n        signal: options.signal,\n      })",
+      "textDigest": "80ed2e315a6c7859",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:runExternalAvailable:identifier_assignment:09e62ee3bdbb8c2c:1",
+      "path": "src/external.ts",
+      "context": "runExternalAvailable",
+      "kind": "identifier_assignment",
+      "excerpt": "leases = await transport.claim({\n      workerId: options.workerId,\n      limit,\n      signal: options.signal,\n    })",
+      "textDigest": "6f32879944cb0d31",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:stop:identifier_assignment:141e5b00891a90db:1",
+      "path": "src/external.ts",
+      "context": "stop",
+      "kind": "identifier_assignment",
+      "excerpt": "settled = true",
+      "textDigest": "ea08b2bda6f42f11",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/external.ts:stop:identifier_assignment:bf9bafda3b69bb06:1",
+      "path": "src/external.ts",
+      "context": "stop",
+      "kind": "identifier_assignment",
+      "excerpt": "wakePoll = undefined",
+      "textDigest": "ab560b51c14b4fb1",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:17375a0b9e1ee33d:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "phase = {\n        state: 'failed',\n        reason: outcome.reason,\n        manualRetry: outcome.manualRetry,\n        failedAt: now,\n        ...(outcome.result === undefined ? {} : { result: copy(outcome.result) }),\n        stoppedBy: 'repor",
+      "textDigest": "a5784d48e3512d72",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:1799b8b88b8fae9e:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "deferrals = add(deferrals, 1)",
+      "textDigest": "b383ed87964bf2ff",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:5a95463a38fe7b81:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "phase = { state: 'waiting', cause: outcome.type, reason: outcome.reason, availableAt }",
+      "textDigest": "9cf1d8926165ffca",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:7d77f917cc8ab0bc:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "retries = add(retries, 1)",
+      "textDigest": "7fe02e73c716e62f",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:a62b0d8850456f76:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "phase = { state: 'failed', reason: outcome.reason, manualRetry, failedAt: now, stoppedBy }",
+      "textDigest": "b6ea54bbad282df4",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/kernel.ts:settleRecord:identifier_assignment:f70571a2d0e24d75:1",
+      "path": "src/kernel.ts",
+      "context": "settleRecord",
+      "kind": "identifier_assignment",
+      "excerpt": "phase = { state: 'succeeded', result: copy(outcome.result), completedAt: now }",
+      "textDigest": "45630802583d31da",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+    },
+    {
+      "id": "src/memory.ts:query:identifier_assignment:76e1b3f920eb6625:1",
+      "path": "src/memory.ts",
+      "context": "query",
+      "kind": "identifier_assignment",
+      "excerpt": "selected = selected.filter((row) => row.outbox.length > 0)",
+      "textDigest": "9fe89845d2e2a398",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/memory.ts:query:identifier_assignment:84661177fe56f23b:1",
+      "path": "src/memory.ts",
+      "context": "query",
+      "kind": "identifier_assignment",
+      "excerpt": "selected = selected.filter((row) => compareUtf8Text(row.id, query.afterId!) > 0)",
+      "textDigest": "adc481fa3d0a4ac9",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/memory.ts:query:identifier_assignment:9c76e4dac004b6a8:1",
+      "path": "src/memory.ts",
+      "context": "query",
+      "kind": "identifier_assignment",
+      "excerpt": "selected = selected.filter((row) => (dueAt(row) ?? Infinity) <= clock)",
+      "textDigest": "d3e423d4942ad5be",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/sqlite.ts:query:identifier_assignment:53dffe601b087b12:1",
+      "path": "src/sqlite.ts",
+      "context": "query",
+      "kind": "identifier_assignment",
+      "excerpt": "statement = db.prepare(sql)",
+      "textDigest": "76964cad8a551b89",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/sqlite.ts:retryStartupBusy:identifier_assignment:20e4b66200bd7692:1",
+      "path": "src/sqlite.ts",
+      "context": "retryStartupBusy",
+      "kind": "identifier_assignment",
+      "excerpt": "delay = Math.min(delay * 2, 25)",
+      "textDigest": "5b3efce29377604f",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/storage-validation.ts:compareUtf8Text:identifier_update:68bfb3b3715b0c2b:1",
+      "path": "src/storage-validation.ts",
+      "context": "compareUtf8Text",
+      "kind": "identifier_update",
+      "excerpt": "index++",
+      "textDigest": "525f9f3fe4711782",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+    },
+    {
+      "id": "src/work.ts:dispatch:identifier_assignment:1f8a1072460628e9:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "identifier_assignment",
+      "excerpt": "outboxAfterId = undefined",
+      "textDigest": "b4bf7a1639379df5",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+    },
+    {
+      "id": "src/work.ts:dispatch:identifier_assignment:458b39f85a04fed6:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "identifier_assignment",
+      "excerpt": "outboxAfterId = parent.id",
+      "textDigest": "40854a73f3c3bb47",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+    },
+    {
+      "id": "src/work.ts:dispatch:identifier_assignment:b0542ec403a9a07f:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "identifier_assignment",
+      "excerpt": "result = await store.query({ scope, select: 'outbox', limit })",
+      "textDigest": "054e193c5aa658ea",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+    },
+    {
+      "id": "src/work.ts:dispatch:identifier_update:133c68db07756d5e:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "identifier_update",
+      "excerpt": "sent++",
+      "textDigest": "d860b0076eb1254b",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+    },
+    {
+      "id": "src/work.ts:dispatch:identifier_update:9847cc95cab5b801:1",
+      "path": "src/work.ts",
+      "context": "dispatch",
+      "kind": "identifier_update",
+      "excerpt": "attempted++",
+      "textDigest": "91b0dbc9a65e4f2a",
+      "families": [
+        "B"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+    },
+    {
+      "id": "src/work.ts:rerun:identifier_assignment:01fb7bb03c636f6e:1",
+      "path": "src/work.ts",
+      "context": "rerun",
+      "kind": "identifier_assignment",
+      "excerpt": "expectedRevision = snapshot.revision",
+      "textDigest": "866d49ded220ed40",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+    },
+    {
+      "id": "src/work.ts:restart:identifier_assignment:51e7425e8266de2b:1",
+      "path": "src/work.ts",
+      "context": "restart",
+      "kind": "identifier_assignment",
+      "excerpt": "expectedRevision = snapshot.revision",
+      "textDigest": "866d49ded220ed40",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+    },
+    {
+      "id": "src/work.ts:retry:identifier_assignment:f60580e822fc89b0:1",
+      "path": "src/work.ts",
+      "context": "retry",
+      "kind": "identifier_assignment",
+      "excerpt": "expectedRevision = snapshot.revision",
+      "textDigest": "866d49ded220ed40",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+    },
+    {
+      "id": "src/work.ts:settle:identifier_assignment:19626bb12c2ffae0:1",
+      "path": "src/work.ts",
+      "context": "settle",
+      "kind": "identifier_assignment",
+      "excerpt": "decision = typeof policy === 'function' ? await policy(context) : policy",
+      "textDigest": "e06812e4b2976080",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+    },
+    {
+      "id": "src/work.ts:settle:identifier_assignment:7a9f1d909d381191:1",
+      "path": "src/work.ts",
+      "context": "settle",
+      "kind": "identifier_assignment",
+      "excerpt": "submitted = { ...submitted, ...timing }",
+      "textDigest": "1f302e34085d0765",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+    },
+    {
+      "id": "src/work.ts:settle:identifier_assignment:959470b3144dffa2:1",
+      "path": "src/work.ts",
+      "context": "settle",
+      "kind": "identifier_assignment",
+      "excerpt": "submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] }",
+      "textDigest": "52840b54c6ed3764",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+    },
+    {
+      "id": "src/work.ts:settle:identifier_assignment:959470b3144dffa2:2",
+      "path": "src/work.ts",
+      "context": "settle",
+      "kind": "identifier_assignment",
+      "excerpt": "submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] }",
+      "textDigest": "52840b54c6ed3764",
+      "families": [
+        "A",
+        "B",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+    },
+    {
+      "id": "src/worker.ts:<callback>:identifier_assignment:629d92378b6a20ae:1",
+      "path": "src/worker.ts",
+      "context": "<callback>",
+      "kind": "identifier_assignment",
+      "excerpt": "wakePoll = stop",
+      "textDigest": "cb803a958e61cadb",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:armExpiry:identifier_assignment:84169534f5204f94:1",
+      "path": "src/worker.ts",
+      "context": "armExpiry",
+      "kind": "identifier_assignment",
+      "excerpt": "ownershipLoss = { error: new Error('Confirmed lease deadline passed') }",
+      "textDigest": "17dc398cd7041b5b",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:armExpiry:identifier_assignment:f242eec037793f28:1",
+      "path": "src/worker.ts",
+      "context": "armExpiry",
+      "kind": "identifier_assignment",
+      "excerpt": "expiryTimer = setTimeout(() => armExpiry(deadline), Math.min(remaining, 2_147_483_647))",
+      "textDigest": "e318ec4a1192108f",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:heartbeat:identifier_assignment:1ba9318c61399490:1",
+      "path": "src/worker.ts",
+      "context": "heartbeat",
+      "kind": "identifier_assignment",
+      "excerpt": "heartbeatTimer = setTimeout(() => {\n            void heartbeat();\n          }, heartbeatMs)",
+      "textDigest": "bd90871ee801339b",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:heartbeat:identifier_assignment:8bc42d825ad68e76:1",
+      "path": "src/worker.ts",
+      "context": "heartbeat",
+      "kind": "identifier_assignment",
+      "excerpt": "ownershipLoss = { error }",
+      "textDigest": "ee1d8fa77660ecc3",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:identifier_assignment:0427888b5b230909:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "identifier_assignment",
+      "excerpt": "stopped = true",
+      "textDigest": "b7c63a040a4ac252",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:identifier_assignment:9013ffa98fcf5940:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "identifier_assignment",
+      "excerpt": "heartbeatTimer = setTimeout(() => {\n        void heartbeat();\n      }, heartbeatMs)",
+      "textDigest": "cd9169988f8d174e",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:recordFatal:identifier_assignment:a79b71b88ee4a0ac:1",
+      "path": "src/worker.ts",
+      "context": "recordFatal",
+      "kind": "identifier_assignment",
+      "excerpt": "fatal = { error }",
+      "textDigest": "5b43858fd542fc45",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:runWorker:identifier_assignment:4b110e1aaf1fb5b8:1",
+      "path": "src/worker.ts",
+      "context": "runWorker",
+      "kind": "identifier_assignment",
+      "excerpt": "claims = await queue.claim({ workerId: options.workerId, limit: available })",
+      "textDigest": "f01f6e9b02793891",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:stop:identifier_assignment:1217d94e43c49da0:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "identifier_assignment",
+      "excerpt": "wakePoll = undefined",
+      "textDigest": "ab560b51c14b4fb1",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+    },
+    {
+      "id": "src/worker.ts:stop:identifier_assignment:657cf2320c8116cb:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "identifier_assignment",
+      "excerpt": "settled = true",
+      "textDigest": "ea08b2bda6f42f11",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
     }
   ]
 }

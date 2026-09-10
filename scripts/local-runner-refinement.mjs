@@ -145,6 +145,9 @@ async function stopReclaimSample(adapter, mode) {
   const heartbeatFailure = new Error(`${adapter}-heartbeat-failure`);
   let failHeartbeat = false;
   const heartbeatAttempted = deferred();
+  let release;
+  let stop;
+  let running;
   try {
     const store = {
       ...fixture.store,
@@ -161,9 +164,9 @@ async function stopReclaimSample(adapter, mode) {
     });
     await queue.ensure(null, { key: 'job' });
     const entered = deferred();
-    const release = deferred();
-    const stop = new AbortController();
-    const running = queue.runAvailable(
+    release = deferred();
+    stop = new AbortController();
+    running = queue.runAvailable(
       { workerId: 'A', heartbeatMs: mode === 'heartbeat' ? 5 : 20, signal: stop.signal },
       async (run) => {
         entered.resolve(run.ref);
@@ -201,6 +204,10 @@ async function stopReclaimSample(adapter, mode) {
         reclaimed.ref.fence === oldRef.fence + 1,
     };
   } finally {
+    failHeartbeat = false;
+    release?.resolve();
+    stop?.abort(new Error(`${adapter}-${mode}-cleanup`));
+    if (running) await within(Promise.allSettled([running]), `${adapter}-${mode} runner cleanup`);
     fixture.close();
   }
 }

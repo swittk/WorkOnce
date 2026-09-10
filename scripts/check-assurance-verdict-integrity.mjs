@@ -206,6 +206,16 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(
     boundedDomain,
+    /'formal\/WorkOnceRuntime\.tla'/u,
+    'bounded-domain evidence must hash the runtime TLA model consumed by runtime boundary proof',
+  );
+  assert.match(
+    boundedDomain,
+    /'formal\/WorkOnceRuntime\.cfg'/u,
+    'bounded-domain evidence must hash the runtime TLC config consumed by runtime boundary proof',
+  );
+  assert.match(
+    boundedDomain,
     /'scripts\/mutation-file-guard\.mjs'/u,
     'bounded-domain evidence must hash the mutation file guard used by mutation witnesses',
   );
@@ -257,6 +267,13 @@ export function assertAssuranceVerdictIntegrity() {
     policyRefinementSource,
     /finally \{\s*release\.resolve\(\);\s*if \(pending\) await observe\(pending\);\s*fixture\.close\(\);/u,
     'policy async-race cleanup must settle the pending promise before fixture close',
+  );
+
+  const conformance = read('scripts/check-formal-implementation-conformance.mjs');
+  assert.match(
+    conformance,
+    /'test\/internal-semantic-surface\.test\.mjs'/u,
+    'assurance infrastructure digest must hash the internal semantic surface regression test',
   );
 
   const boundedCorpus = read('scripts/formal-bounded-refinement-corpus.mjs');

@@ -18,6 +18,12 @@ function start(path, mode, detail = '') {
   );
 }
 const nextMessage = (child) => nextChildMessage(child, 15000);
+async function cleanupChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) }).catch(() => undefined);
+  if (!child.killed) child.kill('SIGKILL');
+  await exited;
+}
 async function killAfterStage(path, mode, detail, expectedStage) {
   const child = start(path, mode, detail);
   try {
@@ -40,7 +46,7 @@ async function killAfterStage(path, mode, detail, expectedStage) {
     assert.equal(signal, 'SIGKILL');
     return { ready, stage };
   } finally {
-    if (!child.killed) child.kill('SIGKILL');
+    await cleanupChild(child);
   }
 }
 function open(path) {

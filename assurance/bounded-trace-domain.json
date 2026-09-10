@@ -18,6 +18,8 @@
     "formal/WorkOnceReadHistory.cfg",
     "assurance/red-before/read-history-future-congruence.json",
     "test/runtime-boundary-refinement.test.mjs",
+    "formal/WorkOnceRuntime.tla",
+    "formal/WorkOnceRuntime.cfg",
     "scripts/local-runner-refinement.mjs",
     "test/local-runner-refinement.test.mjs",
     "test/process/local-runner-child.mjs",
@@ -115,7 +117,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "5894282155a3a56b2a38ee2b8bf28947828886acf0997c33d749a16e8dc4c517",
+  "evidenceDigest": "2e5910104519fe31aace46b6c144b21c3f24bb109a7d761295f510a8a5685beb",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
