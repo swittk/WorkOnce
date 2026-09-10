@@ -5,7 +5,6 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { forkWithInbox, nextChildMessage } from './child-ipc-inbox.mjs';
-import { setTimeout as sleep } from 'node:timers/promises';
 import { createWorkOnce, runExternalAvailable } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
@@ -36,8 +35,8 @@ async function setup(dbPath) {
     store.close();
   }
 }
-function reopen(dbPath) {
-  const store = createSqliteStore(dbPath);
+function reopen(dbPath, now) {
+  const store = createSqliteStore(dbPath, now === undefined ? {} : { now: () => now });
   const work = createWorkOnce({ store, scope: 'external-effect-process' });
   const queue = work.define('job', {
     key: (input) => input.id,
@@ -77,15 +76,16 @@ test('external effect before WorkOnce settlement may repeat after crash and recl
     const stage = await killAfter(child, 'effect-recorded');
     assert.deepEqual(effects(effectPath), [1]);
     let opened = reopen(dbPath);
+    let expiredAt;
     try {
       const running = await opened.queue.inspect('x');
       assert.equal(running.phase.state, 'running');
       assert.equal(running.phase.attempt.fence, 1);
+      expiredAt = running.phase.attempt.leaseUntil + 1;
     } finally {
       opened.store.close();
     }
-    await sleep(325);
-    opened = reopen(dbPath);
+    opened = reopen(dbPath, expiredAt);
     try {
       let reruns = 0;
       const [result] = await runExternalAvailable(

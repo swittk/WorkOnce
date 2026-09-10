@@ -65,14 +65,16 @@ function adapterFixture(adapter) {
     const directory = mkdtempSync(join(tmpdir(), 'workonce-runner-refinement-'));
     let store;
     try {
-      store = createSqliteStore(join(directory, 'workonce.sqlite'));
+      store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => now });
     } catch (error) {
       rmSync(directory, { recursive: true, force: true });
       throw error;
     }
     return {
       store,
-      setNow() {},
+      setNow(value) {
+        now = value;
+      },
       close() {
         try {
           store.close();
@@ -81,7 +83,7 @@ function adapterFixture(adapter) {
         }
       },
       async expire(leaseMs) {
-        await sleep(leaseMs + 25);
+        now += leaseMs + 1;
       },
     };
   }
