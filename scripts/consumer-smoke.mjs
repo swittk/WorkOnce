@@ -4,9 +4,18 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+function execNpm(args, options) {
+  if (process.platform === 'win32')
+    return execFileSync(
+      process.env.ComSpec ?? 'cmd.exe',
+      ['/d', '/s', '/c', 'npm', ...args],
+      options,
+    );
+  return execFileSync('npm', args, options);
+}
 mkdirSync(join(root, '.artifacts'), { recursive: true });
 const packed = JSON.parse(
-  execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', '.artifacts'], {
+  execNpm(['pack', '--ignore-scripts', '--json', '--pack-destination', '.artifacts'], {
     cwd: root,
     encoding: 'utf8',
     env: { ...process.env, WORKONCE_REUSE_BOUND_BUILD: '1' },
@@ -29,8 +38,7 @@ try {
     join(directory, 'package.json'),
     JSON.stringify({ name: 'workonce-consumer-smoke', version: '1.0.0', private: true }),
   );
-  execFileSync(
-    'npm',
+  execNpm(
     [
       'install',
       '--ignore-scripts',

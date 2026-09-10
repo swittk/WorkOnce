@@ -802,7 +802,7 @@ async function wakePollSample() {
   await queue.ensure(null, { key: 'job' });
   const stop = new AbortController();
   const started = performance.now();
-  const result = await observe(
+  const running = observe(
     queue.run(
       { workerId: 'wake', concurrency: 2, heartbeatMs: 20, idleMs: 800, signal: stop.signal },
       async (run) => {
@@ -812,8 +812,14 @@ async function wakePollSample() {
       },
     ),
   );
-  failAtomic = false;
-  stop.abort();
+  let result;
+  try {
+    result = await within(running, 'wake-poll runner exit');
+  } finally {
+    failAtomic = false;
+    stop.abort();
+    await within(Promise.allSettled([running]), 'wake-poll runner drain');
+  }
   return {
     kind: 'wakePoll',
     exactCause: result.rejected && result.error === failure,

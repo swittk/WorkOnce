@@ -809,7 +809,7 @@ async function runDispatcherPoisonSample() {
     await new Promise((resolve) => setTimeout(resolve, 2));
   }
   controller.abort();
-  await pumping;
+  await within(pumping, 'run-dispatcher shutdown');
   return {
     kind: 'runDispatcher',
     observedWithinDeadline,
