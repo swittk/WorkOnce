@@ -181,6 +181,20 @@ mutate(
   /unbounded spawnSync mutation subprocess/u,
 );
 mutate(
+  'scripts/check-alias-contract-mutation.mjs',
+  'function runNode(args, timeout = 15_000) {',
+  'function runNode(args, timeout = 0) {',
+  'spawnSync shorthand timeout default becomes unbounded',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
+  'scripts/check-alias-contract-mutation.mjs',
+  '    45_000,',
+  '    0,',
+  'spawnSync shorthand timeout call override becomes unbounded',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
   'scripts/local-runner-refinement.mjs',
   "    await within(firstWave.promise, 'competing runners first wave');",
   '    await firstWave.promise;',

@@ -27,6 +27,64 @@ function assertSpawnSyncTimeouts(name, source) {
     true,
     ts.ScriptKind.JS,
   );
+  const positiveNumber = (expression) =>
+    expression && ts.isNumericLiteral(expression) && Number(expression.text) > 0;
+  const directCalls = (functionName) => {
+    const found = [];
+    const collect = (node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === functionName
+      )
+        found.push(node);
+      ts.forEachChild(node, collect);
+    };
+    collect(sourceFile);
+    return found;
+  };
+  const identifierHasPositiveValue = (identifier, context) => {
+    for (let current = context; current; current = current.parent) {
+      if (!ts.isFunctionLike(current)) continue;
+      const parameterIndex = current.parameters.findIndex(
+        (parameter) => ts.isIdentifier(parameter.name) && parameter.name.text === identifier.text,
+      );
+      if (parameterIndex < 0) continue;
+      const parameter = current.parameters[parameterIndex];
+      if (!positiveNumber(parameter.initializer)) return false;
+      if (!current.name || !ts.isIdentifier(current.name)) return false;
+      const calls = directCalls(current.name.text);
+      if (calls.length === 0) return false;
+      return calls.every((call) => {
+        const argument = call.arguments[parameterIndex];
+        return argument === undefined ? true : positiveNumber(argument);
+      });
+    }
+    let declaration;
+    const findDeclaration = (node) => {
+      if (
+        declaration === undefined &&
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === identifier.text
+      )
+        declaration = node;
+      ts.forEachChild(node, findDeclaration);
+    };
+    findDeclaration(sourceFile);
+    return declaration !== undefined && positiveNumber(declaration.initializer);
+  };
+  const positiveTimeoutProperty = (property) => {
+    if (ts.isPropertyAssignment(property) && propertyNameText(property.name) === 'timeout')
+      return (
+        positiveNumber(property.initializer) ||
+        (ts.isIdentifier(property.initializer) &&
+          identifierHasPositiveValue(property.initializer, property))
+      );
+    if (ts.isShorthandPropertyAssignment(property) && property.name.text === 'timeout')
+      return identifierHasPositiveValue(property.name, property);
+    return false;
+  };
   let calls = 0;
   function visit(node) {
     if (
@@ -40,11 +98,11 @@ function assertSpawnSyncTimeouts(name, source) {
         options && ts.isObjectLiteralExpression(options),
         `${name} spawnSync options must be an inline object so timeout bounds are auditable`,
       );
-      const hasTimeout = options.properties.some((property) => {
-        if (ts.isShorthandPropertyAssignment(property)) return property.name.text === 'timeout';
-        return ts.isPropertyAssignment(property) && propertyNameText(property.name) === 'timeout';
-      });
-      assert.ok(hasTimeout, `${name} has an unbounded spawnSync mutation subprocess`);
+      const hasPositiveTimeout = options.properties.some(positiveTimeoutProperty);
+      assert.ok(
+        hasPositiveTimeout,
+        `${name} has an unbounded spawnSync mutation subprocess or non-positive timeout`,
+      );
     }
     ts.forEachChild(node, visit);
   }

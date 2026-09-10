@@ -325,6 +325,12 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     );
     await assert.rejects(
       store.atomic(snapshot.id, (row) => ({
+        next: { ...row!, revision: row!.revision + 2 },
+        value: null,
+      })),
+    );
+    await assert.rejects(
+      store.atomic(snapshot.id, (row) => ({
         next: { ...row!, revision: row!.revision + 1 },
         validUntil: Number.NaN,
         value: null,

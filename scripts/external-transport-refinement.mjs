@@ -786,12 +786,13 @@ async function adapterProjection(adapter) {
   }
 }
 async function adapterEquivalenceSample() {
+  const adapters = ['memory', 'sqlite', 'cas'];
   const values = [];
-  for (const adapter of ['memory', 'sqlite', 'cas']) values.push(await adapterProjection(adapter));
+  for (const adapter of adapters) values.push(await adapterProjection(adapter));
   return {
     kind: 'externalAdapterEquivalence',
     equivalent: values.every((value) => stable(value) === stable(values[0])),
-    adapters: 'memory,sqlite,cas',
+    adapters: adapters.join(','),
     exactConflict: values.every((value) => value.conflict === 'settlement_conflict'),
   };
 }

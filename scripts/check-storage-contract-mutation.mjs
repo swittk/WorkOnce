@@ -94,9 +94,9 @@ requireRed(
   'dist/storage-validation.js',
   'exact +1 revision validation',
   ['next.revision !== expectedRevision'],
-  (text) => text.replace('next.revision !== expectedRevision', 'false'),
-  ['--test', 'test/storage-refinement.test.mjs'],
-  /invalidWrite\.exactRevisionError: .*"exactRevisionError":false/u,
+  (text) => text.replace('next.revision !== expectedRevision', 'next.revision < expectedRevision'),
+  ['--test', 'test/conformance.test.mjs'],
+  /Missing expected rejection/u,
 );
 requireRed(
   'dist/sqlite.js',
