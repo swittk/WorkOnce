@@ -2,14 +2,17 @@ import { appendFileSync } from 'node:fs';
 import { createWorkOnce, runExternalAvailable } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
-const [dbPath, effectPath, mode] = process.argv.slice(2);
+const [dbPath, effectPath, mode, leaseMsArg] = process.argv.slice(2);
+const leaseMs = Number(leaseMsArg);
 if (mode !== 'after-settle' && mode !== 'before-settle')
   throw new Error(`Unknown external effect process mode: ${String(mode)}`);
+if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0)
+  throw new Error(`Invalid external effect process lease: ${String(leaseMsArg)}`);
 const store = createSqliteStore(dbPath);
 const work = createWorkOnce({ store, scope: 'external-effect-process' });
 const queue = work.define('job', {
   key: (input) => input.id,
-  limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 60_000 },
+  limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000 },
 });
 const service = queue.serveExternal({
   prepare: (run) => run.handoff(run.input),

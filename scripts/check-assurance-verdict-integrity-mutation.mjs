@@ -326,6 +326,13 @@ mutate(
   /heartbeat crash child must advance logical storage time after the initial claim/u,
 );
 mutate(
+  'test/process/external-effect-process.test.mjs',
+  'const fixtureLeaseMs = childMessageTimeoutMs * 2;',
+  'const fixtureLeaseMs = Math.floor(childMessageTimeoutMs / 2);',
+  'external-effect fixture lease no longer outlives IPC liveness ceiling',
+  /external-effect crash fixture lease must be derived to outlive its IPC liveness ceiling/u,
+);
+mutate(
   'test/process/local-runner-process.test.mjs',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) + 1;',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) - 1;',

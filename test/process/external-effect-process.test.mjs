@@ -9,15 +9,17 @@ import { createWorkOnce, runExternalAvailable } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./external-effect-child.mjs', import.meta.url);
+const childMessageTimeoutMs = 15_000;
+const fixtureLeaseMs = childMessageTimeoutMs * 2;
 function effects(path) {
   if (!existsSync(path)) return [];
   return readFileSync(path, 'utf8').trim().split('\n').filter(Boolean).map(Number);
 }
-const message = (child) => nextChildMessage(child, 15000);
+const message = (child) => nextChildMessage(child, childMessageTimeoutMs);
 function start(dbPath, effectPath, mode) {
   return forkWithInbox(
     childUrl,
-    [dbPath, effectPath, mode],
+    [dbPath, effectPath, mode, String(fixtureLeaseMs)],
     { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
     'External-effect child',
   );
@@ -28,7 +30,7 @@ async function setup(dbPath) {
     const work = createWorkOnce({ store, scope: 'external-effect-process' });
     const queue = work.define('job', {
       key: (input) => input.id,
-      limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 60_000 },
+      limits: { leaseMs: fixtureLeaseMs, maxAttempts: 4, maxElapsedMs: 60_000 },
     });
     await queue.ensure({ id: 'x' });
   } finally {
@@ -40,7 +42,7 @@ function reopen(dbPath, now) {
   const work = createWorkOnce({ store, scope: 'external-effect-process' });
   const queue = work.define('job', {
     key: (input) => input.id,
-    limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 60_000 },
+    limits: { leaseMs: fixtureLeaseMs, maxAttempts: 4, maxElapsedMs: 60_000 },
   });
   const service = queue.serveExternal({
     prepare: (run) => run.handoff(run.input),
@@ -58,7 +60,7 @@ async function killAfter(child, expectedStage) {
     throw new Error(
       `External-effect child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
     );
-  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(childMessageTimeoutMs) });
   child.kill('SIGKILL');
   const [, signal] = await exited;
   assert.equal(signal, 'SIGKILL');

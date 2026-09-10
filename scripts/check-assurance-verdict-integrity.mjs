@@ -835,6 +835,28 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(killHelper, /AbortSignal\.timeout\(15000\)/u);
   assert.match(killHelper, /assert\.equal\(signal, 'SIGKILL'\)/u);
 
+  const externalEffectProcess = read('test/process/external-effect-process.test.mjs');
+  assert.match(
+    externalEffectProcess,
+    /const childMessageTimeoutMs = 15_000;[\s\S]{0,80}?const fixtureLeaseMs = childMessageTimeoutMs \* 2;/u,
+    'external-effect crash fixture lease must be derived to outlive its IPC liveness ceiling',
+  );
+  assert.match(
+    externalEffectProcess,
+    /\[dbPath, effectPath, mode, String\(fixtureLeaseMs\)\]/u,
+    'external-effect crash child must receive the same derived fixture lease',
+  );
+  assert.match(
+    externalEffectProcess,
+    /expiredAt = running\.phase\.attempt\.leaseUntil \+ 1/u,
+    'external-effect crash reclaim must derive expiry from the durable lease deadline',
+  );
+  assert.doesNotMatch(
+    externalEffectProcess,
+    /(?:await )?sleep\(/u,
+    'external-effect crash fixture must not use scheduler sleeps to prove lease expiry',
+  );
+
   const assuranceRunner = read('scripts/run-assurance.mjs');
   assert.match(assuranceRunner, /requireSuccessfulProcess\(result, label\)/u);
   assert.match(assuranceRunner, /function terminateProcessTree\(child\)/u);
