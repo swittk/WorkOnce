@@ -307,10 +307,17 @@ mutate(
 );
 mutate(
   'test/process/sqlite-busy-child.mjs',
-  "      db.exec('COMMIT');\n      process.send?.({ unlocking: true, unlockingAt: Date.now() });",
-  "      process.send?.({ unlocking: true, unlockingAt: Date.now() });\n      db.exec('COMMIT');",
+  "      db.exec('COMMIT');\n      if (process.send) process.send({ unlocking: true, unlockingAt: Date.now() }, finishUnlock);",
+  "      if (process.send) process.send({ unlocking: true, unlockingAt: Date.now() }, finishUnlock);\n      db.exec('COMMIT');",
   'SQLite busy child publishes unlock before commit',
   /SQLite busy lock-release witness must publish only after COMMIT completes/u,
+);
+mutate(
+  'test/process/sqlite-busy-child.mjs',
+  'if (process.send) process.send({ unlocking: true, unlockingAt: Date.now() }, finishUnlock);',
+  'if (process.send) { process.send({ unlocking: true, unlockingAt: Date.now() }); finishUnlock(); }',
+  'SQLite busy child closes before unlock IPC flush completes',
+  /SQLite busy child must flush the unlock witness before closing its IPC channel/u,
 );
 mutate(
   'scripts/check-bounded-trace-domain.mjs',
@@ -318,6 +325,13 @@ mutate(
   '',
   'bounded-domain evidence loses shared refinement sample schema',
   /bounded-domain evidence must hash the shared refinement sample schema/u,
+);
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'test/process/child-ipc-inbox.mjs',\n",
+  '',
+  'bounded-domain evidence loses shared child IPC inbox',
+  /bounded-domain evidence must hash the shared child IPC inbox used by process witnesses/u,
 );
 mutate(
   'scripts/storage-formal.mjs',

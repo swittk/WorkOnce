@@ -52,6 +52,7 @@ const evidenceFiles = [
   'test/local-runner-refinement.test.mjs',
   'test/process/local-runner-child.mjs',
   'test/process/local-runner-process.test.mjs',
+  'test/process/child-ipc-inbox.mjs',
   'formal/WorkOnceLocalRunner.tla',
   'formal/WorkOnceLocalRunner.cfg',
   'scripts/check-local-runner-implementation-mutations.mjs',

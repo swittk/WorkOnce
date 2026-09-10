@@ -22,6 +22,7 @@
     "test/local-runner-refinement.test.mjs",
     "test/process/local-runner-child.mjs",
     "test/process/local-runner-process.test.mjs",
+    "test/process/child-ipc-inbox.mjs",
     "formal/WorkOnceLocalRunner.tla",
     "formal/WorkOnceLocalRunner.cfg",
     "scripts/check-local-runner-implementation-mutations.mjs",
@@ -111,7 +112,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "40c51f2ba60c2d6cb3549fdf0448444de803291747d5771cbd8246f4d99e2bc4",
+  "evidenceDigest": "82963b3fd6948305412124e098a57550275e0770ea05b32958f5260b7211187a",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

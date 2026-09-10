@@ -11,12 +11,20 @@ process.send?.({ locked: true });
 process.once('message', (message) => {
   if (message?.startHold !== true) throw new Error('expected startHold handshake');
   setTimeout(() => {
+    const finishUnlock = (error) => {
+      try {
+        if (error) throw error;
+      } finally {
+        db.close();
+        process.disconnect?.();
+      }
+    };
     try {
       db.exec('COMMIT');
-      process.send?.({ unlocking: true, unlockingAt: Date.now() });
-    } finally {
-      db.close();
-      process.disconnect?.();
+      if (process.send) process.send({ unlocking: true, unlockingAt: Date.now() }, finishUnlock);
+      else finishUnlock();
+    } catch (error) {
+      finishUnlock(error);
     }
   }, holdMs);
 });

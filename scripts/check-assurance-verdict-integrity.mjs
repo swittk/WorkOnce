@@ -152,6 +152,17 @@ export function assertAssuranceVerdictIntegrity() {
     /'scripts\/refinement-sample-schema\.mjs'/u,
     'bounded-domain evidence must hash the shared refinement sample schema',
   );
+  assert.match(
+    boundedDomain,
+    /'test\/process\/child-ipc-inbox\.mjs'/u,
+    'bounded-domain evidence must hash the shared child IPC inbox used by process witnesses',
+  );
+  const sqliteBusyChild = read('test/process/sqlite-busy-child.mjs');
+  assert.match(
+    sqliteBusyChild,
+    /process\.send\(\{ unlocking: true, unlockingAt: Date\.now\(\) \}, finishUnlock\)/u,
+    'SQLite busy child must flush the unlock witness before closing its IPC channel',
+  );
   const formalSource = read('scripts/formal.mjs');
   assert.match(
     formalSource,
@@ -207,10 +218,9 @@ export function assertAssuranceVerdictIntegrity() {
     /finally \{\s*release\(\);\s*try \{\s*await delayed;\s*\} catch \(error\) \{\s*staleError = error;\s*\}\s*\}/u,
     'outbox stale-parent refinement must release its held acknowledgement and drain delayed work in finally',
   );
-  const sqliteBusyChild = read('test/process/sqlite-busy-child.mjs');
   assert.match(
     sqliteBusyChild,
-    /db\.exec\('COMMIT'\);\s*process\.send\?\.\(\{ unlocking: true, unlockingAt: Date\.now\(\) \}\);/u,
+    /db\.exec\('COMMIT'\);[\s\S]{0,160}?process\.send\(\{ unlocking: true, unlockingAt: Date\.now\(\) \}, finishUnlock\)/u,
     'SQLite busy lock-release witness must publish only after COMMIT completes',
   );
   const lifecycleFormalTest = read('test/lifecycle-formal.test.mjs');
