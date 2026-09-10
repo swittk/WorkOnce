@@ -1,8 +1,11 @@
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
-const [path, mode] = process.argv.slice(2);
-const base = createSqliteStore(path);
+const [path, mode, logicalNowArg] = process.argv.slice(2);
+let logicalNow = logicalNowArg === undefined ? undefined : Number(logicalNowArg);
+if (mode === 'heartbeat-ack' && !Number.isSafeInteger(logicalNow))
+  throw new Error('heartbeat-ack requires a safe-integer logical storage clock');
+const base = createSqliteStore(path, logicalNow === undefined ? {} : { now: () => logicalNow });
 const forever = new Promise(() => {
   // The crash fixture must remain alive until its parent delivers SIGKILL.
   // A pending Promise alone does not keep Node's event loop referenced.
@@ -21,6 +24,11 @@ const store =
             next = change.next;
             return change;
           });
+          const claimed =
+            mode === 'heartbeat-ack' &&
+            before?.phase?.state !== 'running' &&
+            next?.phase?.state === 'running';
+          if (claimed) logicalNow += 1;
           const renewed =
             mode === 'heartbeat-ack' &&
             before?.phase?.state === 'running' &&

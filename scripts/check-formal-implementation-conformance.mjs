@@ -1670,6 +1670,18 @@ function assertSourceModelPairing(previousBinding, currentBinding, message) {
   )
     throw new Error(message);
 }
+const outboxPairingMessage =
+  'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.';
+function assertOutboxSourceModelPairing(previousBinding) {
+  assertSourceModelPairing(
+    previousBinding,
+    {
+      sourceDigest: semanticSourceDigest(outboxSourceFiles),
+      modelDigest: formalDigest(outboxModelFiles),
+    },
+    outboxPairingMessage,
+  );
+}
 
 if (process.argv.includes('--check-semantic-environment-binding-only')) {
   if (!fs.existsSync(manifestPath))
@@ -1752,14 +1764,7 @@ if (bindingOnly) {
       'Bound external transport semantics changed without a WorkOnceExternal semantic change. Update the external model or explicitly acknowledge the unchanged abstraction after review.',
     );
   } else if (bindingOnly === '--check-outbox-binding-only') {
-    assertSourceModelPairing(
-      previous.model?.outbox,
-      {
-        sourceDigest: semanticSourceDigest(outboxSourceFiles),
-        modelDigest: formalDigest(outboxModelFiles),
-      },
-      'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
-    );
+    assertOutboxSourceModelPairing(previous.model?.outbox);
   } else {
     assertSourceModelPairing(
       previous.model?.storage,
@@ -1772,6 +1777,11 @@ if (bindingOnly) {
   }
   console.log(`Source/model binding matches for ${bindingOnly}.`);
   process.exit(0);
+}
+
+if (write && !acknowledgePairing && fs.existsSync(manifestPath)) {
+  const previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  assertOutboxSourceModelPairing(previous.model?.outbox);
 }
 
 const live = surface();
@@ -1837,11 +1847,7 @@ if (write) {
     current.model.storage,
     'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
-  assertSourceModelPairing(
-    previous?.model?.outbox,
-    current.model.outbox,
-    'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
-  );
+  assertSourceModelPairing(previous?.model?.outbox, current.model.outbox, outboxPairingMessage);
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

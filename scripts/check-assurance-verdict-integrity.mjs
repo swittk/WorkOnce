@@ -765,7 +765,7 @@ export function assertAssuranceVerdictIntegrity() {
   const processTest = read('test/process/local-runner-process.test.mjs');
   const messageHelper = boundedSection(
     processTest,
-    'function start(path, mode)',
+    'function start(path, mode, now)',
     '\nasync function kill(child)',
     'local-runner buffered IPC helper',
   );
@@ -808,6 +808,21 @@ export function assertAssuranceVerdictIntegrity() {
     processChild,
     /mode === 'multi-active' \? 2000 : 200/u,
     'multi-active crash child must keep the 2000ms synchronization lease',
+  );
+  assert.match(
+    processChild,
+    /now: \(\) => logicalNow/u,
+    'heartbeat crash child must use the parent-supplied logical storage clock',
+  );
+  assert.match(
+    processChild,
+    /if \(claimed\) logicalNow \+= 1/u,
+    'heartbeat crash child must advance logical storage time after the initial claim',
+  );
+  assert.match(
+    processTest,
+    /seed\(path, 1, 200, logicalNow\)[\s\S]{0,160}?start\(path, 'heartbeat-ack', logicalNow\)/u,
+    'heartbeat crash parent must seed and start the child on one shared logical storage clock',
   );
 
   const killHelper = boundedSection(

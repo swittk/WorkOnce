@@ -319,6 +319,13 @@ mutate(
   /multi-active crash child must keep the 2000ms synchronization lease/u,
 );
 mutate(
+  'test/process/local-runner-child.mjs',
+  '          if (claimed) logicalNow += 1;',
+  '          void claimed;',
+  'heartbeat crash child loses deterministic logical clock advance',
+  /heartbeat crash child must advance logical storage time after the initial claim/u,
+);
+mutate(
   'test/process/local-runner-process.test.mjs',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) + 1;',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) - 1;',

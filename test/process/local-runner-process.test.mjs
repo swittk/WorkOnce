@@ -10,10 +10,12 @@ import { createWorkOnce, succeed } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./local-runner-child.mjs', import.meta.url);
-function start(path, mode) {
+function start(path, mode, now) {
+  const args = [path, mode];
+  if (now !== undefined) args.push(String(now));
   return forkWithInbox(
     childUrl,
-    [path, mode],
+    args,
     { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
     'Local-runner child',
   );
@@ -39,8 +41,8 @@ async function cleanupChild(child) {
   if (!child.killed) child.kill('SIGKILL');
   await exited;
 }
-async function seed(path, count, leaseMs = 200) {
-  const store = createSqliteStore(path);
+async function seed(path, count, leaseMs = 200, now) {
+  const store = createSqliteStore(path, now === undefined ? {} : { now: () => now });
   try {
     const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
       limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000, maxDeferrals: 2 },
@@ -123,8 +125,9 @@ test('SIGKILL after heartbeat commit but before reply preserves renewed lease an
   const directory = mkdtempSync(join(tmpdir(), 'workonce-local-runner-heartbeat-'));
   const path = join(directory, 'queue.sqlite');
   try {
-    await seed(path, 1);
-    const child = start(path, 'heartbeat-ack');
+    const logicalNow = 1000;
+    await seed(path, 1, 200, logicalNow);
+    const child = start(path, 'heartbeat-ack', logicalNow);
     let oldRef;
     try {
       assert.equal((await nextMessage(child)).ready, true);

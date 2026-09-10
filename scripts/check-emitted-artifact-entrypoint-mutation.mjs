@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { assertEmittedArtifactEntrypoints } from './check-emitted-artifact-entrypoints.mjs';
 
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
@@ -13,6 +12,20 @@ const packagePath = path.join(root, 'package.json');
 const original = fs.readFileSync(packagePath, 'utf8');
 const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
 const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');
+function expectCheckerFailure(context, pattern) {
+  let failure;
+  try {
+    assertEmittedArtifactEntrypoints();
+  } catch (error) {
+    failure = error;
+  }
+  assert.ok(failure, `${context} unexpectedly passed`);
+  assert.match(
+    `${failure.name}: ${failure.message}`,
+    pattern,
+    `${context} failed for an unrelated reason`,
+  );
+}
 try {
   const pkg = JSON.parse(original);
   assert.equal(
@@ -22,15 +35,10 @@ try {
   );
   pkg.scripts['test:process'] = 'node --test test/process/*.test.mjs';
   mutationFiles.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
-  const result = spawnSync(process.execPath, ['scripts/check-emitted-artifact-entrypoints.mjs'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  requireExpectedProcessFailure(result, 'unguarded test:process entrypoint unexpectedly passed');
-  assert.match(output, /test:process.*lost its required build\/binding guard/u);
+  expectCheckerFailure(
+    'unguarded test:process entrypoint',
+    /test:process.*lost its required build\/binding guard/u,
+  );
   console.log(
     'Emitted-artifact entrypoint mutation guard rejects removal of test:process freshness.',
   );
@@ -47,14 +55,10 @@ try {
       preparePath,
       prepareOriginal.replace('assertBuildSourceBinding();', 'void 0;'),
     );
-    const unboundPrepare = spawnSync(
-      process.execPath,
-      ['scripts/check-emitted-artifact-entrypoints.mjs'],
-      { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+    expectCheckerFailure(
+      'unbound prepare reuse',
+      /prepare-package\.mjs may reuse dist only after verifying/u,
     );
-    const unboundOutput = `${unboundPrepare.stdout ?? ''}\n${unboundPrepare.stderr ?? ''}`;
-    requireExpectedProcessFailure(unboundPrepare, 'unbound prepare reuse unexpectedly passed');
-    assert.match(unboundOutput, /prepare-package\.mjs may reuse dist only after verifying/u);
     console.log(
       'Emitted-artifact entrypoint mutation guard rejects unbound package prepare reuse.',
     );
@@ -73,17 +77,10 @@ try {
       'comment-only prepare guard mutation anchor is stale',
     );
     mutationFiles.writeFileSync(preparePath, commentedGuard);
-    const commentOnlyPrepare = spawnSync(
-      process.execPath,
-      ['scripts/check-emitted-artifact-entrypoints.mjs'],
-      { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+    expectCheckerFailure(
+      'comment-only prepare guard',
+      /prepare-package\.mjs may reuse dist only after verifying/u,
     );
-    const commentOnlyOutput = `${commentOnlyPrepare.stdout ?? ''}\n${commentOnlyPrepare.stderr ?? ''}`;
-    requireExpectedProcessFailure(
-      commentOnlyPrepare,
-      'comment-only prepare guard unexpectedly passed',
-    );
-    assert.match(commentOnlyOutput, /prepare-package\.mjs may reuse dist only after verifying/u);
     console.log('Emitted-artifact entrypoint checker ignores comment-only binding guards.');
   } finally {
     mutationFiles.restoreAll();
@@ -105,18 +102,8 @@ try {
         "await Promise.resolve({}); /* import('./runtime-boundary-refinement.mjs') */",
       ),
     );
-    const commentOnlyImport = spawnSync(
-      process.execPath,
-      ['scripts/check-emitted-artifact-entrypoints.mjs'],
-      { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
-    );
-    const commentOnlyImportOutput = `${commentOnlyImport.stdout ?? ''}\n${commentOnlyImport.stderr ?? ''}`;
-    requireExpectedProcessFailure(
-      commentOnlyImport,
-      'comment-only formal producer import unexpectedly passed',
-    );
-    assert.match(
-      commentOnlyImportOutput,
+    expectCheckerFailure(
+      'comment-only formal producer import',
       /formal\.mjs must verify the bound build before importing/u,
     );
     console.log('Emitted-artifact entrypoint checker ignores comment-only producer imports.');
@@ -137,20 +124,8 @@ try {
       "run('packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);\n" + buildAnchor,
     ),
   );
-  const earlyConsumer = spawnSync(
-    process.execPath,
-    ['scripts/check-emitted-artifact-entrypoints.mjs'],
-    {
-      cwd: root,
-      encoding: 'utf8',
-      env: process.env,
-      timeout: 15_000,
-    },
-  );
-  const earlyOutput = `${earlyConsumer.stdout ?? ''}\n${earlyConsumer.stderr ?? ''}`;
-  requireExpectedProcessFailure(earlyConsumer, 'pre-build assurance consumer unexpectedly passed');
-  assert.match(
-    earlyOutput,
+  expectCheckerFailure(
+    'pre-build assurance consumer',
     /packed consumer.*exactly once|packed consumer.*before the single build/u,
   );
   console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
@@ -169,19 +144,8 @@ try {
   ['unlisted concurrent dist consumer', process.execPath, ['scripts/consumer-smoke.mjs']],`,
     ),
   );
-  const concurrentConsumer = spawnSync(
-    process.execPath,
-    ['scripts/check-emitted-artifact-entrypoints.mjs'],
-    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
-  );
-  const concurrentOutput = `${concurrentConsumer.stdout ?? ''}
-${concurrentConsumer.stderr ?? ''}`;
-  requireExpectedProcessFailure(
-    concurrentConsumer,
-    'concurrent pre-build assurance consumer unexpectedly passed',
-  );
-  assert.match(
-    concurrentOutput,
+  expectCheckerFailure(
+    'concurrent pre-build assurance consumer',
     /unlisted concurrent dist consumer.*before the single build.*pre-build exemption/u,
   );
   console.log(
