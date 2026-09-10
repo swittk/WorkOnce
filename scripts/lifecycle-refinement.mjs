@@ -762,6 +762,15 @@ export function assertLifecycleRefinementSamples(samples) {
     lifecycleExpectedKindCounts,
     'lifecycle sample kind coverage drifted',
   );
+  for (const kind of ['terminalReceipt', 'terminalAckLoss'])
+    assert.deepEqual(
+      samples
+        .filter((sample) => sample.kind === kind)
+        .map((sample) => sample.outcomeKind)
+        .sort(),
+      ['fail', 'succeed'],
+      `${kind} outcome coverage drifted`,
+    );
   for (const kind of [
     'claimScanContinuation',
     'stolenPageContinuation',

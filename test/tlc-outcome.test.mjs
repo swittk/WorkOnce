@@ -92,3 +92,10 @@ test('infrastructure failure cannot masquerade as a mutation kill', () => {
     /TLC infrastructure failure.*TypeOK.*jvm_or_classpath/u,
   );
 });
+
+test('a passing TLC run cannot satisfy a mutation witness', () => {
+  assert.throws(
+    () => requireExpectedInvariantViolation(result({ status: 0 }), 'TypeOK'),
+    /did not violate expected invariant TypeOK/u,
+  );
+});

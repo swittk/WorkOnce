@@ -30,6 +30,18 @@ function within(promise, label, timeoutMs = 3000) {
 function stable(value) {
   return JSON.stringify(value);
 }
+function stableReadState(value) {
+  const strip = (entry) => {
+    if (Array.isArray(entry)) return entry.map(strip);
+    if (entry && typeof entry === 'object') {
+      const cloned = structuredClone(entry);
+      delete cloned.observedAt;
+      return cloned;
+    }
+    return entry;
+  };
+  return stable(strip(value));
+}
 function withoutHistory(row) {
   const cloned = structuredClone(row);
   delete cloned.history;
@@ -255,7 +267,8 @@ async function historyTruncationSample() {
 }
 
 function baseFixture(adapter) {
-  const now = () => 100;
+  let clock = 100;
+  const now = () => clock++;
   if (adapter === 'memory') return { store: createMemoryStore({ now }), close() {} };
   if (adapter === 'sqlite') {
     const directory = mkdtempSync(join(tmpdir(), 'workonce-read-race-'));
@@ -320,17 +333,21 @@ async function endpointRaceSample(adapter, mode) {
       mode,
       callerOrderExact: observed[0].key === 'a' && observed[1].key === 'b',
       perIdRealState:
-        (stable(observed[0]) === stable(before[0]) || stable(observed[0]) === stable(after[0])) &&
-        (stable(observed[1]) === stable(before[1]) || stable(observed[1]) === stable(after[1])),
-      expectedEndpoint: stable(observed) === stable(expected),
+        (stableReadState(observed[0]) === stableReadState(before[0]) ||
+          stableReadState(observed[0]) === stableReadState(after[0])) &&
+        (stableReadState(observed[1]) === stableReadState(before[1]) ||
+          stableReadState(observed[1]) === stableReadState(after[1])),
+      expectedEndpoint: stableReadState(observed) === stableReadState(expected),
       mixedRevision: observed[0].revision !== observed[1].revision,
       oneStorageClock: observed[0].observedAt === observed[1].observedAt,
       perIdContractPreserved:
         observed.length === 2 &&
         observed[0]?.key === 'a' &&
         observed[1]?.key === 'b' &&
-        (stable(observed[0]) === stable(before[0]) || stable(observed[0]) === stable(after[0])) &&
-        (stable(observed[1]) === stable(before[1]) || stable(observed[1]) === stable(after[1])),
+        (stableReadState(observed[0]) === stableReadState(before[0]) ||
+          stableReadState(observed[0]) === stableReadState(after[0])) &&
+        (stableReadState(observed[1]) === stableReadState(before[1]) ||
+          stableReadState(observed[1]) === stableReadState(after[1])),
       crossIdAtomicSnapshotRequired: false,
     };
   } finally {
@@ -341,7 +358,8 @@ async function endpointRaceSample(adapter, mode) {
 }
 
 async function casMixedRaceSample() {
-  const now = () => 100;
+  let clock = 100;
+  const now = () => clock++;
   const native = createMemoryStore({ now });
   const firstRead = deferred();
   const release = deferred();
@@ -394,18 +412,18 @@ async function casMixedRaceSample() {
       mode: 'mixed',
       callerOrderExact: observed[0].key === 'a' && observed[1].key === 'b',
       perIdRealState:
-        stable(observed[0]) === stable(before[0]) &&
-        stable(observed[1]) === stable(bAfter) &&
-        stable(observed[1]) === stable(after[1]),
-      expectedEndpoint: stable(observed) === stable([before[0], bAfter]),
+        stableReadState(observed[0]) === stableReadState(before[0]) &&
+        stableReadState(observed[1]) === stableReadState(bAfter) &&
+        stableReadState(observed[1]) === stableReadState(after[1]),
+      expectedEndpoint: stableReadState(observed) === stableReadState([before[0], bAfter]),
       mixedRevision: observed[0].revision !== observed[1].revision,
       oneStorageClock: observed[0].observedAt === observed[1].observedAt,
       perIdContractPreserved:
         observed.length === 2 &&
         observed[0]?.key === 'a' &&
         observed[1]?.key === 'b' &&
-        stable(observed[0]) === stable(before[0]) &&
-        stable(observed[1]) === stable(bAfter),
+        stableReadState(observed[0]) === stableReadState(before[0]) &&
+        stableReadState(observed[1]) === stableReadState(bAfter),
       crossIdAtomicSnapshotRequired: false,
     };
   } finally {

@@ -29,6 +29,25 @@ test('local runner refinement rejects adapter substitution without a count chang
   );
 });
 
+test('local runner refinement rejects stopReclaim adapter/mode substitution without a count change', async () => {
+  const samples = await samplesOnce;
+  const targetIndex = samples.findIndex(
+    (sample) =>
+      sample.kind === 'stopReclaim' && sample.adapter === 'sqlite' && sample.mode === 'heartbeat',
+  );
+  const donor = samples.find(
+    (sample) =>
+      sample.kind === 'stopReclaim' && sample.adapter === 'memory' && sample.mode === 'heartbeat',
+  );
+  assert.notEqual(targetIndex, -1);
+  assert.ok(donor);
+  const mutant = samples.map((sample, index) => (index === targetIndex ? { ...donor } : sample));
+  assert.throws(
+    () => assertLocalRunnerRefinementSamples(mutant),
+    /stopReclaim adapter\/mode coverage drifted/u,
+  );
+});
+
 test('local runner refinement rejects standalone kind substitution without a count change', async () => {
   const samples = await samplesOnce;
   const dynamicIndex = samples.findIndex((sample) => sample.kind === 'dynamicArrival');

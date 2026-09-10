@@ -347,22 +347,27 @@ async function dynamicArrivalSample() {
       return run.succeed();
     },
   );
-  await waitUntil(() => starts.length >= 2);
-  for (let index = 6; index < 10; index++) await queue.ensure({ index }, { key: String(index) });
-  await waitUntil(async () => {
-    const snapshots = await queue.inspectMany(
-      Array.from({ length: 10 }, (_, index) => String(index)),
-    );
-    return snapshots.every((snapshot) => snapshot?.phase.state === 'succeeded');
-  });
-  stop.abort();
-  await running;
-  return {
-    kind: 'dynamicArrival',
-    allTen: counts.size === 10 && [...counts.values()].every((count) => count === 1),
-    boundedCapacity: peak === 3,
-    refilledAroundSlow: laterBeforeSlow,
-  };
+  try {
+    await waitUntil(() => starts.length >= 2);
+    for (let index = 6; index < 10; index++) await queue.ensure({ index }, { key: String(index) });
+    await waitUntil(async () => {
+      const snapshots = await queue.inspectMany(
+        Array.from({ length: 10 }, (_, index) => String(index)),
+      );
+      return snapshots.every((snapshot) => snapshot?.phase.state === 'succeeded');
+    });
+    stop.abort();
+    await running;
+    return {
+      kind: 'dynamicArrival',
+      allTen: counts.size === 10 && [...counts.values()].every((count) => count === 1),
+      boundedCapacity: peak === 3,
+      refilledAroundSlow: laterBeforeSlow,
+    };
+  } finally {
+    stop.abort();
+    await Promise.allSettled([running]);
+  }
 }
 
 async function handledClaimRecoverySample() {
@@ -398,14 +403,19 @@ async function handledClaimRecoverySample() {
       return run.succeed();
     },
   );
-  await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
-  stop.abort();
-  await running;
-  return {
-    kind: 'handledRecovery',
-    exactErrors: observed.length === 3 && observed.every((error) => error === failure),
-    eventuallyRanOnce: calls === 1,
-  };
+  try {
+    await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
+    stop.abort();
+    await running;
+    return {
+      kind: 'handledRecovery',
+      exactErrors: observed.length === 3 && observed.every((error) => error === failure),
+      eventuallyRanOnce: calls === 1,
+    };
+  } finally {
+    stop.abort();
+    await Promise.allSettled([running]);
+  }
 }
 
 async function competingRunnersSample(adapter) {
@@ -449,21 +459,28 @@ async function competingRunnersSample(adapter) {
       { workerId: 'B', concurrency: 1, idleMs: 1, heartbeatMs: 50, signal: stopB.signal },
       handler,
     );
-    await within(firstWave.promise, 'competing runners first wave');
-    release.resolve();
-    await waitUntil(async () => {
-      const snapshots = await first.inspectMany(['0', '1', '2', '3']);
-      return snapshots.every((snapshot) => snapshot?.phase.state === 'succeeded');
-    });
-    stopA.abort();
-    stopB.abort();
-    await Promise.all([runningA, runningB]);
-    return {
-      kind: 'competingRunners',
-      adapter,
-      bothOwners: owners.has('A') && owners.has('B'),
-      exactlyOnce: counts.size === 4 && [...counts.values()].every((count) => count === 1),
-    };
+    try {
+      await within(firstWave.promise, 'competing runners first wave');
+      release.resolve();
+      await waitUntil(async () => {
+        const snapshots = await first.inspectMany(['0', '1', '2', '3']);
+        return snapshots.every((snapshot) => snapshot?.phase.state === 'succeeded');
+      });
+      stopA.abort();
+      stopB.abort();
+      await Promise.all([runningA, runningB]);
+      return {
+        kind: 'competingRunners',
+        adapter,
+        bothOwners: owners.has('A') && owners.has('B'),
+        exactlyOnce: counts.size === 4 && [...counts.values()].every((count) => count === 1),
+      };
+    } finally {
+      release.resolve();
+      stopA.abort();
+      stopB.abort();
+      await Promise.allSettled([runningA, runningB]);
+    }
   } finally {
     fixture.close();
   }
@@ -593,13 +610,19 @@ async function backoffLane(mode) {
       return run.succeed();
     },
   );
-  await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
-  stop.abort();
-  await running;
-  const durable = semanticSnapshot(await queue.inspect('job'));
-  await queue.ensure(null, { key: 'future' });
-  const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
-  return { observed, durable, future: future.status };
+  try {
+    await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
+    stop.abort();
+    await running;
+    const durable = semanticSnapshot(await queue.inspect('job'));
+    await queue.ensure(null, { key: 'future' });
+    const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
+    return { observed, durable, future: future.status };
+  } finally {
+    release.resolve();
+    stop.abort();
+    await Promise.allSettled([running]);
+  }
 }
 
 async function backoffCongruenceSample() {
@@ -648,21 +671,28 @@ async function lateClaimStopSample() {
       return run.succeed();
     },
   );
-  await within(
-    Promise.all([firstHandlerEntered.promise, secondClaimEntered.promise]),
-    'late claim/handler entries',
-  );
-  stop.abort(new Error('late-claim-stop'));
-  releaseFirstHandler.resolve();
-  await nextTurn();
-  releaseSecondClaim.resolve();
-  await running;
-  const late = await queue.inspect('b');
-  return {
-    kind: 'lateClaimStop',
-    oneHandler: started.length === 1 && started[0] === 'a',
-    lateLeaseNotExecuted: late.phase.state === 'running',
-  };
+  try {
+    await within(
+      Promise.all([firstHandlerEntered.promise, secondClaimEntered.promise]),
+      'late claim/handler entries',
+    );
+    stop.abort(new Error('late-claim-stop'));
+    releaseFirstHandler.resolve();
+    await nextTurn();
+    releaseSecondClaim.resolve();
+    await running;
+    const late = await queue.inspect('b');
+    return {
+      kind: 'lateClaimStop',
+      oneHandler: started.length === 1 && started[0] === 'a',
+      lateLeaseNotExecuted: late.phase.state === 'running',
+    };
+  } finally {
+    stop.abort(new Error('late-claim-stop-cleanup'));
+    releaseFirstHandler.resolve();
+    releaseSecondClaim.resolve();
+    await Promise.allSettled([running]);
+  }
 }
 
 async function timerBoundarySample() {

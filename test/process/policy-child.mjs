@@ -13,9 +13,11 @@ const dynamicTiming = async (context) => {
     ? { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true }
     : { afterMs: 0 };
 };
+const limits = { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 30000, maxDeferrals: 4 };
 const staticDefinition = {
   retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
   wait: { afterMs: 0 },
+  limits,
 };
 const store =
   mode === 'after-commit'
@@ -39,8 +41,8 @@ const store =
 const definition =
   mode === 'during-policy'
     ? outcomeKind === 'retry'
-      ? { retry: dynamicTiming }
-      : { wait: dynamicTiming }
+      ? { retry: dynamicTiming, limits }
+      : { wait: dynamicTiming, limits }
     : staticDefinition;
 const queue = createWorkOnce({ store, scope: 'policy-process' }).define('job', definition);
 const [run] = await queue.claim({ workerId: `child-${mode}-${outcomeKind}`, limit: 1 });

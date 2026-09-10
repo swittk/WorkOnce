@@ -540,10 +540,7 @@ export function assertAssuranceVerdictIntegrity() {
       }
       return [];
     }
-    assert.ok(
-      mutations.length + guardedMutations > 0,
-      `${name} mutation-target audit found no writes to classify`,
-    );
+    if (mutations.length + guardedMutations === 0) return null;
     const targets = [];
     for (const mutation of mutations) {
       const target = mutation.call.arguments[mutation.targetIndex];
@@ -558,15 +555,8 @@ export function assertAssuranceVerdictIntegrity() {
   }
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
-    if (
-      !/(?:writeFileSync|appendFileSync|copyFileSync|cpSync|renameSync|rmSync|unlinkSync|truncateSync|writeSync|promises\s*\.\s*(?:writeFile|appendFile|copyFile|cp|rename|rm|unlink|truncate))\s*\(/u.test(
-        source,
-      ) &&
-      !/from ['"]node:fs\/promises['"]/u.test(source) &&
-      !/import\s*\{[^}]*\bpromises\b[^}]*\}\s*from\s*['"]node:fs['"]/u.test(source)
-    )
-      continue;
     const resolvedTargets = resolvedMutationWriteTargets(source, name);
+    if (resolvedTargets === null) continue;
     const generatedOnly = resolvedTargets.every((target) =>
       generatedMutationRoots.some(
         (rootName) => target === rootName || target.startsWith(`${rootName}/`),

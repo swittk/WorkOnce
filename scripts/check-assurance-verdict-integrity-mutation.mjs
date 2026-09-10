@@ -151,6 +151,13 @@ mutate(
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-lifecycle-source-model-mutation.mjs',
+  "import assert from 'node:assert/strict';",
+  "import assert from 'node:assert/strict';\nimport fs from 'node:fs';\nconst { writeFile: hiddenWrite } = fs.promises;\nhiddenWrite('src/worker.ts', 'selector-probe');",
+  'runtime-destructured promise write alias bypasses mutation-target selection',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
   'scripts/local-runner-refinement.mjs',
   '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
   '          await sleep(35);',

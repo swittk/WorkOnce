@@ -404,14 +404,10 @@ const externalMutants = {
   /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
   CurrentRunningExported: String.raw`  /\ phase' = "running" /\ fence' = 1 /\ exports' = {}
   /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "lease"`,
-  SuccessReceiptCurrent: String.raw`  /\ phase' = "succeeded" /\ fence' = 1 /\ exports' = {1}
-  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "settled"`,
   EffectsRequireExport: String.raw`  /\ phase' = "available" /\ fence' = 0 /\ exports' = {}
   /\ effects' = {1} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "effect"`,
   RejectedFenceIsStale: String.raw`  /\ phase' = "available" /\ fence' = 1 /\ exports' = {1}
   /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 1 /\ reply' = "stale"`,
-  UnknownAckIsDurable: String.raw`  /\ phase' = "available" /\ fence' = 1 /\ exports' = {1}
-  /\ effects' = {} /\ receiptFence' = 0 /\ lastRejectedFence' = 0 /\ reply' = "unknown"`,
 };
 
 const policyMutants = {
@@ -474,7 +470,10 @@ const localRunnerMutationPlan = mutationCoveragePlan(
   localRunnerMutants,
 );
 const policyMutationPlan = mutationCoveragePlan('formal/WorkOncePolicy.cfg', policyMutants);
-const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants);
+const externalMutationPlan = mutationCoveragePlan('formal/WorkOnceExternal.cfg', externalMutants, [
+  'SuccessReceiptCurrent',
+  'UnknownAckIsDurable',
+]);
 const outboxMutationPlan = mutationCoveragePlan('formal/WorkOnceOutbox.cfg', outboxMutants, [
   'PoisonIntentRetained',
   'AllOriginalIntentAccounted',
@@ -1005,6 +1004,40 @@ if (runtimeOnly) {
     baseConfig: baseExternalConfig,
     plan: externalMutationPlan,
   });
+
+  const externalSemanticMutants = [
+    {
+      name: 'WorkOnceExternalBadSuccessReceiptMutant',
+      invariant: 'SuccessReceiptCurrent',
+      action: String.raw`  /\ phase = "running" /\ fence \in exports
+  /\ phase' = "succeeded" /\ receiptFence' = 0 /\ reply' = "settled"
+  /\ UNCHANGED <<fence, exports, effects, lastRejectedFence>>`,
+    },
+    {
+      name: 'WorkOnceExternalUnknownAckNotDurableMutant',
+      invariant: 'UnknownAckIsDurable',
+      action: String.raw`  /\ phase = "running" /\ fence \in exports
+  /\ phase' = "running" /\ receiptFence' = 0 /\ reply' = "unknown"
+  /\ UNCHANGED <<fence, exports, effects, lastRejectedFence>>`,
+    },
+  ];
+  for (const mutant of externalSemanticMutants) {
+    const modulePath = resolve(tlcWorkspace, `${mutant.name}.tla`);
+    const configPath = resolve(tlcWorkspace, `${mutant.name}.cfg`);
+    writeFileSync(
+      modulePath,
+      `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceExternal\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
+    );
+    writeFileSync(
+      configPath,
+      singleInvariantConfig(baseExternalConfig, mutant.invariant).replace(
+        'SPECIFICATION Spec',
+        'SPECIFICATION MutantSpec',
+      ),
+    );
+    requireInvariantRejects(mutant.name, configPath, modulePath, mutant.invariant);
+    markExtraMutationWitness(externalMutationPlan, mutant.invariant);
+  }
 
   const externalSampleMutant = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.tla');
   const externalSampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.cfg');

@@ -42,6 +42,25 @@ test('lifecycle refinement rejects count-preserving sample-kind substitution', a
   );
 });
 
+test('lifecycle refinement rejects count-preserving terminal outcome substitution', async () => {
+  const samples = await runLifecycleRefinementSamples();
+  for (const kind of ['terminalReceipt', 'terminalAckLoss']) {
+    const failIndex = samples.findIndex(
+      (sample) => sample.kind === kind && sample.outcomeKind === 'fail',
+    );
+    const succeed = samples.find(
+      (sample) => sample.kind === kind && sample.outcomeKind === 'succeed',
+    );
+    assert.notEqual(failIndex, -1);
+    assert.ok(succeed);
+    const mutant = samples.map((sample, index) => (index === failIndex ? { ...succeed } : sample));
+    assert.throws(
+      () => assertLifecycleRefinementSamples(mutant),
+      new RegExp(`${kind} outcome coverage drifted`, 'u'),
+    );
+  }
+});
+
 test('lifecycle refinement rejects extra evidence fields in equivalence families', async () => {
   const samples = await runLifecycleRefinementSamples();
   for (const kind of ['claimOrderEquivalence', 'adapterLifecycleEquivalence']) {

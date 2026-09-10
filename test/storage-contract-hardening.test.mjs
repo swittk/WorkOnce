@@ -51,7 +51,13 @@ function casFixture(options = {}) {
 
 function fixtures() {
   const sqliteDir = mkdtempSync(join(tmpdir(), 'workonce-storage-contract-'));
-  const sqlite = createSqliteStore(join(sqliteDir, 'queue.sqlite'), { now: () => 100 });
+  let sqlite;
+  try {
+    sqlite = createSqliteStore(join(sqliteDir, 'queue.sqlite'), { now: () => 100 });
+  } catch (error) {
+    rmSync(sqliteDir, { recursive: true, force: true });
+    throw error;
+  }
   const cas = casFixture();
   return [
     { name: 'memory', store: createMemoryStore({ now: () => 100 }), close() {} },
@@ -205,22 +211,28 @@ test('SQLite startup retry helper handles a one-shot native busy before schema b
 test('SQLite opens only the current schema and never adopts an old development table shape', () => {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-sqlite-current-schema-only-'));
   const path = join(directory, 'queue.sqlite');
-  const raw = new DatabaseSync(path);
-  raw.exec('CREATE TABLE workonce(id TEXT PRIMARY KEY, body TEXT NOT NULL);');
-  const before = raw
-    .prepare('PRAGMA table_info(workonce)')
-    .all()
-    .map((row) => row.name);
-  raw.close();
-  let failure;
+  let raw;
+  let reopened;
+  let unexpectedStore;
   try {
-    createSqliteStore(path);
-  } catch (error) {
-    failure = error;
-  }
-  assert.ok(failure instanceof Error, 'old development schema must not be silently adopted');
-  const reopened = new DatabaseSync(path);
-  try {
+    raw = new DatabaseSync(path);
+    raw.exec('CREATE TABLE workonce(id TEXT PRIMARY KEY, body TEXT NOT NULL);');
+    const before = raw
+      .prepare('PRAGMA table_info(workonce)')
+      .all()
+      .map((row) => row.name);
+    raw.close();
+    raw = undefined;
+    let failure;
+    try {
+      unexpectedStore = createSqliteStore(path);
+      unexpectedStore.close();
+      unexpectedStore = undefined;
+    } catch (error) {
+      failure = error;
+    }
+    assert.ok(failure instanceof Error, 'old development schema must not be silently adopted');
+    reopened = new DatabaseSync(path);
     const after = reopened
       .prepare('PRAGMA table_info(workonce)')
       .all()
@@ -228,7 +240,9 @@ test('SQLite opens only the current schema and never adopts an old development t
     assert.deepEqual(after, before);
     assert.deepEqual(after, ['id', 'body']);
   } finally {
-    reopened.close();
+    unexpectedStore?.close();
+    reopened?.close();
+    raw?.close();
     rmSync(directory, { recursive: true, force: true });
   }
 });

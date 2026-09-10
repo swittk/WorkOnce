@@ -62,5 +62,7 @@ LifecycleSamplesConform(Samples) ==
   /\ {s.adapter : s \in {x \in Samples : x.kind = "stolenPageContinuation"}} = LifecycleAdapterDomain
   /\ {s.adapter : s \in {x \in Samples : x.kind = "claimLimit"}} = LifecycleAdapterDomain
   /\ {s.adapter : s \in {x \in Samples : x.kind = "finiteClaimDrain"}} = LifecycleAdapterDomain
+  /\ {s.outcomeKind : s \in {x \in Samples : x.kind = "terminalReceipt"}} = {"succeed", "fail"}
+  /\ {s.outcomeKind : s \in {x \in Samples : x.kind = "terminalAckLoss"}} = {"succeed", "fail"}
   /\ \A s \in Samples : LifecycleSampleOK(s)
 =============================================================================
