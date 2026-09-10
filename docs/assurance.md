@@ -363,7 +363,7 @@ The current compiled lifecycle observation set contains **26 observations**. In 
 cases it covers exact lease-expiry versus stale-fence causes, legal cancel-before-completion and
 completion-before-cancel orderings, concurrent generation reset, async retry/rerun check races,
 terminal receipt replay/conflict, generation/fence monotonicity, cross-adapter lifecycle projection
-and safe-integer fence/revision/generation boundaries. `WorkOnceLifecycleTemporal.cfg` has seven
+and safe-integer fence/revision/generation boundaries. `WorkOnceLifecycleTemporal.cfg` has eight
 configured invariants and `WorkOnceClaimScan.cfg` has six; every configured invariant has a batched
 mutation witness, and an invalid compiled-observation set is independently rejected.
 

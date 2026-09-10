@@ -123,6 +123,26 @@ assert.match(
   /const outcomes = await Promise\.allSettled\(/u,
   'Parallel assurance must wait for every direct child to settle before propagating a failure.',
 );
+assert.match(
+  text,
+  /processTreeCleanupWaitMs\s*=\s*3000[\s\S]{0,2200}?pending\.get\(child\)\?\.armCleanupTimeout\(\)/u,
+  'Parallel assurance failure cleanup must arm a bounded wait for every direct child.',
+);
+assert.match(
+  text,
+  /containmentFailures\.length > 0[\s\S]{0,500}?new AggregateError/u,
+  'Parallel assurance must report process-tree containment failures alongside the primary failure.',
+);
+assert.match(
+  text,
+  /fs\.writeFileSync\(\$\{JSON\.stringify\(readyMarker\)\}, String\(process\.pid\)\)/u,
+  'Process-tree descendants must report readiness before the injected parent failure.',
+);
+assert.match(
+  text,
+  /await waitForProcessExit\(pid, label\)/u,
+  'Process-tree containment self-test must directly observe each ready descendant exit.',
+);
 
 assert.match(
   text,

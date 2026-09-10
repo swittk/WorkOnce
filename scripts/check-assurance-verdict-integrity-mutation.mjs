@@ -11,7 +11,7 @@ const mutationFiles = createMutationFileGuard();
 function mutate(relative, from, to, label, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
-  assert.ok(original.includes(from), `${label} mutation anchor is stale`);
+  assert.equal(original.split(from).length, 2, `${label} mutation anchor is stale or not unique`);
   try {
     mutationFiles.writeFileSync(target, original.replace(from, to));
     let failure;
@@ -334,9 +334,23 @@ mutate(
   /bounded-domain evidence must hash the shared child IPC inbox used by process witnesses/u,
 );
 mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'assurance/red-before/mutation-guard-cross-contamination.json',\n",
+  '',
+  'bounded-domain evidence loses mutation-guard scheduling witness',
+  /bounded-domain evidence must hash the mutation-guard scheduling witness/u,
+);
+mutate(
+  'scripts/check-bounded-trace-domain.mjs',
+  "  'assurance/red-before/process-fault-test-concurrency.json',\n",
+  '',
+  'bounded-domain evidence loses process-fault scheduling witness',
+  /bounded-domain evidence must hash the process-fault scheduling witness/u,
+);
+mutate(
   'scripts/storage-formal.mjs',
-  'CONSTANT MaxConflicts = ${maxConflicts}',
-  'CONSTANT MaxConflicts = 3',
+  'SPECIFICATION BatchSpec\\nCONSTANT MaxConflicts = ${maxConflicts}',
+  'SPECIFICATION BatchSpec\\nCONSTANT MaxConflicts = 3',
   'storage mutation config diverges from the reviewed base bound',
   /must not hard-code a different MaxConflicts bound/u,
 );
@@ -358,8 +372,8 @@ mutate(
 
 mutate(
   'scripts/lifecycle-refinement.mjs',
-  '      assertExactBooleanSample(\n        sample,\n        [',
-  '      Object.entries(sample);\n      assertExactBooleanSample(\n        sample,\n        [',
+  "    } else if (sample.kind === 'cancelOrdering') {\n      assertExactBooleanSample(\n        sample,\n        [",
+  "    } else if (sample.kind === 'cancelOrdering') {\n      Object.entries(sample);\n      assertExactBooleanSample(\n        sample,\n        [",
   'refinement validator returns to presence-only evidence checking',
   /validates only evidence fields that happen to be present/u,
 );

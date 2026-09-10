@@ -27,6 +27,21 @@ test('lifecycle refinement rejects adapter substitution without a count change',
   }
 });
 
+test('lifecycle refinement rejects count-preserving sample-kind substitution', async () => {
+  const samples = await runLifecycleRefinementSamples();
+  const sourceIndex = samples.findIndex((sample) => sample.kind === 'leaseFenceCause');
+  const replacement = samples.find((sample) => sample.kind === 'generationCompetition');
+  assert.notEqual(sourceIndex, -1);
+  assert.ok(replacement);
+  const mutant = samples.map((sample, index) =>
+    index === sourceIndex ? { ...replacement } : sample,
+  );
+  assert.throws(
+    () => assertLifecycleRefinementSamples(mutant),
+    /lifecycle sample kind coverage drifted/u,
+  );
+});
+
 test('lifecycle refinement rejects extra evidence fields in equivalence families', async () => {
   const samples = await runLifecycleRefinementSamples();
   for (const kind of ['claimOrderEquivalence', 'adapterLifecycleEquivalence']) {

@@ -164,6 +164,16 @@ export function assertAssuranceVerdictIntegrity() {
     /'test\/process\/child-ipc-inbox\.mjs'/u,
     'bounded-domain evidence must hash the shared child IPC inbox used by process witnesses',
   );
+  assert.match(
+    boundedDomain,
+    /'assurance\/red-before\/mutation-guard-cross-contamination\.json'/u,
+    'bounded-domain evidence must hash the mutation-guard scheduling witness',
+  );
+  assert.match(
+    boundedDomain,
+    /'assurance\/red-before\/process-fault-test-concurrency\.json'/u,
+    'bounded-domain evidence must hash the process-fault scheduling witness',
+  );
   const sqliteBusyChild = read('test/process/sqlite-busy-child.mjs');
   assert.match(
     sqliteBusyChild,

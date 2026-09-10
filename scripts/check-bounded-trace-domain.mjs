@@ -137,6 +137,8 @@ const evidenceFiles = [
   'scripts/formal-implementation-surface.cjs',
   'scripts/check-source-path-portability-mutation.mjs',
   'assurance/red-before/manifest-worktree-source-path-portability.json',
+  'assurance/red-before/mutation-guard-cross-contamination.json',
+  'assurance/red-before/process-fault-test-concurrency.json',
   'scripts/run-assurance.mjs',
   'scripts/consumer-smoke.mjs',
   'scripts/prepare-package.mjs',

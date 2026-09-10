@@ -105,6 +105,20 @@ try {
     text.replace("process.kill(-pid, 'SIGKILL');", "child.kill('SIGKILL');"),
   );
   expectSchedulingFailure(
+    'unbounded failed-child cleanup',
+    (text) => text.replace('      pending.get(child)?.armCleanupTimeout();', '      void child;'),
+    /bounded wait for every direct child/u,
+  );
+  expectSchedulingFailure(
+    'unsynchronized descendant readiness',
+    (text) =>
+      text.replace(
+        '    fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));',
+        '    void readyMarker;',
+      ),
+    /descendants must report readiness/u,
+  );
+  expectSchedulingFailure(
     'lost process-tree containment self-test',
     (text) =>
       text.replace(

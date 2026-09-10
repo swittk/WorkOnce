@@ -735,8 +735,33 @@ export async function runLifecycleRefinementSamples() {
   return samples;
 }
 
+const lifecycleExpectedKindCounts = {
+  revisionHistorySplit: 1,
+  cancelOrdering: 2,
+  terminalReceipt: 2,
+  leaseFenceCause: 1,
+  generationCompetition: 1,
+  resetCheckRace: 2,
+  claimOrderEquivalence: 1,
+  adapterLifecycleEquivalence: 1,
+  terminalAckLoss: 2,
+  lifecycleArithmetic: 1,
+  claimScanContinuation: 3,
+  stolenPageContinuation: 3,
+  claimLimit: 3,
+  finiteClaimDrain: 3,
+};
+
 export function assertLifecycleRefinementSamples(samples) {
   assert.equal(samples.length, 26, 'lifecycle refinement sample family unexpectedly changed');
+  const observedKindCounts = {};
+  for (const sample of samples)
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+  assert.deepEqual(
+    observedKindCounts,
+    lifecycleExpectedKindCounts,
+    'lifecycle sample kind coverage drifted',
+  );
   for (const kind of [
     'claimScanContinuation',
     'stolenPageContinuation',

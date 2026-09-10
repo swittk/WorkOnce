@@ -62,6 +62,68 @@ try {
     mutationFiles.restoreAll();
   }
 
+  try {
+    const commentedGuard = prepareOriginal.replace(
+      'assertBuildSourceBinding();',
+      '// assertBuildSourceBinding();\n  void 0;',
+    );
+    assert.notEqual(
+      commentedGuard,
+      prepareOriginal,
+      'comment-only prepare guard mutation anchor is stale',
+    );
+    mutationFiles.writeFileSync(preparePath, commentedGuard);
+    const commentOnlyPrepare = spawnSync(
+      process.execPath,
+      ['scripts/check-emitted-artifact-entrypoints.mjs'],
+      { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+    );
+    const commentOnlyOutput = `${commentOnlyPrepare.stdout ?? ''}\n${commentOnlyPrepare.stderr ?? ''}`;
+    requireExpectedProcessFailure(
+      commentOnlyPrepare,
+      'comment-only prepare guard unexpectedly passed',
+    );
+    assert.match(commentOnlyOutput, /prepare-package\.mjs may reuse dist only after verifying/u);
+    console.log('Emitted-artifact entrypoint checker ignores comment-only binding guards.');
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
+  const formalPath = path.join(root, 'scripts/formal.mjs');
+  const formalOriginal = fs.readFileSync(formalPath, 'utf8');
+  try {
+    const importAnchor = "await import('./runtime-boundary-refinement.mjs')";
+    assert.equal(
+      formalOriginal.split(importAnchor).length,
+      2,
+      'formal runtime producer import mutation anchor is stale or not unique',
+    );
+    mutationFiles.writeFileSync(
+      formalPath,
+      formalOriginal.replace(
+        importAnchor,
+        "await Promise.resolve({}); /* import('./runtime-boundary-refinement.mjs') */",
+      ),
+    );
+    const commentOnlyImport = spawnSync(
+      process.execPath,
+      ['scripts/check-emitted-artifact-entrypoints.mjs'],
+      { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+    );
+    const commentOnlyImportOutput = `${commentOnlyImport.stdout ?? ''}\n${commentOnlyImport.stderr ?? ''}`;
+    requireExpectedProcessFailure(
+      commentOnlyImport,
+      'comment-only formal producer import unexpectedly passed',
+    );
+    assert.match(
+      commentOnlyImportOutput,
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log('Emitted-artifact entrypoint checker ignores comment-only producer imports.');
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

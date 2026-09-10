@@ -43,29 +43,44 @@ function npmParallelEntry(label, args) {
     return [label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]];
   return [label, 'npm', args];
 }
+const processTreeCleanupWaitMs = 3000;
 function terminateProcessTree(child) {
   const pid = child.pid;
-  if (!Number.isInteger(pid)) return;
+  if (!Number.isInteger(pid)) return undefined;
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
+    const result = spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
       stdio: 'ignore',
       windowsHide: true,
     });
-    return;
+    if (result.error)
+      return new Error(`process-tree termination failed for pid ${pid}: ${result.error.message}`, {
+        cause: result.error,
+      });
+    return undefined;
   }
   try {
     process.kill(-pid, 'SIGKILL');
+    return undefined;
   } catch (error) {
-    if (error?.code !== 'ESRCH')
-      console.error(`[assurance] process-tree termination failed for pid ${pid}:`, error);
+    if (error?.code === 'ESRCH') return undefined;
+    return new Error(
+      `process-tree termination failed for pid ${pid}: ${error?.message ?? String(error)}`,
+      { cause: error },
+    );
   }
 }
 async function runParallel(entries) {
   const started = performance.now();
   const children = new Set();
+  const pending = new Map();
+  const containmentFailures = [];
   let primaryError;
   const terminateAllProcessTrees = () => {
-    for (const child of children) terminateProcessTree(child);
+    for (const child of children) {
+      const terminationFailure = terminateProcessTree(child);
+      if (terminationFailure) containmentFailures.push(terminationFailure);
+      pending.get(child)?.armCleanupTimeout();
+    }
   };
   const outcomes = await Promise.allSettled(
     entries.map(
@@ -80,39 +95,82 @@ async function runParallel(entries) {
             detached: process.platform !== 'win32',
           });
           children.add(child);
+          let settled = false;
+          let cleanupTimer;
+          const finish = (settler, value) => {
+            if (settled) return;
+            settled = true;
+            if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
+            pending.delete(child);
+            children.delete(child);
+            settler(value);
+          };
+          const resolveOnce = () => finish(resolvePromise);
+          const rejectOnce = (error) => finish(rejectPromise, error);
+          const armCleanupTimeout = () => {
+            if (settled || cleanupTimer !== undefined) return;
+            cleanupTimer = setTimeout(() => {
+              const error = new Error(
+                `${label} did not exit within ${processTreeCleanupWaitMs} ms after process-tree termination`,
+              );
+              containmentFailures.push(error);
+              rejectOnce(error);
+            }, processTreeCleanupWaitMs);
+          };
+          pending.set(child, { armCleanupTimeout });
           const fail = (error) => {
-            if (primaryError === undefined) {
+            const isPrimary = primaryError === undefined;
+            if (isPrimary) {
               primaryError = error;
               terminateAllProcessTrees();
             }
-            rejectPromise(error);
+            rejectOnce(error);
           };
-          child.once('error', (error) => {
-            fail(error);
-            children.delete(child);
-          });
+          child.once('error', fail);
           child.once('exit', (code, signal) => {
             if (signal) {
               fail(new Error(`${label} terminated by ${signal}`));
-              children.delete(child);
               return;
             }
             if (code !== 0) {
               fail(new Error(`${label} exited with status ${String(code)}`));
-              children.delete(child);
               return;
             }
-            children.delete(child);
             console.log(`[assurance] ${label}: ${Math.round(performance.now() - childStarted)} ms`);
-            resolvePromise();
+            resolveOnce();
           });
         }),
     ),
   );
-  if (primaryError !== undefined) throw primaryError;
+  if (primaryError !== undefined) {
+    if (containmentFailures.length > 0)
+      throw new AggregateError(
+        [primaryError, ...containmentFailures],
+        `${primaryError.message}; process-tree containment also failed: ${containmentFailures
+          .map((error) => error.message)
+          .join('; ')}`,
+      );
+    throw primaryError;
+  }
   const unexpectedFailure = outcomes.find((outcome) => outcome.status === 'rejected');
   if (unexpectedFailure) throw unexpectedFailure.reason;
   console.log(`[assurance] parallel batch: ${Math.round(performance.now() - started)} ms`);
+}
+async function waitForProcessExit(pid, label, timeoutMs = 2500) {
+  const deadline = performance.now() + timeoutMs;
+  for (;;) {
+    try {
+      process.kill(pid, 0);
+    } catch (error) {
+      if (error?.code === 'ESRCH') return;
+      throw error;
+    }
+    if (performance.now() >= deadline)
+      throw new Error(
+        `parallel assurance failure left an orphan descendant process running: ${label}`,
+      );
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 20));
+  }
 }
 async function runParallelProcessTreeSelfTest() {
   if (process.platform === 'win32') {
@@ -122,25 +180,52 @@ async function runParallelProcessTreeSelfTest() {
   const directory = fs.mkdtempSync(path.join(tmpdir(), 'workonce-assurance-tree-'));
   const failedMarker = path.join(directory, 'failed-descendant.txt');
   const siblingMarker = path.join(directory, 'sibling-descendant.txt');
-  const descendantCode = (marker) => `
+  const failedReady = path.join(directory, 'failed-descendant-ready.txt');
+  const siblingReady = path.join(directory, 'sibling-descendant-ready.txt');
+  const allReady = [failedReady, siblingReady];
+  const descendantCode = (marker, readyMarker) => `
     const fs = require('node:fs');
+    fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));
     setTimeout(() => {
       fs.writeFileSync(${JSON.stringify(marker)}, 'late\\n');
       process.exit(0);
     }, 400);
   `;
-  const parentCode = (marker, fail) => `
+  const parentCode = (marker, readyMarker, fail) => `
+    const fs = require('node:fs');
     const { spawn } = require('node:child_process');
-    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(marker))}], { stdio: 'ignore' });
-    ${fail ? 'setTimeout(() => process.exit(17), 60);' : ''}
+    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(marker, readyMarker))}], { stdio: 'ignore' });
+    ${
+      fail
+        ? `const ready = ${JSON.stringify(allReady)};
+    const deadline = Date.now() + 5000;
+    const readiness = setInterval(() => {
+      if (ready.every((file) => fs.existsSync(file))) {
+        clearInterval(readiness);
+        process.exit(17);
+      } else if (Date.now() >= deadline) {
+        clearInterval(readiness);
+        process.exit(18);
+      }
+    }, 5);`
+        : ''
+    }
     setInterval(() => {}, 1000);
   `;
   try {
     let observedFailure = false;
     try {
       const selfTestEntries = [
-        ['process-tree failing parent', process.execPath, ['-e', parentCode(failedMarker, true)]],
-        ['process-tree sibling parent', process.execPath, ['-e', parentCode(siblingMarker, false)]],
+        [
+          'process-tree failing parent',
+          process.execPath,
+          ['-e', parentCode(failedMarker, failedReady, true)],
+        ],
+        [
+          'process-tree sibling parent',
+          process.execPath,
+          ['-e', parentCode(siblingMarker, siblingReady, false)],
+        ],
       ];
       await runParallel(selfTestEntries);
     } catch (error) {
@@ -150,7 +235,17 @@ async function runParallelProcessTreeSelfTest() {
     }
     if (!observedFailure)
       throw new Error('parallel process-tree self-test did not observe parent failure');
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 650));
+    for (const [readyMarker, label] of [
+      [failedReady, 'failed-child descendant'],
+      [siblingReady, 'sibling descendant'],
+    ]) {
+      if (!fs.existsSync(readyMarker))
+        throw new Error(`parallel process-tree self-test did not observe ${label} readiness`);
+      const pid = Number(fs.readFileSync(readyMarker, 'utf8'));
+      if (!Number.isInteger(pid) || pid <= 0)
+        throw new Error(`parallel process-tree self-test recorded invalid ${label} pid`);
+      await waitForProcessExit(pid, label);
+    }
     if (fs.existsSync(failedMarker) || fs.existsSync(siblingMarker))
       throw new Error('parallel assurance failure left an orphan descendant process running');
     console.log(

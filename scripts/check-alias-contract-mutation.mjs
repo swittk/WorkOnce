@@ -23,9 +23,14 @@ function requireRed(label, result, pattern) {
   requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
   assert.match(output(result), pattern);
 }
-function mutateFile(relative, mutate, check) {
+function mutateFile(relative, anchor, mutate, check) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
+  assert.equal(
+    original.split(anchor).length,
+    2,
+    `${relative} mutation anchor is stale or not unique`,
+  );
   try {
     const changed = mutate(original);
     assert.notEqual(changed, original, `${relative} mutation anchor did not match`);
@@ -64,6 +69,7 @@ for (const [relative, anchor, replacement, label] of [
 ]) {
   mutateFile(
     relative,
+    anchor,
     (text) => text.replace(anchor, replacement),
     () => {
       const result = runNode([
@@ -96,6 +102,7 @@ for (const [relative, anchor, replacement, label] of [
 ]) {
   mutateFile(
     relative,
+    anchor,
     (text) => text.replace(anchor, replacement),
     () => {
       const result = runNode([

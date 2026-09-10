@@ -63,13 +63,22 @@ function adapterFixture(adapter) {
   }
   if (adapter === 'sqlite') {
     const directory = mkdtempSync(join(tmpdir(), 'workonce-runner-refinement-'));
-    const store = createSqliteStore(join(directory, 'workonce.sqlite'));
+    let store;
+    try {
+      store = createSqliteStore(join(directory, 'workonce.sqlite'));
+    } catch (error) {
+      rmSync(directory, { recursive: true, force: true });
+      throw error;
+    }
     return {
       store,
       setNow() {},
       close() {
-        store.close();
-        rmSync(directory, { recursive: true, force: true });
+        try {
+          store.close();
+        } finally {
+          rmSync(directory, { recursive: true, force: true });
+        }
       },
       async expire(leaseMs) {
         await sleep(leaseMs + 25);

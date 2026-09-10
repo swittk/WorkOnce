@@ -24,27 +24,136 @@ for (const [name, prefix] of Object.entries(requiredPrefixes)) {
     throw new Error(`Emitted-artifact entrypoint '${name}' lost its required build/binding guard.`);
 }
 
+function parseModule(relative) {
+  const filePath = path.join(root, relative);
+  const text = fs.readFileSync(filePath, 'utf8');
+  return {
+    filePath,
+    text,
+    sourceFile: ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS),
+  };
+}
+function isIdentifierCall(node, name) {
+  return (
+    ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === name
+  );
+}
+function topLevelCallPositions(sourceFile, name) {
+  const positions = [];
+  for (const statement of sourceFile.statements) {
+    if (!ts.isExpressionStatement(statement) || !isIdentifierCall(statement.expression, name))
+      continue;
+    positions.push(statement.expression.getStart(sourceFile));
+  }
+  return positions;
+}
+function isStaticallyUnreachable(node) {
+  let child = node;
+  for (let parent = node.parent; parent; child = parent, parent = parent.parent) {
+    if (ts.isIfStatement(parent)) {
+      if (parent.thenStatement === child && parent.expression.kind === ts.SyntaxKind.FalseKeyword)
+        return true;
+      if (parent.elseStatement === child && parent.expression.kind === ts.SyntaxKind.TrueKeyword)
+        return true;
+    }
+    if (
+      (ts.isWhileStatement(parent) || ts.isDoStatement(parent)) &&
+      parent.statement === child &&
+      parent.expression.kind === ts.SyntaxKind.FalseKeyword
+    )
+      return true;
+  }
+  return false;
+}
+function dynamicImportPositions(sourceFile, specifier) {
+  const positions = [];
+  function visit(node) {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      literalText(node.arguments[0]) === specifier &&
+      !isStaticallyUnreachable(node)
+    )
+      positions.push(node.getStart(sourceFile));
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return positions;
+}
+function isReuseCondition(node, sourceFile) {
+  return (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+    node.left.getText(sourceFile) === 'process.env.WORKONCE_REUSE_BOUND_BUILD' &&
+    literalText(node.right) === '1'
+  );
+}
+function reuseGuardPositions(sourceFile) {
+  const positions = [];
+  for (const statement of sourceFile.statements) {
+    if (!ts.isIfStatement(statement) || !isReuseCondition(statement.expression, sourceFile))
+      continue;
+    const body = ts.isBlock(statement.thenStatement)
+      ? statement.thenStatement.statements
+      : [statement.thenStatement];
+    for (const child of body) {
+      if (
+        !ts.isExpressionStatement(child) ||
+        !isIdentifierCall(child.expression, 'assertBuildSourceBinding')
+      )
+        continue;
+      positions.push(child.expression.getStart(sourceFile));
+    }
+  }
+  return positions;
+}
+function reuseEnvironmentAssignments(sourceFile) {
+  let count = 0;
+  function visit(node) {
+    if (
+      ts.isPropertyAssignment(node) &&
+      ((ts.isIdentifier(node.name) && node.name.text === 'WORKONCE_REUSE_BOUND_BUILD') ||
+        (ts.isStringLiteral(node.name) && node.name.text === 'WORKONCE_REUSE_BOUND_BUILD')) &&
+      literalText(node.initializer) === '1' &&
+      !isStaticallyUnreachable(node)
+    )
+      count += 1;
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return count;
+}
+
 if (scripts.prepare !== 'node scripts/prepare-package.mjs')
   throw new Error('Package prepare must route through the source-bound build guard.');
-const prepare = fs.readFileSync(path.join(root, 'scripts/prepare-package.mjs'), 'utf8');
-const prepareReuse = prepare.indexOf("WORKONCE_REUSE_BOUND_BUILD === '1'");
-const prepareGuard = prepare.indexOf('assertBuildSourceBinding();');
-if (prepareReuse < 0 || prepareGuard < 0 || prepareGuard < prepareReuse)
+const prepareModule = parseModule('scripts/prepare-package.mjs');
+const prepareGuards = reuseGuardPositions(prepareModule.sourceFile);
+if (prepareGuards.length !== 1)
   throw new Error('prepare-package.mjs may reuse dist only after verifying the bound build.');
-const consumerSmoke = fs.readFileSync(path.join(root, 'scripts/consumer-smoke.mjs'), 'utf8');
-if (!consumerSmoke.includes("WORKONCE_REUSE_BOUND_BUILD: '1'"))
+const consumerSmokeModule = parseModule('scripts/consumer-smoke.mjs');
+if (reuseEnvironmentAssignments(consumerSmokeModule.sourceFile) !== 1)
   throw new Error('Packed consumer must explicitly request source-bound prepare reuse.');
 
-const formal = fs.readFileSync(path.join(root, 'scripts/formal.mjs'), 'utf8');
-const formalGuard = formal.indexOf('assertBuildSourceBinding();');
-const formalProducer = formal.indexOf("import('./runtime-boundary-refinement.mjs')");
-if (formalGuard < 0 || formalProducer < 0 || formalGuard > formalProducer)
+const formalModule = parseModule('scripts/formal.mjs');
+const formalGuards = topLevelCallPositions(formalModule.sourceFile, 'assertBuildSourceBinding');
+const formalProducers = dynamicImportPositions(
+  formalModule.sourceFile,
+  './runtime-boundary-refinement.mjs',
+);
+if (
+  formalGuards.length !== 1 ||
+  formalProducers.length !== 1 ||
+  formalGuards[0] > formalProducers[0]
+)
   throw new Error('formal.mjs must verify the bound build before importing compiled observations.');
 
-const traces = fs.readFileSync(path.join(root, 'scripts/check-bounded-trace-domain.mjs'), 'utf8');
-const traceGuard = traces.indexOf('assertBuildSourceBinding();');
-const traceProducer = traces.indexOf("import('./formal-bounded-refinement-corpus.mjs')");
-if (traceGuard < 0 || traceProducer < 0 || traceGuard > traceProducer)
+const tracesModule = parseModule('scripts/check-bounded-trace-domain.mjs');
+const traceGuards = topLevelCallPositions(tracesModule.sourceFile, 'assertBuildSourceBinding');
+const traceProducers = dynamicImportPositions(
+  tracesModule.sourceFile,
+  './formal-bounded-refinement-corpus.mjs',
+);
+if (traceGuards.length !== 1 || traceProducers.length !== 1 || traceGuards[0] > traceProducers[0])
   throw new Error(
     'check-bounded-trace-domain.mjs must verify the bound build before importing compiled traces.',
   );

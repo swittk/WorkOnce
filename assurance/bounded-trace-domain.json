@@ -107,12 +107,14 @@
     "scripts/formal-implementation-surface.cjs",
     "scripts/check-source-path-portability-mutation.mjs",
     "assurance/red-before/manifest-worktree-source-path-portability.json",
+    "assurance/red-before/mutation-guard-cross-contamination.json",
+    "assurance/red-before/process-fault-test-concurrency.json",
     "scripts/run-assurance.mjs",
     "scripts/consumer-smoke.mjs",
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "54703430fa5b6a6c1f33bb5a184fb88fa76caddb3d7bc50ba9e96c5056a33768",
+  "evidenceDigest": "1d5468e75fb18dd9830a4285b59130aef787a8506f5ceb4927e22bc72a0aedf0",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

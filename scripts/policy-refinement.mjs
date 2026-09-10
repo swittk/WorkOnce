@@ -649,13 +649,13 @@ async function adapterPolicyProjection(adapter, outcomeKind) {
 }
 
 async function adapterEquivalenceSample(outcomeKind) {
+  const adapters = ['memory', 'sqlite', 'cas'];
   const values = [];
-  for (const adapter of ['memory', 'sqlite', 'cas'])
-    values.push(await adapterPolicyProjection(adapter, outcomeKind));
+  for (const adapter of adapters) values.push(await adapterPolicyProjection(adapter, outcomeKind));
   return {
     kind: 'adapterEquivalence',
     outcomeKind,
-    adapters: 'memory,sqlite,cas',
+    adapters: adapters.join(','),
     equivalent: values.every((value) => stableRow(value) === stableRow(values[0])),
   };
 }
