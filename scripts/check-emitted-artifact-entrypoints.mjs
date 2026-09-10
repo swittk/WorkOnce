@@ -59,11 +59,12 @@ const sourceFile = ts.createSourceFile(
   ts.ScriptKind.JS,
 );
 const buildPositions = [];
-const consumerPositions = new Map();
-function recordConsumer(label, position) {
-  const positions = consumerPositions.get(label) ?? [];
+const buildBatchEnds = [];
+const stepPositions = new Map();
+function recordStep(label, position) {
+  const positions = stepPositions.get(label) ?? [];
   positions.push(position);
-  consumerPositions.set(label, positions);
+  stepPositions.set(label, positions);
 }
 function literalText(node) {
   return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
@@ -73,68 +74,62 @@ function literalText(node) {
 function inspectCall(node) {
   if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return;
   const name = node.expression.text;
-  if (
-    (name === 'runNpm' || name === 'npmParallelEntry') &&
-    literalText(node.arguments[0]) === 'single build'
-  ) {
-    buildPositions.push(node.getStart(sourceFile));
+  if (name === 'runParallel' && ts.isArrayLiteralExpression(node.arguments[0])) {
+    let containsBuild = false;
+    for (const entry of node.arguments[0].elements) {
+      if (
+        ts.isCallExpression(entry) &&
+        ts.isIdentifier(entry.expression) &&
+        entry.expression.text === 'npmParallelEntry' &&
+        literalText(entry.arguments[0]) === 'single build'
+      )
+        containsBuild = true;
+      if (!ts.isArrayLiteralExpression(entry)) continue;
+      const label = literalText(entry.elements[0]);
+      if (label) recordStep(label, entry.getStart(sourceFile));
+    }
+    if (containsBuild) buildBatchEnds.push(node.getEnd());
     return;
   }
   if (name === 'run') {
     const label = literalText(node.arguments[0]);
-    if (label) recordConsumer(label, node.getStart(sourceFile));
+    if (label) recordStep(label, node.getStart(sourceFile));
     return;
   }
-  if (name !== 'runParallel' || !ts.isArrayLiteralExpression(node.arguments[0])) return;
-  for (const entry of node.arguments[0].elements) {
-    if (!ts.isArrayLiteralExpression(entry)) continue;
-    const label = literalText(entry.elements[0]);
-    if (label) recordConsumer(label, entry.getStart(sourceFile));
+  if (name !== 'npmParallelEntry') return;
+  const label = literalText(node.arguments[0]);
+  if (!label) return;
+  if (label === 'single build') {
+    buildPositions.push(node.getStart(sourceFile));
+    return;
   }
+  recordStep(label, node.getStart(sourceFile));
 }
 function visit(node) {
   inspectCall(node);
   ts.forEachChild(node, visit);
 }
 visit(sourceFile);
-if (buildPositions.length !== 1)
+if (buildPositions.length !== 1 || buildBatchEnds.length !== 1)
   throw new Error(
-    `Full assurance must execute exactly one build step; found ${buildPositions.length}.`,
+    `Full assurance must execute exactly one build barrier; found ${buildPositions.length} build steps in ${buildBatchEnds.length} build batches.`,
   );
-const [build] = buildPositions;
-for (const consumer of [
-  'typed-read definition-fence mutation guard',
-  'typed-read source/model mutation guard',
-  'typed-read route/order mutation guard',
-  'read-history retention/order mutation guard',
-  'policy source/model mutation guard',
-  'policy implementation mutation guards',
-  'local-runner source/model mutation guard',
-  'local-runner implementation mutation guards',
-  'external source/model mutation guard',
-  'external implementation mutation guards',
-  'outbox source/model mutation guard',
-  'outbox implementation mutation guard',
-  'storage implementation mutation guard',
-  'storage source/model mutation guard',
-  'alias runtime/type mutation guard',
-  'implementation traces',
-  'lifecycle formal proof wrapper',
-  'real process faults',
-  'bounded-domain audit',
-  'TLC storage/conformance + mutation guards',
-  'TLC lifecycle/runtime/read/policy boundaries + mutation guards',
-  'packed consumer',
-]) {
-  const positions = consumerPositions.get(consumer) ?? [];
+const [buildBatchEnd] = buildBatchEnds;
+const preBuildExemptions = new Set(['format', 'type-contract tests']);
+for (const [step, positions] of stepPositions) {
   if (positions.length !== 1)
     throw new Error(
-      `Full assurance must execute emitted-artifact consumer '${consumer}' exactly once; found ${positions.length}.`,
+      `Full assurance step '${step}' must execute exactly once; found ${positions.length}.`,
     );
-  if (positions[0] < build)
+  if (positions[0] < buildBatchEnd && !preBuildExemptions.has(step))
     throw new Error(
-      `Full assurance emitted-artifact consumer '${consumer}' runs before the single build.`,
+      `Full assurance step '${step}' may execute before the single build without a reviewed pre-build exemption.`,
     );
+}
+for (const exemption of preBuildExemptions) {
+  const positions = stepPositions.get(exemption) ?? [];
+  if (positions.length !== 1 || positions[0] >= buildBatchEnd)
+    throw new Error(`Reviewed pre-build exemption '${exemption}' is stale or no longer pre-build.`);
 }
 
 console.log(

@@ -55,6 +55,13 @@ export function assertAssuranceVerdictIntegrity() {
       );
   }
 
+  const buildSourceBindingMutation = read('scripts/check-build-source-binding-mutation.mjs');
+  assert.match(
+    buildSourceBindingMutation,
+    /requireSuccessfulProcess\(bindingCheck\(\), 'baseline build\/source binding'\)/u,
+    'build/source mutation guard must verify a green bound baseline before creating mutants',
+  );
+
   for (const name of fs
     .readdirSync(path.join(root, 'scripts'))
     .filter((name) => name.endsWith('refinement.mjs'))) {

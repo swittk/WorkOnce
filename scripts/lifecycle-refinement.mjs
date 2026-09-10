@@ -813,13 +813,12 @@ export function assertLifecycleRefinementSamples(samples) {
       );
       assert.ok(['retry', 'rerun'].includes(sample.resetKind), name);
     } else if (sample.kind === 'claimOrderEquivalence') {
+      assertExactBooleanSample(sample, ['exactOrder', 'adaptersEquivalent'], ['adapters']);
       assert.equal(
         sample.adapters,
         'memory,sqlite,cas',
         'claimOrderEquivalence adapter coverage drifted',
       );
-      assert.equal(sample.exactOrder, true, name);
-      assert.equal(sample.adaptersEquivalent, true, name);
     } else if (sample.kind === 'claimScanContinuation') {
       assertExactBooleanSample(
         sample,
@@ -846,12 +845,12 @@ export function assertLifecycleRefinementSamples(samples) {
     } else if (sample.kind === 'finiteClaimDrain') {
       assertExactBooleanSample(sample, ['allUnique', 'allReached', 'boundedPasses'], ['adapter']);
     } else if (sample.kind === 'adapterLifecycleEquivalence') {
+      assertExactBooleanSample(sample, ['equivalent'], ['adapters']);
       assert.equal(
         sample.adapters,
         'memory,sqlite,cas',
         'adapterLifecycleEquivalence adapter coverage drifted',
       );
-      assert.equal(sample.equivalent, true, name);
     } else if (sample.kind === 'terminalAckLoss') {
       assertExactBooleanSample(
         sample,

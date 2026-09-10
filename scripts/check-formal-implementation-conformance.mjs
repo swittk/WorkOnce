@@ -1836,16 +1836,11 @@ if (write) {
     current.model.storage,
     'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
-  if (
-    previous?.model?.outbox?.sourceDigest &&
-    previous.model.outbox.sourceDigest !== current.model.outbox.sourceDigest &&
-    previous.model.outbox.modelDigest === current.model.outbox.modelDigest &&
-    !acknowledgePairing
-  ) {
-    throw new Error(
-      'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
-    );
-  }
+  assertSourceModelPairing(
+    previous?.model?.outbox,
+    current.model.outbox,
+    'Bound outbox scheduler semantics changed without an outbox model semantic change. Update the outbox abstraction or explicitly acknowledge the unchanged abstraction after review.',
+  );
   if (
     previous &&
     previous.stateMachineBinding.sourceDigest !== current.stateMachineBinding.sourceDigest &&

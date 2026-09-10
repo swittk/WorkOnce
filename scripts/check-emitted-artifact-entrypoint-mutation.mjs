@@ -92,6 +92,39 @@ try {
     /packed consumer.*exactly once|packed consumer.*before the single build/u,
   );
   console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
+  mutationFiles.restoreAll();
+  const buildEntry = "  npmParallelEntry('single build', ['run', 'build']),";
+  assert.equal(
+    assuranceOriginal.split(buildEntry).length,
+    2,
+    'concurrent-build consumer anchor is stale or not unique',
+  );
+  mutationFiles.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(
+      buildEntry,
+      `${buildEntry}
+  ['unlisted concurrent dist consumer', process.execPath, ['scripts/consumer-smoke.mjs']],`,
+    ),
+  );
+  const concurrentConsumer = spawnSync(
+    process.execPath,
+    ['scripts/check-emitted-artifact-entrypoints.mjs'],
+    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+  );
+  const concurrentOutput = `${concurrentConsumer.stdout ?? ''}
+${concurrentConsumer.stderr ?? ''}`;
+  requireExpectedProcessFailure(
+    concurrentConsumer,
+    'concurrent pre-build assurance consumer unexpectedly passed',
+  );
+  assert.match(
+    concurrentOutput,
+    /unlisted concurrent dist consumer.*before the single build.*pre-build exemption/u,
+  );
+  console.log(
+    'Emitted-artifact entrypoint ordering rejects an unreviewed consumer concurrent with the single build.',
+  );
 } finally {
   mutationFiles.restoreAll();
 }

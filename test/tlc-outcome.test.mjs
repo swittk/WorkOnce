@@ -66,6 +66,22 @@ test('timeout, signal, OOM, classpath, parser and unknown exits are infrastructu
   }
 });
 
+test('infrastructure diagnostics outrank mixed semantic-looking TLC output', () => {
+  const cases = [
+    ['java.lang.OutOfMemoryError: Java heap space', 'jvm_out_of_memory'],
+    ['Error: Could not find or load main class tlc2.TLC', 'jvm_or_classpath'],
+    ['Exception in thread "main" java.lang.IllegalStateException', 'tool_exception'],
+  ];
+  for (const [stderr, reason] of cases) {
+    const outcome = classifyTlcOutcome(
+      result({ stdout: 'Invariant TypeOK is violated.\n', stderr }),
+    );
+    assert.equal(outcome.kind, 'infrastructure_failure');
+    assert.equal(outcome.reason, reason);
+    assert.deepEqual(outcome.invariants, ['TypeOK']);
+  }
+});
+
 test('infrastructure failure cannot masquerade as a mutation kill', () => {
   assert.throws(
     () =>

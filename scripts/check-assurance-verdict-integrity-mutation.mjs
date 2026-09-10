@@ -400,6 +400,14 @@ mutate(
   /both lease and generation elapsed deadline/u,
 );
 
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  "requireSuccessfulProcess(bindingCheck(), 'baseline build/source binding');",
+  'void bindingCheck();',
+  'build/source mutation guard loses green baseline precondition',
+  /green bound baseline before creating mutants/u,
+);
+
 console.log(
   'Assurance verdict integrity mutation guard rejects all reviewed false-green and hang regressions.',
 );

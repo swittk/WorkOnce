@@ -27,6 +27,19 @@ test('lifecycle refinement rejects adapter substitution without a count change',
   }
 });
 
+test('lifecycle refinement rejects extra evidence fields in equivalence families', async () => {
+  const samples = await runLifecycleRefinementSamples();
+  for (const kind of ['claimOrderEquivalence', 'adapterLifecycleEquivalence']) {
+    const mutant = samples.map((sample) =>
+      sample.kind === kind ? { ...sample, unexpectedEvidence: true } : sample,
+    );
+    assert.throws(
+      () => assertLifecycleRefinementSamples(mutant),
+      new RegExp(`${kind} evidence fields drifted`, 'u'),
+    );
+  }
+});
+
 test('lifecycle refinement rejects an omitted required evidence field', async () => {
   const samples = await runLifecycleRefinementSamples();
   const mutant = samples.map((sample) => {

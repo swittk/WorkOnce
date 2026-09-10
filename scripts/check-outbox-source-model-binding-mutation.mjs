@@ -37,4 +37,41 @@ try {
 } finally {
   mutationFiles.restoreAll();
 }
+
+const manifestPath = path.join(root, 'assurance/formal-implementation-manifest.json');
+const manifestOriginal = fs.readFileSync(manifestPath, 'utf8');
+try {
+  const manifest = JSON.parse(manifestOriginal);
+  assert.equal(
+    typeof manifest.model?.outbox?.sourceDigest,
+    'string',
+    'outbox manifest source digest mutation anchor is stale',
+  );
+  delete manifest.model.outbox.sourceDigest;
+  mutationFiles.writeFileSync(
+    manifestPath,
+    `${JSON.stringify(manifest, null, 2)}
+`,
+  );
+  const result = spawnSync(
+    process.execPath,
+    ['scripts/check-formal-implementation-conformance.mjs', '--write'],
+    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+  );
+  const output = `${result.stdout ?? ''}
+${result.stderr ?? ''}`;
+  requireExpectedProcessFailure(
+    result,
+    'missing prior outbox source digest unexpectedly passed write',
+  );
+  assert.match(
+    output,
+    /Bound outbox scheduler semantics changed without an outbox model semantic change/u,
+  );
+  console.log(
+    'Outbox write-path pairing rejects a missing prior source digest without review acknowledgement.',
+  );
+} finally {
+  mutationFiles.restoreAll();
+}
 mutationFiles.dispose();

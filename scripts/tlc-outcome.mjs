@@ -56,6 +56,16 @@ export function classifyTlcOutcome(result) {
 
   if (result.status === 0) return { kind: 'success', invariants, output };
 
+  const infrastructure = infrastructureReason(result, output);
+  if (infrastructure !== 'unclassified_nonzero_exit') {
+    return {
+      kind: 'infrastructure_failure',
+      reason: infrastructure,
+      invariants,
+      output,
+    };
+  }
+
   if (invariants.length > 0) {
     return { kind: 'semantic_counterexample', reason: 'invariant_violation', invariants, output };
   }
@@ -73,7 +83,7 @@ export function classifyTlcOutcome(result) {
 
   return {
     kind: 'infrastructure_failure',
-    reason: infrastructureReason(result, output),
+    reason: infrastructure,
     invariants,
     output,
   };
