@@ -5,13 +5,16 @@ import {
   runReadHistorySamples,
 } from '../scripts/read-history-refinement.mjs';
 
+const samplesOnce = runReadHistorySamples();
+samplesOnce.catch(() => {});
+
 test('history-only state and concurrent inspectMany obey the supported read contract', async () => {
-  const samples = await runReadHistorySamples();
+  const samples = await samplesOnce;
   assertReadHistorySamples(samples);
 });
 
 test('read-history refinement rejects count-preserving adapter/mode substitution', async () => {
-  const samples = await runReadHistorySamples();
+  const samples = await samplesOnce;
   const sqliteWriter = samples.findIndex(
     (sample) =>
       sample.kind === 'inspectManyRace' &&

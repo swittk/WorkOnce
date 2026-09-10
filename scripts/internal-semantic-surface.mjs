@@ -91,6 +91,7 @@ function constructKind(node) {
   ) {
     if (isPropertyTarget(node.left)) return 'property_assignment';
     if (ts.isIdentifier(node.left)) return 'identifier_assignment';
+    return 'other_assignment';
   }
   if (
     (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
@@ -161,6 +162,7 @@ export function discoverInternalSemanticTopology() {
   const unclassifiedCalls = [];
   const occurrences = new Map();
   const unclassifiedOccurrences = new Map();
+  const semanticOrdinals = new Map();
   for (const name of files) {
     const relative = `src/${name}`;
     const text = fs.readFileSync(path.join(root, relative), 'utf8');
@@ -171,6 +173,12 @@ export function discoverInternalSemanticTopology() {
       true,
       ts.ScriptKind.TS,
     );
+    function nextSemanticOrdinal(context) {
+      const key = `${relative}\0${context}`;
+      const ordinal = (semanticOrdinals.get(key) ?? 0) + 1;
+      semanticOrdinals.set(key, ordinal);
+      return ordinal;
+    }
     function visit(node) {
       const kind = constructKind(node);
       if (kind) {
@@ -178,6 +186,7 @@ export function discoverInternalSemanticTopology() {
         const excerpt = full.slice(0, 240);
         const textDigest = semanticTextDigest(full);
         const context = contextName(node);
+        const ordinal = nextSemanticOrdinal(context);
         const key = `${relative}\0${context}\0${kind}\0${textDigest}`;
         const occurrence = (occurrences.get(key) ?? 0) + 1;
         occurrences.set(key, occurrence);
@@ -186,6 +195,7 @@ export function discoverInternalSemanticTopology() {
           path: relative,
           context,
           kind,
+          ordinal,
           excerpt,
           textDigest,
         });
@@ -193,6 +203,7 @@ export function discoverInternalSemanticTopology() {
         const full = node.getText(source).replace(/\r\n?/gu, '\n').trim();
         const textDigest = semanticTextDigest(full);
         const context = contextName(node);
+        const ordinal = nextSemanticOrdinal(context);
         const called = callName(node) ?? '<dynamic>';
         const key = `${relative}\0${context}\0${called}\0${textDigest}`;
         const occurrence = (unclassifiedOccurrences.get(key) ?? 0) + 1;
@@ -202,6 +213,7 @@ export function discoverInternalSemanticTopology() {
           path: relative,
           context,
           call: called,
+          ordinal,
           textDigest,
         });
       }

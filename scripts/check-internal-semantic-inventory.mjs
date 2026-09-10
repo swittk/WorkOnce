@@ -26,6 +26,8 @@ for (const entry of inventory.entries) {
     throw new Error(`Internal semantic inventory has a duplicate/invalid id: ${entry?.id}`);
   if (entry.classification !== 'APPLICABLE')
     throw new Error(`Internal semantic inventory entry ${entry.id} is not explicitly classified.`);
+  if (!Number.isSafeInteger(entry.ordinal) || entry.ordinal < 1)
+    throw new Error(`Internal semantic inventory entry ${entry.id} lacks a semantic ordinal.`);
   if (!Array.isArray(entry.families) || entry.families.length === 0)
     throw new Error(`Internal semantic inventory entry ${entry.id} has no proof family.`);
   for (const family of entry.families) {
@@ -48,7 +50,7 @@ const mismatches = [];
 for (const entry of observed) {
   const expected = reviewed.get(entry.id);
   if (!expected) continue;
-  for (const field of ['path', 'context', 'kind', 'excerpt', 'textDigest']) {
+  for (const field of ['path', 'context', 'kind', 'ordinal', 'excerpt', 'textDigest']) {
     if (expected[field] !== entry[field]) mismatches.push(`${entry.id}:${field}`);
   }
 }

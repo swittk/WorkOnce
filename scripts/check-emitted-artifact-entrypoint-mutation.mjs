@@ -111,6 +111,37 @@ try {
     mutationFiles.restoreAll();
   }
 
+  try {
+    const importAnchor = "await import('./runtime-boundary-refinement.mjs')";
+    const dormantProducer = formalOriginal.replace(
+      importAnchor,
+      `await Promise.resolve({});
+async function dormantRuntimeProducer() { return import('./runtime-boundary-refinement.mjs'); }`,
+    );
+    mutationFiles.writeFileSync(formalPath, dormantProducer);
+    expectCheckerFailure(
+      'dormant formal producer import',
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log('Emitted-artifact entrypoint checker ignores dormant dynamic producer imports.');
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
+  try {
+    const earlyStaticProducer = `import './runtime-boundary-refinement.mjs';\n${formalOriginal}`;
+    mutationFiles.writeFileSync(formalPath, earlyStaticProducer);
+    expectCheckerFailure(
+      'early static formal producer import',
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log(
+      'Emitted-artifact entrypoint checker rejects static producers that execute before the binding guard.',
+    );
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

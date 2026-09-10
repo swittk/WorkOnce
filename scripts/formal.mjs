@@ -739,6 +739,55 @@ MutantSpec == Init /\ [][MutantNext]_vars
     plan: readHistoryMutationPlan,
   });
 
+  const readHistoryInfluenceMutant = resolve(
+    tlcWorkspace,
+    'WorkOnceReadHistoryInfluenceMutant.tla',
+  );
+  const readHistoryInfluenceMutantConfig = resolve(
+    tlcWorkspace,
+    'WorkOnceReadHistoryInfluenceMutant.cfg',
+  );
+  writeFileSync(
+    readHistoryInfluenceMutant,
+    String.raw`---- MODULE WorkOnceReadHistoryInfluenceMutant ----
+EXTENDS WorkOnceReadHistory
+HistorySensitiveApply(p, history, op) ==
+  IF history[DifferenceIndex] = "old:history-A"
+  THEN Apply(p, op)
+  ELSE [Apply(p, op) EXCEPT !.state = "failed"]
+HistorySensitiveStep(op) ==
+  /\ depth < MaxDepth
+  /\ op \in Ops
+  /\ LET writes == WritesHistory(left, op) IN
+       /\ left' = HistorySensitiveApply(left, leftHistory, op)
+       /\ right' = HistorySensitiveApply(right, rightHistory, op)
+       /\ leftHistory' = IF writes THEN TrimAppend(leftHistory, HistoryEvent(left, op)) ELSE leftHistory
+       /\ rightHistory' = IF writes THEN TrimAppend(rightHistory, HistoryEvent(right, op)) ELSE rightHistory
+       /\ futureHistory' = IF writes THEN Append(futureHistory, HistoryEvent(left, op)) ELSE futureHistory
+       /\ historyWrites' = IF writes THEN historyWrites + 1 ELSE historyWrites
+       /\ depth' = depth + 1
+HistorySensitiveNext == \E op \in Ops : HistorySensitiveStep(op)
+MutantSpec == Init /\ [][HistorySensitiveNext]_vars
+====
+`,
+  );
+  writeFileSync(
+    readHistoryInfluenceMutantConfig,
+    singleInvariantConfig(baseReadHistoryConfig, 'CurrentProjectionCongruent').replace(
+      'SPECIFICATION Spec',
+      'SPECIFICATION MutantSpec',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceReadHistoryInfluenceMutant',
+    readHistoryInfluenceMutantConfig,
+    readHistoryInfluenceMutant,
+    'CurrentProjectionCongruent',
+  );
+  console.log(
+    'TLC read-history mutation guard rejects a future transition whose projection depends on durable history.',
+  );
+
   const readHistorySampleMutant = resolve(tlcWorkspace, 'WorkOnceReadHistorySamplesMutant.tla');
   const readHistorySampleMutantConfig = resolve(
     tlcWorkspace,

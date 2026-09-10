@@ -88,6 +88,58 @@ ${source.slice(brace + 1)}`,
 }
 
 try {
+  const wakePollAnchor = '  let wakePoll: (() => void) | undefined;';
+  assert.equal(
+    source.split(wakePollAnchor).length,
+    2,
+    'destructuring mutation anchor must be unique',
+  );
+  mutationFiles.writeFileSync(
+    sourcePath,
+    source.replace(
+      wakePollAnchor,
+      `${wakePollAnchor}
+  [fatal, wakePoll] = [fatal, wakePoll];
+  ({ fatal, wakePoll } = { fatal, wakePoll });`,
+    ),
+  );
+  const destructuringMutant = run();
+  requireExpectedProcessFailure(
+    destructuringMutant,
+    'destructuring assignments unexpectedly bypassed internal semantic inventory',
+  );
+  assert.match(output(destructuringMutant), /other_assignment/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
+  const orderAnchor = `  const active = new Set<Promise<void>>();
+  let fatal: { error: unknown } | undefined;`;
+  assert.equal(
+    source.split(orderAnchor).length,
+    2,
+    'semantic order mutation anchor must be unique',
+  );
+  mutationFiles.writeFileSync(
+    sourcePath,
+    source.replace(
+      orderAnchor,
+      `  let fatal: { error: unknown } | undefined;
+  const active = new Set<Promise<void>>();`,
+    ),
+  );
+  const orderMutant = run();
+  requireExpectedProcessFailure(
+    orderMutant,
+    'semantic-order swap unexpectedly bypassed internal semantic inventory',
+  );
+  assert.match(output(orderMutant), /:ordinal/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
   assert.equal(
     source.split('    stopped = true;').length,
     2,

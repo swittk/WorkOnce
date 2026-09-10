@@ -4,7 +4,7 @@
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
     "count": 880,
-    "digest": "d80c6dbf5dfe0cf2"
+    "digest": "da03a57956559769"
   },
   "entries": [
     {
@@ -18,7 +18,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 1
     },
     {
       "id": "src/conformance.ts:<callback>:call_Promise.all:26348155841eb356:1",
@@ -32,7 +33,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 21
     },
     {
       "id": "src/conformance.ts:<callback>:call_Promise.all:3cb56f529cdd1131:1",
@@ -46,7 +48,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 209
     },
     {
       "id": "src/conformance.ts:<callback>:call_Promise.allSettled:9c6a627a80b7c64a:1",
@@ -60,7 +63,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 96
     },
     {
       "id": "src/conformance.ts:<callback>:call_Promise.allSettled:758cd9744e0f389d:1",
@@ -74,7 +78,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 158
     },
     {
       "id": "src/conformance.ts:<callback>:for_of_loop:73c24ba9d9d05d7e:1",
@@ -88,7 +93,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 40
     },
     {
       "id": "src/conformance.ts:<callback>:mutable_let:fc90bbf8f6198482:1",
@@ -102,7 +108,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 114
     },
     {
       "id": "src/conformance.ts:<callback>:mutable_let:2be6f0741fb320eb:1",
@@ -116,7 +123,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 112
     },
     {
       "id": "src/conformance.ts:<callback>:mutable_let:a5ae334642ca92f3:1",
@@ -130,7 +138,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 136
     },
     {
       "id": "src/conformance.ts:<callback>:mutable_let:3a994d02bfff35a7:1",
@@ -144,7 +153,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine."
+      "reason": "Shared adapter-conformance control flow is G semantics and I proof infrastructure, not a separate runtime state machine.",
+      "ordinal": 74
     },
     {
       "id": "src/conformance.ts:<callback>:property_assignment:d40783147d1d5d9a:1",
@@ -158,7 +168,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow.",
+      "ordinal": 4
     },
     {
       "id": "src/conformance.ts:<callback>:property_assignment:f5f7d4ed21a56deb:1",
@@ -172,7 +183,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow.",
+      "ordinal": 273
     },
     {
       "id": "src/conformance.ts:<callback>:property_assignment:56fb15fe0ff456ae:1",
@@ -186,7 +198,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow.",
+      "ordinal": 14
     },
     {
       "id": "src/conformance.ts:test:call_mutator_push:a5d10d33675b044d:1",
@@ -200,7 +213,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow."
+      "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow.",
+      "ordinal": 3
     },
     {
       "id": "src/external.ts:<callback>:call_mutator_delete:808e652ab4e75ae0:1",
@@ -213,7 +227,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics.",
+      "ordinal": 14
     },
     {
       "id": "src/external.ts:<callback>:call_setTimeout:765ee100244afa2b:1",
@@ -226,7 +241,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 6
     },
     {
       "id": "src/external.ts:<callback>:mutable_let:90c7f36fdfffe363:1",
@@ -239,7 +255,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:<module>:mutable_property:d36afba0af915803:1",
@@ -252,7 +269,8 @@
         "D"
       ],
       "reason": "ExternalWorkRun.signal is mutable per-lease interruption state; family D proves how executor stop and ownership loss publish and consume that signal.",
-      "classification": "APPLICABLE"
+      "classification": "APPLICABLE",
+      "ordinal": 1
     },
     {
       "id": "src/external.ts:<module>:new_AbortController:80f884b72c81f91b:1",
@@ -265,7 +283,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:armExpiry:call_setTimeout:6a3ec1a2d2f218fb:1",
@@ -278,7 +297,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:heartbeat:call_setTimeout:b5b93ff9d513e2a0:1",
@@ -291,7 +311,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 6
     },
     {
       "id": "src/external.ts:processLease:call_setTimeout:8a2af25fa769ede4:1",
@@ -304,7 +325,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 15
     },
     {
       "id": "src/external.ts:processLease:mutable_let:b0df23f8bab5f7f3:1",
@@ -317,7 +339,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 6
     },
     {
       "id": "src/external.ts:processLease:mutable_let:b25899df20ce8245:1",
@@ -330,7 +353,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 7
     },
     {
       "id": "src/external.ts:processLease:mutable_let:b68d204455e81908:1",
@@ -343,7 +367,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:processLease:new_AbortController:843114dfa8bf523a:1",
@@ -356,7 +381,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 1
     },
     {
       "id": "src/external.ts:processLease:property_assignment:7d580c9a02fd772f:1",
@@ -369,7 +395,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:runExternal:call_Promise.all:92dcbed48501015a:1",
@@ -382,7 +409,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 24
     },
     {
       "id": "src/external.ts:runExternal:call_Promise.race:ee206f34b81ecf16:1",
@@ -395,7 +423,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 7
     },
     {
       "id": "src/external.ts:runExternal:call_mutator_add:4ccfbb5637f2b0e4:1",
@@ -408,7 +437,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics."
+      "reason": "External runner supervision mutates active-lease bookkeeping and publishes per-lease interruption state; family D proves its stop, drain, heartbeat-loss, and settlement semantics.",
+      "ordinal": 22
     },
     {
       "id": "src/external.ts:runExternal:for_of_loop:3121da2c0be9c687:1",
@@ -421,7 +451,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 17
     },
     {
       "id": "src/external.ts:runExternal:mutable_let:76c47a223c41d658:1",
@@ -434,7 +465,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 8
     },
     {
       "id": "src/external.ts:runExternal:mutable_let:a1a54a0eca4a637d:1",
@@ -447,7 +479,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:runExternal:mutable_let:c418ede857c42a1b:1",
@@ -460,7 +493,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 4
     },
     {
       "id": "src/external.ts:runExternal:new_Set:dcb0bc8c1a403a2e:1",
@@ -473,7 +507,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 3
     },
     {
       "id": "src/external.ts:runExternal:while_loop:9617c4b4f5adce2d:1",
@@ -486,7 +521,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 6
     },
     {
       "id": "src/external.ts:runExternalAvailable:call_Promise.all:0a276b791852ae59:1",
@@ -499,7 +535,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 7
     },
     {
       "id": "src/external.ts:runExternalAvailable:mutable_let:a500c78a180385f8:1",
@@ -512,7 +549,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+      "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:validateClaimBatch:call_mutator_add:723296327dfe6cb6:1",
@@ -525,7 +563,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:validateClaimBatch:for_of_loop:4d28f8f125e7ed5e:1",
@@ -538,7 +577,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:validateClaimBatch:new_Set:a2fd31b2d35e139d:1",
@@ -551,7 +591,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics.",
+      "ordinal": 1
     },
     {
       "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:9db87824efe2a857:1",
@@ -564,7 +605,8 @@
         "A"
       ],
       "classification": "APPLICABLE",
-      "reason": "Canonical request/receipt identity contributes to durable lifecycle replay and conflict semantics."
+      "reason": "Canonical request/receipt identity contributes to durable lifecycle replay and conflict semantics.",
+      "ordinal": 10
     },
     {
       "id": "src/kernel.ts:changed:call_row.history.slice:e0829416145438db:1",
@@ -578,7 +620,8 @@
         "E"
       ],
       "classification": "APPLICABLE",
-      "reason": "Lifecycle revision/history retention is durable A state and directly observable through E history reads."
+      "reason": "Lifecycle revision/history retention is durable A state and directly observable through E history reads.",
+      "ordinal": 3
     },
     {
       "id": "src/kernel.ts:changed:property_assignment:b0faf6f9d05064b4:1",
@@ -592,7 +635,8 @@
         "E"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable history replacement/truncation is lifecycle truth observed by history reads; A owns the transition history and E owns exact typed/history inspection semantics."
+      "reason": "Durable history replacement/truncation is lifecycle truth observed by history reads; A owns the transition history and E owns exact typed/history inspection semantics.",
+      "ordinal": 2
     },
     {
       "id": "src/kernel.ts:constructor:property_assignment:685bad246c189fe1:1",
@@ -605,7 +649,8 @@
         "H"
       ],
       "classification": "APPLICABLE",
-      "reason": "WorkConflict.name is consumer-visible exported conflict identity rather than durable state; family H owns public error/export identity."
+      "reason": "WorkConflict.name is consumer-visible exported conflict identity rather than durable state; family H owns public error/export identity.",
+      "ordinal": 2
     },
     {
       "id": "src/kernel.ts:settleRecord:call_mutator_add:ced73b718c16c62e:1",
@@ -618,7 +663,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
+      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication.",
+      "ordinal": 11
     },
     {
       "id": "src/kernel.ts:settleRecord:call_mutator_add:ced73b718c16c62e:2",
@@ -631,7 +677,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication."
+      "reason": "Follow-up identity set mutation enforces duplicate child identity consistency within one settlement; family B owns durable continuation identity and deduplication.",
+      "ordinal": 19
     },
     {
       "id": "src/kernel.ts:settleRecord:for_of_loop:ace35be104c7d7dc:1",
@@ -646,7 +693,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 7
     },
     {
       "id": "src/kernel.ts:settleRecord:for_of_loop:ace35be104c7d7dc:2",
@@ -661,7 +709,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 15
     },
     {
       "id": "src/kernel.ts:settleRecord:mutable_let:30d7666547db2d8c:1",
@@ -676,7 +725,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 3
     },
     {
       "id": "src/kernel.ts:settleRecord:mutable_let:87129533b9d9f780:1",
@@ -691,7 +741,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 5
     },
     {
       "id": "src/kernel.ts:settleRecord:mutable_let:335b8168e2210c99:1",
@@ -706,7 +757,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 4
     },
     {
       "id": "src/kernel.ts:settleRecord:new_Set:bdda45f587054335:1",
@@ -721,7 +773,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 6
     },
     {
       "id": "src/kernel.ts:settleRecord:new_Set:bdda45f587054335:2",
@@ -736,7 +789,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent."
+      "reason": "Settlement mutates lifecycle counters/phase, retry/defer policy state, receipts, and durable follow-up intent.",
+      "ordinal": 14
     },
     {
       "id": "src/kernel.ts:settleRecord:property_assignment:daaab46462a89777:1",
@@ -749,7 +803,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement publishes the durable follow-up outbox atomically with terminal state; family B owns parent/child continuation state."
+      "reason": "Settlement publishes the durable follow-up outbox atomically with terminal state; family B owns parent/child continuation state.",
+      "ordinal": 37
     },
     {
       "id": "src/kernel.ts:settleRecord:property_assignment:cf55293547f99b4a:1",
@@ -763,7 +818,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Settlement receipt mutation binds accepted attempt/submission identity to replay and retry/defer outcomes; lifecycle A and policy F own those semantics."
+      "reason": "Settlement receipt mutation binds accepted attempt/submission identity to replay and retry/defer outcomes; lifecycle A and policy F own those semantics.",
+      "ordinal": 35
     },
     {
       "id": "src/memory.ts:atomic:call_mutator_set:1c105527494e0d42:1",
@@ -776,7 +832,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 11
     },
     {
       "id": "src/memory.ts:createMemoryStore:new_Map:35bcd6d56baa84b9:1",
@@ -789,7 +846,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 1
     },
     {
       "id": "src/memory.ts:query:call_selected.slice:85073c3f59a51f5a:1",
@@ -802,7 +860,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 15
     },
     {
       "id": "src/memory.ts:query:call_selected.sort:05d8161dd52adfb3:1",
@@ -815,7 +874,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 13
     },
     {
       "id": "src/memory.ts:query:mutable_let:bad78c9051f95bc2:1",
@@ -828,7 +888,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 4
     },
     {
       "id": "src/sqlite.ts:createSqliteStore:new_Map:c72a5fae96d4654f:1",
@@ -841,7 +902,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 10
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:ba0ef02bfc35a0d0:1",
@@ -854,7 +916,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 8
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:d9985287082df002:1",
@@ -867,7 +930,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 7
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:45d6e09b77e49a2d:1",
@@ -880,7 +944,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 5
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:b558d01f63ff56e9:1",
@@ -893,7 +958,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 10
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:25e9576cc1dc6668:1",
@@ -906,7 +972,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 11
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:6c7da090a5f17845:1",
@@ -919,7 +986,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 9
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:464bb984273cabab:1",
@@ -932,7 +1000,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 12
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:fb358318258a9d98:1",
@@ -945,7 +1014,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 3
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:eefe270be93dcfd8:1",
@@ -958,7 +1028,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 4
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:fba45a821125e5b4:1",
@@ -971,7 +1042,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 6
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_set:fb726b5f5bad35cd:1",
@@ -984,7 +1056,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G."
+      "reason": "Storage adapter mutable container/query state affects supported persistence, ordering, filtering, prepared-statement reuse, or atomic visibility and therefore belongs to family G.",
+      "ordinal": 18
     },
     {
       "id": "src/sqlite.ts:query:mutable_let:2f00980dc4f0461b:1",
@@ -997,7 +1070,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 14
     },
     {
       "id": "src/sqlite.ts:retryStartupBusy:for_loop:b8c499b3d1891564:1",
@@ -1010,7 +1084,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 3
     },
     {
       "id": "src/sqlite.ts:retryStartupBusy:mutable_let:3b33bd9705d2b9ba:1",
@@ -1023,7 +1098,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 2
     },
     {
       "id": "src/storage-validation.ts:<module>:new_Set:fe1a21b07cf9b9c7:1",
@@ -1036,7 +1112,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 1
     },
     {
       "id": "src/storage-validation.ts:compareUtf8Text:for_loop:ac625e69f7085482:1",
@@ -1049,7 +1126,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 4
     },
     {
       "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:64a4195752767913:1",
@@ -1062,7 +1140,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 23
     },
     {
       "id": "src/storage-validation.ts:validateWorkRecord:for_of_loop:378a3c8c2e85abdb:1",
@@ -1075,7 +1154,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
+      "ordinal": 19
     },
     {
       "id": "src/work.ts:<module>:mutable_property:733b1ee1b5a9e335:1",
@@ -1089,7 +1169,8 @@
         "D"
       ],
       "reason": "WorkRun.signal is mutable runner-owned interruption state shared by local and external execution; C and D prove admission, stop, heartbeat-loss and drain semantics around it.",
-      "classification": "APPLICABLE"
+      "classification": "APPLICABLE",
+      "ordinal": 1
     },
     {
       "id": "src/work.ts:<module>:new_AbortController:71e6dece3007b872:1",
@@ -1103,7 +1184,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "WorkRun cancellation signal is the runner-facing interruption surface used by local and external execution."
+      "reason": "WorkRun cancellation signal is the runner-facing interruption surface used by local and external execution.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:claim:call_mutator_push:b93c7f1170adbb9a:1",
@@ -1116,7 +1198,8 @@
         "A"
       ],
       "classification": "APPLICABLE",
-      "reason": "Claim result accumulation preserves the concrete order/cardinality of successfully claimed durable attempts; family A owns durable claim semantics."
+      "reason": "Claim result accumulation preserves the concrete order/cardinality of successfully claimed durable attempts; family A owns durable claim semantics.",
+      "ordinal": 8
     },
     {
       "id": "src/work.ts:claim:for_of_loop:464e06c7a4802c80:1",
@@ -1130,7 +1213,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Bounded due discovery and per-candidate atomic claim bridge lifecycle A to storage/query semantics G."
+      "reason": "Bounded due discovery and per-candidate atomic claim bridge lifecycle A to storage/query semantics G.",
+      "ordinal": 4
     },
     {
       "id": "src/work.ts:constructor:property_assignment:337f2f6fb0cc4a6a:1",
@@ -1143,7 +1227,8 @@
         "H"
       ],
       "classification": "APPLICABLE",
-      "reason": "WorkDispatchError.name is consumer-visible exported error identity rather than durable state; family H owns public error/export identity."
+      "reason": "WorkDispatchError.name is consumer-visible exported error identity rather than durable state; family H owns public error/export identity.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:createWorkOnce:mutable_let:f48d5b11e8e029ed:1",
@@ -1156,7 +1241,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 1
     },
     {
       "id": "src/work.ts:dispatch:call_mutator_push:ab5ffbcfff698655:1",
@@ -1169,7 +1255,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Dispatch failure accumulation controls the bounded durable-follow-up result/error surface; family B owns retained failure and continuation semantics."
+      "reason": "Dispatch failure accumulation controls the bounded durable-follow-up result/error surface; family B owns retained failure and continuation semantics.",
+      "ordinal": 16
     },
     {
       "id": "src/work.ts:dispatch:for_of_loop:1536ad0afda45851:1",
@@ -1182,7 +1269,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 11
     },
     {
       "id": "src/work.ts:dispatch:for_of_loop:56ad37e09fc782fe:1",
@@ -1195,7 +1283,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 9
     },
     {
       "id": "src/work.ts:dispatch:mutable_let:20bde721567bda7b:1",
@@ -1208,7 +1297,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:dispatch:mutable_let:f3afdaeba4c53644:1",
@@ -1221,7 +1311,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 7
     },
     {
       "id": "src/work.ts:dispatch:mutable_let:f02290a596bce024:1",
@@ -1234,7 +1325,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 8
     },
     {
       "id": "src/work.ts:handoff:call_mutator_push:63eb2085237c26ce:1",
@@ -1247,7 +1339,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it."
+      "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it.",
+      "ordinal": 7
     },
     {
       "id": "src/work.ts:handoff:for_of_loop:4e5e7d5e33813b02:1",
@@ -1260,7 +1353,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Foreign handoff preparation/export and per-lease iteration belongs to D."
+      "reason": "Foreign handoff preparation/export and per-lease iteration belongs to D.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:rerun:mutable_let:34c618e3b1a2836e:1",
@@ -1274,7 +1368,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
+      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics.",
+      "ordinal": 4
     },
     {
       "id": "src/work.ts:restart:mutable_let:241c040925bb06c5:1",
@@ -1288,7 +1383,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
+      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:retry:mutable_let:1ea13d3072bffaff:1",
@@ -1302,7 +1398,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics."
+      "reason": "Revision-checked generation reset combines durable lifecycle fencing with retry/manual-policy semantics.",
+      "ordinal": 5
     },
     {
       "id": "src/work.ts:runDispatcher:while_loop:e2dc279211bf3d3c:1",
@@ -1315,7 +1412,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
+      "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B.",
+      "ordinal": 2
     },
     {
       "id": "src/work.ts:settle:mutable_let:6cadf50b439a0cc3:1",
@@ -1330,7 +1428,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics."
+      "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics.",
+      "ordinal": 3
     },
     {
       "id": "src/work.ts:settle:mutable_let:720ab1806ab79a70:1",
@@ -1345,7 +1444,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics."
+      "reason": "Resolved settlement combines lifecycle/receipt, retry/defer policy, and continuation planning semantics.",
+      "ordinal": 11
     },
     {
       "id": "src/worker.ts:<callback>:call_mutator_delete:2f5a9aa17ea01672:1",
@@ -1358,7 +1458,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior.",
+      "ordinal": 17
     },
     {
       "id": "src/worker.ts:<callback>:call_setTimeout:14f12c7c7e4b2bc4:1",
@@ -1371,7 +1472,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:<callback>:call_setTimeout:c750f896f1a7ca93:1",
@@ -1384,7 +1486,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 9
     },
     {
       "id": "src/worker.ts:<callback>:mutable_let:1d816ed33791bf91:1",
@@ -1397,7 +1500,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 8
     },
     {
       "id": "src/worker.ts:<module>:new_WeakMap:7d4d4bb19766c784:1",
@@ -1410,7 +1514,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:armExpiry:call_setTimeout:c114ef178cc923f7:1",
@@ -1423,7 +1528,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 6
     },
     {
       "id": "src/worker.ts:heartbeat:call_setTimeout:8e582c99cc68d296:1",
@@ -1436,7 +1542,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 5
     },
     {
       "id": "src/worker.ts:markLocalClaimStartedAt:call_mutator_set:291b94679a168397:1",
@@ -1449,7 +1556,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:processClaim:call_setTimeout:7bb93c72a2bf7fff:1",
@@ -1462,7 +1570,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 16
     },
     {
       "id": "src/worker.ts:processClaim:mutable_let:be3cf2ba54b41817:1",
@@ -1475,7 +1584,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 8
     },
     {
       "id": "src/worker.ts:processClaim:mutable_let:093addb73c572bc2:1",
@@ -1488,7 +1598,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 7
     },
     {
       "id": "src/worker.ts:processClaim:mutable_let:20f09ed442489592:1",
@@ -1501,7 +1612,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 5
     },
     {
       "id": "src/worker.ts:processClaim:mutable_let:c7eaed52eeb10863:1",
@@ -1514,7 +1626,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 6
     },
     {
       "id": "src/worker.ts:processClaim:new_AbortController:96543281a52dcb9e:1",
@@ -1527,7 +1640,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:processClaim:property_assignment:124d425eae512b76:1",
@@ -1540,7 +1654,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior.",
+      "ordinal": 2
     },
     {
       "id": "src/worker.ts:processClaims:call_Promise.all:cc914af4d65f4ca5:1",
@@ -1553,7 +1668,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 3
     },
     {
       "id": "src/worker.ts:runWorker:call_Promise.all:d3fcb590a2633d6f:1",
@@ -1566,7 +1682,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 22
     },
     {
       "id": "src/worker.ts:runWorker:call_Promise.race:713a682f6df724c9:1",
@@ -1579,7 +1696,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 7
     },
     {
       "id": "src/worker.ts:runWorker:call_mutator_add:8d32c39198615faa:1",
@@ -1592,7 +1710,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior."
+      "reason": "Managed local runner mutates claim-start history, active-task bookkeeping, and per-run interruption state; family C proves admission, stop, failure-cause, and drain behavior.",
+      "ordinal": 20
     },
     {
       "id": "src/worker.ts:runWorker:for_of_loop:1373d7843b89399a:1",
@@ -1605,7 +1724,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 15
     },
     {
       "id": "src/worker.ts:runWorker:mutable_let:912b9786c6238007:1",
@@ -1618,7 +1738,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 4
     },
     {
       "id": "src/worker.ts:runWorker:mutable_let:ad141b70be907357:1",
@@ -1631,7 +1752,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 5
     },
     {
       "id": "src/worker.ts:runWorker:mutable_let:cf0220ba99512aaa:1",
@@ -1644,7 +1766,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 8
     },
     {
       "id": "src/worker.ts:runWorker:new_Set:031f0b563b7aca4b:1",
@@ -1657,7 +1780,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 3
     },
     {
       "id": "src/worker.ts:runWorker:while_loop:413c4e0640380f60:1",
@@ -1670,7 +1794,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+      "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C.",
+      "ordinal": 6
     },
     {
       "id": "src/external.ts:<callback>:call_addEventListener:bf18a89bf6db5bad:1",
@@ -1683,7 +1808,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 8
     },
     {
       "id": "src/external.ts:armExpiry:call_clearTimeout:f419c0d1426b222a:1",
@@ -1696,7 +1822,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 1
     },
     {
       "id": "src/external.ts:armExpiry:call_mutator_abort:40ce7e30e5299c66:1",
@@ -1709,7 +1836,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 3
     },
     {
       "id": "src/external.ts:heartbeat:call_mutator_abort:e71e15bef9b997ac:1",
@@ -1722,7 +1850,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 7
     },
     {
       "id": "src/external.ts:processLease:call_addEventListener:fcc8fcbd27df340b:1",
@@ -1735,7 +1864,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 3
     },
     {
       "id": "src/external.ts:processLease:call_clearTimeout:e0e657caa6c2b890:1",
@@ -1748,7 +1878,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 20
     },
     {
       "id": "src/external.ts:processLease:call_clearTimeout:e2d5e23de00b17b8:1",
@@ -1761,7 +1892,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 19
     },
     {
       "id": "src/external.ts:processLease:call_removeEventListener:4eabddd025affc08:1",
@@ -1774,7 +1906,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 9
     },
     {
       "id": "src/external.ts:processLease:call_removeEventListener:4eabddd025affc08:2",
@@ -1787,7 +1920,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 21
     },
     {
       "id": "src/external.ts:stop:call_clearTimeout:303b4fa41018f95c:1",
@@ -1800,7 +1934,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 3
     },
     {
       "id": "src/external.ts:stop:call_mutator_abort:a3cde329b744eeeb:1",
@@ -1813,7 +1948,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 1
     },
     {
       "id": "src/external.ts:stop:call_removeEventListener:0de08fd457c47193:1",
@@ -1826,7 +1962,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D.",
+      "ordinal": 4
     },
     {
       "id": "src/sqlite.ts:sleepSync:call_Atomics.wait:82a4968385c48908:1",
@@ -1839,7 +1976,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "SQLite startup contention backoff and blocking coordination belongs to family G."
+      "reason": "SQLite startup contention backoff and blocking coordination belongs to family G.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:<callback>:call_addEventListener:227d348bd6223566:1",
@@ -1852,7 +1990,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 3
     },
     {
       "id": "src/worker.ts:<callback>:call_addEventListener:6d4d3882bb34f8d7:1",
@@ -1865,7 +2004,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 11
     },
     {
       "id": "src/worker.ts:armExpiry:call_clearTimeout:707430eb2f8a1b34:1",
@@ -1878,7 +2018,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:armExpiry:call_mutator_abort:6939637e56f7a289:1",
@@ -1891,7 +2032,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 4
     },
     {
       "id": "src/worker.ts:heartbeat:call_mutator_abort:58401eda7461dee7:1",
@@ -1904,7 +2046,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 7
     },
     {
       "id": "src/worker.ts:processClaim:call_addEventListener:cc54b1be1c6d6ad1:1",
@@ -1917,7 +2060,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 3
     },
     {
       "id": "src/worker.ts:processClaim:call_clearTimeout:220e655d34508cae:1",
@@ -1930,7 +2074,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 21
     },
     {
       "id": "src/worker.ts:processClaim:call_clearTimeout:df8389672649cb12:1",
@@ -1943,7 +2088,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 20
     },
     {
       "id": "src/worker.ts:processClaim:call_removeEventListener:eccfd1cdfb7dcf6d:1",
@@ -1956,7 +2102,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 22
     },
     {
       "id": "src/worker.ts:stop:call_clearTimeout:f0d486549adcf3c3:1",
@@ -1969,7 +2116,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:stop:call_clearTimeout:f0d486549adcf3c3:2",
@@ -1982,7 +2130,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 6
     },
     {
       "id": "src/worker.ts:stop:call_mutator_abort:0bc39cb14bd382da:1",
@@ -1995,7 +2144,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 4
     },
     {
       "id": "src/worker.ts:stop:call_removeEventListener:24cc345bd0c35611:1",
@@ -2008,7 +2158,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 2
     },
     {
       "id": "src/worker.ts:stop:call_removeEventListener:517bcf54798edc8d:1",
@@ -2021,7 +2172,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 7
     },
     {
       "id": "src/worker.ts:waitForPoll:call_Promise.resolve:42c58843fb68a9fd:1",
@@ -2034,7 +2186,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C.",
+      "ordinal": 1
     },
     {
       "id": "src/cas.ts:atomic:identifier_update:38c40b20942406d3:1",
@@ -2047,7 +2200,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 2
     },
     {
       "id": "src/conformance.ts:<callback>:identifier_assignment:151b08aa9e5dce4b:1",
@@ -2061,7 +2215,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow.",
+      "ordinal": 115
     },
     {
       "id": "src/conformance.ts:<callback>:identifier_assignment:cc22b31b98e1c206:1",
@@ -2075,7 +2230,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow.",
+      "ordinal": 113
     },
     {
       "id": "src/conformance.ts:retry:identifier_update:ad6eb65057d8ec1e:1",
@@ -2089,7 +2245,8 @@
         "I"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow."
+      "reason": "Identifier-local mutation participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:<callback>:identifier_assignment:13d7a9b1b606a016:1",
@@ -2102,7 +2259,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 9
     },
     {
       "id": "src/external.ts:armExpiry:identifier_assignment:9762d041c73dff04:1",
@@ -2115,7 +2273,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 4
     },
     {
       "id": "src/external.ts:heartbeat:identifier_assignment:79250fc793833d95:1",
@@ -2128,7 +2287,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 5
     },
     {
       "id": "src/external.ts:processLease:identifier_assignment:7db6afe6a2ed907f:1",
@@ -2141,7 +2301,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 14
     },
     {
       "id": "src/external.ts:processLease:identifier_assignment:94eb80b762d0c263:1",
@@ -2154,7 +2315,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 18
     },
     {
       "id": "src/external.ts:recordFatal:identifier_assignment:8b880cd05fa03576:1",
@@ -2167,7 +2329,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 1
     },
     {
       "id": "src/external.ts:runExternal:identifier_assignment:c8e478f012cfa9fa:1",
@@ -2180,7 +2343,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 10
     },
     {
       "id": "src/external.ts:runExternalAvailable:identifier_assignment:09e62ee3bdbb8c2c:1",
@@ -2193,7 +2357,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 4
     },
     {
       "id": "src/external.ts:stop:identifier_assignment:141e5b00891a90db:1",
@@ -2206,7 +2371,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 2
     },
     {
       "id": "src/external.ts:stop:identifier_assignment:bf9bafda3b69bb06:1",
@@ -2219,7 +2385,8 @@
         "D"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D."
+      "reason": "Identifier-local mutation controls external runner transport, lease, timer, fatal, or poll state and is owned by external-executor family D.",
+      "ordinal": 5
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:17375a0b9e1ee33d:1",
@@ -2234,7 +2401,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 20
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:1799b8b88b8fae9e:1",
@@ -2249,7 +2417,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 31
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:5a95463a38fe7b81:1",
@@ -2264,7 +2433,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 33
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:7d77f917cc8ab0bc:1",
@@ -2279,7 +2449,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 29
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:a62b0d8850456f76:1",
@@ -2294,7 +2465,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 28
     },
     {
       "id": "src/kernel.ts:settleRecord:identifier_assignment:f70571a2d0e24d75:1",
@@ -2309,7 +2481,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F."
+      "reason": "Identifier-local settlement mutation changes lifecycle phase/counters, retry/defer policy, or continuation-linked state covered jointly by A, B, and F.",
+      "ordinal": 12
     },
     {
       "id": "src/memory.ts:query:identifier_assignment:76e1b3f920eb6625:1",
@@ -2322,7 +2495,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 9
     },
     {
       "id": "src/memory.ts:query:identifier_assignment:84661177fe56f23b:1",
@@ -2335,7 +2509,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 11
     },
     {
       "id": "src/memory.ts:query:identifier_assignment:9c76e4dac004b6a8:1",
@@ -2348,7 +2523,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 7
     },
     {
       "id": "src/sqlite.ts:query:identifier_assignment:53dffe601b087b12:1",
@@ -2361,7 +2537,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 16
     },
     {
       "id": "src/sqlite.ts:retryStartupBusy:identifier_assignment:20e4b66200bd7692:1",
@@ -2374,7 +2551,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 9
     },
     {
       "id": "src/storage-validation.ts:compareUtf8Text:identifier_update:68bfb3b3715b0c2b:1",
@@ -2387,7 +2565,8 @@
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
+      "ordinal": 5
     },
     {
       "id": "src/work.ts:dispatch:identifier_assignment:1f8a1072460628e9:1",
@@ -2400,7 +2579,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B.",
+      "ordinal": 4
     },
     {
       "id": "src/work.ts:dispatch:identifier_assignment:458b39f85a04fed6:1",
@@ -2413,7 +2593,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B.",
+      "ordinal": 10
     },
     {
       "id": "src/work.ts:dispatch:identifier_assignment:b0542ec403a9a07f:1",
@@ -2426,7 +2607,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B.",
+      "ordinal": 5
     },
     {
       "id": "src/work.ts:dispatch:identifier_update:133c68db07756d5e:1",
@@ -2439,7 +2621,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B.",
+      "ordinal": 15
     },
     {
       "id": "src/work.ts:dispatch:identifier_update:9847cc95cab5b801:1",
@@ -2452,7 +2635,8 @@
         "B"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B."
+      "reason": "Identifier-local dispatch mutation controls durable follow-up cursor, budget, fairness, or delivery accounting and is owned by continuation family B.",
+      "ordinal": 12
     },
     {
       "id": "src/work.ts:rerun:identifier_assignment:01fb7bb03c636f6e:1",
@@ -2466,7 +2650,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F.",
+      "ordinal": 7
     },
     {
       "id": "src/work.ts:restart:identifier_assignment:51e7425e8266de2b:1",
@@ -2480,7 +2665,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F.",
+      "ordinal": 5
     },
     {
       "id": "src/work.ts:retry:identifier_assignment:f60580e822fc89b0:1",
@@ -2494,7 +2680,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F."
+      "reason": "Identifier-local revision mutation participates in generation reset and retry/manual-policy semantics covered jointly by lifecycle A and policy F.",
+      "ordinal": 8
     },
     {
       "id": "src/work.ts:settle:identifier_assignment:19626bb12c2ffae0:1",
@@ -2509,7 +2696,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F.",
+      "ordinal": 13
     },
     {
       "id": "src/work.ts:settle:identifier_assignment:7a9f1d909d381191:1",
@@ -2524,7 +2712,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F.",
+      "ordinal": 17
     },
     {
       "id": "src/work.ts:settle:identifier_assignment:959470b3144dffa2:1",
@@ -2539,7 +2728,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F.",
+      "ordinal": 20
     },
     {
       "id": "src/work.ts:settle:identifier_assignment:959470b3144dffa2:2",
@@ -2554,7 +2744,8 @@
         "F"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F."
+      "reason": "Identifier-local settlement mutation resolves lifecycle, retry/defer policy, and continuation planning semantics covered by A, B, and F.",
+      "ordinal": 23
     },
     {
       "id": "src/worker.ts:<callback>:identifier_assignment:629d92378b6a20ae:1",
@@ -2567,7 +2758,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 12
     },
     {
       "id": "src/worker.ts:armExpiry:identifier_assignment:84169534f5204f94:1",
@@ -2580,7 +2772,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 3
     },
     {
       "id": "src/worker.ts:armExpiry:identifier_assignment:f242eec037793f28:1",
@@ -2593,7 +2786,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 5
     },
     {
       "id": "src/worker.ts:heartbeat:identifier_assignment:1ba9318c61399490:1",
@@ -2606,7 +2800,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 4
     },
     {
       "id": "src/worker.ts:heartbeat:identifier_assignment:8bc42d825ad68e76:1",
@@ -2619,7 +2814,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 6
     },
     {
       "id": "src/worker.ts:processClaim:identifier_assignment:0427888b5b230909:1",
@@ -2632,7 +2828,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 19
     },
     {
       "id": "src/worker.ts:processClaim:identifier_assignment:9013ffa98fcf5940:1",
@@ -2645,7 +2842,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 15
     },
     {
       "id": "src/worker.ts:recordFatal:identifier_assignment:a79b71b88ee4a0ac:1",
@@ -2658,7 +2856,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 1
     },
     {
       "id": "src/worker.ts:runWorker:identifier_assignment:4b110e1aaf1fb5b8:1",
@@ -2671,7 +2870,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 9
     },
     {
       "id": "src/worker.ts:stop:identifier_assignment:1217d94e43c49da0:1",
@@ -2684,7 +2884,8 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 8
     },
     {
       "id": "src/worker.ts:stop:identifier_assignment:657cf2320c8116cb:1",
@@ -2697,7 +2898,23 @@
         "C"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C."
+      "reason": "Identifier-local mutation controls managed local-runner ownership, timer, fatal, poll, or claim state and is owned by local-runner family C.",
+      "ordinal": 5
+    },
+    {
+      "id": "src/conformance.ts:<callback>:other_assignment:503fb54a32cdb2df:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "other_assignment",
+      "excerpt": "[run] = await q.claim({ workerId: 'B' })",
+      "textDigest": "9896cfd882367267",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Destructuring assignment participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow.",
+      "ordinal": 83
     }
   ]
 }

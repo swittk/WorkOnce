@@ -75,14 +75,38 @@ export function assertEmittedArtifactEntrypoints() {
     }
     return false;
   }
-  function dynamicImportPositions(sourceFile, specifier) {
+  function isFunctionBoundary(node) {
+    return (
+      ts.isFunctionDeclaration(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isArrowFunction(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isConstructorDeclaration(node) ||
+      ts.isGetAccessorDeclaration(node) ||
+      ts.isSetAccessorDeclaration(node)
+    );
+  }
+  function executesDuringModuleInitialization(node, sourceFile) {
+    if (isStaticallyUnreachable(node)) return false;
+    for (let parent = node.parent; parent && parent !== sourceFile; parent = parent.parent)
+      if (isFunctionBoundary(parent)) return false;
+    return true;
+  }
+  function staticImportCount(sourceFile, specifier) {
+    let count = 0;
+    for (const statement of sourceFile.statements)
+      if (ts.isImportDeclaration(statement) && literalText(statement.moduleSpecifier) === specifier)
+        count += 1;
+    return count;
+  }
+  function moduleInitializationDynamicImportPositions(sourceFile, specifier) {
     const positions = [];
     function visit(node) {
       if (
         ts.isCallExpression(node) &&
         node.expression.kind === ts.SyntaxKind.ImportKeyword &&
         literalText(node.arguments[0]) === specifier &&
-        !isStaticallyUnreachable(node)
+        executesDuringModuleInitialization(node, sourceFile)
       )
         positions.push(node.getStart(sourceFile));
       ts.forEachChild(node, visit);
@@ -146,12 +170,15 @@ export function assertEmittedArtifactEntrypoints() {
 
   const formalModule = parseModule('scripts/formal.mjs');
   const formalGuards = topLevelCallPositions(formalModule.sourceFile, 'assertBuildSourceBinding');
-  const formalProducers = dynamicImportPositions(
+  const formalProducerSpecifier = './runtime-boundary-refinement.mjs';
+  const formalStaticProducers = staticImportCount(formalModule.sourceFile, formalProducerSpecifier);
+  const formalProducers = moduleInitializationDynamicImportPositions(
     formalModule.sourceFile,
-    './runtime-boundary-refinement.mjs',
+    formalProducerSpecifier,
   );
   if (
     formalGuards.length !== 1 ||
+    formalStaticProducers !== 0 ||
     formalProducers.length !== 1 ||
     formalGuards[0] > formalProducers[0]
   )
@@ -161,11 +188,18 @@ export function assertEmittedArtifactEntrypoints() {
 
   const tracesModule = parseModule('scripts/check-bounded-trace-domain.mjs');
   const traceGuards = topLevelCallPositions(tracesModule.sourceFile, 'assertBuildSourceBinding');
-  const traceProducers = dynamicImportPositions(
+  const traceProducerSpecifier = './formal-bounded-refinement-corpus.mjs';
+  const traceStaticProducers = staticImportCount(tracesModule.sourceFile, traceProducerSpecifier);
+  const traceProducers = moduleInitializationDynamicImportPositions(
     tracesModule.sourceFile,
-    './formal-bounded-refinement-corpus.mjs',
+    traceProducerSpecifier,
   );
-  if (traceGuards.length !== 1 || traceProducers.length !== 1 || traceGuards[0] > traceProducers[0])
+  if (
+    traceGuards.length !== 1 ||
+    traceStaticProducers !== 0 ||
+    traceProducers.length !== 1 ||
+    traceGuards[0] > traceProducers[0]
+  )
     throw new Error(
       'check-bounded-trace-domain.mjs must verify the bound build before importing compiled traces.',
     );
