@@ -5,13 +5,15 @@ import {
   runLocalRunnerRefinementSamples,
 } from '../scripts/local-runner-refinement.mjs';
 
+const samplesOnce = runLocalRunnerRefinementSamples();
+
 test('compiled local managed-runner observations cover causes, fairness, contention and boundaries', async () => {
-  const samples = await runLocalRunnerRefinementSamples();
+  const samples = await samplesOnce;
   assertLocalRunnerRefinementSamples(samples);
 });
 
 test('local runner refinement rejects adapter substitution without a count change', async () => {
-  const samples = await runLocalRunnerRefinementSamples();
+  const samples = await samplesOnce;
   const sqliteIndex = samples.findIndex(
     (sample) => sample.kind === 'settleCause' && sample.adapter === 'sqlite',
   );
@@ -28,7 +30,7 @@ test('local runner refinement rejects adapter substitution without a count chang
 });
 
 test('local runner refinement rejects standalone kind substitution without a count change', async () => {
-  const samples = await runLocalRunnerRefinementSamples();
+  const samples = await samplesOnce;
   const dynamicIndex = samples.findIndex((sample) => sample.kind === 'dynamicArrival');
   const wakePoll = samples.find((sample) => sample.kind === 'wakePoll');
   assert.notEqual(dynamicIndex, -1);

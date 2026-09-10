@@ -40,6 +40,11 @@ try {
 }
 
 try {
+  assert.equal(
+    baseConfig.split('CHECK_DEADLOCK FALSE').length,
+    2,
+    'WorkOnce.cfg mutation anchor must be unique',
+  );
   const mutant = baseConfig.replace(
     'CHECK_DEADLOCK FALSE',
     '  UncoveredInvariant\nCHECK_DEADLOCK FALSE',

@@ -14,6 +14,8 @@ const runnerTarget = path.join(root, 'scripts/run-assurance.mjs');
 const runnerOriginal = fs.readFileSync(runnerTarget, 'utf8');
 const configTarget = path.join(root, 'tsconfig.json');
 const configOriginal = fs.readFileSync(configTarget, 'utf8');
+const conformanceTarget = path.join(root, 'scripts/check-formal-implementation-conformance.mjs');
+const conformanceOriginal = fs.readFileSync(conformanceTarget, 'utf8');
 
 function run(script, ...args) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -61,6 +63,30 @@ try {
     'formal manifest accepted an unbound assurance runner',
   );
   assert.match(output(runnerBinding), /Full assurance invokes unbound proof\/checker scripts/u);
+  mutationFiles.restoreAll();
+  const infrastructureNeedle = "  'scripts/run-assurance.mjs',";
+  assert.equal(
+    conformanceOriginal.split(infrastructureNeedle).length,
+    2,
+    'assurance infrastructure duplicate mutation anchor is not unique',
+  );
+  mutationFiles.writeFileSync(
+    conformanceTarget,
+    conformanceOriginal.replace(
+      infrastructureNeedle,
+      `${infrastructureNeedle}
+  'scripts/run-assurance.mjs',`,
+    ),
+  );
+  const duplicateBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    duplicateBinding,
+    'duplicate assurance infrastructure path unexpectedly passed',
+    /assuranceInfrastructureFiles contains duplicate bound paths/u,
+  );
   mutationFiles.restoreAll();
   const configMutant = configOriginal.replace('\"target\": \"ES2018\"', '\"target\": \"ES2020\"');
   assert.notEqual(configMutant, configOriginal, 'compiler target mutation anchor is missing');

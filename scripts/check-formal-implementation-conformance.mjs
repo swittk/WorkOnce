@@ -376,7 +376,11 @@ const assuranceInfrastructureFiles = [
 for (const evidenceFile of redBeforeEvidenceFiles)
   if (!assuranceInfrastructureFiles.includes(evidenceFile))
     assuranceInfrastructureFiles.push(evidenceFile);
-assuranceInfrastructureFiles.sort();
+const uniqueAssuranceInfrastructureFiles = [...new Set(assuranceInfrastructureFiles)];
+if (uniqueAssuranceInfrastructureFiles.length !== assuranceInfrastructureFiles.length)
+  throw new Error('assuranceInfrastructureFiles contains duplicate bound paths.');
+assuranceInfrastructureFiles.length = 0;
+assuranceInfrastructureFiles.push(...uniqueAssuranceInfrastructureFiles.sort(compareExact));
 
 function assertAssuranceRunnerScriptsBound() {
   const runnerPath = path.join(root, 'scripts/run-assurance.mjs');

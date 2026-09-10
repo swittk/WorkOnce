@@ -108,12 +108,27 @@ function constructKind(node) {
   return undefined;
 }
 
+function compareExact(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+export function discoverTypeScriptFiles(directory, prefix = '') {
+  const files = [];
+  const entries = fs
+    .readdirSync(directory, { withFileTypes: true })
+    .sort((left, right) => compareExact(left.name, right.name));
+  for (const entry of entries) {
+    const relative = `${prefix}${entry.name}`;
+    if (entry.isDirectory())
+      files.push(...discoverTypeScriptFiles(path.join(directory, entry.name), `${relative}/`));
+    else if (entry.isFile() && entry.name.endsWith('.ts')) files.push(relative);
+  }
+  return files;
+}
+
 export function discoverInternalSemanticSurface() {
   const srcDir = path.join(root, 'src');
-  const files = fs
-    .readdirSync(srcDir)
-    .filter((name) => name.endsWith('.ts'))
-    .sort();
+  const files = discoverTypeScriptFiles(srcDir);
   const entries = [];
   const occurrences = new Map();
   for (const name of files) {
@@ -149,7 +164,7 @@ export function discoverInternalSemanticSurface() {
     }
     visit(source);
   }
-  return entries.sort((a, b) => a.id.localeCompare(b.id));
+  return entries.sort((a, b) => compareExact(a.id, b.id));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
