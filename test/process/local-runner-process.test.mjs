@@ -33,6 +33,12 @@ async function kill(child) {
   const [, signal] = await exited;
   assert.equal(signal, 'SIGKILL');
 }
+async function cleanupChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) }).catch(() => undefined);
+  if (!child.killed) child.kill('SIGKILL');
+  await exited;
+}
 async function seed(path, count, leaseMs = 200) {
   const store = createSqliteStore(path);
   try {
@@ -98,7 +104,7 @@ test('SIGKILL with three active local attempts leaves all durable leases reclaim
         opened.store.close();
       }
     } finally {
-      if (!child.killed) child.kill('SIGKILL');
+      await cleanupChild(child);
     }
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -119,7 +125,7 @@ test('SIGKILL after heartbeat commit but before reply preserves renewed lease an
       oldRef = stage.ref;
       await kill(child);
     } finally {
-      if (!child.killed) child.kill('SIGKILL');
+      await cleanupChild(child);
     }
     const opened = reopen(path);
     try {
@@ -161,7 +167,7 @@ test('SIGKILL after settlement commit but before reply replays the exact termina
       ref = stage.ref;
       await kill(child);
     } finally {
-      if (!child.killed) child.kill('SIGKILL');
+      await cleanupChild(child);
     }
     const opened = reopen(path);
     try {

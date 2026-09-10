@@ -287,6 +287,9 @@ export function assertAssuranceVerdictIntegrity() {
     let guardedMutations = 0;
     const promiseMutationImports = new Map();
     const promiseMutationNamespaces = new Set();
+    const directMutationImports = new Map();
+    const mutationAliases = new Map();
+    const fsNamespaces = new Set();
     const directMutationPathArguments = new Map([
       ['writeFileSync', [0]],
       ['appendFileSync', [0]],
@@ -311,8 +314,12 @@ export function assertAssuranceVerdictIntegrity() {
     function mutationTargetIndexes(call) {
       const expression = call.expression;
       if (ts.isIdentifier(expression)) {
+        const alias = mutationAliases.get(expression.text);
+        if (alias) return alias;
         const direct = directMutationPathArguments.get(expression.text);
         if (direct) return direct;
+        const directImported = directMutationImports.get(expression.text);
+        if (directImported) return directMutationPathArguments.get(directImported) ?? [];
         const imported = promiseMutationImports.get(expression.text);
         return imported ? (promiseMutationPathArguments.get(imported) ?? []) : [];
       }
@@ -344,6 +351,31 @@ export function assertAssuranceVerdictIntegrity() {
       values.push(value);
       map.set(key, values);
     };
+    const isFsNamespaceExpression = (expression) =>
+      ts.isIdentifier(expression) && fsNamespaces.has(expression.text);
+    const isPromiseNamespaceExpression = (expression) =>
+      (ts.isIdentifier(expression) && promiseMutationNamespaces.has(expression.text)) ||
+      (ts.isPropertyAccessExpression(expression) &&
+        expression.name.text === 'promises' &&
+        isFsNamespaceExpression(expression.expression));
+    const aliasedMutationIndexes = (expression) => {
+      if (ts.isIdentifier(expression)) {
+        const alias = mutationAliases.get(expression.text);
+        if (alias) return alias;
+        const direct = directMutationPathArguments.get(expression.text);
+        if (direct) return direct;
+        const directImported = directMutationImports.get(expression.text);
+        if (directImported) return directMutationPathArguments.get(directImported) ?? [];
+        const promiseImported = promiseMutationImports.get(expression.text);
+        return promiseImported ? (promiseMutationPathArguments.get(promiseImported) ?? []) : [];
+      }
+      if (!ts.isPropertyAccessExpression(expression)) return [];
+      if (isFsNamespaceExpression(expression.expression))
+        return directMutationPathArguments.get(expression.name.text) ?? [];
+      if (isPromiseNamespaceExpression(expression.expression))
+        return promiseMutationPathArguments.get(expression.name.text) ?? [];
+      return [];
+    };
     function discover(node) {
       if (
         ts.isImportDeclaration(node) &&
@@ -362,15 +394,18 @@ export function assertAssuranceVerdictIntegrity() {
                 promiseMutationImports.set(element.name.text, imported);
             }
         }
-        if (
-          node.moduleSpecifier.text === 'node:fs' &&
-          clause.namedBindings &&
-          ts.isNamedImports(clause.namedBindings)
-        )
-          for (const element of clause.namedBindings.elements) {
-            const imported = element.propertyName?.text ?? element.name.text;
-            if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
-          }
+        if (node.moduleSpecifier.text === 'node:fs') {
+          if (clause.name) fsNamespaces.add(clause.name.text);
+          if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+            fsNamespaces.add(clause.namedBindings.name.text);
+          if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
+            for (const element of clause.namedBindings.elements) {
+              const imported = element.propertyName?.text ?? element.name.text;
+              if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
+              else if (directMutationPathArguments.has(imported))
+                directMutationImports.set(element.name.text, imported);
+            }
+        }
       }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
         add(declarations, node.name.text, node.initializer);
@@ -380,6 +415,32 @@ export function assertAssuranceVerdictIntegrity() {
           node.initializer.expression.text === 'createMutationFileGuard'
         )
           mutationGuardBindings.add(node.name.text);
+        if (isPromiseNamespaceExpression(node.initializer))
+          promiseMutationNamespaces.add(node.name.text);
+        const aliasIndexes = aliasedMutationIndexes(node.initializer);
+        if (aliasIndexes.length > 0) mutationAliases.set(node.name.text, aliasIndexes);
+      }
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isObjectBindingPattern(node.name) &&
+        node.initializer
+      ) {
+        const directSource = isFsNamespaceExpression(node.initializer);
+        const promiseSource = isPromiseNamespaceExpression(node.initializer);
+        for (const element of node.name.elements) {
+          if (!ts.isIdentifier(element.name)) continue;
+          const imported = element.propertyName?.getText(sourceFile) ?? element.name.text;
+          if (directSource && imported === 'promises') {
+            promiseMutationNamespaces.add(element.name.text);
+            continue;
+          }
+          const indexes = directSource
+            ? directMutationPathArguments.get(imported)
+            : promiseSource
+              ? promiseMutationPathArguments.get(imported)
+              : undefined;
+          if (indexes) mutationAliases.set(element.name.text, indexes);
+        }
       }
       if (ts.isFunctionDeclaration(node) && node.name) functions.set(node.name.text, node);
       if (ts.isForOfStatement(node)) {
