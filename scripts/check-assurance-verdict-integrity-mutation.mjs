@@ -306,7 +306,7 @@ mutate(
 );
 mutate(
   'scripts/external-transport-refinement.mjs',
-  '        async heartbeat() {\n          return { observedAt: 100, leaseUntil: 120 };\n        },',
+  '        async heartbeat() {\n          return { observedAt: 100, leaseUntil: 100 + ackHistoryLeaseMs };\n        },',
   '        heartbeat: service.heartbeat,',
   'unknown-ACK witness allows scheduler-dependent durable heartbeat history',
   /AssertionError: unknown-ACK history sample must use deterministic heartbeat stub/u,

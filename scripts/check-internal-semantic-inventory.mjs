@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { discoverInternalSemanticSurface } from './internal-semantic-surface.mjs';
+import {
+  discoverInternalSemanticTopology,
+  unclassifiedCallSurfaceDigest,
+} from './internal-semantic-surface.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
@@ -10,6 +13,12 @@ const allowedFamilies = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
 
 if (inventory.schemaVersion !== 1 || !Array.isArray(inventory.entries))
   throw new Error('Internal semantic inventory has an unsupported schema.');
+if (
+  !inventory.unclassifiedCallSurface ||
+  !Number.isSafeInteger(inventory.unclassifiedCallSurface.count) ||
+  typeof inventory.unclassifiedCallSurface.digest !== 'string'
+)
+  throw new Error('Internal semantic inventory lacks its fail-closed unclassified-call surface.');
 
 const reviewed = new Map();
 for (const entry of inventory.entries) {
@@ -30,7 +39,8 @@ for (const entry of inventory.entries) {
   reviewed.set(entry.id, entry);
 }
 
-const observed = discoverInternalSemanticSurface();
+const topology = discoverInternalSemanticTopology();
+const observed = topology.entries;
 const observedIds = new Set(observed.map((entry) => entry.id));
 const additions = observed.filter((entry) => !reviewed.has(entry.id));
 const removals = inventory.entries.filter((entry) => !observedIds.has(entry.id));
@@ -56,6 +66,18 @@ if (additions.length || removals.length || mismatches.length) {
       .join('\n'),
   );
 }
+
+const unclassifiedCallSurface = {
+  count: topology.unclassifiedCalls.length,
+  digest: unclassifiedCallSurfaceDigest(topology.unclassifiedCalls),
+};
+if (
+  inventory.unclassifiedCallSurface.count !== unclassifiedCallSurface.count ||
+  inventory.unclassifiedCallSurface.digest !== unclassifiedCallSurface.digest
+)
+  throw new Error(
+    `Internal semantic unclassified call surface drifted; review every new/changed call before refreshing the inventory. expected=${JSON.stringify(inventory.unclassifiedCallSurface)} observed=${JSON.stringify(unclassifiedCallSurface)}`,
+  );
 
 const familyCounts = {};
 for (const entry of inventory.entries) {

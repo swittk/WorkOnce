@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
+  "unclassifiedCallSurface": {
+    "count": 878,
+    "digest": "e729e37e6655717c"
+  },
   "entries": [
     {
       "id": "src/cas.ts:atomic:for_loop:d60f797c32e9f677:1",
@@ -1667,6 +1671,370 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Managed local runner supervision, capacity, timer, ownership-loss, and drain state belongs to family C."
+    },
+    {
+      "id": "src/external.ts:<callback>:call_addEventListener:bf18a89bf6db5bad:1",
+      "path": "src/external.ts",
+      "context": "<callback>",
+      "kind": "call_addEventListener",
+      "excerpt": "options.signal.addEventListener('abort', stop, { once: true })",
+      "textDigest": "3dbfb453a5d70d25",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:armExpiry:call_clearTimeout:f419c0d1426b222a:1",
+      "path": "src/external.ts",
+      "context": "armExpiry",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(expiryTimer)",
+      "textDigest": "5c968546bac4f6cc",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:armExpiry:call_mutator_abort:40ce7e30e5299c66:1",
+      "path": "src/external.ts",
+      "context": "armExpiry",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(new Error('Confirmed external lease deadline passed'))",
+      "textDigest": "2904e3093acce7cd",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:heartbeat:call_mutator_abort:e71e15bef9b997ac:1",
+      "path": "src/external.ts",
+      "context": "heartbeat",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(error)",
+      "textDigest": "c7bb59daffbbbe87",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:processLease:call_addEventListener:fcc8fcbd27df340b:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "call_addEventListener",
+      "excerpt": "options.signal.addEventListener('abort', stop, { once: true })",
+      "textDigest": "3dbfb453a5d70d25",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:processLease:call_clearTimeout:e0e657caa6c2b890:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(expiryTimer)",
+      "textDigest": "5c968546bac4f6cc",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:processLease:call_clearTimeout:e2d5e23de00b17b8:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(heartbeatTimer)",
+      "textDigest": "2a0e0f1081da1475",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:processLease:call_removeEventListener:4eabddd025affc08:1",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "call_removeEventListener",
+      "excerpt": "options.signal.removeEventListener('abort', stop)",
+      "textDigest": "705c95141762d445",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:processLease:call_removeEventListener:4eabddd025affc08:2",
+      "path": "src/external.ts",
+      "context": "processLease",
+      "kind": "call_removeEventListener",
+      "excerpt": "options.signal.removeEventListener('abort', stop)",
+      "textDigest": "705c95141762d445",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:stop:call_clearTimeout:303b4fa41018f95c:1",
+      "path": "src/external.ts",
+      "context": "stop",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(timer)",
+      "textDigest": "f05317e92e0f0831",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:stop:call_mutator_abort:a3cde329b744eeeb:1",
+      "path": "src/external.ts",
+      "context": "stop",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(options.signal.reason ?? new Error('External ownership lost'))",
+      "textDigest": "d80379f711314dae",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:stop:call_removeEventListener:0de08fd457c47193:1",
+      "path": "src/external.ts",
+      "context": "stop",
+      "kind": "call_removeEventListener",
+      "excerpt": "options.signal.removeEventListener('abort', stop)",
+      "textDigest": "705c95141762d445",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External executor lease supervision, timers, cancellation, and ACK-history state belongs to family D."
+    },
+    {
+      "id": "src/sqlite.ts:sleepSync:call_Atomics.wait:82a4968385c48908:1",
+      "path": "src/sqlite.ts",
+      "context": "sleepSync",
+      "kind": "call_Atomics.wait",
+      "excerpt": "Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds)",
+      "textDigest": "eed64475004b821f",
+      "families": [
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "SQLite startup contention backoff and blocking coordination belongs to family G."
+    },
+    {
+      "id": "src/worker.ts:<callback>:call_addEventListener:227d348bd6223566:1",
+      "path": "src/worker.ts",
+      "context": "<callback>",
+      "kind": "call_addEventListener",
+      "excerpt": "signal?.addEventListener('abort', stop, { once: true })",
+      "textDigest": "5d2c07a6a1c3b2cb",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:<callback>:call_addEventListener:6d4d3882bb34f8d7:1",
+      "path": "src/worker.ts",
+      "context": "<callback>",
+      "kind": "call_addEventListener",
+      "excerpt": "options.signal.addEventListener('abort', stop, { once: true })",
+      "textDigest": "3dbfb453a5d70d25",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:armExpiry:call_clearTimeout:707430eb2f8a1b34:1",
+      "path": "src/worker.ts",
+      "context": "armExpiry",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(expiryTimer)",
+      "textDigest": "5c968546bac4f6cc",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:armExpiry:call_mutator_abort:6939637e56f7a289:1",
+      "path": "src/worker.ts",
+      "context": "armExpiry",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(ownershipLoss.error)",
+      "textDigest": "ec1c56f1513fc9d7",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:heartbeat:call_mutator_abort:58401eda7461dee7:1",
+      "path": "src/worker.ts",
+      "context": "heartbeat",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(error)",
+      "textDigest": "c7bb59daffbbbe87",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:call_addEventListener:cc54b1be1c6d6ad1:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "call_addEventListener",
+      "excerpt": "options.signal?.addEventListener('abort', stop, { once: true })",
+      "textDigest": "ea100fae72d1db7b",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:call_clearTimeout:220e655d34508cae:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(expiryTimer)",
+      "textDigest": "5c968546bac4f6cc",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:call_clearTimeout:df8389672649cb12:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(heartbeatTimer)",
+      "textDigest": "2a0e0f1081da1475",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:processClaim:call_removeEventListener:eccfd1cdfb7dcf6d:1",
+      "path": "src/worker.ts",
+      "context": "processClaim",
+      "kind": "call_removeEventListener",
+      "excerpt": "options.signal?.removeEventListener('abort', stop)",
+      "textDigest": "4db7ffb8e9f882c1",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:stop:call_clearTimeout:f0d486549adcf3c3:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(timer)",
+      "textDigest": "f05317e92e0f0831",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:stop:call_clearTimeout:f0d486549adcf3c3:2",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "call_clearTimeout",
+      "excerpt": "clearTimeout(timer)",
+      "textDigest": "f05317e92e0f0831",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:stop:call_mutator_abort:0bc39cb14bd382da:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "call_mutator_abort",
+      "excerpt": "controller.abort(options.signal?.reason)",
+      "textDigest": "b24d3dcbed59dd0f",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:stop:call_removeEventListener:24cc345bd0c35611:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "call_removeEventListener",
+      "excerpt": "signal?.removeEventListener('abort', stop)",
+      "textDigest": "b11637d744066612",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:stop:call_removeEventListener:517bcf54798edc8d:1",
+      "path": "src/worker.ts",
+      "context": "stop",
+      "kind": "call_removeEventListener",
+      "excerpt": "options.signal.removeEventListener('abort', stop)",
+      "textDigest": "705c95141762d445",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/worker.ts:waitForPoll:call_Promise.resolve:42c58843fb68a9fd:1",
+      "path": "src/worker.ts",
+      "context": "waitForPoll",
+      "kind": "call_Promise.resolve",
+      "excerpt": "Promise.resolve()",
+      "textDigest": "9b8874eb7ffebcf3",
+      "families": [
+        "C"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
     }
   ]
 }

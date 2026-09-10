@@ -12,10 +12,12 @@ const mutationFiles = createMutationFileGuard();
 const sourcePath = path.join(root, 'src/worker.ts');
 const workSourcePath = path.join(root, 'src/work.ts');
 const externalSourcePath = path.join(root, 'src/external.ts');
+const modelSourcePath = path.join(root, 'src/model.ts');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
 const source = fs.readFileSync(sourcePath, 'utf8');
 const workSource = fs.readFileSync(workSourcePath, 'utf8');
 const externalSource = fs.readFileSync(externalSourcePath, 'utf8');
+const modelSource = fs.readFileSync(modelSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
 function run() {
@@ -43,6 +45,8 @@ try {
     `${source.slice(0, brace + 1)}
   let internalSemanticInventoryMutant = 0;
   internalSemanticInventoryMutant += 1;
+  queueMicrotask(() => {});
+  Object.assign({}, { mutant: true });
   const internalSemanticWeakMapMutant = new WeakMap<object, number>();
   internalSemanticWeakMapMutant.set({}, 1);
   const internalSemanticQueueMutant: number[] = [];
@@ -74,6 +78,23 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /call_mutator_push/u);
   assert.match(sourceOutput, /property_assignment/u);
   assert.match(sourceOutput, /mutable_property/u);
+  assert.match(sourceOutput, /call_queueMicrotask/u);
+  assert.match(sourceOutput, /call_mutator_Object\.assign/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
+  mutationFiles.writeFileSync(
+    modelSourcePath,
+    `${modelSource}\nfunction internalSemanticUnknownCallMutant(): void { internalSemanticCompletelyNewCall(); }\n`,
+  );
+  const unclassifiedCallMutant = run();
+  requireExpectedProcessFailure(
+    unclassifiedCallMutant,
+    'new unclassified call unexpectedly bypassed internal semantic inventory',
+  );
+  assert.match(output(unclassifiedCallMutant), /unclassified call surface drifted/u);
 } finally {
   mutationFiles.restoreAll();
 }

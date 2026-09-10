@@ -41,6 +41,7 @@ function newName(node) {
   return normalizeName(node.expression.getText());
 }
 const mutatingMethodNames = new Set([
+  'abort',
   'add',
   'clear',
   'copyWithin',
@@ -53,6 +54,25 @@ const mutatingMethodNames = new Set([
   'shift',
   'splice',
   'unshift',
+]);
+const temporalMethodNames = new Set(['addEventListener', 'removeEventListener']);
+const temporalCallNames = new Set([
+  'clearImmediate',
+  'clearInterval',
+  'clearTimeout',
+  'process.nextTick',
+  'queueMicrotask',
+  'setImmediate',
+  'setInterval',
+  'setTimeout',
+]);
+const mutatingStaticCallNames = new Set([
+  'Object.assign',
+  'Object.defineProperties',
+  'Object.defineProperty',
+  'Reflect.defineProperty',
+  'Reflect.deleteProperty',
+  'Reflect.set',
 ]);
 function isPropertyTarget(node) {
   return ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node);
@@ -84,6 +104,12 @@ function constructKind(node) {
     mutatingMethodNames.has(node.expression.name.text)
   )
     return `call_mutator_${node.expression.name.text}`;
+  if (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    temporalMethodNames.has(node.expression.name.text)
+  )
+    return `call_${node.expression.name.text}`;
   if (ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Let) !== 0)
     return 'mutable_let';
   if (ts.isWhileStatement(node)) return 'while_loop';
@@ -97,14 +123,14 @@ function constructKind(node) {
   const called = callName(node);
   if (
     called &&
-    (called === 'setTimeout' ||
-      called === 'Promise.race' ||
-      called === 'Promise.all' ||
-      called === 'Promise.allSettled' ||
+    (temporalCallNames.has(called) ||
+      called.startsWith('Promise.') ||
+      called.startsWith('Atomics.') ||
       called.endsWith('.sort') ||
       called.endsWith('.slice'))
   )
     return `call_${called}`;
+  if (called && mutatingStaticCallNames.has(called)) return `call_mutator_${called}`;
   return undefined;
 }
 
@@ -126,11 +152,13 @@ export function discoverTypeScriptFiles(directory, prefix = '') {
   return files;
 }
 
-export function discoverInternalSemanticSurface() {
+export function discoverInternalSemanticTopology() {
   const srcDir = path.join(root, 'src');
   const files = discoverTypeScriptFiles(srcDir);
   const entries = [];
+  const unclassifiedCalls = [];
   const occurrences = new Map();
+  const unclassifiedOccurrences = new Map();
   for (const name of files) {
     const relative = `src/${name}`;
     const text = fs.readFileSync(path.join(root, relative), 'utf8');
@@ -159,12 +187,38 @@ export function discoverInternalSemanticSurface() {
           excerpt,
           textDigest,
         });
+      } else if (ts.isCallExpression(node)) {
+        const full = node.getText(source).replace(/\r\n?/gu, '\n').trim();
+        const textDigest = semanticTextDigest(full);
+        const context = contextName(node);
+        const called = callName(node) ?? '<dynamic>';
+        const key = `${relative}\0${context}\0${called}\0${textDigest}`;
+        const occurrence = (unclassifiedOccurrences.get(key) ?? 0) + 1;
+        unclassifiedOccurrences.set(key, occurrence);
+        unclassifiedCalls.push({
+          id: `${relative}:${context}:call_unclassified:${digest(key)}:${occurrence}`,
+          path: relative,
+          context,
+          call: called,
+          textDigest,
+        });
       }
       ts.forEachChild(node, visit);
     }
     visit(source);
   }
-  return entries.sort((a, b) => compareExact(a.id, b.id));
+  return {
+    entries: entries.sort((a, b) => compareExact(a.id, b.id)),
+    unclassifiedCalls: unclassifiedCalls.sort((a, b) => compareExact(a.id, b.id)),
+  };
+}
+
+export function unclassifiedCallSurfaceDigest(entries) {
+  return semanticTextDigest(JSON.stringify(entries));
+}
+
+export function discoverInternalSemanticSurface() {
+  return discoverInternalSemanticTopology().entries;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

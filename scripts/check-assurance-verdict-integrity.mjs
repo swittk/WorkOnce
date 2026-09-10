@@ -799,7 +799,11 @@ export function assertAssuranceVerdictIntegrity() {
     /async heartbeat\(\) \{/u,
     'unknown-ACK history sample must use deterministic heartbeat stub',
   );
-  assert.match(ackSample, /return \{ observedAt: 100, leaseUntil: 120 \}/u);
+  assert.match(
+    ackSample,
+    /return \{ observedAt: 100, leaseUntil: 100 \+ ackHistoryLeaseMs \}/u,
+    'unknown-ACK history sample must preserve the explicit reviewed lease duration',
+  );
   assert.doesNotMatch(ackSample, /heartbeat: service\.heartbeat/u);
 
   const processTest = read('test/process/local-runner-process.test.mjs');

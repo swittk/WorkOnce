@@ -110,6 +110,8 @@ function serviceFor(fixture, scope, options = {}) {
   return { work, queue, service };
 }
 
+const ackHistoryLeaseMs = 5_000;
+
 async function handoffHistoryLane(asyncPrepare) {
   const fixture = adapterFixture('memory', 'external-history');
   const prepareHistory = [];
@@ -247,7 +249,9 @@ async function unknownSettleAckSample() {
   let savedAttempt;
   let savedOutcome;
   try {
-    const { queue, service } = serviceFor(fixture, 'external-unknown-ack');
+    const { queue, service } = serviceFor(fixture, 'external-unknown-ack', {
+      leaseMs: ackHistoryLeaseMs,
+    });
     await queue.ensure({ id: 'x' });
     const transport = {
       ...service,
@@ -270,6 +274,11 @@ async function unknownSettleAckSample() {
         return run.succeed();
       },
     );
+    assert.ok(result, 'unknown-ACK sample must return its claimed attempt result');
+    assert.equal(result.status, 'interrupted', 'unknown settle ACK must interrupt the caller');
+    assert.equal(result.error, ackError, 'unknown settle ACK must preserve the transport error');
+    assert.ok(savedAttempt, 'unknown settle ACK sample must capture the settled attempt');
+    assert.ok(savedOutcome, 'unknown settle ACK sample must capture the settled outcome');
     const committed = await queue.inspect('x');
     const replay = await service.settle(savedAttempt, savedOutcome);
     let laterCalls = 0;
@@ -791,15 +800,18 @@ async function unknownAckHistorySample() {
   async function lane(loseAck) {
     const fixture = adapterFixture('memory', 'external-ack-history');
     try {
-      const { queue, service } = serviceFor(fixture, 'external-ack-history');
+      const { queue, service } = serviceFor(fixture, 'external-ack-history', {
+        leaseMs: ackHistoryLeaseMs,
+      });
       await queue.ensure({ id: 'x' });
       let firstAttempt;
       let firstOutcome;
       let lose = loseAck;
+      const ackError = new Error('unknown ACK');
       const transport = {
         ...service,
         async heartbeat() {
-          return { observedAt: 100, leaseUntil: 120 };
+          return { observedAt: 100, leaseUntil: 100 + ackHistoryLeaseMs };
         },
         async settle(attempt, outcome) {
           firstAttempt = attempt;
@@ -807,7 +819,7 @@ async function unknownAckHistorySample() {
           const phase = await service.settle(attempt, outcome);
           if (lose) {
             lose = false;
-            throw new Error('unknown ACK');
+            throw ackError;
           }
           return phase;
         },
@@ -817,6 +829,16 @@ async function unknownAckHistorySample() {
         { workerId: 'relay', signal: new AbortController().signal },
         async (run) => run.succeed(),
       );
+      assert.ok(result, 'ACK-history sample must return its claimed attempt result');
+      assert.equal(
+        result.status,
+        loseAck ? 'interrupted' : 'settled',
+        'ACK-history sample must observe the expected caller-side result',
+      );
+      if (loseAck)
+        assert.equal(result.error, ackError, 'lost ACK must preserve the transport error');
+      assert.ok(firstAttempt, 'ACK-history sample must capture the settled attempt');
+      assert.ok(firstOutcome, 'ACK-history sample must capture the settled outcome');
       const durable = (await fixture.store.getMany([firstAttempt.workId])).rows[0];
       const future = {
         replay: (await service.settle(firstAttempt, firstOutcome)).state,
