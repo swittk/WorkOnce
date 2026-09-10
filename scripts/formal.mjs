@@ -270,6 +270,7 @@ function mutationWitnessConfig(configText) {
   const output = [];
   let skipping = false;
   let inserted = false;
+  let specSwapped = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (/^INVARIANT\s+[A-Za-z_][A-Za-z0-9_]*$/u.test(trimmed)) continue;
@@ -283,6 +284,7 @@ function mutationWitnessConfig(configText) {
     }
     if (trimmed === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION BatchSpec');
+      specSwapped = true;
       continue;
     }
     if (trimmed === 'CHECK_DEADLOCK FALSE' && !inserted) {
@@ -293,7 +295,16 @@ function mutationWitnessConfig(configText) {
     output.push(line);
   }
   if (!inserted) output.push('INVARIANT MutationWitnesses', 'INVARIANT MutationBranchesEnabled');
+  if (!specSwapped)
+    throw new Error('Mutation witness config found no SPECIFICATION Spec line to rebind');
   return `${output.join('\n').trimEnd()}\n`;
+}
+
+try {
+  mutationWitnessConfig('SPECIFICATION WrongSpec\nCHECK_DEADLOCK FALSE\n');
+  throw new Error('Mutation witness config missing-spec self-test unexpectedly passed');
+} catch (error) {
+  if (!/found no SPECIFICATION Spec line to rebind/u.test(error?.message ?? '')) throw error;
 }
 
 function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {

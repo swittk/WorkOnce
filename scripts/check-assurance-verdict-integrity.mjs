@@ -371,6 +371,11 @@ export function assertAssuranceVerdictIntegrity() {
     /WorkOnceLifecycleSamples(?:FalseField)?Mutant\.tla/u,
     'lifecycle bad-sample witnesses regressed to one JVM per mutation',
   );
+  assert.match(
+    formalSource,
+    /if \(!specSwapped\)\s*throw new Error\('Mutation witness config found no SPECIFICATION Spec line to rebind'\)/u,
+    'formal mutation witness config must fail closed when SPECIFICATION Spec is absent',
+  );
   const storageFormalSource = read('scripts/storage-formal.mjs');
   assert.ok(
     storageFormalSource.includes(

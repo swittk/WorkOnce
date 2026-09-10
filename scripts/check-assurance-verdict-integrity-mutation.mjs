@@ -579,6 +579,13 @@ mutate(
   'runtime bad-sample batch loses its registered discriminating invariant',
   /runtime bad-sample mutations must remain in the observed-model TLC traversal/u,
 );
+mutate(
+  'scripts/formal.mjs',
+  "  if (!specSwapped)\n    throw new Error('Mutation witness config found no SPECIFICATION Spec line to rebind');",
+  '  void specSwapped;',
+  'formal mutation witness config loses missing-spec fail-closed guard',
+  /formal mutation witness config must fail closed when SPECIFICATION Spec is absent/u,
+);
 
 mutate(
   'scripts/check-build-input-binding-mutation.mjs',
