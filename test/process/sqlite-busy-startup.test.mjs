@@ -56,7 +56,13 @@ test('SQLite startup retries a real write lock and succeeds after the lock clear
     );
     await waitForExit(child);
   } finally {
-    if (child && child.exitCode === null) child.kill('SIGKILL');
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
     rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -90,7 +96,13 @@ test('SQLite startup busy timeout propagates a native busy/locked failure withou
       store.close();
     }
   } finally {
-    if (child && child.exitCode === null) child.kill('SIGKILL');
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
     rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -31,7 +31,13 @@ async function killAt(path, mode, stage) {
     assert.equal(signal, 'SIGKILL');
     return seen;
   } finally {
-    if (!child.killed) child.kill('SIGKILL');
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
   }
 }
 

@@ -67,7 +67,13 @@ for (const [signal, expectedCode] of [
       assert.equal(exitCode, expectedCode);
       assert.equal(readFileSync(target, 'utf8'), 'original\n');
     } finally {
-      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      if (child.exitCode === null && child.signalCode === null) {
+        const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+          () => undefined,
+        );
+        child.kill('SIGKILL');
+        await exited;
+      }
       rmSync(directory, { recursive: true, force: true });
     }
   });
@@ -94,7 +100,13 @@ test('mutation file guard restores original bytes on unhandled exit', async () =
     assert.notEqual(exitCode, 0);
     assert.equal(readFileSync(target, 'utf8'), 'original\n');
   } finally {
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
     rmSync(directory, { recursive: true, force: true });
   }
 });

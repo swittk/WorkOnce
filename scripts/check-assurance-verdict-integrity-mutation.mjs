@@ -137,6 +137,13 @@ mutate(
   /must (?:import|use) spawnSync/u,
 );
 mutate(
+  'scripts/check-assurance-scheduling-mutation.mjs',
+  '        timeout: 5_000,\n',
+  '',
+  'one spawnSync loses its bound while sibling timeout identifiers remain',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
   'scripts/local-runner-refinement.mjs',
   "    await within(firstWave.promise, 'competing runners first wave');",
   '    await firstWave.promise;',

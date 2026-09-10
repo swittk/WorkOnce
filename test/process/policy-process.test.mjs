@@ -18,11 +18,13 @@ function start(path, mode, outcomeKind) {
     'Policy child',
   );
 }
-const message = (child) => nextChildMessage(child, 15000);
+const childMessageTimeoutMs = 15_000;
+const harnessWaitBudgetMs = childMessageTimeoutMs * 3;
+const message = (child) => nextChildMessage(child, childMessageTimeoutMs);
 const jobDefinition = {
   retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
   wait: { afterMs: 0 },
-  limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 30000, maxDeferrals: 4 },
+  limits: { leaseMs: 250, maxAttempts: 4, maxElapsedMs: harnessWaitBudgetMs * 2, maxDeferrals: 4 },
 };
 async function setup(path) {
   const store = createSqliteStore(path);
@@ -52,7 +54,7 @@ async function killAt(path, mode, outcomeKind, expectedStage) {
       throw new Error(
         `Policy child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
       );
-    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(childMessageTimeoutMs) });
     child.kill('SIGKILL');
     const [, signal] = await exited;
     assert.equal(signal, 'SIGKILL');

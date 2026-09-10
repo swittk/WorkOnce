@@ -14,6 +14,46 @@ function boundedSection(source, startAnchor, endAnchor, label) {
   assert.ok(end > start, `${label} end anchor is missing or precedes its start`);
   return source.slice(start, end);
 }
+function propertyNameText(name) {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
+    return name.text;
+  return undefined;
+}
+function assertSpawnSyncTimeouts(name, source) {
+  const sourceFile = ts.createSourceFile(
+    name,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
+  );
+  let calls = 0;
+  function visit(node) {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'spawnSync'
+    ) {
+      calls++;
+      const options = node.arguments[2];
+      assert.ok(
+        options && ts.isObjectLiteralExpression(options),
+        `${name} spawnSync options must be an inline object so timeout bounds are auditable`,
+      );
+      const hasTimeout = options.properties.some((property) => {
+        if (ts.isShorthandPropertyAssignment(property)) return property.name.text === 'timeout';
+        return ts.isPropertyAssignment(property) && propertyNameText(property.name) === 'timeout';
+      });
+      assert.ok(hasTimeout, `${name} has an unbounded spawnSync mutation subprocess`);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  assert.ok(
+    calls > 0,
+    `${name} must use spawnSync so the shared bounded/fail-closed subprocess controls apply`,
+  );
+}
 
 export function assertAssuranceVerdictIntegrity() {
   const mutationFiles = fs
@@ -38,7 +78,7 @@ export function assertAssuranceVerdictIntegrity() {
       /\bspawnSync\(/u,
       `${name} must use spawnSync so the shared bounded/fail-closed subprocess controls apply`,
     );
-    assert.match(source, /\btimeout\s*(?::|,)/u, `${name} has an unbounded mutation subprocess`);
+    assertSpawnSyncTimeouts(name, source);
     for (const pattern of bareStatusPatterns) {
       pattern.lastIndex = 0;
       assert.equal(

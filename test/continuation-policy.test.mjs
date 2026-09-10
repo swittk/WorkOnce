@@ -27,29 +27,33 @@ test('async continuation planner sees typed input/result and is not rerun on ide
   const [child] = await followup.claim({ workerId: 'B' });
   assert.deepEqual(child.input, { to: 'staff', asset: 'result' });
 });
-test('cancel during an async continuation planner leaves no success or follow-up', async () => {
-  const work = createWorkOnce({ store: createMemoryStore(), scope: 't' });
-  const child = work.define('next');
-  let release, enter;
-  const entered = new Promise((r) => (enter = r)),
-    gate = new Promise((r) => (release = r));
-  const q = work.define('main', {
-    next: async () => {
-      enter();
-      await gate;
-      return [child.request(null, { key: 'child' })];
-    },
-  });
-  await q.enqueue(null, { key: 'job' });
-  const [run] = await q.claim({ workerId: 'A' });
-  const pending = run.settle(run.succeed());
-  await entered;
-  await q.cancel({ key: 'job', generation: 1 });
-  release();
-  await assert.rejects(pending, (e) => e.code === 'stale_attempt');
-  assert.equal(await work.dispatch(), 0);
-  assert.equal(await child.inspect('child'), undefined);
-});
+test(
+  'cancel during an async continuation planner leaves no success or follow-up',
+  { timeout: 5000 },
+  async () => {
+    const work = createWorkOnce({ store: createMemoryStore(), scope: 't' });
+    const child = work.define('next');
+    let release, enter;
+    const entered = new Promise((r) => (enter = r)),
+      gate = new Promise((r) => (release = r));
+    const q = work.define('main', {
+      next: async () => {
+        enter();
+        await gate;
+        return [child.request(null, { key: 'child' })];
+      },
+    });
+    await q.enqueue(null, { key: 'job' });
+    const [run] = await q.claim({ workerId: 'A' });
+    const pending = run.settle(run.succeed());
+    await entered;
+    await q.cancel({ key: 'job', generation: 1 });
+    release();
+    await assert.rejects(pending, (e) => e.code === 'stale_attempt');
+    assert.equal(await work.dispatch(), 0);
+    assert.equal(await child.inspect('child'), undefined);
+  },
+);
 
 test('continuation planner also runs for a typed terminal failure result', async () => {
   const work = createWorkOnce({ store: createMemoryStore(), scope: 't' });

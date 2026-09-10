@@ -5,13 +5,19 @@ import {
   runLifecycleRefinementSamples,
 } from '../scripts/lifecycle-refinement.mjs';
 
+let lifecycleSamplesPromise;
+function lifecycleSamples() {
+  lifecycleSamplesPromise ??= runLifecycleRefinementSamples();
+  return lifecycleSamplesPromise;
+}
+
 test('compiled lifecycle observations cover hidden revisions, receipts, scan fairness, adapter parity and boundaries', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   assertLifecycleRefinementSamples(samples);
 });
 
 test('lifecycle refinement rejects adapter substitution without a count change', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   for (const kind of ['claimLimit', 'stolenPageContinuation']) {
     const sqliteIndex = samples.findIndex(
       (sample) => sample.kind === kind && sample.adapter === 'sqlite',
@@ -28,7 +34,7 @@ test('lifecycle refinement rejects adapter substitution without a count change',
 });
 
 test('lifecycle refinement rejects count-preserving sample-kind substitution', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   const sourceIndex = samples.findIndex((sample) => sample.kind === 'leaseFenceCause');
   const replacement = samples.find((sample) => sample.kind === 'generationCompetition');
   assert.notEqual(sourceIndex, -1);
@@ -43,7 +49,7 @@ test('lifecycle refinement rejects count-preserving sample-kind substitution', a
 });
 
 test('lifecycle refinement rejects count-preserving terminal outcome substitution', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   for (const kind of ['terminalReceipt', 'terminalAckLoss']) {
     const failIndex = samples.findIndex(
       (sample) => sample.kind === kind && sample.outcomeKind === 'fail',
@@ -62,7 +68,7 @@ test('lifecycle refinement rejects count-preserving terminal outcome substitutio
 });
 
 test('lifecycle refinement rejects extra evidence fields in equivalence families', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   for (const kind of ['claimOrderEquivalence', 'adapterLifecycleEquivalence']) {
     const mutant = samples.map((sample) =>
       sample.kind === kind ? { ...sample, unexpectedEvidence: true } : sample,
@@ -75,7 +81,7 @@ test('lifecycle refinement rejects extra evidence fields in equivalence families
 });
 
 test('lifecycle refinement rejects an omitted required evidence field', async () => {
-  const samples = await runLifecycleRefinementSamples();
+  const samples = await lifecycleSamples();
   const mutant = samples.map((sample) => {
     if (sample.kind !== 'terminalReceipt' || sample.outcomeKind !== 'succeed') return sample;
     const { resetClearsReceipt: _removed, ...rest } = sample;
