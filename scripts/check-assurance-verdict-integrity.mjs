@@ -786,14 +786,23 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(multiFixture, /seed\(path, 3, 2000\)/u);
   assert.match(
     multiFixture,
-    /inspectMany\(\['0', '1', '2'\]\)/u,
+    /observing\.queue\.inspectMany\(\['0', '1', '2'\]\)/u,
     'multi-active crash fixture must observe durable WorkOnce state before SIGKILL',
   );
   assert.match(multiFixture, /snapshot\?\.phase\.state === 'running'/u);
   assert.match(multiFixture, /snapshots\.map\(\(snapshot\) => snapshot\.phase\.attempt\)/u);
   assert.doesNotMatch(multiFixture, /nextMessage\(child\)/u);
-  assert.match(multiFixture, /sleep\(2050\)/u);
-  assert.match(multiFixture, /reopen\(path, 2000\)/u);
+  assert.doesNotMatch(multiFixture, /sleep\(2050\)/u);
+  assert.match(
+    multiFixture,
+    /expiredAt = Math\.max\(\.\.\.snapshots\.map\(\(snapshot\) => snapshot\.phase\.attempt\.leaseUntil\)\) \+ 1/u,
+    'multi-active crash fixture must derive expiry from the durable post-kill lease deadline',
+  );
+  assert.match(
+    multiFixture,
+    /reopen\(path, 2000, expiredAt\)/u,
+    'multi-active crash fixture must reclaim using a clock beyond the durable lease deadline',
+  );
   const processChild = read('test/process/local-runner-child.mjs');
   assert.match(
     processChild,

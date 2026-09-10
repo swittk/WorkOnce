@@ -51,8 +51,8 @@ async function seed(path, count, leaseMs = 200) {
     store.close();
   }
 }
-function reopen(path, leaseMs = 200) {
-  const store = createSqliteStore(path);
+function reopen(path, leaseMs = 200, now) {
+  const store = createSqliteStore(path, now === undefined ? {} : { now: () => now });
   const queue = createWorkOnce({ store, scope: 'local-runner-process' }).define('job', {
     limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000, maxDeferrals: 2 },
   });
@@ -86,8 +86,16 @@ test('SIGKILL with three active local attempts leaves all durable leases reclaim
         observing.store.close();
       }
       await kill(child);
-      await sleep(2050);
-      const opened = reopen(path, 2000);
+      const afterKill = reopen(path, 2000);
+      let expiredAt;
+      try {
+        const snapshots = await afterKill.queue.inspectMany(['0', '1', '2']);
+        assert.ok(snapshots.every((snapshot) => snapshot?.phase.state === 'running'));
+        expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) + 1;
+      } finally {
+        afterKill.store.close();
+      }
+      const opened = reopen(path, 2000, expiredAt);
       try {
         const reclaimed = await opened.queue.claim({ workerId: 'restart', limit: 3 });
         assert.equal(reclaimed.length, 3);
@@ -127,7 +135,7 @@ test('SIGKILL after heartbeat commit but before reply preserves renewed lease an
     } finally {
       await cleanupChild(child);
     }
-    const opened = reopen(path);
+    const opened = reopen(path, 200, oldRef.leaseUntil - 1);
     try {
       const renewed = await opened.queue.inspect('0');
       assert.equal(renewed.phase.state, 'running');
@@ -135,8 +143,7 @@ test('SIGKILL after heartbeat commit but before reply preserves renewed lease an
     } finally {
       opened.store.close();
     }
-    await sleep(250);
-    const reopened = reopen(path);
+    const reopened = reopen(path, 200, oldRef.leaseUntil + 1);
     try {
       const [reclaimed] = await reopened.queue.claim({ workerId: 'restart', limit: 1 });
       assert.ok(reclaimed);

@@ -3,6 +3,8 @@ import { createWorkOnce, runExternalAvailable } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const [dbPath, effectPath, mode] = process.argv.slice(2);
+if (mode !== 'after-settle' && mode !== 'before-settle')
+  throw new Error(`Unknown external effect process mode: ${String(mode)}`);
 const store = createSqliteStore(dbPath);
 const work = createWorkOnce({ store, scope: 'external-effect-process' });
 const queue = work.define('job', {

@@ -118,6 +118,7 @@ const externalSourceSymbols = {
     'ExternalWorkRun.defer',
     'ExternalWorkRun.fail',
     'validateExternalWorkerOptions',
+    'validateClaimBatch',
     'processLease',
     'runExternalAvailable',
     'processExternal',

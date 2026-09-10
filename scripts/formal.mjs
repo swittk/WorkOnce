@@ -27,11 +27,19 @@ const tlcWorkspace = acquireTlcWorkspace(shardMode ? 'formal-shard' : 'formal-pa
 cleanupTlcWorkspaceOnSuccess(tlcWorkspace);
 const javaTmp = resolve(tlcWorkspace, 'java-tmp');
 mkdirSync(javaTmp, { recursive: true });
-const configuredWorkers = Number(process.env.WORKONCE_TLC_WORKERS);
+const configuredWorkers =
+  process.env.WORKONCE_TLC_WORKERS === undefined
+    ? undefined
+    : Number(process.env.WORKONCE_TLC_WORKERS);
+if (
+  configuredWorkers !== undefined &&
+  (!Number.isSafeInteger(configuredWorkers) || configuredWorkers < 2)
+)
+  throw new RangeError('WORKONCE_TLC_WORKERS must be a safe integer >= 2');
 const workers = String(
-  Number.isSafeInteger(configuredWorkers) && configuredWorkers >= 2
-    ? Math.min(configuredWorkers, availableParallelism())
-    : Math.max(2, Math.min(8, availableParallelism())),
+  configuredWorkers === undefined
+    ? Math.max(2, Math.min(8, availableParallelism()))
+    : Math.min(configuredWorkers, availableParallelism()),
 );
 const timeoutMs = 30_000;
 

@@ -97,6 +97,7 @@ ExternalSampleOK(s) ==
     [] s.kind = "capacityFairness" ->
        /\ s.exactHandledFailure /\ s.laterHealthyAdmitted /\ s.healthySettled /\ s.boundedClaims /\ s.noFatalEscape
     [] s.kind = "oversizedClaim" -> /\ s.exactError /\ s.noHandlerStarted
+    [] s.kind = "duplicateClaim" -> /\ s.exactError /\ s.noHandlerStarted
     [] s.kind = "stopSignal" -> /\ s.preAbortedNoClaim /\ s.sameSignalPropagated /\ s.abortDuringClaimFulfills
     [] s.kind = "leaseBoundary" ->
        /\ s.zeroRejectedBeforeHandler /\ s.nanRejectedBeforeHandler
@@ -114,7 +115,7 @@ ExternalSamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
        "handoffHistory", "prepareRace", "prepareDisposition", "unknownSettleAck",
-       "staleForeignAttempt", "capacityFairness", "oversizedClaim", "stopSignal",
+       "staleForeignAttempt", "capacityFairness", "oversizedClaim", "duplicateClaim", "stopSignal",
        "leaseBoundary", "heartbeatFailure", "externalAdapterEquivalence", "unknownAckHistory"
      }
   /\ \A s \in Samples : ExternalSampleOK(s)

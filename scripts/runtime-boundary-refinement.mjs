@@ -672,12 +672,15 @@ export async function runRuntimeBoundarySamples() {
 }
 
 export function assertRuntimeBoundarySamples(samples) {
+  assert.equal(samples.length, 235, 'runtime boundary sample family unexpectedly changed');
+  const firstFatalModes = [];
   for (const s of samples) {
     const name = JSON.stringify(s);
     if (s.kind === 'runner') {
       assert.equal(s.rejected, !s.handled, name);
       assert.equal(s.returnedValue, s.failureValue, name);
       assert.ok(s.preserved && s.drained && !s.timedOut, name);
+      if (s.site === 'firstFatal') firstFatalModes.push(s.mode);
       if (s.site === 'claimGate') assert.equal(s.started, 1, name);
       if (s.site === 'abortClaimReply') {
         assert.equal(s.started, 0, name);
@@ -726,6 +729,11 @@ export function assertRuntimeBoundarySamples(samples) {
       assert.equal(s.completionRejected, s.first === 'cancel', name);
     } else assert.fail(`Unmapped boundary sample: ${name}`);
   }
+  assert.deepEqual(
+    firstFatalModes.sort(),
+    ['external', 'local'],
+    'first-fatal runner coverage drifted',
+  );
   assert.deepEqual([...new Set(samples.map((s) => s.kind))].sort(), [
     'backoff',
     'budget',

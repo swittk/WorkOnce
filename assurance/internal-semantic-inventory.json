@@ -472,12 +472,12 @@
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
     },
     {
-      "id": "src/external.ts:runExternal:while_loop:b943b14792d0657b:1",
+      "id": "src/external.ts:runExternal:while_loop:9617c4b4f5adce2d:1",
       "path": "src/external.ts",
       "context": "runExternal",
       "kind": "while_loop",
       "excerpt": "while (!options.signal.aborted && fatal === undefined) {\n    const available = capacity - active.size;\n    if (!available) {\n      await Promise.race(active);\n      continue;\n    }\n    let leases: LeasedWork<I>[];\n    const claimStartedAt =",
-      "textDigest": "edc9b465ae200b92",
+      "textDigest": "88b80099b8c39247",
       "families": [
         "D"
       ],
@@ -509,6 +509,45 @@
       ],
       "classification": "APPLICABLE",
       "reason": "External runner/transport supervision, capacity, timer, and per-lease state belongs to family D."
+    },
+    {
+      "id": "src/external.ts:validateClaimBatch:call_mutator_add:723296327dfe6cb6:1",
+      "path": "src/external.ts",
+      "context": "validateClaimBatch",
+      "kind": "call_mutator_add",
+      "excerpt": "attempts.add(identity)",
+      "textDigest": "ec786a0ec405d467",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
+    },
+    {
+      "id": "src/external.ts:validateClaimBatch:for_of_loop:4d28f8f125e7ed5e:1",
+      "path": "src/external.ts",
+      "context": "validateClaimBatch",
+      "kind": "for_of_loop",
+      "excerpt": "for (const lease of leases) {\n    const { workId, generation, fence } = lease.attempt;\n    const identity = JSON.stringify([workId, generation, fence]);\n    if (attempts.has(identity))\n      throw new RangeError('External claim returned dup",
+      "textDigest": "07b3fef50566be8e",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
+    },
+    {
+      "id": "src/external.ts:validateClaimBatch:new_Set:a2fd31b2d35e139d:1",
+      "path": "src/external.ts",
+      "context": "validateClaimBatch",
+      "kind": "new_Set",
+      "excerpt": "new Set<string>()",
+      "textDigest": "962245ec0235402e",
+      "families": [
+        "D"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "External claim-batch validation prevents one authoritative attempt from starting duplicate external handlers; family D proves executor claim, ownership, and handler-start semantics."
     },
     {
       "id": "src/kernel.ts:canonical:call_Object.keys(row) .filter((key) => row[key] !== undefined) .sort:9db87824efe2a857:1",

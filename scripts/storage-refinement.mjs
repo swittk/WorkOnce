@@ -474,7 +474,9 @@ function sqliteBusyHelperSample() {
     const path = join(directory, 'queue.sqlite');
     const original = DatabaseSync.prototype.exec;
     let injected = 0;
+    let walAttempts = 0;
     DatabaseSync.prototype.exec = function patchedExec(sql) {
+      if (String(sql).includes('PRAGMA journal_mode=WAL')) walAttempts++;
       if (injected === 0 && String(sql).includes('PRAGMA journal_mode=WAL')) {
         injected++;
         const error = new Error(
@@ -495,7 +497,7 @@ function sqliteBusyHelperSample() {
     try {
       const store = createSqliteStore(path, { busyTimeoutMs: 1000 });
       store.close();
-      return injected === 1;
+      return injected === 1 && walAttempts >= 2;
     } finally {
       DatabaseSync.prototype.exec = original;
       rmSync(directory, { recursive: true, force: true });

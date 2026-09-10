@@ -34,7 +34,7 @@ const store =
           if (renewed || settled) {
             process.send?.({
               stage: renewed ? 'heartbeat-committed' : 'settlement-committed',
-              ref: before.phase.attempt,
+              ref: renewed ? next.phase.attempt : before.phase.attempt,
             });
             await forever;
           }

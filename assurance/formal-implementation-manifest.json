@@ -11055,14 +11055,14 @@
         "SuccessReceiptCurrent",
         "UnknownAckIsDurable"
       ],
-      "modelDigest": "d02c8aba0155b3eac75a2bc223d3756ecbdcadce452846682af61f69daf3d706",
+      "modelDigest": "a1168b92a69750633f4863db10da872cf0aec463d23877bcf7f36c8e3e61c158",
       "modelFiles": [
         "formal/WorkOnceExternal.tla",
         "formal/WorkOnceExternal.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/external-transport-refinement.mjs",
-      "sourceDigest": "b9479780498a31834c4d79560eddca203c13aa42c9d3999fb93c441f14cb0769",
+      "sourceDigest": "53acb18f9bbf7581ce4f61966d49468bd06a19ec5fc4ecf5d15d300a62ea64a9",
       "sourceFiles": [
         "src/external.ts",
         "src/work.ts",
@@ -11077,6 +11077,7 @@
           "ExternalWorkRun.defer",
           "ExternalWorkRun.fail",
           "validateExternalWorkerOptions",
+          "validateClaimBatch",
           "processLease",
           "runExternalAvailable",
           "processExternal",
@@ -11380,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "dfd865fee8c498c4e6ce238c229eae8ce2b91dd66bb3d2bc00bbd3779f74dde4",
+    "assuranceInfrastructureDigest": "016d71e00ba2857295991ea941be0a4f97274a872b8bd9e38ba35e223aed8d0c",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11505,7 +11506,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "ee4ba2dd418fea8b389307296cc43de09a70e2fed41c0bad88b3a136dcb199c8",
+    "modelDigest": "4e71584ab3c58842b7e7c3e87cb38a99ff1a4a95fcde1746d097d48df698b0a1",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -11540,7 +11541,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "d050b1374e9b13f71ca3e9b777a96b2024894cfe5beb9ef801bf91fd5f97d362",
+    "sourceDigest": "f843689b9318a3b1353e83d8946cbfd53bc049290ad2969e6aebb1247856995e",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

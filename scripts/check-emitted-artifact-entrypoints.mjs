@@ -232,7 +232,7 @@ for (const [step, positions] of stepPositions) {
     );
   if (positions[0] < buildBatchEnd && !preBuildExemptions.has(step))
     throw new Error(
-      `Full assurance step '${step}' may execute before the single build without a reviewed pre-build exemption.`,
+      `Full assurance step '${step}' executes before the single build without a reviewed pre-build exemption.`,
     );
 }
 for (const exemption of preBuildExemptions) {

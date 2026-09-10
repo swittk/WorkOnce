@@ -57,6 +57,7 @@ test('policy refinement rejects count-preserving backoff category substitution',
 
 test('policy refinement rejects collapsed adapter-equivalence coverage', async () => {
   const samples = await runPolicyRefinementSamples();
+  assert.ok(samples.some((sample) => sample.kind === 'adapterEquivalence'));
   const mutant = samples.map((sample) =>
     sample.kind === 'adapterEquivalence' ? { ...sample, adapters: 'memory' } : sample,
   );

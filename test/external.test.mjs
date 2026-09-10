@@ -487,6 +487,48 @@ test('external workers reject oversized claim responses before starting handlers
   assert.equal(runStarted, 0);
 });
 
+test('external workers reject duplicate attempt identities before starting handlers', async () => {
+  const attempt = { workId: 'same', generation: 1, fence: 1 };
+  const lease = { input: { id: 'same' }, attempt, observedAt: 0, leaseUntil: 1000 };
+  const duplicateTransport = () => ({
+    async claim() {
+      return [lease, { ...lease, input: { id: 'duplicate' } }];
+    },
+    async heartbeat() {
+      return { observedAt: 0, leaseUntil: 1000 };
+    },
+    async settle() {
+      return { state: 'succeeded', result: null };
+    },
+  });
+  let processStarted = 0;
+  await assert.rejects(
+    runExternalAvailable(
+      duplicateTransport(),
+      { workerId: 'relay', concurrency: 2, signal: new AbortController().signal },
+      async (run) => {
+        processStarted++;
+        return run.succeed();
+      },
+    ),
+    /duplicate attempt identity/u,
+  );
+  assert.equal(processStarted, 0);
+  let runStarted = 0;
+  await assert.rejects(
+    runExternal(
+      duplicateTransport(),
+      { workerId: 'relay', concurrency: 2, signal: new AbortController().signal },
+      async (run) => {
+        runStarted++;
+        return run.succeed();
+      },
+    ),
+    /duplicate attempt identity/u,
+  );
+  assert.equal(runStarted, 0);
+});
+
 test('managed external runner rethrows the original claim failure when no observer exists', async () => {
   const { transport: base } = fixture();
   const failure = new Error('original claim failure');

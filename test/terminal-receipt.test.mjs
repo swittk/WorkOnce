@@ -34,4 +34,7 @@ test('non-terminal receipts retain their old waiting acknowledgement after recla
   const [second] = await q.claim({ workerId: 'B' });
   assert.equal(second.attempt.fence, first.attempt.fence + 1);
   assert.deepEqual(await first.settle(outcome), waiting);
+  const live = await q.inspect('x');
+  assert.equal(live.phase.state, 'running');
+  assert.equal(live.phase.attempt.fence, second.attempt.fence);
 });

@@ -14,9 +14,24 @@ const formalTarget = path.join(root, 'scripts/formal.mjs');
 const formalOriginal = fs.readFileSync(formalTarget, 'utf8');
 const packageTarget = path.join(root, 'package.json');
 const packageOriginal = fs.readFileSync(packageTarget, 'utf8');
+function assertUniqueMutationAnchor(source, mutate, label) {
+  let anchor;
+  let calls = 0;
+  mutate({
+    replace(from) {
+      calls++;
+      anchor = from;
+      return '';
+    },
+  });
+  assert.equal(calls, 1, `${label} mutation must perform exactly one string replacement`);
+  assert.equal(typeof anchor, 'string', `${label} mutation anchor must be a string`);
+  assert.equal(source.split(anchor).length, 2, `${label} mutation anchor is stale or not unique`);
+}
 function expectSchedulingFailure(label, mutate, pattern) {
   const mutant = mutate(original);
   assert.notEqual(mutant, original, `${label} scheduling mutation anchor is stale`);
+  assertUniqueMutationAnchor(original, mutate, label);
   mutationFiles.writeFileSync(target, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
@@ -36,6 +51,7 @@ function expectSchedulingFailure(label, mutate, pattern) {
 function expectProcessTreeContainmentFailure(label, mutate) {
   const mutant = mutate(original);
   assert.notEqual(mutant, original, `${label} process-tree mutation anchor is stale`);
+  assertUniqueMutationAnchor(original, mutate, label);
   mutationFiles.writeFileSync(target, mutant);
   try {
     const result = spawnSync(
@@ -64,6 +80,7 @@ function expectProcessTreeContainmentFailure(label, mutate) {
 function expectPackageSchedulingFailure(label, mutate, pattern) {
   const mutant = mutate(packageOriginal);
   assert.notEqual(mutant, packageOriginal, `${label} scheduling mutation anchor is stale`);
+  assertUniqueMutationAnchor(packageOriginal, mutate, label);
   mutationFiles.writeFileSync(packageTarget, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {
@@ -83,6 +100,7 @@ function expectPackageSchedulingFailure(label, mutate, pattern) {
 function expectFormalSchedulingFailure(label, mutate, pattern) {
   const mutant = mutate(formalOriginal);
   assert.notEqual(mutant, formalOriginal, `${label} scheduling mutation anchor is stale`);
+  assertUniqueMutationAnchor(formalOriginal, mutate, label);
   mutationFiles.writeFileSync(formalTarget, mutant);
   try {
     const result = spawnSync(process.execPath, ['scripts/check-assurance-scheduling.mjs'], {

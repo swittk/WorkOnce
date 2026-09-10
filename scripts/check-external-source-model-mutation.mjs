@@ -11,8 +11,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutationFiles = createMutationFileGuard();
 const target = path.join(root, 'src/external.ts');
 const original = fs.readFileSync(target, 'utf8');
-const needle = '    if (leases.length > limit)';
-const replacement = '    if (leases.length >= limit)';
+const needle = '    if (attempts.has(identity))';
+const replacement = '    if (false)';
 assert.equal(
   original.split(needle).length,
   2,

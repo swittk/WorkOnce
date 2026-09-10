@@ -1,4 +1,5 @@
 import test from 'node:test';
+import assert from 'node:assert/strict';
 import {
   runRuntimeBoundarySamples,
   assertRuntimeBoundarySamples,
@@ -6,5 +7,5 @@ import {
 
 test('real local/external runners, typed reads, policy delays and race results refine runtime boundaries', async () => {
   const samples = await runRuntimeBoundarySamples();
-  assertRuntimeBoundarySamples(samples);
+  assert.equal(assertRuntimeBoundarySamples(samples), 235);
 });

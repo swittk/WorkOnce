@@ -124,8 +124,15 @@ test('SIGKILL after durable claim, restart and late callback preserve fencing', 
     child.kill('SIGKILL');
     const [, signal] = await exited;
     assert.equal(signal, 'SIGKILL');
-    await sleep(3100);
     store = createSqliteStore(path);
+    q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
+      limits: { leaseMs: 3000 },
+    });
+    const afterKill = await q.inspect('job');
+    assert.equal(afterKill.phase.state, 'running');
+    const expiredAt = afterKill.phase.attempt.leaseUntil + 1;
+    store.close();
+    store = createSqliteStore(path, { now: () => expiredAt });
     q = createWorkOnce({ store, scope: 'process-test' }).define('work', {
       limits: { leaseMs: 3000 },
     });

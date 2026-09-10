@@ -111,6 +111,19 @@ function validateExternalWorkerOptions(options: ExternalWorkerOptions): number {
   return integer(options.concurrency ?? 1, 'concurrency', 1);
 }
 
+function validateClaimBatch<I>(leases: readonly LeasedWork<I>[], limit: number): void {
+  if (leases.length > limit)
+    throw new RangeError('External claim returned more leases than requested');
+  const attempts = new Set<string>();
+  for (const lease of leases) {
+    const { workId, generation, fence } = lease.attempt;
+    const identity = JSON.stringify([workId, generation, fence]);
+    if (attempts.has(identity))
+      throw new RangeError('External claim returned duplicate attempt identity');
+    attempts.add(identity);
+  }
+}
+
 async function processLease<I, O, R extends string>(
   transport: ExternalWorkTransport<I, O, R>,
   lease: LeasedWork<I>,
@@ -200,8 +213,7 @@ export async function runExternalAvailable<I, O, R extends string>(
       limit,
       signal: options.signal,
     });
-    if (leases.length > limit)
-      throw new RangeError('External claim returned more leases than requested');
+    validateClaimBatch(leases, limit);
   } catch (error) {
     if (options.signal.aborted) return [];
     throw error;
@@ -270,8 +282,7 @@ export async function runExternal<I, O, R extends string>(
         limit: available,
         signal: options.signal,
       });
-      if (leases.length > available)
-        throw new RangeError('External claim returned more leases than requested');
+      validateClaimBatch(leases, available);
     } catch (error) {
       if (options.signal.aborted) break;
       if (!options.onError) {

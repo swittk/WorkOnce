@@ -320,6 +320,13 @@ mutate(
 );
 mutate(
   'test/process/local-runner-process.test.mjs',
+  'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) + 1;',
+  'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) - 1;',
+  'multi-active crash reclaim clock stays before durable lease expiry',
+  /multi-active crash fixture must derive expiry from the durable post-kill lease deadline/u,
+);
+mutate(
+  'test/process/local-runner-process.test.mjs',
   "  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
   "  const exited = once(child, 'exit');",
   'unbounded process exit wait',

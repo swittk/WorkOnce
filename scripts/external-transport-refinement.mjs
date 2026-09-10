@@ -437,6 +437,40 @@ async function oversizedClaimSample() {
   };
 }
 
+async function duplicateClaimSample() {
+  let handlers = 0;
+  const attempt = { workId: 'same', generation: 1, fence: 1 };
+  const lease = { input: { id: 'same' }, attempt, observedAt: 0, leaseUntil: 100 };
+  const transport = {
+    async claim() {
+      return [lease, { ...lease, input: { id: 'duplicate' } }];
+    },
+    async heartbeat() {
+      return { observedAt: 0, leaseUntil: 100 };
+    },
+    async settle() {
+      return { state: 'succeeded', result: null };
+    },
+  };
+  const result = await observe(
+    runExternalAvailable(
+      transport,
+      { workerId: 'relay', concurrency: 2, signal: new AbortController().signal },
+      async (run) => {
+        handlers++;
+        return run.succeed();
+      },
+    ),
+  );
+  return {
+    kind: 'duplicateClaim',
+    exactError:
+      result.error instanceof RangeError &&
+      result.error.message === 'External claim returned duplicate attempt identity',
+    noHandlerStarted: handlers === 0,
+  };
+}
+
 async function stopSignalSample() {
   const pre = new AbortController();
   pre.abort(new Error('already stopped'));
@@ -814,6 +848,7 @@ export async function runExternalTransportSamples() {
     await staleForeignAttemptSample(),
     await syntheticCapacitySample(),
     await oversizedClaimSample(),
+    await duplicateClaimSample(),
     await stopSignalSample(),
     await leaseBoundarySample(),
     await heartbeatFailureSample(),
@@ -831,6 +866,7 @@ const externalBooleanFields = {
     'noFatalEscape',
     'observedWithinDeadline',
   ],
+  duplicateClaim: ['exactError', 'noHandlerStarted'],
   externalAdapterEquivalence: ['equivalent', 'exactConflict'],
   handoffHistory: [
     'materiallyDifferentHistory',
@@ -879,6 +915,7 @@ const externalMetadataFields = {
 };
 const externalExpectedKindCounts = Object.freeze({
   capacityFairness: 1,
+  duplicateClaim: 1,
   externalAdapterEquivalence: 1,
   handoffHistory: 1,
   heartbeatFailure: 1,
@@ -893,7 +930,7 @@ const externalExpectedKindCounts = Object.freeze({
 });
 
 export function assertExternalTransportSamples(samples) {
-  assert.equal(samples.length, 13, 'external transport sample family unexpectedly changed');
+  assert.equal(samples.length, 14, 'external transport sample family unexpectedly changed');
   const observedKindCounts = {};
   const prepareRaces = [];
   for (const sample of samples) {

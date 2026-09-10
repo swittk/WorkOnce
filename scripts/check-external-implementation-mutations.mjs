@@ -83,7 +83,7 @@ try {
   }
   {
     const needle =
-      "        if (leases.length > limit)\n            throw new RangeError('External claim returned more leases than requested');";
+      "    if (leases.length > limit)\n        throw new RangeError('External claim returned more leases than requested');";
     assert.equal(
       externalOriginal.split(needle).length,
       2,
@@ -100,6 +100,28 @@ try {
        await assert.rejects(runExternalAvailable(transport,{workerId:'r',concurrency:1,signal:new AbortController().signal},async run=>{handlers++;return run.succeed();}),/more leases than requested/,'oversized external claim must reject before handlers');
        assert.equal(handlers,0);`,
       /oversized external claim must reject before handlers|Missing expected rejection/u,
+    );
+    restore();
+  }
+  {
+    const needle = '        if (attempts.has(identity))';
+    assert.equal(
+      externalOriginal.split(needle).length,
+      2,
+      'duplicate-claim mutation anchor is stale or not unique',
+    );
+    fs.writeFileSync(externalPath, externalOriginal.replace(needle, '        if (false)'));
+    requireInlineRed(
+      'duplicate external attempt acceptance',
+      `import assert from 'node:assert/strict';
+       import { runExternalAvailable } from '${importRoot}/index.js';
+       const attempt={workId:'same',generation:1,fence:1};
+       const lease={input:null,attempt,observedAt:0,leaseUntil:100};
+       let handlers=0;
+       const transport={async claim(){return [lease,{...lease}]},async heartbeat(){return {observedAt:0,leaseUntil:100}},async settle(){return {state:'succeeded',result:null}}};
+       await assert.rejects(runExternalAvailable(transport,{workerId:'r',concurrency:2,signal:new AbortController().signal},async run=>{handlers++;return run.succeed();}),/duplicate attempt identity/,'duplicate external attempt must reject before handlers');
+       assert.equal(handlers,0);`,
+      /duplicate external attempt must reject before handlers|Missing expected rejection/u,
     );
     restore();
   }

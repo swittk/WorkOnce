@@ -95,7 +95,7 @@
 - Spec: `formal/WorkOnceExternal.tla`
 - Fresh compiled observations: `scripts/external-transport-refinement.mjs` via `scripts/formal.mjs`
 - Checked invariants: `CurrentRunningExported`, `EffectsRequireExport`, `ExternalTypeOK`, `RejectedFenceIsStale`, `SuccessReceiptCurrent`, `UnknownAckIsDurable`
-- Bound external source symbols: `src/external.ts:ExternalWorkRun.succeed`, `src/external.ts:ExternalWorkRun.retry`, `src/external.ts:ExternalWorkRun.wait`, `src/external.ts:ExternalWorkRun.defer`, `src/external.ts:ExternalWorkRun.fail`, `src/external.ts:validateExternalWorkerOptions`, `src/external.ts:processLease`, `src/external.ts:runExternalAvailable`, `src/external.ts:processExternal`, `src/external.ts:runExternal`, `src/kernel.ts:integer`, `src/work.ts:WorkRun.handoff`, `src/work.ts:WorkQueue.handoff`, `src/work.ts:WorkQueue.serveExternal`, `src/worker.ts:waitForPoll`
+- Bound external source symbols: `src/external.ts:ExternalWorkRun.succeed`, `src/external.ts:ExternalWorkRun.retry`, `src/external.ts:ExternalWorkRun.wait`, `src/external.ts:ExternalWorkRun.defer`, `src/external.ts:ExternalWorkRun.fail`, `src/external.ts:validateExternalWorkerOptions`, `src/external.ts:validateClaimBatch`, `src/external.ts:processLease`, `src/external.ts:runExternalAvailable`, `src/external.ts:processExternal`, `src/external.ts:runExternal`, `src/kernel.ts:integer`, `src/work.ts:WorkRun.handoff`, `src/work.ts:WorkQueue.handoff`, `src/work.ts:WorkQueue.serveExternal`, `src/worker.ts:waitForPoll`
 
 ## Storage/conformance model
 
@@ -109,7 +109,7 @@
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
 - Bound proof/checker files: **121**
-- Content digest: `dfd865fee8c498c4e6ce238c229eae8ce2b91dd66bb3d2bc00bbd3779f74dde4`
+- Content digest: `016d71e00ba2857295991ea941be0a4f97274a872b8bd9e38ba35e223aed8d0c`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 
