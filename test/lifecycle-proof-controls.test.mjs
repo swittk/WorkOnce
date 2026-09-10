@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { requireSuccessfulProcess } from '../scripts/subprocess-outcome.mjs';
+import { createMutationFileGuard } from '../scripts/mutation-file-guard.mjs';
 
 function run(script) {
   const result = spawnSync(process.execPath, [script], {
@@ -31,6 +32,8 @@ test('lifecycle proof is source/model bound and critical compiled mutants are ki
 test('lifecycle binding write mode ignores mutation-only digest injection', () => {
   const target = 'assurance/lifecycle-proof-binding.json';
   const original = fs.readFileSync(target, 'utf8');
+  const guard = createMutationFileGuard();
+  guard.writeFileSync(target, original);
   try {
     const result = spawnSync(
       process.execPath,
@@ -44,6 +47,6 @@ test('lifecycle binding write mode ignores mutation-only digest injection', () =
     requireSuccessfulProcess(result, 'lifecycle binding write child');
     assert.equal(fs.readFileSync(target, 'utf8'), original);
   } finally {
-    fs.writeFileSync(target, original);
+    guard.dispose();
   }
 });

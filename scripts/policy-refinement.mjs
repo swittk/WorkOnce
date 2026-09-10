@@ -737,6 +737,14 @@ export async function runPolicyRefinementSamples() {
   return samples;
 }
 
+const backoffExpectedCategories = [
+  'capped',
+  'maxFiniteCap',
+  'noGrowth',
+  'positiveOverflow',
+  'zeroOverflow',
+];
+
 const policyExpectedKindCounts = {
   retryBoundary: 12,
   deferBoundary: 8,
@@ -770,6 +778,14 @@ export function assertPolicyRefinementSamples(samples) {
       .sort(),
     ['cas', 'memory', 'sqlite'],
     'wakeCompetition adapter coverage drifted',
+  );
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'backoffFinite')
+      .map((sample) => sample.category)
+      .sort(),
+    backoffExpectedCategories,
+    'backoffFinite category coverage drifted',
   );
   for (const sample of samples) {
     const name = JSON.stringify(sample);

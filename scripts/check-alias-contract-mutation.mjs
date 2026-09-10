@@ -140,6 +140,11 @@ try {
   for (const [relative, anchor, replacement] of typeMutants) {
     const target = path.join(root, relative);
     const original = fs.readFileSync(target, 'utf8');
+    assert.equal(
+      original.split(anchor).length,
+      2,
+      `${relative} type mutation anchor is stale or not unique`,
+    );
     const changed = original.replace(anchor, replacement);
     assert.notEqual(changed, original, `${relative} mutation anchor did not match`);
     typeOriginals.set(target, original);

@@ -816,6 +816,11 @@ export function assertAssuranceVerdictIntegrity() {
   assert.match(assuranceRunner, /function terminateProcessTree\(child\)/u);
   assert.match(
     assuranceRunner,
+    /result\.status !== 0 && result\.status !== 128/u,
+    'Windows assurance containment must reject taskkill failures other than missing processes',
+  );
+  assert.match(
+    assuranceRunner,
     /detached: process\.platform !== 'win32'/u,
     'parallel assurance children must be isolatable as complete process trees',
   );

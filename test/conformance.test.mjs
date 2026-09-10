@@ -38,6 +38,31 @@ for (const adapter of ['memory', 'sqlite'])
     console.log(adapter, passed);
   });
 
+test('shared conformance accepts adapter-specific invalid-write rejection messages', async () => {
+  let clock = 100_000;
+  const passed = await runConformance(() => {
+    const base = createMemoryStore({ now: () => clock });
+    return {
+      store: {
+        ...base,
+        async atomic(id, decide) {
+          try {
+            return await base.atomic(id, decide);
+          } catch (error) {
+            if (/revision|validUntil/u.test(error?.message ?? ''))
+              throw new Error('adapter rejected invalid write');
+            throw error;
+          }
+        },
+      },
+      advance(ms) {
+        clock += ms;
+      },
+    };
+  });
+  assert.equal(passed.length, 18);
+});
+
 test('shared conformance rejects adapters that deduplicate duplicate getMany ids', async () => {
   await assert.rejects(
     runConformance(() => {

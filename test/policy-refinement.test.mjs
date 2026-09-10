@@ -40,6 +40,21 @@ test('policy refinement rejects count-preserving sample-kind substitution', asyn
   );
 });
 
+test('policy refinement rejects count-preserving backoff category substitution', async () => {
+  const samples = await runPolicyRefinementSamples();
+  const maxFiniteIndex = samples.findIndex(
+    (sample) => sample.kind === 'backoffFinite' && sample.category === 'maxFiniteCap',
+  );
+  assert.notEqual(maxFiniteIndex, -1);
+  const mutant = samples.map((sample, index) =>
+    index === maxFiniteIndex ? { ...sample, category: 'capped' } : sample,
+  );
+  assert.throws(
+    () => assertPolicyRefinementSamples(mutant),
+    /backoffFinite category coverage drifted/u,
+  );
+});
+
 test('policy refinement rejects collapsed adapter-equivalence coverage', async () => {
   const samples = await runPolicyRefinementSamples();
   const mutant = samples.map((sample) =>

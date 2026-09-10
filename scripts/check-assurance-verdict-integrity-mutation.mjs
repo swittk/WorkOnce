@@ -190,7 +190,7 @@ mutate(
   '    maxBuffer: 64 * 1024 * 1024,\n',
   '',
   'lifecycle formal wrapper loses explicit output budget',
-  /bound captured TLC output/u,
+  /lifecycle formal wrapper must bound captured TLC output explicitly/u,
 );
 mutate(
   'test/process/lifecycle-process.test.mjs',
@@ -274,7 +274,7 @@ mutate(
   'async function finiteDrainSample',
   'async function renamedFiniteDrainSample',
   'scoped assurance section loses its start anchor',
-  /start anchor is missing/u,
+  /finite-drain sample start anchor is missing/u,
 );
 mutate(
   'scripts/lifecycle-formal.mjs',
@@ -462,6 +462,14 @@ mutate(
   'void bindingCheck();',
   'build/source mutation guard loses green baseline precondition',
   /green bound baseline before creating mutants/u,
+);
+
+mutate(
+  'scripts/run-assurance.mjs',
+  '    if (result.status !== 0 && result.status !== 128)',
+  '    if (false)',
+  'Windows taskkill containment ignores failed termination',
+  /Windows assurance containment must reject taskkill failures other than missing processes/u,
 );
 
 console.log(

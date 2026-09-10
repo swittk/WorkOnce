@@ -56,6 +56,10 @@ function terminateProcessTree(child) {
       return new Error(`process-tree termination failed for pid ${pid}: ${result.error.message}`, {
         cause: result.error,
       });
+    if (result.status !== 0 && result.status !== 128)
+      return new Error(
+        `process-tree termination failed for pid ${pid}: taskkill exited with status ${String(result.status)}`,
+      );
     return undefined;
   }
   try {
