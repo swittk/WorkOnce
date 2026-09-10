@@ -67,6 +67,7 @@ test('successful child preserves an inherited parent-owned TLC workspace', () =>
       cwd: process.cwd(),
       env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: workspace },
       encoding: 'utf8',
+      timeout: 15_000,
     });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(readFileSync(marker, 'utf8'), 'KEEP');

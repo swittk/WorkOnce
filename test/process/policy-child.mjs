@@ -1,7 +1,13 @@
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
-const [path, mode, outcomeKind] = process.argv.slice(2);
+const [path, mode, outcomeKind, leaseMsArg, maxElapsedMsArg] = process.argv.slice(2);
+const leaseMs = Number(leaseMsArg);
+const maxElapsedMs = Number(maxElapsedMsArg);
+if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0)
+  throw new Error('Policy child requires a positive safe-integer lease');
+if (!Number.isSafeInteger(maxElapsedMs) || maxElapsedMs <= leaseMs)
+  throw new Error('Policy child requires a safe elapsed budget beyond the lease');
 const base = createSqliteStore(path);
 let currentRef;
 setInterval(() => {}, 1000);
@@ -13,7 +19,7 @@ const dynamicTiming = async (context) => {
     ? { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true }
     : { afterMs: 0 };
 };
-const limits = { leaseMs: 250, maxAttempts: 4, maxElapsedMs: 30000, maxDeferrals: 4 };
+const limits = { leaseMs, maxAttempts: 4, maxElapsedMs, maxDeferrals: 4 };
 const staticDefinition = {
   retry: { retry: true, afterMs: 0, maxRetries: 2, manualRetry: true },
   wait: { afterMs: 0 },

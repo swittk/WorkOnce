@@ -33,6 +33,7 @@ const write = process.argv.includes('--write');
 const evidenceFiles = [
   'scripts/formal-bounded-refinement-corpus.mjs',
   'scripts/refinement-sample-schema.mjs',
+  'scripts/refinement-sqlite-fixture.mjs',
   'test/formal-bounded-refinement.test.mjs',
   'scripts/runtime-boundary-refinement.mjs',
   'scripts/read-boundary-refinement.mjs',

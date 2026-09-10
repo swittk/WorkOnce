@@ -395,7 +395,7 @@ Dispatch operations are mapped to explicit `OutboxDispatch` / budget-dispatch ac
 
 External execution now has a dedicated `WorkOnceExternal` machine plus compiled transport observations. The proof binds exported lease/fence identity, successful receipt identity, stale-fence rejection and durable unknown-ack handling to the public handoff/external-runner implementation. Source/model mutation controls cover the external runner, queue handoff/serve paths and shared poll wake behavior.
 
-The managed external runner also preserves the actual abort or heartbeat failure as the interrupted result instead of replacing it with a generic ownership-loss error. Process-level fault tests exercise the effect boundary across real child-process death/reclaim. A deliberate TLC witness demonstrates that duplicate external effects remain reachable across crash/reclaim when the external system does not participate in idempotency/fencing; WorkOnce therefore continues to make no exactly-once external-effect claim.
+The managed external runner also preserves the actual abort or heartbeat failure as the interrupted result instead of replacing it with a generic ownership-loss error. Process-level fault tests exercise the effect boundary across real child-process death/reclaim. Deliberate TLC witnesses demonstrate that duplicate external effects remain reachable across crash/reclaim and that an older exported attempt may still perform an external effect after a newer fence is claimed when the external system does not participate in idempotency/fencing; WorkOnce therefore continues to make no exactly-once external-effect claim.
 
 ## Storage and adapter temporal refinement
 

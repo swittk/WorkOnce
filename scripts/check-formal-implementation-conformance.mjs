@@ -291,6 +291,7 @@ const assuranceInfrastructureFiles = [
   'scripts/check-assurance-verdict-integrity.mjs',
   'scripts/mutation-file-guard.mjs',
   'scripts/refinement-sample-schema.mjs',
+  'scripts/refinement-sqlite-fixture.mjs',
   'scripts/check-assurance-verdict-integrity-mutation.mjs',
   'assurance/red-before/review-5148224210-assurance-verdict-integrity.json',
   'scripts/tlc-workspace.mjs',

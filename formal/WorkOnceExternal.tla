@@ -27,6 +27,12 @@ ExternalEffect ==
   /\ reply' = "effect"
   /\ UNCHANGED <<phase, fence, exports, receiptFence, lastRejectedFence>>
 
+StaleEffect(f) ==
+  /\ phase = "running" /\ f \in exports /\ f # fence
+  /\ effects' = effects \cup {f}
+  /\ reply' = "stale_effect"
+  /\ UNCHANGED <<phase, fence, exports, receiptFence, lastRejectedFence>>
+
 CrashExpire ==
   /\ phase = "running"
   /\ phase' = "available"
@@ -58,6 +64,7 @@ Replay ==
 
 Next == ClaimExport \/ ExternalEffect \/ CrashExpire \/ HeartbeatCurrent \/ Replay
         \/ (\E f \in exports : RejectStale(f))
+        \/ (\E f \in exports : StaleEffect(f))
         \/ (\E knownAck \in BOOLEAN : SettleCurrent(knownAck))
 Spec == Init /\ [][Next]_vars
 
@@ -68,7 +75,7 @@ ExternalTypeOK ==
   /\ effects \subseteq 1..2
   /\ receiptFence \in 0..2
   /\ lastRejectedFence \in 0..2
-  /\ reply \in {"none", "lease", "effect", "crash", "heartbeat", "stale", "settled", "unknown", "replay"}
+  /\ reply \in {"none", "lease", "effect", "stale_effect", "crash", "heartbeat", "stale", "settled", "unknown", "replay"}
 
 CurrentRunningExported == phase = "running" => fence \in exports
 SuccessReceiptCurrent == phase = "succeeded" => /\ receiptFence = fence /\ fence \in exports
@@ -80,6 +87,11 @@ UnknownAckIsDurable == reply = "unknown" => /\ phase = "succeeded" /\ receiptFen
 \* separately requires TLC to violate this predicate, matching the real SIGKILL
 \* effect-before-settlement process witness.
 NoDuplicateExternalEffects == Cardinality(effects) <= 1
+
+\* Also intentionally NOT an invariant: an exported old attempt may still perform an
+\* application effect after a newer fence has been claimed. WorkOnce can reject its settle but
+\* cannot retroactively fence an unrelated external side effect.
+NoStaleExternalEffect == reply # "stale_effect"
 
 ExternalSampleOK(s) ==
   CASE s.kind = "handoffHistory" ->

@@ -3,6 +3,7 @@
   "evidenceFiles": [
     "scripts/formal-bounded-refinement-corpus.mjs",
     "scripts/refinement-sample-schema.mjs",
+    "scripts/refinement-sqlite-fixture.mjs",
     "test/formal-bounded-refinement.test.mjs",
     "scripts/runtime-boundary-refinement.mjs",
     "scripts/read-boundary-refinement.mjs",
@@ -117,7 +118,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "fa2d4bc7e1ff49a523e01531d3df4e92e870a7e59c473b9c2cbc3108cb197cef",
+  "evidenceDigest": "6d55e5a040e6eb0441e943106d6a2cb6a78c5a818d6ddc40adac71d1a8d52681",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

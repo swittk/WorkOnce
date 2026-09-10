@@ -23,6 +23,7 @@
   "evidenceFiles": [
     "scripts/lifecycle-refinement.mjs",
     "scripts/refinement-sample-schema.mjs",
+    "scripts/refinement-sqlite-fixture.mjs",
     "scripts/lifecycle-formal.mjs",
     "scripts/build-source-binding.mjs",
     "scripts/tlc-outcome.mjs",
@@ -41,5 +42,5 @@
   ],
   "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
   "modelDigest": "b14fd7811a6d2e76bd625590b41c438402c0415893e0d3dd71a6f09d85c02642",
-  "evidenceDigest": "3ae10bda4bf281508dafed3b754187b494ca2361d1aecc3e2e516bc51a41b45c"
+  "evidenceDigest": "3bcc241bf45773e84428d7d1eb528089219fa9a8de301d32a388c10cc616d019"
 }

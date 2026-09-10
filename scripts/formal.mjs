@@ -104,6 +104,69 @@ function requireInvariantRejects(model, config, modulePath, invariant) {
   console.log(`TLC mutation guard: ${invariant} rejects its injected violating transition.`);
 }
 
+function runReachableMutationWitnessBatch({
+  model,
+  baseModule,
+  baseConfig,
+  witnesses,
+  directInvariants = [],
+}) {
+  const modulePath = resolve(tlcWorkspace, `${model}.tla`);
+  const configPath = resolve(tlcWorkspace, `${model}.cfg`);
+  const definitions = [];
+  const expected = [];
+  for (const witness of witnesses) {
+    const actionName = `${witness.name}Unsafe`;
+    const absentName = `${witness.name}WitnessAbsent`;
+    definitions.push(`${actionName} ==\n${witness.action}`);
+    definitions.push(`${absentName} == ~ENABLED (${actionName} /\\ ~${witness.invariant}')`);
+    expected.push(absentName);
+  }
+  expected.push(...directInvariants);
+  writeFileSync(
+    modulePath,
+    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\n${definitions.join('\n\n')}\n====\n`,
+  );
+  writeFileSync(
+    configPath,
+    `${baseConfig.trimEnd()}\n${expected.map((name) => `INVARIANT ${name}`).join('\n')}\n`,
+  );
+  const directory = resolve(tlcWorkspace, model);
+  mkdirSync(directory, { recursive: true });
+  const baseArgs = tlcArgs(model, configPath, modulePath, { heapMb: 192, workerCount: '1' });
+  baseArgs.splice(baseArgs.length - 1, 0, '-continue');
+  const result = spawnSync('java', baseArgs, {
+    cwd: 'formal',
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    killSignal: 'SIGKILL',
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  if (result.error || result.signal || result.status === null || result.status === undefined)
+    throw new Error(`TLC reachable-mutation batch ${model} did not complete normally.`, {
+      cause: result.error,
+    });
+  if (result.status !== 0) {
+    const outcome = classifyTlcOutcome(result);
+    throw new Error(
+      `TLC reachable-mutation batch ${model} failed as ${outcome.kind}/${outcome.reason ?? 'unknown'}.\n${outcome.output.slice(-2000)}`,
+    );
+  }
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  for (const invariant of expected) {
+    const escaped = invariant.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    if (!new RegExp(`Invariant\\s+${escaped}\\s+is violated`, 'u').test(output))
+      throw new Error(
+        `TLC reachable-mutation batch ${model} did not prove witness ${invariant}.\n${output.slice(-2000)}`,
+      );
+  }
+  if (!/0 states left on queue\./u.test(output))
+    throw new Error(`TLC reachable-mutation batch ${model} did not exhaust its state graph.`);
+  console.log(
+    `TLC reachable-mutation batch proves ${expected.length} exact counterexample witnesses for ${baseModule} in one state-graph traversal.`,
+  );
+}
+
 function configuredInvariants(configText) {
   const lines = configText.replace(/\r\n?/gu, '\n').split('\n');
   const result = [];
@@ -581,11 +644,11 @@ if (runtimeOnly) {
   const observedModule = resolve(tlcWorkspace, 'WorkOnceRuntimeObserved.tla');
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == [kind |-> \"runner\", failureValue |-> \"none\", returnedValue |-> \"none\", handled |-> FALSE, rejected |-> TRUE, preserved |-> TRUE, drained |-> TRUE, timedOut |-> FALSE, site |-> \"direct\"]\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRead == [kind |-> \"read\", matched |-> FALSE, accepted |-> TRUE, definitionError |-> FALSE, snapshotExact |-> FALSE, errorCause |-> \"none\"]\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
   );
   writeFileSync(
     config,
-    `${readFileSync('formal/WorkOnceRuntime.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\n`,
+    `${readFileSync('formal/WorkOnceRuntime.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT RuntimeNegativeSampleMutantsRejected\n`,
   );
   console.log(
     `TLC runtime boundary receives ${samples.length} fresh compiled public API observations.`,
@@ -600,85 +663,9 @@ if (runtimeOnly) {
     plan: runtimeMutationPlan,
   });
 
-  const sampleMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeSamplesMutant.tla');
-  const sampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeSamplesMutant.cfg');
-  writeFileSync(
-    sampleMutant,
-    String.raw`---- MODULE WorkOnceRuntimeSamplesMutant ----
-EXTENDS WorkOnceRuntimeObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    sampleMutantConfig,
-    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOnceRuntimeSamplesMutant',
-    sampleMutantConfig,
-    sampleMutant,
-    'RuntimeSamplesConform',
-  );
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
-
-  const runnerFailureMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeRunnerFailureMutant.tla');
-  const runnerFailureMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeRunnerFailureMutant.cfg');
-  writeFileSync(
-    runnerFailureMutant,
-    String.raw`---- MODULE WorkOnceRuntimeRunnerFailureMutant ----
-EXTENDS WorkOnceRuntimeObserved
-BadRunner == [kind |-> "runner", failureValue |-> "none", returnedValue |-> "none",
-              handled |-> FALSE, rejected |-> TRUE, preserved |-> TRUE,
-              drained |-> TRUE, timedOut |-> FALSE, site |-> "direct"]
-BadSamples == ObservedSamples \cup {BadRunner}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    runnerFailureMutantConfig,
-    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOnceRuntimeRunnerFailureMutant',
-    runnerFailureMutantConfig,
-    runnerFailureMutant,
-    'RuntimeSamplesConform',
-  );
-
-  const readFenceMutant = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.tla');
-  const readFenceMutantConfig = resolve(tlcWorkspace, 'WorkOnceRuntimeReadFenceMutant.cfg');
-  writeFileSync(
-    readFenceMutant,
-    String.raw`---- MODULE WorkOnceRuntimeReadFenceMutant ----
-EXTENDS WorkOnceRuntimeObserved
-BadRead == [kind |-> "read", matched |-> FALSE, accepted |-> TRUE,
-            definitionError |-> FALSE, snapshotExact |-> FALSE, errorCause |-> "none"]
-BadSamples == ObservedSamples \cup {BadRead}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    readFenceMutantConfig,
-    singleInvariantConfig(runtimeConfig, 'RuntimeSamplesConform').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOnceRuntimeReadFenceMutant',
-    readFenceMutantConfig,
-    readFenceMutant,
-    'RuntimeSamplesConform',
+  console.log(
+    'TLC mutation guard: RuntimeSamplesConform rejects all 3 injected sample mutations in the observed-model run.',
   );
 
   // Keep the realistic late-admission mutant in addition to the one-step activity check above.
@@ -717,14 +704,14 @@ MutantSpec == Init /\ [][MutantNext]_vars
   const readHistoryConfig = resolve(tlcWorkspace, 'WorkOnceReadHistory-observed.cfg');
   writeFileSync(
     readHistoryObserved,
-    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceReadHistory WITH Samples <- InvalidSamples\nReadHistoryNegativeSampleMutantRejected == ~InvalidSampleCheck!ReadHistorySamplesConform\n====\n`,
   );
   writeFileSync(
     readHistoryConfig,
     `${readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8').replace(
       'CONSTANT Samples = {}',
       'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT ReadHistorySamplesConform\n`,
+    )}\nINVARIANT ReadHistorySamplesConform\nINVARIANT ReadHistoryNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC read-history boundary receives ${readHistorySamples.length} fresh compiled observations.`,
@@ -788,32 +775,8 @@ MutantSpec == Init /\ [][HistorySensitiveNext]_vars
     'TLC read-history mutation guard rejects a future transition whose projection depends on durable history.',
   );
 
-  const readHistorySampleMutant = resolve(tlcWorkspace, 'WorkOnceReadHistorySamplesMutant.tla');
-  const readHistorySampleMutantConfig = resolve(
-    tlcWorkspace,
-    'WorkOnceReadHistorySamplesMutant.cfg',
-  );
-  writeFileSync(
-    readHistorySampleMutant,
-    String.raw`---- MODULE WorkOnceReadHistorySamplesMutant ----
-EXTENDS WorkOnceReadHistoryObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    readHistorySampleMutantConfig,
-    singleInvariantConfig(
-      readFileSync(readHistoryConfig, 'utf8'),
-      'ReadHistorySamplesConform',
-    ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
-  );
-  requireInvariantRejects(
-    'WorkOnceReadHistorySamplesMutant',
-    readHistorySampleMutantConfig,
-    readHistorySampleMutant,
-    'ReadHistorySamplesConform',
+  console.log(
+    'TLC mutation guard: ReadHistorySamplesConform rejects its injected bad sample in the observed-model run.',
   );
 
   const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(
@@ -825,14 +788,14 @@ MutantSpec == Init /\ [][Next]_vars
   const localRunnerConfig = resolve(tlcWorkspace, 'WorkOnceLocalRunner-observed.cfg');
   writeFileSync(
     localRunnerObserved,
-    `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+    `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceLocalRunner WITH Samples <- InvalidSamples\nLocalRunnerNegativeSampleMutantRejected == ~InvalidSampleCheck!LocalRunnerSamplesConform\n====\n`,
   );
   writeFileSync(
     localRunnerConfig,
     `${readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8').replace(
       'CONSTANT Samples = {}',
       'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT LocalRunnerSamplesConform\n`,
+    )}\nINVARIANT LocalRunnerSamplesConform\nINVARIANT LocalRunnerNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC local-runner boundary receives ${localRunnerSamples.length} fresh compiled public API observations.`,
@@ -847,32 +810,8 @@ MutantSpec == Init /\ [][Next]_vars
     plan: localRunnerMutationPlan,
   });
 
-  const localRunnerSampleMutant = resolve(tlcWorkspace, 'WorkOnceLocalRunnerSamplesMutant.tla');
-  const localRunnerSampleMutantConfig = resolve(
-    tlcWorkspace,
-    'WorkOnceLocalRunnerSamplesMutant.cfg',
-  );
-  writeFileSync(
-    localRunnerSampleMutant,
-    String.raw`---- MODULE WorkOnceLocalRunnerSamplesMutant ----
-EXTENDS WorkOnceLocalRunnerObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    localRunnerSampleMutantConfig,
-    singleInvariantConfig(
-      readFileSync(localRunnerConfig, 'utf8'),
-      'LocalRunnerSamplesConform',
-    ).replace('CONSTANT Samples <- ObservedSamples', 'CONSTANT Samples <- BadSamples'),
-  );
-  requireInvariantRejects(
-    'WorkOnceLocalRunnerSamplesMutant',
-    localRunnerSampleMutantConfig,
-    localRunnerSampleMutant,
-    'LocalRunnerSamplesConform',
+  console.log(
+    'TLC mutation guard: LocalRunnerSamplesConform rejects its injected bad sample in the observed-model run.',
   );
 }
 
@@ -886,14 +825,14 @@ if (nonRuntimeOnly) {
   const policyConfig = resolve(tlcWorkspace, 'WorkOncePolicy-observed.cfg');
   writeFileSync(
     policyObserved,
-    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOncePolicy WITH Samples <- InvalidSamples\nPolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform\n====\n`,
   );
   writeFileSync(
     policyConfig,
     `${readFileSync('formal/WorkOncePolicy.cfg', 'utf8').replace(
       'CONSTANT Samples = {}',
       'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT PolicySamplesConform\n`,
+    )}\nINVARIANT PolicySamplesConform\nINVARIANT PolicyNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC policy boundary receives ${policySamples.length} fresh compiled public API observations.`,
@@ -908,29 +847,8 @@ if (nonRuntimeOnly) {
     plan: policyMutationPlan,
   });
 
-  const policySampleMutant = resolve(tlcWorkspace, 'WorkOncePolicySamplesMutant.tla');
-  const policySampleMutantConfig = resolve(tlcWorkspace, 'WorkOncePolicySamplesMutant.cfg');
-  writeFileSync(
-    policySampleMutant,
-    String.raw`---- MODULE WorkOncePolicySamplesMutant ----
-EXTENDS WorkOncePolicyObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    policySampleMutantConfig,
-    singleInvariantConfig(readFileSync(policyConfig, 'utf8'), 'PolicySamplesConform').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOncePolicySamplesMutant',
-    policySampleMutantConfig,
-    policySampleMutant,
-    'PolicySamplesConform',
+  console.log(
+    'TLC mutation guard: PolicySamplesConform rejects its injected bad sample in the observed-model run.',
   );
 }
 
@@ -938,7 +856,8 @@ if (nonRuntimeOnly) {
   const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
     './outbox-refinement.mjs'
   );
-  runModel('WorkOnceOutbox', 'WorkOnceOutbox.cfg');
+  // WorkOnceOutboxObserved runs the same base Spec and every base invariant below, so a separate
+  // WorkOnceOutbox JVM would duplicate the identical state graph. The budget model remains distinct.
   runModel('WorkOnceOutboxBudget', 'WorkOnceOutboxBudget.cfg');
   const outboxSamples = await runOutboxRefinementSamples();
   assertOutboxRefinementSamples(outboxSamples);
@@ -946,39 +865,19 @@ if (nonRuntimeOnly) {
   const outboxConfig = resolve(tlcWorkspace, 'WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
-    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConform ==\n  /\\ Samples # {}\n  /\\ {s.kind : s \\in Samples} = {"rotation", "poison", "restart", "ackLoss", "casAckLoss", "adapter", "adapterBudget", "adapterFaults", "adapterConcurrent", "budget", "grid", "multiPoison", "dynamic", "finiteArrivals", "concurrent", "limitBoundary", "staleParent", "rotationFailure", "multiError", "runDispatcher", "historyCongruence", "historySplit"}\n  /\\ \\A s \\in Samples : OutboxSampleOK(s)\n====\n`,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {"rotation", "poison", "restart", "ackLoss", "casAckLoss", "adapter", "adapterBudget", "adapterFaults", "adapterConcurrent", "budget", "grid", "multiPoison", "dynamic", "finiteArrivals", "concurrent", "limitBoundary", "staleParent", "rotationFailure", "multiError", "runDispatcher", "historyCongruence", "historySplit"}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n====\n`,
   );
   writeFileSync(
     outboxConfig,
-    `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT OutboxSamplesConform\n`,
+    `${readFileSync('formal/WorkOnceOutbox.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT OutboxSamplesConform\nINVARIANT OutboxNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC outbox model receives ${outboxSamples.length} fresh compiled scheduler observations.`,
   );
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
 
-  const sampleMutant = resolve(tlcWorkspace, 'WorkOnceOutboxSamplesMutant.tla');
-  const sampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceOutboxSamplesMutant.cfg');
-  writeFileSync(
-    sampleMutant,
-    String.raw`---- MODULE WorkOnceOutboxSamplesMutant ----
-EXTENDS WorkOnceOutboxObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-====
-`,
-  );
-  writeFileSync(
-    sampleMutantConfig,
-    readFileSync(outboxConfig, 'utf8').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOnceOutboxSamplesMutant',
-    sampleMutantConfig,
-    sampleMutant,
-    'OutboxSamplesConform',
+  console.log(
+    'TLC mutation guard: OutboxSamplesConform rejects its injected bad sample in the observed-model run.',
   );
 
   runMutationWitnessBatch({
@@ -1015,20 +914,14 @@ BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
   /\ UNCHANGED <<bQueue, cursor, attempts, delivered, passCount, crashes>>`,
     },
   ];
-  for (const mutant of semanticMutants) {
-    const modulePath = resolve(tlcWorkspace, `${mutant.name}.tla`);
-    const configPath = resolve(tlcWorkspace, `${mutant.name}.cfg`);
-    writeFileSync(
-      modulePath,
-      `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceOutbox\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
-    );
-    writeFileSync(
-      configPath,
-      singleInvariantConfig(readFileSync('formal/WorkOnceOutbox.cfg', 'utf8'), mutant.invariant),
-    );
-    requireInvariantRejects(mutant.name, configPath, modulePath, mutant.invariant);
+  runReachableMutationWitnessBatch({
+    model: 'WorkOnceOutboxReachableMutationBatch',
+    baseModule: 'WorkOnceOutboxObserved',
+    baseConfig: readFileSync(outboxConfig, 'utf8'),
+    witnesses: semanticMutants,
+  });
+  for (const mutant of semanticMutants)
     markExtraMutationWitness(outboxMutationPlan, mutant.invariant);
-  }
 }
 
 if (runtimeOnly) {
@@ -1041,14 +934,14 @@ if (runtimeOnly) {
   const externalConfig = resolve(tlcWorkspace, 'WorkOnceExternal-observed.cfg');
   writeFileSync(
     externalObserved,
-    `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\n====\n`,
+    `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceExternal WITH Samples <- InvalidSamples\nExternalNegativeSampleMutantRejected == ~InvalidSampleCheck!ExternalSamplesConform\n====\n`,
   );
   writeFileSync(
     externalConfig,
     `${readFileSync('formal/WorkOnceExternal.cfg', 'utf8').replace(
       'CONSTANT Samples = {}',
       'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT ExternalSamplesConform\n`,
+    )}\nINVARIANT ExternalSamplesConform\nINVARIANT ExternalNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC external transport boundary receives ${externalSamples.length} fresh compiled public API observations.`,
@@ -1074,76 +967,29 @@ if (runtimeOnly) {
     {
       name: 'WorkOnceExternalUnknownAckNotDurableMutant',
       invariant: 'UnknownAckIsDurable',
-      action: String.raw`  /\ phase = "running" /\ fence \in exports
+      action: String.raw`  /\ phase = "running" /\ fence = 2 /\ fence \in exports /\ lastRejectedFence = 1
   /\ phase' = "running" /\ receiptFence' = 0 /\ reply' = "unknown"
   /\ UNCHANGED <<fence, exports, effects, lastRejectedFence>>`,
     },
   ];
-  for (const mutant of externalSemanticMutants) {
-    const modulePath = resolve(tlcWorkspace, `${mutant.name}.tla`);
-    const configPath = resolve(tlcWorkspace, `${mutant.name}.cfg`);
-    writeFileSync(
-      modulePath,
-      `---- MODULE ${mutant.name} ----\nEXTENDS WorkOnceExternal\nUnsafe ==\n${mutant.action}\nMutantNext == Next \\/ Unsafe\nMutantSpec == Init /\\ [][MutantNext]_vars\n====\n`,
-    );
-    writeFileSync(
-      configPath,
-      singleInvariantConfig(baseExternalConfig, mutant.invariant).replace(
-        'SPECIFICATION Spec',
-        'SPECIFICATION MutantSpec',
-      ),
-    );
-    requireInvariantRejects(mutant.name, configPath, modulePath, mutant.invariant);
-    markExtraMutationWitness(externalMutationPlan, mutant.invariant);
-  }
-
-  const externalSampleMutant = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.tla');
-  const externalSampleMutantConfig = resolve(tlcWorkspace, 'WorkOnceExternalSamplesMutant.cfg');
-  writeFileSync(
-    externalSampleMutant,
-    String.raw`---- MODULE WorkOnceExternalSamplesMutant ----
-EXTENDS WorkOnceExternalObserved
-BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}
-MutantSpec == Init /\ [][Next]_vars
-====
-`,
-  );
-  writeFileSync(
-    externalSampleMutantConfig,
-    singleInvariantConfig(readFileSync(externalConfig, 'utf8'), 'ExternalSamplesConform').replace(
-      'CONSTANT Samples <- ObservedSamples',
-      'CONSTANT Samples <- BadSamples',
-    ),
-  );
-  requireInvariantRejects(
-    'WorkOnceExternalSamplesMutant',
-    externalSampleMutantConfig,
-    externalSampleMutant,
-    'ExternalSamplesConform',
-  );
-
-  const duplicateBoundaryModule = resolve(tlcWorkspace, 'WorkOnceExternalDuplicateBoundary.tla');
-  const duplicateBoundaryConfig = resolve(tlcWorkspace, 'WorkOnceExternalDuplicateBoundary.cfg');
-  writeFileSync(
-    duplicateBoundaryModule,
-    String.raw`---- MODULE WorkOnceExternalDuplicateBoundary ----
-EXTENDS WorkOnceExternalObserved
-MutantSpec == Spec
-====
-`,
-  );
-  writeFileSync(
-    duplicateBoundaryConfig,
-    singleInvariantConfig(readFileSync(externalConfig, 'utf8'), 'NoDuplicateExternalEffects'),
-  );
-  requireInvariantRejects(
-    'WorkOnceExternalDuplicateBoundary',
-    duplicateBoundaryConfig,
-    duplicateBoundaryModule,
-    'NoDuplicateExternalEffects',
-  );
+  const [successReceiptMutant, unknownAckMutant] = externalSemanticMutants;
+  const staleEffectWitness = {
+    name: 'WorkOnceExternalStaleEffectReachability',
+    invariant: 'NoStaleExternalEffect',
+    action: String.raw`  /\ lastRejectedFence = 0
+  /\ StaleEffect(1)`,
+  };
+  runReachableMutationWitnessBatch({
+    model: 'WorkOnceExternalReachableMutationBatch',
+    baseModule: 'WorkOnceExternalObserved',
+    baseConfig: readFileSync(externalConfig, 'utf8'),
+    witnesses: [staleEffectWitness, unknownAckMutant, successReceiptMutant],
+    directInvariants: ['NoDuplicateExternalEffects'],
+  });
+  markExtraMutationWitness(externalMutationPlan, successReceiptMutant.invariant);
+  markExtraMutationWitness(externalMutationPlan, unknownAckMutant.invariant);
   console.log(
-    'TLC external boundary witness confirms duplicate external effects are reachable across crash/reclaim; exactly-once is not claimed.',
+    'TLC external boundary witnesses confirm duplicate effects and stale-attempt effects after reclaim are reachable; exactly-once is not claimed.',
   );
 }
 

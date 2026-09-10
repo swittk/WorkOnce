@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,6 +19,7 @@ function bindingCheck() {
 }
 
 try {
+  requireSuccessfulProcess(bindingCheck(), 'baseline build-input binding');
   for (const relative of ['package.json', 'scripts/cjs-package.mjs']) {
     const target = path.join(root, relative);
     const original = fs.readFileSync(target, 'utf8');

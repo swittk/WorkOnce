@@ -8,6 +8,7 @@ import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
 function casFixture(options = {}) {
   let now = 100;
@@ -47,15 +48,9 @@ function casFixture(options = {}) {
 function adapterFixture(adapter) {
   if (adapter === 'memory') return { store: createMemoryStore({ now: () => 100 }), close() {} };
   if (adapter === 'cas') return { store: casFixture().store, close() {} };
-  const directory = mkdtempSync(join(tmpdir(), 'workonce-storage-refinement-'));
-  const store = createSqliteStore(join(directory, 'queue.sqlite'), { now: () => 100 });
-  return {
-    store,
-    close() {
-      store.close();
-      rmSync(directory, { recursive: true, force: true });
-    },
-  };
+  return createRefinementSqliteFixture('workonce-storage-refinement-', 'queue.sqlite', {
+    now: () => 100,
+  });
 }
 
 async function detachedSample(adapter) {

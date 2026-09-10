@@ -95,7 +95,11 @@ requireRed(
   'exact +1 revision validation',
   ['next.revision !== expectedRevision'],
   (text) => text.replace('next.revision !== expectedRevision', 'next.revision < expectedRevision'),
-  ['--test', 'test/conformance.test.mjs'],
+  [
+    '--input-type=module',
+    '--eval',
+    "import { runConformance } from './dist/conformance.js'; import { createMemoryStore } from './dist/memory.js'; let clock = 100000; await runConformance(() => { const store = createMemoryStore({ now: () => clock }); return { store, advance(ms) { clock += ms; }, close() { store.close?.(); } }; });",
+  ],
   /next revision must equal expectedRevision exactly/u,
 );
 requireRed(

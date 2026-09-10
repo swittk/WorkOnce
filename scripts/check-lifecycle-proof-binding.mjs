@@ -29,6 +29,7 @@ const modelFiles = [
 const evidenceFiles = [
   'scripts/lifecycle-refinement.mjs',
   'scripts/refinement-sample-schema.mjs',
+  'scripts/refinement-sqlite-fixture.mjs',
   'scripts/lifecycle-formal.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/tlc-outcome.mjs',

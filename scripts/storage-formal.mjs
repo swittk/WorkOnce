@@ -96,18 +96,35 @@ function requireRejects(model, config, modulePath, invariant) {
 
 const samples = await runStorageRefinementSamples();
 assertStorageRefinementSamples(samples);
+const duplicateSlotTarget = samples.find(
+  (sample) => sample.kind === 'detached' && sample.adapter === 'memory',
+);
+if (!duplicateSlotTarget || !Object.hasOwn(duplicateSlotTarget, 'duplicateSlotsExact'))
+  throw new Error(
+    'Storage mutation guard target missing: detached/memory sample has no duplicateSlotsExact observation.',
+  );
+const duplicateSlotMutantSamples = samples.map((sample) =>
+  sample === duplicateSlotTarget ? { ...sample, duplicateSlotsExact: false } : sample,
+);
 const observedModule = resolve(tlcWorkspace, 'WorkOnceStorageObserved.tla');
 const observedConfig = resolve(tlcWorkspace, 'WorkOnceStorageObserved.cfg');
 writeFileSync(
   observedModule,
   embeddedStorageModule(
     'WorkOnceStorageObserved',
-    `ObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}`,
+    [
+      `ObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}`,
+      String.raw`InvalidSamples == ObservedSamples \cup {[kind |-> "invalid"]}`,
+      `DuplicateSlotSamples == {\n${duplicateSlotMutantSamples.map(tlaValue).join(',\n')}\n}`,
+      'InvalidSampleCheck == INSTANCE WorkOnceStorage WITH Samples <- InvalidSamples, MaxConflicts <- MaxConflicts',
+      'DuplicateSlotCheck == INSTANCE WorkOnceStorage WITH Samples <- DuplicateSlotSamples, MaxConflicts <- MaxConflicts',
+      'StorageNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!StorageSamplesConform /\\ ~DuplicateSlotCheck!StorageSamplesConform',
+    ].join('\n'),
   ),
 );
 writeFileSync(
   observedConfig,
-  `${readFileSync('formal/WorkOnceStorage.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\n`,
+  `${readFileSync('formal/WorkOnceStorage.cfg', 'utf8')}\nCONSTANT Samples <- ObservedSamples\nINVARIANT StorageNegativeSampleMutantsRejected\n`,
 );
 console.log(`TLC storage model receives ${samples.length} fresh compiled storage observations.`);
 tlc('WorkOnceStorageObserved', observedConfig, observedModule);
@@ -203,61 +220,6 @@ console.log(
   `TLC storage mutation witness batch proves ${mutationEntries.length} configured state invariants are non-vacuous in sequence.`,
 );
 
-const sampleModule = resolve(tlcWorkspace, 'WorkOnceStorageMutant_StorageSamplesConform.tla');
-const sampleConfig = resolve(tlcWorkspace, 'WorkOnceStorageMutant_StorageSamplesConform.cfg');
-writeFileSync(
-  sampleModule,
-  embeddedStorageModule(
-    'WorkOnceStorageMutant_StorageSamplesConform',
-    [
-      `ObservedSamples == {\n${observedSamplesLines}\n}`,
-      String.raw`BadSamples == ObservedSamples \cup {[kind |-> "invalid"]}`,
-    ].join('\n'),
-  ),
-);
-writeFileSync(
-  sampleConfig,
-  `SPECIFICATION Spec\nCONSTANT MaxConflicts = ${maxConflicts}\nCONSTANT Samples <- BadSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
-);
-requireRejects(
-  'WorkOnceStorageMutant_StorageSamplesConform',
-  sampleConfig,
-  sampleModule,
-  'StorageSamplesConform',
-);
-
-const duplicateSlotTarget = samples.find(
-  (sample) => sample.kind === 'detached' && sample.adapter === 'memory',
-);
-if (!duplicateSlotTarget || !Object.hasOwn(duplicateSlotTarget, 'duplicateSlotsExact'))
-  throw new Error(
-    'Storage mutation guard target missing: detached/memory sample has no duplicateSlotsExact observation.',
-  );
-const duplicateSlotMutantSamples = samples.map((sample) =>
-  sample === duplicateSlotTarget ? { ...sample, duplicateSlotsExact: false } : sample,
-);
-const duplicateSlotModule = resolve(
-  tlcWorkspace,
-  'WorkOnceStorageMutant_DuplicateSlotsConform.tla',
-);
-const duplicateSlotConfig = resolve(
-  tlcWorkspace,
-  'WorkOnceStorageMutant_DuplicateSlotsConform.cfg',
-);
-writeFileSync(
-  duplicateSlotModule,
-  embeddedStorageModule(
-    'WorkOnceStorageMutant_DuplicateSlotsConform',
-    `ObservedSamples == {\n${duplicateSlotMutantSamples.map(tlaValue).join(',\n')}\n}`,
-  ),
-);
-writeFileSync(
-  duplicateSlotConfig,
-  `SPECIFICATION Spec\nCONSTANT MaxConflicts = ${maxConflicts}\nCONSTANT Samples <- ObservedSamples\nINVARIANT StorageSamplesConform\nCHECK_DEADLOCK FALSE\n`,
-);
-requireRejects(
-  'WorkOnceStorageMutant_DuplicateSlotsConform',
-  duplicateSlotConfig,
-  duplicateSlotModule,
-  'StorageSamplesConform',
+console.log(
+  'TLC storage mutation guard: StorageSamplesConform rejects invalid-kind and duplicate-slot sample mutations in the observed-model run.',
 );

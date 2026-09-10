@@ -398,6 +398,20 @@ mutate(
   /external-effect crash fixture lease must be derived to outlive its IPC liveness ceiling/u,
 );
 mutate(
+  'test/process/policy-process.test.mjs',
+  'const fixtureLeaseMs = childMessageTimeoutMs * 2;',
+  'const fixtureLeaseMs = Math.floor(childMessageTimeoutMs / 2);',
+  'policy fixture lease no longer outlives IPC liveness ceiling',
+  /policy crash fixture lease must be derived to outlive its IPC liveness ceiling/u,
+);
+mutate(
+  'test/process/policy-process.test.mjs',
+  'expiredAt = before.phase.attempt.leaseUntil + 1;',
+  'expiredAt = before.phase.attempt.leaseUntil - 1;',
+  'policy crash reclaim clock stays before durable lease expiry',
+  /policy crash reclaim must derive expiry from the durable lease deadline/u,
+);
+mutate(
   'test/process/local-runner-process.test.mjs',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) + 1;',
   'expiredAt = Math.max(...snapshots.map((snapshot) => snapshot.phase.attempt.leaseUntil)) - 1;',
@@ -556,6 +570,36 @@ mutate(
   '    if (false)',
   'Windows taskkill containment ignores failed termination',
   /Windows assurance containment must reject taskkill failures other than missing processes/u,
+);
+
+mutate(
+  'scripts/formal.mjs',
+  'RuntimeNegativeSampleMutantsRejected ==',
+  'RuntimeNegativeSampleMutantsRejectedBROKEN ==',
+  'runtime bad-sample batch loses its registered discriminating invariant',
+  /runtime bad-sample mutations must remain in the observed-model TLC traversal/u,
+);
+
+mutate(
+  'scripts/check-build-input-binding-mutation.mjs',
+  "  requireSuccessfulProcess(bindingCheck(), 'baseline build-input binding');\n",
+  '',
+  'build-input mutation checker loses its green baseline',
+  /build-input mutation guard must establish a green baseline/u,
+);
+mutate(
+  'test/tlc-workspace.test.mjs',
+  '      timeout: 15_000,\n',
+  '',
+  'TLC workspace test child loses its timeout bound',
+  /test\/tlc-workspace\.test\.mjs has an unbounded spawnSync/u,
+);
+mutate(
+  'scripts/lifecycle-refinement.mjs',
+  "    kind: 'claimOrderEquivalence',\n    adapters: lifecycleAdapters.join(','),",
+  "    kind: 'claimOrderEquivalence',\n    adapters: 'memory,sqlite,cas',",
+  'lifecycle adapter evidence label becomes independent of iterated domain',
+  /lifecycle adapter evidence label must derive from the adapter loop/u,
 );
 
 console.log(

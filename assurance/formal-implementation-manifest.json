@@ -11055,7 +11055,7 @@
         "SuccessReceiptCurrent",
         "UnknownAckIsDurable"
       ],
-      "modelDigest": "a1168b92a69750633f4863db10da872cf0aec463d23877bcf7f36c8e3e61c158",
+      "modelDigest": "7a3149aae11ab7c66f70da8aeb834340dd6e29d57f3ee36044903cef0e1ee53e",
       "modelFiles": [
         "formal/WorkOnceExternal.tla",
         "formal/WorkOnceExternal.cfg"
@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "cf6e8e0ad02f2e8954a460b8d2bfcbf37aafc9924173d601cb988cfdb9f63d8f",
+    "assuranceInfrastructureDigest": "001274c47a4ab847119b4d9c70ea0cf5cca04d9f1d09a6a6bd14613bd2590b07",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11472,6 +11472,7 @@
       "scripts/read-boundary-refinement.mjs",
       "scripts/read-history-refinement.mjs",
       "scripts/refinement-sample-schema.mjs",
+      "scripts/refinement-sqlite-fixture.mjs",
       "scripts/run-assurance.mjs",
       "scripts/runtime-boundary-refinement.mjs",
       "scripts/storage-formal.mjs",
@@ -11507,7 +11508,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "4e71584ab3c58842b7e7c3e87cb38a99ff1a4a95fcde1746d097d48df698b0a1",
+    "modelDigest": "1465fd5dcdc8928af6cca237148461b6db0ba7cc7ff1d1b22e2c473c38e86409",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const scriptsRoot = path.join(root, 'scripts');
+const testRoot = path.join(root, 'test');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 function boundedSection(source, startAnchor, endAnchor, label) {
   const start = source.indexOf(startAnchor);
@@ -153,11 +154,26 @@ export function assertAssuranceVerdictIntegrity() {
       );
   }
 
+  for (const relative of fs
+    .readdirSync(testRoot, { recursive: true })
+    .filter((name) => name.endsWith('.mjs'))
+    .sort()) {
+    const source = read(`test/${relative}`);
+    if (!/\bspawnSync\(/u.test(source)) continue;
+    assertSpawnSyncTimeouts(`test/${relative}`, source);
+  }
+
   const buildSourceBindingMutation = read('scripts/check-build-source-binding-mutation.mjs');
   assert.match(
     buildSourceBindingMutation,
     /requireSuccessfulProcess\(bindingCheck\(\), 'baseline build\/source binding'\)/u,
     'build/source mutation guard must verify a green bound baseline before creating mutants',
+  );
+  const buildInputBindingMutation = read('scripts/check-build-input-binding-mutation.mjs');
+  assert.match(
+    buildInputBindingMutation,
+    /requireSuccessfulProcess\(bindingCheck\(\), 'baseline build-input binding'\)/u,
+    'build-input mutation guard must establish a green baseline before mutating tracked build inputs',
   );
 
   for (const name of fs
@@ -309,7 +325,64 @@ export function assertAssuranceVerdictIntegrity() {
     /INVARIANT MutationBranchesEnabled/u,
     'formal mutation witness configs must check per-branch enabledness',
   );
+  for (const [name, sourceNeedle] of [
+    [
+      'runtime',
+      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform',
+    ],
+    [
+      'read-history',
+      'ReadHistoryNegativeSampleMutantRejected == ~InvalidSampleCheck!ReadHistorySamplesConform',
+    ],
+    [
+      'local-runner',
+      'LocalRunnerNegativeSampleMutantRejected == ~InvalidSampleCheck!LocalRunnerSamplesConform',
+    ],
+    ['policy', 'PolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform'],
+    ['outbox', 'OutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)'],
+    [
+      'external',
+      'ExternalNegativeSampleMutantRejected == ~InvalidSampleCheck!ExternalSamplesConform',
+    ],
+  ])
+    assert.ok(
+      formalSource.includes(sourceNeedle),
+      `${name} bad-sample mutations must remain in the observed-model TLC traversal`,
+    );
+  assert.match(
+    formalSource,
+    /runReachableMutationWitnessBatch\(\{[\s\S]{0,180}?WorkOnceOutboxReachableMutationBatch/u,
+    'outbox reachable semantic mutants must share one base-state traversal',
+  );
+  assert.doesNotMatch(
+    formalSource,
+    /WorkOnce(?:RuntimeSamplesMutant|RuntimeRunnerFailureMutant|RuntimeReadFenceMutant|ReadHistorySamplesMutant|LocalRunnerSamplesMutant|PolicySamplesMutant|OutboxSamplesMutant|ExternalSamplesMutant)\.tla/u,
+    'formal bad-sample witnesses regressed to one JVM per sample mutation',
+  );
+  const lifecycleFormalSource = read('scripts/lifecycle-formal.mjs');
+  assert.ok(
+    lifecycleFormalSource.includes(
+      'LifecycleNegativeSampleMutantsRejected == /\\\\ ~LifecycleSamplesConform(BadSamples) /\\\\ ~LifecycleSamplesConform(BadFieldSamples)',
+    ),
+    'lifecycle bad-sample witnesses must share the observed-model TLC traversal',
+  );
+  assert.doesNotMatch(
+    lifecycleFormalSource,
+    /WorkOnceLifecycleSamples(?:FalseField)?Mutant\.tla/u,
+    'lifecycle bad-sample witnesses regressed to one JVM per mutation',
+  );
   const storageFormalSource = read('scripts/storage-formal.mjs');
+  assert.ok(
+    storageFormalSource.includes(
+      'StorageNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!StorageSamplesConform /\\\\ ~DuplicateSlotCheck!StorageSamplesConform',
+    ),
+    'storage bad-sample witnesses must share the observed-model TLC traversal',
+  );
+  assert.doesNotMatch(
+    storageFormalSource,
+    /WorkOnceStorageMutant_(?:StorageSamplesConform|DuplicateSlotsConform)\.tla/u,
+    'storage bad-sample witnesses regressed to one JVM per mutation',
+  );
   assert.match(
     storageFormalSource,
     /maxConflictsMatch[\s\S]{0,220}?formal\/WorkOnceStorage\.cfg/u,
@@ -320,6 +393,44 @@ export function assertAssuranceVerdictIntegrity() {
     /CONSTANT MaxConflicts = 3/u,
     'storage mutation configs must not hard-code a different MaxConflicts bound',
   );
+  const lifecycleRefinementSource = read('scripts/lifecycle-refinement.mjs');
+  assert.match(
+    lifecycleRefinementSource,
+    /const lifecycleAdapters = \['memory', 'sqlite', 'cas'\];/u,
+    'lifecycle adapter equivalence must have one authoritative adapter-domain array',
+  );
+  assert.doesNotMatch(
+    lifecycleRefinementSource,
+    /adapters:\s*'memory,sqlite,cas'/u,
+    'lifecycle adapter evidence label must derive from the adapter loop rather than a duplicate literal',
+  );
+  assert.ok(
+    (lifecycleRefinementSource.match(/adapters:\s*lifecycleAdapters\.join\(','\)/gu) ?? [])
+      .length >= 2,
+    'both lifecycle adapter-equivalence samples must derive their evidence label from the iterated adapter array',
+  );
+  const refinementSqliteFixture = read('scripts/refinement-sqlite-fixture.mjs');
+  assert.match(
+    refinementSqliteFixture,
+    /catch \(error\) \{[\s\S]{0,180}?rmSync\(directory,[\s\S]{0,100}?throw error/u,
+    'shared SQLite refinement fixture must remove its directory when store construction fails',
+  );
+  assert.match(
+    refinementSqliteFixture,
+    /try \{[\s\S]{0,100}?store\.close\(\);[\s\S]{0,100}?finally \{[\s\S]{0,100}?rmSync\(directory/u,
+    'shared SQLite refinement fixture must remove its directory even when store close fails',
+  );
+  for (const provenanceSource of [
+    read('scripts/check-formal-implementation-conformance.mjs'),
+    read('scripts/check-bounded-trace-domain.mjs'),
+    read('scripts/check-lifecycle-proof-binding.mjs'),
+  ])
+    assert.match(
+      provenanceSource,
+      /'scripts\/refinement-sqlite-fixture\.mjs'/u,
+      'shared SQLite refinement fixture must be content-bound by assurance provenance',
+    );
+
   const policyRefinementSource = read('scripts/policy-refinement.mjs');
   assert.match(
     policyRefinementSource,
@@ -1036,6 +1147,44 @@ export function assertAssuranceVerdictIntegrity() {
     externalEffectProcess,
     /(?:await )?sleep\(/u,
     'external-effect crash fixture must not use scheduler sleeps to prove lease expiry',
+  );
+
+  const policyProcess = read('test/process/policy-process.test.mjs');
+  assert.match(
+    policyProcess,
+    /const childMessageTimeoutMs = 15_000;[\s\S]{0,80}?const fixtureLeaseMs = childMessageTimeoutMs \* 2;/u,
+    'policy crash fixture lease must be derived to outlive its IPC liveness ceiling',
+  );
+  assert.match(
+    policyProcess,
+    /\[path, mode, outcomeKind, String\(fixtureLeaseMs\), String\(fixtureMaxElapsedMs\)\]/u,
+    'policy crash child must receive the same derived lease and elapsed budget',
+  );
+  assert.match(
+    policyProcess,
+    /expiredAt = before\.phase\.attempt\.leaseUntil \+ 1/u,
+    'policy crash reclaim must derive expiry from the durable lease deadline',
+  );
+  assert.match(
+    policyProcess,
+    /reopen\(path, expiredAt\)/u,
+    'policy crash fixture must reclaim using a logical clock beyond durable lease expiry',
+  );
+  assert.doesNotMatch(
+    policyProcess,
+    /(?:await )?sleep\(/u,
+    'policy crash fixture must not use scheduler sleeps to prove lease expiry',
+  );
+  const policyChild = read('test/process/policy-child.mjs');
+  assert.match(
+    policyChild,
+    /const \[path, mode, outcomeKind, leaseMsArg, maxElapsedMsArg\] = process\.argv\.slice\(2\)/u,
+    'policy crash child must use parent-provided timing bounds',
+  );
+  assert.doesNotMatch(
+    policyChild,
+    /leaseMs:\s*250|const limits = \{ leaseMs:\s*250/u,
+    'policy crash child must not restore a scheduler-sensitive fixed lease',
   );
 
   const assuranceRunner = read('scripts/run-assurance.mjs');

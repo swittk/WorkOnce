@@ -63,3 +63,16 @@ test('local runner refinement rejects standalone kind substitution without a cou
     /local runner refinement kind coverage drifted/u,
   );
 });
+
+test('local runner refinement rejects an unclassified observation field', async () => {
+  const samples = await samplesOnce;
+  const targetIndex = samples.findIndex((sample) => sample.kind === 'wakePoll');
+  assert.notEqual(targetIndex, -1);
+  const mutant = samples.map((sample, index) =>
+    index === targetIndex ? { ...sample, unclassifiedObservation: true } : sample,
+  );
+  assert.throws(
+    () => assertLocalRunnerRefinementSamples(mutant),
+    /wakePoll evidence fields drifted/u,
+  );
+});

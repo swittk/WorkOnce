@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce, exponentialBackoff } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { createSqliteStore } from '../dist/sqlite.js';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -45,18 +42,16 @@ function adapterFixture(kind) {
     };
   }
   if (kind === 'sqlite') {
-    const directory = mkdtempSync(join(tmpdir(), 'workonce-policy-proof-'));
-    const store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => now });
+    const sqlite = createRefinementSqliteFixture('workonce-policy-proof-', 'workonce.sqlite', {
+      now: () => now,
+    });
     return {
       kind,
-      store,
+      store: sqlite.store,
       setNow(value) {
         now = value;
       },
-      close() {
-        store.close();
-        rmSync(directory, { recursive: true, force: true });
-      },
+      close: sqlite.close,
     };
   }
   if (kind === 'cas') {
@@ -699,6 +694,41 @@ async function timingBoundarySample() {
       both.result.error.message === 'Use at or afterMs, not both',
     invalidTimingNoWrite: both.noWrite,
   };
+}
+
+/** Run only the real public-runtime sample needed to kill one policy implementation mutant. */
+export async function assertPolicyMutationWitness(witness) {
+  if (witness === 'zeroOverflow') {
+    const sample = backoffSamples().find((item) => item.category === 'zeroOverflow');
+    assert.ok(sample, 'zero-overflow policy witness is missing');
+    assert.equal(
+      sample.matchesExpected,
+      true,
+      `backoffFinite.matchesExpected: ${JSON.stringify(sample)}`,
+    );
+    assert.equal(sample.safeInteger, true, `backoffFinite.safeInteger: ${JSON.stringify(sample)}`);
+    return;
+  }
+  if (witness === 'stopPrecedence') {
+    const sample = await retryBoundarySample(true, false, true, true);
+    assert.equal(sample.stop, sample.expected, JSON.stringify(sample));
+    assert.equal(sample.reasonPreserved, true, JSON.stringify(sample));
+    assert.equal(sample.counterExact, true, JSON.stringify(sample));
+    return;
+  }
+  if (witness === 'wakeRevision') {
+    const sample = await wakeCompetitionSample('memory');
+    for (const field of [
+      'exactlyOneWake',
+      'exactLoser',
+      'immediateEligibility',
+      'claimable',
+      'terminalCauseExact',
+    ])
+      assert.equal(sample[field], true, `wakeCompetition.${field}: ${JSON.stringify(sample)}`);
+    return;
+  }
+  throw new Error(`Unknown policy mutation witness ${String(witness)}`);
 }
 
 export async function runPolicyRefinementSamples() {

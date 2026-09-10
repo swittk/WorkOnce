@@ -271,49 +271,19 @@ const observedModule = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.tla');
 const observedConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.cfg');
 writeFileSync(
   observedModule,
-  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\n====\n`,
+  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nBadSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadFieldSamples == ObservedSamples \\cup {[kind |-> \"leaseFenceCause\", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\nLifecycleNegativeSampleMutantsRejected == /\\ ~LifecycleSamplesConform(BadSamples) /\\ ~LifecycleSamplesConform(BadFieldSamples)\n====\n`,
 );
 writeFileSync(
   observedConfig,
-  'SPECIFICATION Spec\nINVARIANT LifecycleSamplesObserved\nCHECK_DEADLOCK FALSE\n',
+  'SPECIFICATION Spec\nINVARIANT LifecycleSamplesObserved\nINVARIANT LifecycleNegativeSampleMutantsRejected\nCHECK_DEADLOCK FALSE\n',
 );
 console.log(
   `TLC lifecycle boundary receives ${samples.length} fresh compiled implementation observations.`,
 );
 runModel('WorkOnceLifecycleObserved', observedConfig, observedModule, 256);
 
-const badModule = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesMutant.tla');
-const badConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesMutant.cfg');
-writeFileSync(
-  badModule,
-  `---- MODULE WorkOnceLifecycleSamplesMutant ----\nEXTENDS WorkOnceLifecycleObserved\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nBadLifecycleSamplesObserved == LifecycleSamplesConform(BadSamples)\n====\n`,
-);
-writeFileSync(
-  badConfig,
-  'SPECIFICATION Spec\nINVARIANT BadLifecycleSamplesObserved\nCHECK_DEADLOCK FALSE\n',
-);
-requireInvariantRejects(
-  'WorkOnceLifecycleSamplesMutant',
-  badConfig,
-  badModule,
-  'BadLifecycleSamplesObserved',
-);
-
-const badFieldModule = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesFalseFieldMutant.tla');
-const badFieldConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleSamplesFalseFieldMutant.cfg');
-writeFileSync(
-  badFieldModule,
-  `---- MODULE WorkOnceLifecycleSamplesFalseFieldMutant ----\nEXTENDS WorkOnceLifecycleObserved\nBadFieldSamples == ObservedSamples \\cup {[kind |-> "leaseFenceCause", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\nBadFieldLifecycleSamplesObserved == LifecycleSamplesConform(BadFieldSamples)\n====\n`,
-);
-writeFileSync(
-  badFieldConfig,
-  'SPECIFICATION Spec\nINVARIANT BadFieldLifecycleSamplesObserved\nCHECK_DEADLOCK FALSE\n',
-);
-requireInvariantRejects(
-  'WorkOnceLifecycleSamplesFalseFieldMutant',
-  badFieldConfig,
-  badFieldModule,
-  'BadFieldLifecycleSamplesObserved',
+console.log(
+  'Lifecycle sample mutation guards reject invalid-kind and false-field witnesses in the observed-model TLC run.',
 );
 
 console.log('Lifecycle temporal, claim-scan, observation and mutation gates passed.');

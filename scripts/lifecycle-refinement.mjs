@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { changed, claimRecord, retryRecord } from '../dist/kernel.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { createSqliteStore } from '../dist/sqlite.js';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -48,18 +45,16 @@ function adapterFixture(kind) {
     };
   }
   if (kind === 'sqlite') {
-    const directory = mkdtempSync(join(tmpdir(), 'workonce-lifecycle-proof-'));
-    const store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => now });
+    const sqlite = createRefinementSqliteFixture('workonce-lifecycle-proof-', 'workonce.sqlite', {
+      now: () => now,
+    });
     return {
       kind,
-      store,
+      store: sqlite.store,
       setNow(value) {
         now = value;
       },
-      close() {
-        store.close();
-        rmSync(directory, { recursive: true, force: true });
-      },
+      close: sqlite.close,
     };
   }
   if (kind === 'cas') {
@@ -346,6 +341,8 @@ async function resetCheckRaceSample(resetKind) {
   }
 }
 
+const lifecycleAdapters = ['memory', 'sqlite', 'cas'];
+
 async function claimOrderProjection(adapter) {
   const fixture = adapterFixture(adapter);
   try {
@@ -370,11 +367,10 @@ async function claimOrderProjection(adapter) {
 
 async function claimOrderEquivalenceSample() {
   const values = [];
-  for (const adapter of ['memory', 'sqlite', 'cas'])
-    values.push(await claimOrderProjection(adapter));
+  for (const adapter of lifecycleAdapters) values.push(await claimOrderProjection(adapter));
   return {
     kind: 'claimOrderEquivalence',
-    adapters: 'memory,sqlite,cas',
+    adapters: lifecycleAdapters.join(','),
     exactOrder: values[0].join(',') === '99:a,99:b,100:m,100:y,100:z',
     adaptersEquivalent: values.every(
       (value) => JSON.stringify(value) === JSON.stringify(values[0]),
@@ -575,11 +571,10 @@ async function adapterLifecycleProjection(adapter) {
 
 async function adapterLifecycleEquivalenceSample() {
   const values = [];
-  for (const adapter of ['memory', 'sqlite', 'cas'])
-    values.push(await adapterLifecycleProjection(adapter));
+  for (const adapter of lifecycleAdapters) values.push(await adapterLifecycleProjection(adapter));
   return {
     kind: 'adapterLifecycleEquivalence',
-    adapters: 'memory,sqlite,cas',
+    adapters: lifecycleAdapters.join(','),
     equivalent: values.every((value) => JSON.stringify(value) === JSON.stringify(values[0])),
   };
 }

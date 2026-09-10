@@ -75,7 +75,7 @@ mutate(
   '  if (!insideBase(workspace))',
   '  if (false)',
   'inherited TLC workspace containment removal',
-  /containment-checked|private descendant/u,
+  /inherited TLC workspace cleanup is not containment-checked/u,
 );
 
 console.log('TLC workspace isolation mutation guard rejects shared generated-module namespaces.');

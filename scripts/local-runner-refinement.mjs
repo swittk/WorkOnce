@@ -938,72 +938,37 @@ export function assertLocalRunnerRefinementSamples(samples) {
       ['cas', 'memory', 'sqlite'],
       `${kind} adapter coverage drifted`,
     );
+  const booleanFields = {
+    stopReclaim: ['exactCause', 'leftRunning', 'reclaimAdvanced'],
+    undefinedHeartbeat: ['interrupted', 'exactUndefined'],
+    settleCause: ['exactCause', 'stillRunning'],
+    competingRunners: ['bothOwners', 'exactlyOnce'],
+    firstFatal: ['bothActive', 'exactFirst'],
+    dynamicArrival: ['allTen', 'boundedCapacity', 'refilledAroundSlow'],
+    handledRecovery: ['exactErrors', 'eventuallyRanOnce'],
+    completionOrder: ['sameProjection', 'sameFuture'],
+    handledAbortHistory: ['sameDurable', 'sameFuture'],
+    backoffHistory: ['handledOnce', 'sameDurable', 'sameFuture'],
+    lateClaimStop: ['oneHandler', 'lateLeaseNotExecuted'],
+    timerBoundary: [
+      'exactLeaseRejects',
+      'oneBelowAccepts',
+      'hugeFiniteAccepted',
+      'expiryCauseExact',
+      'hugeIdleInterruptible',
+    ],
+    wakePoll: ['exactCause', 'promptlyWoken'],
+  };
+  const metadataFields = {
+    stopReclaim: ['adapter', 'mode'],
+    undefinedHeartbeat: ['adapter'],
+    settleCause: ['adapter'],
+    competingRunners: ['adapter'],
+  };
   for (const sample of samples) {
-    const name = JSON.stringify(sample);
-    switch (sample.kind) {
-      case 'stopReclaim':
-        assert.equal(sample.exactCause, true, name);
-        assert.equal(sample.leftRunning, true, name);
-        assert.equal(sample.reclaimAdvanced, true, name);
-        break;
-      case 'undefinedHeartbeat':
-        assert.equal(sample.interrupted, true, name);
-        assert.equal(sample.exactUndefined, true, name);
-        break;
-      case 'settleCause':
-        assert.equal(sample.exactCause, true, name);
-        assert.equal(sample.stillRunning, true, name);
-        break;
-      case 'competingRunners':
-        assert.equal(sample.bothOwners, true, name);
-        assert.equal(sample.exactlyOnce, true, name);
-        break;
-      case 'firstFatal':
-        assert.equal(sample.bothActive, true, name);
-        assert.equal(sample.exactFirst, true, name);
-        break;
-      case 'dynamicArrival':
-        assert.equal(sample.allTen, true, name);
-        assert.equal(sample.boundedCapacity, true, name);
-        assert.equal(sample.refilledAroundSlow, true, name);
-        break;
-      case 'handledRecovery':
-        assert.equal(sample.exactErrors, true, name);
-        assert.equal(sample.eventuallyRanOnce, true, name);
-        break;
-      case 'completionOrder':
-        assert.equal(sample.sameProjection, true, name);
-        assert.equal(sample.sameFuture, true, name);
-        break;
-      case 'handledAbortHistory':
-        assert.equal(sample.sameDurable, true, name);
-        assert.equal(sample.sameFuture, true, name);
-        break;
-      case 'backoffHistory':
-        assert.equal(sample.handledOnce, true, name);
-        assert.equal(sample.sameDurable, true, name);
-        assert.equal(sample.sameFuture, true, name);
-        break;
-      case 'lateClaimStop':
-        assert.equal(sample.oneHandler, true, name);
-        assert.equal(sample.lateLeaseNotExecuted, true, name);
-        break;
-      case 'timerBoundary':
-        assertExactBooleanSample(sample, [
-          'exactLeaseRejects',
-          'oneBelowAccepts',
-          'hugeFiniteAccepted',
-          'expiryCauseExact',
-          'hugeIdleInterruptible',
-        ]);
-        break;
-      case 'wakePoll':
-        assert.equal(sample.exactCause, true, name);
-        assert.equal(sample.promptlyWoken, true, name);
-        break;
-      default:
-        assert.fail(`Unmapped local runner sample: ${name}`);
-    }
+    const fields = booleanFields[sample.kind];
+    assert.ok(fields, `Unmapped local runner sample: ${JSON.stringify(sample)}`);
+    assertExactBooleanSample(sample, fields, metadataFields[sample.kind] ?? []);
   }
   return samples.length;
 }

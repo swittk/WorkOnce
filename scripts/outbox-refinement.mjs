@@ -1,10 +1,7 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { createSqliteStore } from '../dist/sqlite.js';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 function within(promise, label, timeoutMs = 3000) {
@@ -285,15 +282,8 @@ async function adapterBudgetSample(adapter, base, cleanup = () => {}) {
 }
 
 function sqliteFixture() {
-  const directory = mkdtempSync(join(tmpdir(), 'workonce-outbox-proof-'));
-  const store = createSqliteStore(join(directory, 'workonce.sqlite'));
-  return {
-    store,
-    cleanup() {
-      store.close();
-      rmSync(directory, { recursive: true, force: true });
-    },
-  };
+  const sqlite = createRefinementSqliteFixture('workonce-outbox-proof-', 'workonce.sqlite');
+  return { store: sqlite.store, cleanup: sqlite.close };
 }
 
 function ambiguousCasFixture() {

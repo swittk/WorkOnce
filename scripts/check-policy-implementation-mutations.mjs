@@ -17,13 +17,21 @@ const originals = new Map([
 function restore() {
   for (const [file, text] of originals) fs.writeFileSync(file, text);
 }
-function runExpectedFailure(label, pattern) {
-  const result = spawnSync(process.execPath, ['--test', 'test/policy-refinement.test.mjs'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
+function runExpectedFailure(label, witness, pattern) {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      `import { assertPolicyMutationWitness } from './scripts/policy-refinement.mjs'; await assertPolicyMutationWitness(${JSON.stringify(witness)});`,
+    ],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+      timeout: 15_000,
+    },
+  );
   requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   console.log(`Policy implementation mutation guard rejects ${label}.`);
 }
@@ -37,6 +45,7 @@ try {
     fs.writeFileSync(retryPath, original.replace(needle, replacement));
     runExpectedFailure(
       'zero-delay overflow mutation',
+      'zeroOverflow',
       /backoffFinite\.matchesExpected:[^\n]*"category":"zeroOverflow"/u,
     );
     restore();
@@ -53,6 +62,7 @@ try {
     fs.writeFileSync(kernelPath, original.replace(needle, replacement));
     runExpectedFailure(
       'retry/defer stop-precedence mutation',
+      'stopPrecedence',
       /"kind":"retryBoundary"[^\n]*"stop":"deadline_exceeded"[^\n]*"expected":"attempt_budget_exhausted"/u,
     );
     restore();
@@ -66,6 +76,7 @@ try {
     fs.writeFileSync(workPath, original.replace(needle, replacement));
     runExpectedFailure(
       'wake revision-fence mutation',
+      'wakeRevision',
       /wakeCompetition\.(?:exactlyOneWake|exactLoser):[^\n]*false/u,
     );
     restore();

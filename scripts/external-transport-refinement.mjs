@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce, runExternal, runExternalAvailable } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { createSqliteStore } from '../dist/sqlite.js';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
 const observe = (promise) =>
   promise.then(
@@ -56,18 +53,16 @@ function adapterFixture(kind, scope, options = {}) {
     };
   }
   if (kind === 'sqlite') {
-    const directory = mkdtempSync(join(tmpdir(), 'workonce-external-proof-'));
-    const store = createSqliteStore(join(directory, 'workonce.sqlite'), { now: () => now });
+    const sqlite = createRefinementSqliteFixture('workonce-external-proof-', 'workonce.sqlite', {
+      now: () => now,
+    });
     return {
       kind,
-      store,
+      store: sqlite.store,
       setNow(value) {
         now = value;
       },
-      close() {
-        store.close();
-        rmSync(directory, { recursive: true, force: true });
-      },
+      close: sqlite.close,
     };
   }
   if (kind === 'cas') {

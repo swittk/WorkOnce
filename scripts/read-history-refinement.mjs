@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
-import { createSqliteStore } from '../dist/sqlite.js';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
+import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
 function deferred() {
   let resolve;
@@ -271,15 +268,7 @@ function baseFixture(adapter) {
   const now = () => clock++;
   if (adapter === 'memory') return { store: createMemoryStore({ now }), close() {} };
   if (adapter === 'sqlite') {
-    const directory = mkdtempSync(join(tmpdir(), 'workonce-read-race-'));
-    const store = createSqliteStore(join(directory, 'queue.sqlite'), { now });
-    return {
-      store,
-      close() {
-        store.close();
-        rmSync(directory, { recursive: true, force: true });
-      },
-    };
+    return createRefinementSqliteFixture('workonce-read-race-', 'queue.sqlite', { now });
   }
   throw new Error(`Unsupported base fixture ${adapter}`);
 }
