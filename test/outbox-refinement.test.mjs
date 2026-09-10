@@ -6,6 +6,7 @@ import {
 } from '../scripts/outbox-refinement.mjs';
 
 const samplesOnce = runOutboxRefinementSamples();
+void samplesOnce.catch(() => {});
 
 test('compiled outbox observations cover cursor rotation, faults, restart and adapters', async () => {
   const samples = await samplesOnce;

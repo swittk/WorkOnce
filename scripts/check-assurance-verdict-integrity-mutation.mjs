@@ -48,6 +48,13 @@ mutate(
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  delayedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); const delayedTrackedWrite = fs.writeFileSync; fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'tracked write before its later alias declaration remains classified',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
   "  const { writeFile: renamedTrackedWrite } = fs.promises; renamedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'renamed destructured promise write hides a tracked source target beside a generated write',
   /mutates tracked source\/config without signal-safe file restoration/u,
@@ -212,6 +219,27 @@ mutate(
   '  void result;',
   'weak lifecycle TLC mutation classification',
   /lifecycle formal runner must preserve fail-closed invariant-violation classification/u,
+);
+mutate(
+  'scripts/lifecycle-formal.mjs',
+  '    .map(([invariant]) => String.raw`    /\\ ENABLED Mutant_${invariant}`)',
+  '    .map(([invariant]) => String.raw`    /\\ TRUE`)',
+  'lifecycle mutation batch loses per-branch enabledness proof',
+  /lifecycle formal mutation batches must prove every generated branch is enabled/u,
+);
+mutate(
+  'scripts/lifecycle-formal.mjs',
+  "const mutationWitnessInvariants = [\n  'INVARIANT MutationWitnesses',\n  'INVARIANT MutationBranchesEnabled',\n];",
+  "const mutationWitnessInvariants = [\n  'INVARIANT MutationWitnesses',\n];",
+  'lifecycle mutation config drops enabledness invariant',
+  /lifecycle formal mutation witness configs must check per-branch enabledness/u,
+);
+mutate(
+  'formal/WorkOnceContract.tla',
+  '       /\\ s.observedWithinDeadline\n',
+  '',
+  'formal outbox runDispatcher sample loses deadline witness',
+  /formal outbox runDispatcher contract must require observedWithinDeadline/u,
 );
 mutate(
   'scripts/check-tlc-outcome-classification.mjs',

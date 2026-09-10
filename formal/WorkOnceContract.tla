@@ -150,6 +150,7 @@ OutboxSampleOK(s) ==
        /\ s.bothIntentsRetained
     [] s.kind = "runDispatcher" ->
        /\ s.exactPoisonObserved
+       /\ s.observedWithinDeadline
        /\ s.neighborDelivered
        /\ s.healthySiblingDelivered
        /\ s.poisonStillRetained

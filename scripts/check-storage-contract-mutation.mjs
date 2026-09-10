@@ -6,9 +6,21 @@ import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-function requireRed(relative, label, mutate, args, pattern) {
+function countAnchor(source, anchor) {
+  if (typeof anchor === 'string') return source.split(anchor).length - 1;
+  const flags = anchor.flags.includes('g') ? anchor.flags : `${anchor.flags}g`;
+  return [...source.matchAll(new RegExp(anchor.source, flags))].length;
+}
+
+function requireRed(relative, label, anchors, mutate, args, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
+  for (const anchor of anchors)
+    assert.equal(
+      countAnchor(original, anchor),
+      1,
+      `${label} mutation anchor is stale or not unique`,
+    );
   const mutant = mutate(original);
   assert.notEqual(mutant, original, `${label} mutation anchor did not match`);
   try {
@@ -27,6 +39,7 @@ function requireRed(relative, label, mutate, args, pattern) {
 requireRed(
   'dist/memory.js',
   'detached getMany rows',
+  ['return row ? copy(row) : undefined;'],
   (text) => text.replace('return row ? copy(row) : undefined;', 'return row ?? undefined;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
   /getMany detached mutation leaked caller write into durable storage/u,
@@ -34,6 +47,7 @@ requireRed(
 requireRed(
   'dist/cas.js',
   'bounded compare-miss retries',
+  ['conflicts < maxConflicts'],
   (text) => text.replace('conflicts < maxConflicts', 'conflicts <= maxConflicts'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
   /bounded contention exhaustion must stop after exactly maxConflicts compare attempts/u,
@@ -41,6 +55,7 @@ requireRed(
 requireRed(
   'dist/cas.js',
   'unknown CAS acknowledgement propagation',
+  [/const applied = await port\.compareExchange\(\{([\s\S]*?)\n\s*\}\);/u],
   (text) =>
     text.replace(
       /const applied = await port\.compareExchange\(\{([\s\S]*?)\n\s*\}\);/u,
@@ -52,6 +67,9 @@ requireRed(
 requireRed(
   'dist/cas.js',
   'CAS deadline expiry classification',
+  [
+    /\s*if \(change\.validUntil !== undefined\) \{[\s\S]*?throw new WorkConflict\('lease_expired'\);\s*\}/u,
+  ],
   (text) =>
     text.replace(
       /\s*if \(change\.validUntil !== undefined\) \{[\s\S]*?throw new WorkConflict\('lease_expired'\);\s*\}/u,
@@ -63,6 +81,7 @@ requireRed(
 requireRed(
   'dist/memory.js',
   'exclusive afterId cursor ordering',
+  ['compareUtf8Text(row.id, query.afterId) > 0'],
   (text) =>
     text.replace(
       'compareUtf8Text(row.id, query.afterId) > 0',
@@ -74,6 +93,7 @@ requireRed(
 requireRed(
   'dist/storage-validation.js',
   'exact +1 revision validation',
+  ['next.revision !== expectedRevision'],
   (text) => text.replace('next.revision !== expectedRevision', 'false'),
   ['--test', 'test/storage-refinement.test.mjs'],
   /exactRevisionError/u,
@@ -81,6 +101,7 @@ requireRed(
 requireRed(
   'dist/sqlite.js',
   'SQLite startup busy recognition',
+  ['return /database is (?:locked|busy)/iu.test(error.message);'],
   (text) =>
     text.replace('return /database is (?:locked|busy)/iu.test(error.message);', 'return false;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],

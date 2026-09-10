@@ -453,14 +453,12 @@ export function assertAssuranceVerdictIntegrity() {
               add(domains, element.name.text, { iterable: node.expression, index });
           });
       }
-      if (ts.isCallExpression(node)) {
-        calls.push(node);
-        for (const targetIndex of mutationTargetIndexes(node))
-          mutations.push({ call: node, targetIndex });
-      }
+      if (ts.isCallExpression(node)) calls.push(node);
       ts.forEachChild(node, discover);
     }
     discover(sourceFile);
+    for (const call of calls)
+      for (const targetIndex of mutationTargetIndexes(call)) mutations.push({ call, targetIndex });
     for (const call of calls) {
       if (!ts.isIdentifier(call.expression)) continue;
       const fn = functions.get(call.expression.text);
@@ -629,6 +627,23 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(lifecycleFormal, /specSwapped = true/u);
   assert.match(lifecycleFormal, /if \(!specSwapped\)[\s\S]{0,160}?SPECIFICATION Spec/u);
+  assert.match(
+    lifecycleFormal,
+    /enabledBranches[\s\S]{0,500}?ENABLED Mutant_/u,
+    'lifecycle formal mutation batches must prove every generated branch is enabled',
+  );
+  assert.match(
+    lifecycleFormal,
+    /INVARIANT MutationBranchesEnabled/u,
+    'lifecycle formal mutation witness configs must check per-branch enabledness',
+  );
+
+  const workOnceContract = read('formal/WorkOnceContract.tla');
+  assert.match(
+    workOnceContract,
+    /s\.kind = "runDispatcher" ->[\s\S]{0,260}?s\.observedWithinDeadline/u,
+    'formal outbox runDispatcher contract must require observedWithinDeadline',
+  );
 
   const storageFormal = read('scripts/storage-formal.mjs');
   assert.match(storageFormal, /classifyTlcOutcome/u);

@@ -11164,7 +11164,7 @@
         "PoisonIntentRetained"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "099bbc73ce0a07f43af801676776acfa2733478db8e897c348e7cadde1fa3acb",
+      "modelDigest": "3ddd6f457bcabc8efcf2fe5a8a8df69c90a5ccf5ca5ab4577a9cd186da00b9ff",
       "modelFiles": [
         "formal/WorkOnceOutbox.tla",
         "formal/WorkOnceOutbox.cfg",
@@ -11268,7 +11268,7 @@
       ],
       "historyObservationProducer": "scripts/read-history-refinement.mjs",
       "historySpec": "formal/WorkOnceReadHistory.tla",
-      "modelDigest": "ee510d82ca6e3448774ffe967843df2bfcb5c2dcb588e4f1d62266689c918d02",
+      "modelDigest": "73cbce25b362424ff6159c67ff9703b6ac6fc749c31b3b212db45402d6dad5a2",
       "modelFiles": [
         "formal/WorkOnceContract.tla",
         "formal/WorkOnceReadHistory.tla",
@@ -11326,7 +11326,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "1057e3070228f3fd2d6542476407e92d5b819974787c89d6d7fe8d79d8644b15",
+      "modelDigest": "c82b4aee0ba8161515ebdf9d8c225c33b472ac462f8d1bd69e975a8541dcd811",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -11380,7 +11380,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "635791764a66de2b0b6005d2bf32c07089bff1ffc60486a1b60419543d6f9425",
+    "assuranceInfrastructureDigest": "dc2068cf545c9f73854cf93088900c15e76d8daf1d987823450272f4ebe398c6",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11505,7 +11505,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "a52034f1dba9745517574e74f0e34a5d72a55dd2303523d4106dfcc7e1e831d0",
+    "modelDigest": "ee4ba2dd418fea8b389307296cc43de09a70e2fed41c0bad88b3a136dcb199c8",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

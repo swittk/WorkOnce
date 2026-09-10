@@ -66,8 +66,8 @@ test('SQLite startup busy timeout propagates a native busy/locked failure withou
   const path = join(dir, 'queue.sqlite');
   let child;
   try {
-    child = await lock(path, 500);
-    child.send({ startHold: true });
+    child = await lock(path, 0);
+    const startedAt = Date.now();
     let failure;
     try {
       createSqliteStore(path, { busyTimeoutMs: 20 });
@@ -77,6 +77,10 @@ test('SQLite startup busy timeout propagates a native busy/locked failure withou
     assert.ok(failure instanceof Error);
     assert.match(failure.message, /database is (?:locked|busy)/iu);
     assert.equal(typeof failure.code, 'string');
+    child.send({ startHold: true });
+    const unlocking = await nextChildMessage(child, 5000);
+    assert.equal(unlocking.unlocking, true);
+    assert.ok(unlocking.unlockingAt >= startedAt, 'child lock released before timeout probe began');
     await waitForExit(child);
     const store = createSqliteStore(path, { busyTimeoutMs: 1000 });
     try {

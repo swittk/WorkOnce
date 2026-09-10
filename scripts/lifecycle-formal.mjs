@@ -91,6 +91,11 @@ function configuredInvariants(configText) {
   return result;
 }
 
+const mutationWitnessInvariants = [
+  'INVARIANT MutationWitnesses',
+  'INVARIANT MutationBranchesEnabled',
+];
+
 function mutationWitnessConfig(configText) {
   const output = [];
   let skipping = false;
@@ -111,12 +116,12 @@ function mutationWitnessConfig(configText) {
       continue;
     }
     if (line.trim() === 'CHECK_DEADLOCK FALSE' && !inserted) {
-      output.push('INVARIANT MutationWitnesses');
+      output.push(...mutationWitnessInvariants);
       inserted = true;
     }
     output.push(line);
   }
-  if (!inserted) output.push('INVARIANT MutationWitnesses');
+  if (!inserted) output.push(...mutationWitnessInvariants);
   if (!specSwapped)
     throw new Error('Mutation witness config found no "SPECIFICATION Spec" line to rebind');
   return `${output.join('\n').trimEnd()}\n`;
@@ -129,14 +134,24 @@ function runMutationWitnessBatch({ model, baseModule, configPath, mutants }) {
     throw new Error(
       `Lifecycle mutation coverage drifted for ${configPath}: configured=${configured.join(',')} guarded=${guarded.join(',')}`,
     );
-  const branches = Object.entries(mutants)
+  const mutationEntries = Object.entries(mutants);
+  const branchDefinitions = mutationEntries
     .map(([invariant, body]) => {
       const indented = body
         .split('\n')
-        .map((line) => `   ${line}`)
+        .map((line) => `  ${line}`)
         .join('\n');
-      return `  \\/ /\\ mutantId = "none"\n${indented}\n     /\\ mutantId' = ${JSON.stringify(invariant)}`;
+      return String.raw`Mutant_${invariant} ==
+  /\ mutantId = "none"
+${indented}
+  /\ mutantId' = ${JSON.stringify(invariant)}`;
     })
+    .join('\n\n');
+  const branches = mutationEntries
+    .map(([invariant]) => String.raw`  \/ Mutant_${invariant}`)
+    .join('\n');
+  const enabledBranches = mutationEntries
+    .map(([invariant]) => String.raw`    /\ ENABLED Mutant_${invariant}`)
     .join('\n');
   const witnesses = Object.keys(mutants)
     .map((invariant) => `  \\/ /\\ mutantId = ${JSON.stringify(invariant)} /\\ ~${invariant}`)
@@ -145,7 +160,7 @@ function runMutationWitnessBatch({ model, baseModule, configPath, mutants }) {
   const mutantConfig = resolve(tlcWorkspace, `${model}.cfg`);
   writeFileSync(
     modulePath,
-    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
+    `---- MODULE ${model} ----\nEXTENDS ${baseModule}\nVARIABLE mutantId\nbatchVars == <<vars, mutantId>>\nBatchInit == /\\ Init /\\ mutantId = "none"\n${branchDefinitions}\nUnsafe ==\n${branches}\nBatchNext == Unsafe\nMutationWitnesses ==\n  \\/ mutantId = "none"\n${witnesses}\nMutationBranchesEnabled ==\n  \\/ mutantId # "none"\n  \\/ /\\ mutantId = "none"\n${enabledBranches}\nBatchSpec == BatchInit /\\ [][BatchNext]_batchVars\n====\n`,
   );
   writeFileSync(mutantConfig, mutationWitnessConfig(readFileSync(configPath, 'utf8')));
   runModel(model, mutantConfig, modulePath, 256);
