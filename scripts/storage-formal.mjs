@@ -67,13 +67,14 @@ function tlc(model, config, modulePath, capture = false) {
     },
   );
   if (!capture) {
-    process.stdout.write(result.stdout ?? '');
-    process.stderr.write(result.stderr ?? '');
     const outcome = classifyTlcOutcome(result);
-    if (outcome.kind !== 'success')
+    if (outcome.kind !== 'success') {
+      process.stdout.write(result.stdout ?? '');
+      process.stderr.write(result.stderr ?? '');
       throw new Error(
         `TLC storage model ${model} failed: ${outcome.reason ?? outcome.kind}\n${outcome.output.slice(-2500)}`,
       );
+    }
   }
   return result;
 }
@@ -191,12 +192,13 @@ writeFileSync(
 );
 const batchResult = tlc('WorkOnceStorageInvariantMutationBatch', batchConfig, batchModule, true);
 const batchOutcome = classifyTlcOutcome(batchResult);
-if (batchOutcome.kind !== 'success')
+if (batchOutcome.kind !== 'success') {
+  process.stdout.write(batchResult.stdout ?? '');
+  process.stderr.write(batchResult.stderr ?? '');
   throw new Error(
     `Storage invariant mutation witness batch failed; this is not a mutation kill: ${batchOutcome.reason ?? batchOutcome.kind}\n${batchOutcome.output.slice(-2500)}`,
   );
-process.stdout.write(batchResult.stdout ?? '');
-process.stderr.write(batchResult.stderr ?? '');
+}
 console.log(
   `TLC storage mutation witness batch proves ${mutationEntries.length} configured state invariants are non-vacuous in sequence.`,
 );

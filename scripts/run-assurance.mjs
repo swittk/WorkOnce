@@ -20,6 +20,7 @@ const tlcWorkers = String(
     : Math.max(2, Math.min(8, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
 );
 process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
+process.env.NODE_NO_WARNINGS = '1';
 function run(label, command, args) {
   const started = performance.now();
   const result = spawnSync(command, args, {

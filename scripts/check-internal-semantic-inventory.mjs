@@ -8,83 +8,90 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
-const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
 const allowedFamilies = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
 
-if (inventory.schemaVersion !== 1 || !Array.isArray(inventory.entries))
-  throw new Error('Internal semantic inventory has an unsupported schema.');
-if (
-  !inventory.unclassifiedCallSurface ||
-  !Number.isSafeInteger(inventory.unclassifiedCallSurface.count) ||
-  typeof inventory.unclassifiedCallSurface.digest !== 'string'
-)
-  throw new Error('Internal semantic inventory lacks its fail-closed unclassified-call surface.');
+export function assertInternalSemanticInventory() {
+  const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+  if (inventory.schemaVersion !== 1 || !Array.isArray(inventory.entries))
+    throw new Error('Internal semantic inventory has an unsupported schema.');
+  if (
+    !inventory.unclassifiedCallSurface ||
+    !Number.isSafeInteger(inventory.unclassifiedCallSurface.count) ||
+    typeof inventory.unclassifiedCallSurface.digest !== 'string'
+  )
+    throw new Error('Internal semantic inventory lacks its fail-closed unclassified-call surface.');
 
-const reviewed = new Map();
-for (const entry of inventory.entries) {
-  if (!entry || typeof entry.id !== 'string' || reviewed.has(entry.id))
-    throw new Error(`Internal semantic inventory has a duplicate/invalid id: ${entry?.id}`);
-  if (entry.classification !== 'APPLICABLE')
-    throw new Error(`Internal semantic inventory entry ${entry.id} is not explicitly classified.`);
-  if (!Number.isSafeInteger(entry.ordinal) || entry.ordinal < 1)
-    throw new Error(`Internal semantic inventory entry ${entry.id} lacks a semantic ordinal.`);
-  if (!Array.isArray(entry.families) || entry.families.length === 0)
-    throw new Error(`Internal semantic inventory entry ${entry.id} has no proof family.`);
-  for (const family of entry.families) {
-    if (!allowedFamilies.has(family))
+  const reviewed = new Map();
+  for (const entry of inventory.entries) {
+    if (!entry || typeof entry.id !== 'string' || reviewed.has(entry.id))
+      throw new Error(`Internal semantic inventory has a duplicate/invalid id: ${entry?.id}`);
+    if (entry.classification !== 'APPLICABLE')
       throw new Error(
-        `Internal semantic inventory entry ${entry.id} has invalid family ${family}.`,
+        `Internal semantic inventory entry ${entry.id} is not explicitly classified.`,
       );
+    if (!Number.isSafeInteger(entry.ordinal) || entry.ordinal < 1)
+      throw new Error(`Internal semantic inventory entry ${entry.id} lacks a semantic ordinal.`);
+    if (!Array.isArray(entry.families) || entry.families.length === 0)
+      throw new Error(`Internal semantic inventory entry ${entry.id} has no proof family.`);
+    for (const family of entry.families) {
+      if (!allowedFamilies.has(family))
+        throw new Error(
+          `Internal semantic inventory entry ${entry.id} has invalid family ${family}.`,
+        );
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.trim().length < 20)
+      throw new Error(`Internal semantic inventory entry ${entry.id} lacks a concrete reason.`);
+    reviewed.set(entry.id, entry);
   }
-  if (typeof entry.reason !== 'string' || entry.reason.trim().length < 20)
-    throw new Error(`Internal semantic inventory entry ${entry.id} lacks a concrete reason.`);
-  reviewed.set(entry.id, entry);
-}
 
-const topology = discoverInternalSemanticTopology();
-const observed = topology.entries;
-const observedIds = new Set(observed.map((entry) => entry.id));
-const additions = observed.filter((entry) => !reviewed.has(entry.id));
-const removals = inventory.entries.filter((entry) => !observedIds.has(entry.id));
-const mismatches = [];
-for (const entry of observed) {
-  const expected = reviewed.get(entry.id);
-  if (!expected) continue;
-  for (const field of ['path', 'context', 'kind', 'ordinal', 'excerpt', 'textDigest']) {
-    if (expected[field] !== entry[field]) mismatches.push(`${entry.id}:${field}`);
+  const topology = discoverInternalSemanticTopology();
+  const observed = topology.entries;
+  const observedIds = new Set(observed.map((entry) => entry.id));
+  const additions = observed.filter((entry) => !reviewed.has(entry.id));
+  const removals = inventory.entries.filter((entry) => !observedIds.has(entry.id));
+  const mismatches = [];
+  for (const entry of observed) {
+    const expected = reviewed.get(entry.id);
+    if (!expected) continue;
+    for (const field of ['path', 'context', 'kind', 'ordinal', 'excerpt', 'textDigest']) {
+      if (expected[field] !== entry[field]) mismatches.push(`${entry.id}:${field}`);
+    }
   }
-}
 
-if (additions.length || removals.length || mismatches.length) {
-  const describe = (entry) => `${entry.id} (${entry.path} ${entry.context} ${entry.kind})`;
-  throw new Error(
-    [
-      'Internal semantic inventory drifted; classify new/changed library-owned temporal topology before assurance can pass.',
-      additions.length ? `added=${additions.map(describe).join('; ')}` : '',
-      removals.length ? `removed=${removals.map(describe).join('; ')}` : '',
-      mismatches.length ? `changed=${mismatches.join('; ')}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n'),
+  if (additions.length || removals.length || mismatches.length) {
+    const describe = (entry) => `${entry.id} (${entry.path} ${entry.context} ${entry.kind})`;
+    throw new Error(
+      [
+        'Internal semantic inventory drifted; classify new/changed library-owned temporal topology before assurance can pass.',
+        additions.length ? `added=${additions.map(describe).join('; ')}` : '',
+        removals.length ? `removed=${removals.map(describe).join('; ')}` : '',
+        mismatches.length ? `changed=${mismatches.join('; ')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+  }
+
+  const unclassifiedCallSurface = {
+    count: topology.unclassifiedCalls.length,
+    digest: unclassifiedCallSurfaceDigest(topology.unclassifiedCalls),
+  };
+  if (
+    inventory.unclassifiedCallSurface.count !== unclassifiedCallSurface.count ||
+    inventory.unclassifiedCallSurface.digest !== unclassifiedCallSurface.digest
+  )
+    throw new Error(
+      `Internal semantic unclassified call surface drifted; review every new/changed call before refreshing the inventory. expected=${JSON.stringify(inventory.unclassifiedCallSurface)} observed=${JSON.stringify(unclassifiedCallSurface)}`,
+    );
+
+  const familyCounts = {};
+  for (const entry of inventory.entries) {
+    for (const family of entry.families) familyCounts[family] = (familyCounts[family] ?? 0) + 1;
+  }
+  console.log(
+    `Internal semantic topology: ${observed.length} constructs explicitly classified; families=${JSON.stringify(familyCounts)}.`,
   );
 }
 
-const unclassifiedCallSurface = {
-  count: topology.unclassifiedCalls.length,
-  digest: unclassifiedCallSurfaceDigest(topology.unclassifiedCalls),
-};
-if (
-  inventory.unclassifiedCallSurface.count !== unclassifiedCallSurface.count ||
-  inventory.unclassifiedCallSurface.digest !== unclassifiedCallSurface.digest
-)
-  throw new Error(
-    `Internal semantic unclassified call surface drifted; review every new/changed call before refreshing the inventory. expected=${JSON.stringify(inventory.unclassifiedCallSurface)} observed=${JSON.stringify(unclassifiedCallSurface)}`,
-  );
-
-const familyCounts = {};
-for (const entry of inventory.entries) {
-  for (const family of entry.families) familyCounts[family] = (familyCounts[family] ?? 0) + 1;
-}
-console.log(
-  `Internal semantic topology: ${observed.length} constructs explicitly classified; families=${JSON.stringify(familyCounts)}.`,
-);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+  assertInternalSemanticInventory();

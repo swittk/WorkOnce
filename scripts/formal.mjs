@@ -74,10 +74,10 @@ function runModel(model, config, modulePath = `${model}.tla`) {
     killSignal: 'SIGKILL',
     maxBuffer: 16 * 1024 * 1024,
   });
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
   const outcome = classifyTlcOutcome(result);
   if (outcome.kind === 'success') return;
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
   if (outcome.kind === 'semantic_counterexample')
     throw new Error(`TLC semantic counterexample (${outcome.reason}) in ${model}.`);
   throw new Error(

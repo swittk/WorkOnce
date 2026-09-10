@@ -52,7 +52,7 @@ mutate(
   '    if (code === 0) rmSync(workspace, { recursive: true, force: true });',
   '    rmSync(workspace, { recursive: true, force: true });',
   'failed TLC workspace diagnostics are deleted',
-  /successful invocation/u,
+  /TLC workspaces must be removed only after a successful invocation/u,
 );
 
 mutate(

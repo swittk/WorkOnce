@@ -91,6 +91,13 @@ mutate(
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
+  "import fs from 'node:fs';",
+  "const importedLaterWrite = fs.writeFileSync;\nimport fs from 'node:fs';\nimportedLaterWrite('src/worker.ts', 'scope-audit-probe');",
+  'tracked write through an alias declared before its static fs import remains classified',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
   '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
   "  const { writeFile: renamedTrackedWrite } = fs.promises; renamedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'renamed destructured promise write hides a tracked source target beside a generated write',

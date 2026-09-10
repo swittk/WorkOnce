@@ -61,10 +61,10 @@ function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
   });
-  process.stdout.write(result.stdout ?? '');
-  process.stderr.write(result.stderr ?? '');
   const outcome = classifyTlcOutcome(result);
   if (outcome.kind !== 'success') {
+    process.stdout.write(result.stdout ?? '');
+    process.stderr.write(result.stderr ?? '');
     const reason = outcome.reason ?? outcome.kind;
     throw new Error(`TLC ${model} failed: ${reason}\n${outcome.output.slice(-2000)}`);
   }

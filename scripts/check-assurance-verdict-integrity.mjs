@@ -407,6 +407,7 @@ export function assertAssuranceVerdictIntegrity() {
     const domains = new Map();
     const functions = new Map();
     const calls = [];
+    const aliasDeclarations = [];
     const mutations = [];
     const mutationGuardBindings = new Set();
     let guardedMutations = 0;
@@ -502,6 +503,7 @@ export function assertAssuranceVerdictIntegrity() {
       return [];
     };
     function discover(node) {
+      if (ts.isVariableDeclaration(node) && node.initializer) aliasDeclarations.push(node);
       if (
         ts.isImportDeclaration(node) &&
         ts.isStringLiteralLike(node.moduleSpecifier) &&
@@ -582,6 +584,56 @@ export function assertAssuranceVerdictIntegrity() {
       ts.forEachChild(node, discover);
     }
     discover(sourceFile);
+    function resolveMutationAlias(declaration) {
+      let changed = false;
+      if (ts.isIdentifier(declaration.name) && declaration.initializer) {
+        if (
+          isPromiseNamespaceExpression(declaration.initializer) &&
+          !promiseMutationNamespaces.has(declaration.name.text)
+        ) {
+          promiseMutationNamespaces.add(declaration.name.text);
+          changed = true;
+        }
+        const aliasIndexes = aliasedMutationIndexes(declaration.initializer);
+        if (aliasIndexes.length > 0 && !mutationAliases.has(declaration.name.text)) {
+          mutationAliases.set(declaration.name.text, aliasIndexes);
+          changed = true;
+        }
+      }
+      if (ts.isObjectBindingPattern(declaration.name) && declaration.initializer) {
+        const directSource = isFsNamespaceExpression(declaration.initializer);
+        const promiseSource = isPromiseNamespaceExpression(declaration.initializer);
+        for (const element of declaration.name.elements) {
+          if (!ts.isIdentifier(element.name)) continue;
+          const imported = element.propertyName?.getText(sourceFile) ?? element.name.text;
+          if (
+            directSource &&
+            imported === 'promises' &&
+            !promiseMutationNamespaces.has(element.name.text)
+          ) {
+            promiseMutationNamespaces.add(element.name.text);
+            changed = true;
+            continue;
+          }
+          const indexes = directSource
+            ? directMutationPathArguments.get(imported)
+            : promiseSource
+              ? promiseMutationPathArguments.get(imported)
+              : undefined;
+          if (indexes && !mutationAliases.has(element.name.text)) {
+            mutationAliases.set(element.name.text, indexes);
+            changed = true;
+          }
+        }
+      }
+      return changed;
+    }
+    let aliasesChanged;
+    do {
+      aliasesChanged = false;
+      for (const declaration of aliasDeclarations)
+        if (resolveMutationAlias(declaration)) aliasesChanged = true;
+    } while (aliasesChanged);
     for (const call of calls)
       for (const targetIndex of mutationTargetIndexes(call)) mutations.push({ call, targetIndex });
     for (const call of calls) {

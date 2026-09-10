@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
+import { assertInternalSemanticInventory } from './check-internal-semantic-inventory.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutationFiles = createMutationFileGuard();
@@ -20,16 +19,13 @@ const externalSource = fs.readFileSync(externalSourcePath, 'utf8');
 const modelSource = fs.readFileSync(modelSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
-function run() {
-  return spawnSync(process.execPath, ['scripts/check-internal-semantic-inventory.mjs'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
-}
-function output(result) {
-  return `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+function runExpectedFailure(label) {
+  try {
+    assertInternalSemanticInventory();
+  } catch (error) {
+    return `${error?.name ?? 'Error'}: ${error?.message ?? String(error)}`;
+  }
+  assert.fail(`${label} unexpectedly passed`);
 }
 
 try {
@@ -66,12 +62,9 @@ ${source.slice(brace + 1)}`,
   internalSemanticMutablePropertyMutant = 0;`,
     ),
   );
-  const sourceMutant = run();
-  requireExpectedProcessFailure(
-    sourceMutant,
+  const sourceOutput = runExpectedFailure(
     'new mutable runner/class state unexpectedly passed inventory',
   );
-  const sourceOutput = output(sourceMutant);
   assert.match(sourceOutput, /Internal semantic inventory drifted/u);
   assert.match(sourceOutput, /mutable_let/u);
   assert.match(sourceOutput, /identifier_assignment/u);
@@ -103,12 +96,10 @@ try {
   ({ fatal, wakePoll } = { fatal, wakePoll });`,
     ),
   );
-  const destructuringMutant = run();
-  requireExpectedProcessFailure(
-    destructuringMutant,
+  const destructuringOutput = runExpectedFailure(
     'destructuring assignments unexpectedly bypassed internal semantic inventory',
   );
-  assert.match(output(destructuringMutant), /other_assignment/u);
+  assert.match(destructuringOutput, /other_assignment/u);
 } finally {
   mutationFiles.restoreAll();
 }
@@ -129,12 +120,10 @@ try {
   const active = new Set<Promise<void>>();`,
     ),
   );
-  const orderMutant = run();
-  requireExpectedProcessFailure(
-    orderMutant,
+  const orderOutput = runExpectedFailure(
     'semantic-order swap unexpectedly bypassed internal semantic inventory',
   );
-  assert.match(output(orderMutant), /:ordinal/u);
+  assert.match(orderOutput, /:ordinal/u);
 } finally {
   mutationFiles.restoreAll();
 }
@@ -149,12 +138,10 @@ try {
     sourcePath,
     source.replace('    stopped = true;', '    stopped = false;'),
   );
-  const assignmentMutant = run();
-  requireExpectedProcessFailure(
-    assignmentMutant,
+  const assignmentOutput = runExpectedFailure(
     'existing identifier assignment semantic edit unexpectedly bypassed internal inventory',
   );
-  assert.match(output(assignmentMutant), /identifier_assignment/u);
+  assert.match(assignmentOutput, /identifier_assignment/u);
 } finally {
   mutationFiles.restoreAll();
 }
@@ -164,12 +151,10 @@ try {
     modelSourcePath,
     `${modelSource}\nfunction internalSemanticUnknownCallMutant(): void { internalSemanticCompletelyNewCall(); }\n`,
   );
-  const unclassifiedCallMutant = run();
-  requireExpectedProcessFailure(
-    unclassifiedCallMutant,
+  const unclassifiedCallOutput = runExpectedFailure(
     'new unclassified call unexpectedly bypassed internal semantic inventory',
   );
-  assert.match(output(unclassifiedCallMutant), /unclassified call surface drifted/u);
+  assert.match(unclassifiedCallOutput, /unclassified call surface drifted/u);
 } finally {
   mutationFiles.restoreAll();
 }
@@ -185,12 +170,10 @@ try {
     externalSourcePath,
     externalSource.replace(suffixAnchor, `${suffixAnchor} // full-text-digest-mutant`),
   );
-  const suffixMutant = run();
-  requireExpectedProcessFailure(
-    suffixMutant,
+  const suffixOutput = runExpectedFailure(
     'semantic edit beyond the human-readable excerpt unexpectedly passed inventory',
   );
-  assert.match(output(suffixMutant), /Internal semantic inventory drifted/u);
+  assert.match(suffixOutput, /Internal semantic inventory drifted/u);
 } finally {
   mutationFiles.restoreAll();
 }
@@ -203,12 +186,10 @@ try {
   );
   inventory.entries[0].families = [];
   mutationFiles.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`);
-  const classificationMutant = run();
-  requireExpectedProcessFailure(
-    classificationMutant,
+  const classificationOutput = runExpectedFailure(
     'unclassified inventory cell unexpectedly passed',
   );
-  assert.match(output(classificationMutant), /has no proof family/u);
+  assert.match(classificationOutput, /has no proof family/u);
 } finally {
   mutationFiles.restoreAll();
 }
