@@ -16,7 +16,7 @@ export function attachChildInbox(child, label = 'child') {
     inbox.ended = error;
     for (const waiter of inbox.waiters.splice(0)) waiter.reject(error);
   };
-  child.once('exit', (code, signal) =>
+  child.once('close', (code, signal) =>
     end(
       new Error(
         `${label} exited before its next IPC message: code=${String(code)} signal=${String(signal)}`,

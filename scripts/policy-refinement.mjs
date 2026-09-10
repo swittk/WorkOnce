@@ -771,6 +771,29 @@ export function assertPolicyRefinementSamples(samples) {
     policyExpectedKindCounts,
     'policy sample kind coverage drifted',
   );
+  for (const kind of [
+    'policyFailure',
+    'policyReplay',
+    'casAckLoss',
+    'receiptAcrossAttempts',
+    'adapterEquivalence',
+  ])
+    assert.deepEqual(
+      samples
+        .filter((sample) => sample.kind === kind)
+        .map((sample) => sample.outcomeKind)
+        .sort(),
+      ['defer', 'retry'],
+      `${kind} outcome coverage drifted`,
+    );
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'policyRace')
+      .map((sample) => `${sample.outcomeKind}:${sample.race}`)
+      .sort(),
+    ['defer:cancel', 'defer:reclaim', 'retry:cancel', 'retry:reclaim'],
+    'policyRace lane coverage drifted',
+  );
   assert.deepEqual(
     samples
       .filter((sample) => sample.kind === 'wakeCompetition')

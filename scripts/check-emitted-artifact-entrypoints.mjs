@@ -67,7 +67,7 @@ export function assertEmittedArtifactEntrypoints() {
           return true;
       }
       if (
-        (ts.isWhileStatement(parent) || ts.isDoStatement(parent)) &&
+        ts.isWhileStatement(parent) &&
         parent.statement === child &&
         parent.expression.kind === ts.SyntaxKind.FalseKeyword
       )

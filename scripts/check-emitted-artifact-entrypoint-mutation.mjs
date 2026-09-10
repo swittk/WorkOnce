@@ -142,6 +142,20 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
     mutationFiles.restoreAll();
   }
 
+  try {
+    const earlyDoWhileProducer = `do { await import('./runtime-boundary-refinement.mjs'); } while (false);\n${formalOriginal}`;
+    mutationFiles.writeFileSync(formalPath, earlyDoWhileProducer);
+    expectCheckerFailure(
+      'early do-while formal producer import',
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log(
+      'Emitted-artifact entrypoint checker treats do-while(false) bodies as executing once.',
+    );
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

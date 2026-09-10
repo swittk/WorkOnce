@@ -96,7 +96,7 @@ requireRed(
   ['next.revision !== expectedRevision'],
   (text) => text.replace('next.revision !== expectedRevision', 'next.revision < expectedRevision'),
   ['--test', 'test/conformance.test.mjs'],
-  /Missing expected rejection/u,
+  /next revision must equal expectedRevision exactly/u,
 );
 requireRed(
   'dist/sqlite.js',

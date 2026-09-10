@@ -66,3 +66,23 @@ test('policy refinement rejects collapsed adapter-equivalence coverage', async (
     /adapterEquivalence adapter coverage drifted/u,
   );
 });
+
+test('policy refinement rejects count-preserving outcome and race lane substitutions', async () => {
+  const samples = await runPolicyRefinementSamples();
+  const outcomeMutant = samples.map((sample) =>
+    sample.kind === 'adapterEquivalence' ? { ...sample, outcomeKind: 'retry' } : sample,
+  );
+  assert.throws(
+    () => assertPolicyRefinementSamples(outcomeMutant),
+    /adapterEquivalence outcome coverage drifted/u,
+  );
+  const raceMutant = samples.map((sample) =>
+    sample.kind === 'policyRace' && sample.race === 'reclaim'
+      ? { ...sample, race: 'cancel' }
+      : sample,
+  );
+  assert.throws(
+    () => assertPolicyRefinementSamples(raceMutant),
+    /policyRace lane coverage drifted/u,
+  );
+});
