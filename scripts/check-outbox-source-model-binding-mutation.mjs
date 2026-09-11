@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
@@ -18,13 +18,17 @@ assert.equal(
   2,
   'outbox source/model mutation anchor is stale or not unique',
 );
-try {
-  mutationFiles.writeFileSync(target, original.replace(needle, replacement));
-  const result = spawnSync(
+function bindingCheck() {
+  return spawnSync(
     process.execPath,
     ['scripts/check-formal-implementation-conformance.mjs', '--check-outbox-binding-only'],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
+}
+requireSuccessfulProcess(bindingCheck(), 'baseline outbox source/model binding');
+try {
+  mutationFiles.writeFileSync(target, original.replace(needle, replacement));
+  const result = bindingCheck();
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   requireExpectedProcessFailure(result, 'outbox source/model drift mutant unexpectedly passed');
   assert.match(

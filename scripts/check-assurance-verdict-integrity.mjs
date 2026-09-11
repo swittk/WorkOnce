@@ -255,6 +255,40 @@ export function assertAssuranceVerdictIntegrity() {
     /requireSuccessfulProcess\(bindingCheck\(\), 'baseline build-input binding'\)/u,
     'build-input mutation guard must establish a green baseline before mutating tracked build inputs',
   );
+  for (const [relative, label, mutantAnchor] of [
+    [
+      'scripts/check-lifecycle-source-model-mutation.mjs',
+      'lifecycle',
+      'WORKONCE_LIFECYCLE_BINDING_MUTANT',
+    ],
+    ['scripts/check-read-source-model-binding-mutation.mjs', 'read', 'mutationFiles.writeFileSync'],
+    [
+      'scripts/check-policy-source-model-binding-mutation.mjs',
+      'policy',
+      'mutationFiles.writeFileSync',
+    ],
+    [
+      'scripts/check-local-runner-source-model-mutation.mjs',
+      'local-runner',
+      'mutationFiles.writeFileSync',
+    ],
+    ['scripts/check-external-source-model-mutation.mjs', 'external', 'mutationFiles.writeFileSync'],
+    [
+      'scripts/check-outbox-source-model-binding-mutation.mjs',
+      'outbox',
+      'mutationFiles.writeFileSync',
+    ],
+    ['scripts/check-storage-source-model-mutation.mjs', 'storage', 'mutationFiles.writeFileSync'],
+  ]) {
+    const source = read(relative);
+    const baseline = `requireSuccessfulProcess(bindingCheck(), 'baseline ${label} source/model binding');`;
+    const baselinePosition = source.indexOf(baseline);
+    const mutationPosition = source.indexOf(mutantAnchor);
+    assert.ok(
+      baselinePosition >= 0 && mutationPosition >= 0 && baselinePosition < mutationPosition,
+      `${label} source/model mutation guard must prove a green baseline before creating mutants`,
+    );
+  }
   const sourcePathPortabilityMutation = read('scripts/check-source-path-portability-mutation.mjs');
   assert.match(
     sourcePathPortabilityMutation,
@@ -1215,7 +1249,8 @@ export function assertAssuranceVerdictIntegrity() {
     }
     return [...new Set(targets)];
   }
-  for (const name of mutationFiles) {
+  const generatedWriteAuditFiles = [...mutationFiles, 'check-tlc-outcome-classification.mjs'];
+  for (const name of generatedWriteAuditFiles) {
     const source = read(`scripts/${name}`);
     const resolvedTargets = resolvedMutationWriteTargets(source, name);
     if (resolvedTargets === null) continue;

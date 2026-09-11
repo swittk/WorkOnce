@@ -2,16 +2,21 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const result = spawnSync(process.execPath, ['scripts/check-lifecycle-proof-binding.mjs'], {
-  cwd: root,
-  encoding: 'utf8',
-  env: { ...process.env, WORKONCE_LIFECYCLE_BINDING_MUTANT: 'src/work.ts' },
-  timeout: 15_000,
-});
+function bindingCheck(env = process.env) {
+  return spawnSync(process.execPath, ['scripts/check-lifecycle-proof-binding.mjs'], {
+    cwd: root,
+    encoding: 'utf8',
+    env,
+    timeout: 15_000,
+  });
+}
+requireSuccessfulProcess(bindingCheck(), 'baseline lifecycle source/model binding');
+
+const result = bindingCheck({ ...process.env, WORKONCE_LIFECYCLE_BINDING_MUTANT: 'src/work.ts' });
 const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
 requireExpectedProcessFailure(result, 'lifecycle source/model drift mutant unexpectedly passed');
 assert.match(output, /Lifecycle source\/model binding drifted/u);

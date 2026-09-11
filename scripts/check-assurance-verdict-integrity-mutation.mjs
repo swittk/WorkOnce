@@ -69,6 +69,21 @@ mutate(
 );
 
 mutate(
+  'scripts/check-external-source-model-mutation.mjs',
+  "requireSuccessfulProcess(bindingCheck(), 'baseline external source/model binding');",
+  'void bindingCheck;',
+  'external source/model mutation guard loses its green-before baseline',
+  /external source\/model mutation guard must prove a green baseline before creating mutants/u,
+);
+mutate(
+  'scripts/check-tlc-outcome-classification.mjs',
+  "const invalidJar = path.join(artifactDir, 'invalid-tlc-classification.jar');",
+  "const invalidJar = path.join(root, 'src/work.ts');",
+  'live TLC classifier writes outside generated artifact roots',
+  /check-tlc-outcome-classification\.mjs mutates tracked source\/config without signal-safe file restoration/u,
+);
+
+mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {",
   "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts', 'src/worker.ts']) {",

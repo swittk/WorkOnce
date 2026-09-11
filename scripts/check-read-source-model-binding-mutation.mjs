@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
@@ -19,17 +19,21 @@ function restore() {
   mutationFiles.restoreAll();
 }
 function expectBindingFailure(label) {
-  const result = spawnSync(
-    process.execPath,
-    ['scripts/check-formal-implementation-conformance.mjs', '--check-read-binding-only'],
-    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
-  );
+  const result = bindingCheck();
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   requireExpectedProcessFailure(result, `${label} source/model drift mutant unexpectedly passed`);
   assert.match(output, /Bound typed-read\/history semantics changed/u);
   console.log(`Typed-read/history source/model mutation guard rejects ${label}.`);
 }
 
+function bindingCheck() {
+  return spawnSync(
+    process.execPath,
+    ['scripts/check-formal-implementation-conformance.mjs', '--check-read-binding-only'],
+    { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
+  );
+}
+requireSuccessfulProcess(bindingCheck(), 'baseline read source/model binding');
 try {
   {
     const original = originals.get(workPath);
