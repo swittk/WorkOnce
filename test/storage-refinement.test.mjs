@@ -13,10 +13,13 @@ test('compiled storage observations cover adapters, contention, ordering, invali
 test('storage refinement rejects duplicate witness multiplicity', async () => {
   const samples = await runStorageRefinementSamples();
   const donor = samples.find((sample) => sample.kind === 'casBoundary');
+  const victimIndex = samples.findIndex((sample) => sample.kind === 'casExhaustion');
   assert.ok(donor);
+  assert.notEqual(victimIndex, -1);
+  const mutant = samples.map((sample, index) => (index === victimIndex ? { ...donor } : sample));
   assert.throws(
-    () => assertStorageRefinementSamples([...samples, { ...donor }]),
-    /storage refinement sample family unexpectedly changed|storage sample kind multiplicity drifted/u,
+    () => assertStorageRefinementSamples(mutant),
+    /storage sample kind multiplicity drifted/u,
   );
 });
 
