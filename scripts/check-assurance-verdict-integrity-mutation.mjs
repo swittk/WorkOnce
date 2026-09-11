@@ -230,6 +230,27 @@ mutate(
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs['writeFileSync'](path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'computed fs mutation member hides a tracked source target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const hiddenWrites = { tracked: fs.writeFileSync }; hiddenWrites.tracked(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'object-property fs mutation alias hides a tracked source target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs[process.env.WORKONCE_MUTATION_METHOD](path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'dynamic fs mutation member must fail closed when unresolved',
+  /mutation callee cannot be statically resolved/u,
+);
+mutate(
   'scripts/local-runner-refinement.mjs',
   '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
   '          await sleep(35);',
@@ -541,6 +562,13 @@ mutate(
   /restore remembered files during normal disposal/u,
 );
 mutate(
+  'scripts/mutation-file-guard.mjs',
+  '    fs.writeSync(2, `${restoreFailureDiagnostic(error)}\\n`);',
+  '    process.stderr.write(`${restoreFailureDiagnostic(error)}\\n`);',
+  'mutation file guard restores asynchronous pre-exit diagnostics',
+  /synchronously publish restore failures before forced exit/u,
+);
+mutate(
   'scripts/lifecycle-formal.mjs',
   "  process.stdout.write(result.stdout ?? '');",
   '  void result.stdout;',
@@ -587,6 +615,56 @@ mutate(
   /formal mutation witness config must fail closed when SPECIFICATION Spec is absent/u,
 );
 
+mutate(
+  'scripts/check-source-path-portability-mutation.mjs',
+  'if (process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED !== String(process.ppid)) {',
+  'if (false) {',
+  'source-path mutation checker loses parent-bound standalone baseline',
+  /standalone baseline bypass must be bound to its direct assurance parent/u,
+);
+mutate(
+  'scripts/check-source-path-portability-mutation.mjs',
+  "  requireSuccessfulProcess(selfTest('--self-test-source-paths'), 'baseline compiler source paths');\n",
+  '',
+  'source-path mutation checker loses source-path green baseline',
+  /must prove baseline compiler source paths before standalone mutants/u,
+);
+mutate(
+  'scripts/run-assurance.mjs',
+  'process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = String(process.pid);',
+  "process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = '1';",
+  'assurance runner compiler baseline certificate loses parent binding',
+  /must bind compiler baseline certification to its own process id/u,
+);
+mutate(
+  'scripts/run-assurance.mjs',
+  "    'compiler source-path portability baseline',\n",
+  "    'compiler source-path portability missing-baseline',\n",
+  'assurance runner loses named source-path baseline before mutants',
+  /compiler source-path portability baseline must run before compiler source-path mutants/u,
+);
+
+mutate(
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  "requireSuccessfulProcess(\n  run('scripts/check-formal-implementation-conformance.mjs', '--check-infrastructure-binding-only'),\n  'baseline assurance infrastructure binding',\n);\n",
+  '',
+  'assurance infrastructure mutation checker loses infrastructure baseline',
+  /must establish a green infrastructure baseline/u,
+);
+mutate(
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  "requireSuccessfulProcess(\n  run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only'),\n  'baseline bounded-trace evidence binding',\n);\n",
+  '',
+  'assurance infrastructure mutation checker loses bounded-evidence baseline',
+  /must establish a green bounded-evidence baseline/u,
+);
+mutate(
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  "requireSuccessfulProcess(\n  run(\n    'scripts/check-formal-implementation-conformance.mjs',\n    '--check-semantic-environment-binding-only',\n  ),\n  'baseline semantic-environment binding',\n);\n",
+  '',
+  'assurance infrastructure mutation checker loses semantic-environment baseline',
+  /must establish a green semantic-environment baseline/u,
+);
 mutate(
   'scripts/check-build-input-binding-mutation.mjs',
   "  requireSuccessfulProcess(bindingCheck(), 'baseline build-input binding');\n",

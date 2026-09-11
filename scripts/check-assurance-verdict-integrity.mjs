@@ -175,6 +175,69 @@ export function assertAssuranceVerdictIntegrity() {
     /requireSuccessfulProcess\(bindingCheck\(\), 'baseline build-input binding'\)/u,
     'build-input mutation guard must establish a green baseline before mutating tracked build inputs',
   );
+  const sourcePathPortabilityMutation = read('scripts/check-source-path-portability-mutation.mjs');
+  assert.match(
+    sourcePathPortabilityMutation,
+    /WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED !== String\(process\.ppid\)/u,
+    'source-path mutation guard standalone baseline bypass must be bound to its direct assurance parent',
+  );
+  for (const [flag, label] of [
+    ['--self-test-source-paths', 'baseline compiler source paths'],
+    ['--self-test-trivia-ordinals', 'baseline type identity trivia'],
+  ]) {
+    const flagPattern = flag.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    const labelPattern = label.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    assert.match(
+      sourcePathPortabilityMutation,
+      new RegExp(
+        `requireSuccessfulProcess\\([\\s\\S]{0,120}?selfTest\\('${flagPattern}'\\)[\\s\\S]{0,120}?'${labelPattern}'`,
+        'u',
+      ),
+      `source-path mutation guard must prove ${label} before standalone mutants`,
+    );
+  }
+  const sourcePathAssuranceRunner = read('scripts/run-assurance.mjs');
+  const sourcePathMutationPosition = sourcePathAssuranceRunner.indexOf(
+    "run('compiler source-path portability mutation guard'",
+  );
+  assert.ok(
+    sourcePathMutationPosition >= 0,
+    'assurance runner lost compiler source-path mutation guard',
+  );
+  for (const label of [
+    'type identity trivia baseline',
+    'compiler source-path portability baseline',
+  ]) {
+    const baselinePosition = sourcePathAssuranceRunner.indexOf(`'${label}'`);
+    assert.ok(
+      baselinePosition >= 0 && baselinePosition < sourcePathMutationPosition,
+      `${label} must run before compiler source-path mutants`,
+    );
+  }
+  assert.match(
+    sourcePathAssuranceRunner,
+    /WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = String\(process\.pid\)/u,
+    'assurance runner must bind compiler baseline certification to its own process id',
+  );
+
+  const assuranceInfrastructureBindingMutation = read(
+    'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+  );
+  for (const [pattern, label] of [
+    [
+      /requireSuccessfulProcess\([\s\S]{0,260}?--check-infrastructure-binding-only[\s\S]{0,160}?baseline assurance infrastructure binding/u,
+      'assurance infrastructure mutation guard must establish a green infrastructure baseline',
+    ],
+    [
+      /requireSuccessfulProcess\([\s\S]{0,260}?--check-evidence-binding-only[\s\S]{0,160}?baseline bounded-trace evidence binding/u,
+      'assurance infrastructure mutation guard must establish a green bounded-evidence baseline',
+    ],
+    [
+      /requireSuccessfulProcess\([\s\S]{0,260}?--check-semantic-environment-binding-only[\s\S]{0,160}?baseline semantic-environment binding/u,
+      'assurance infrastructure mutation guard must establish a green semantic-environment baseline',
+    ],
+  ])
+    assert.match(assuranceInfrastructureBindingMutation, pattern, label);
 
   for (const name of fs
     .readdirSync(path.join(root, 'scripts'))
@@ -255,6 +318,11 @@ export function assertAssuranceVerdictIntegrity() {
     mutationFileGuard,
     /process\.once\('exit', onExit\)/u,
     'mutation file guard must restore remembered files on process exit',
+  );
+  assert.match(
+    mutationFileGuard,
+    /fs\.writeSync\(2, `\$\{restoreFailureDiagnostic\(error\)\}\\n`\)/u,
+    'mutation file guard must synchronously publish restore failures before forced exit',
   );
 
   const boundedDomain = read('scripts/check-bounded-trace-domain.mjs');
@@ -531,6 +599,7 @@ export function assertAssuranceVerdictIntegrity() {
     const promiseMutationNamespaces = new Set();
     const directMutationImports = new Map();
     const mutationAliases = new Map();
+    const objectMutationAliases = new Map();
     const fsNamespaces = new Set();
     const directMutationPathArguments = new Map([
       ['writeFileSync', [0]],
@@ -553,6 +622,33 @@ export function assertAssuranceVerdictIntegrity() {
       ['unlink', [0]],
       ['truncate', [0]],
     ]);
+    const staticMemberNames = (expression) => {
+      if (ts.isPropertyAccessExpression(expression)) return [expression.name.text];
+      if (!ts.isElementAccessExpression(expression) || !expression.argumentExpression) return [];
+      return resolve(expression.argumentExpression);
+    };
+    const memberMutationIndexes = (expression) => {
+      if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
+        return [];
+      const names = staticMemberNames(expression);
+      const base = expression.expression;
+      const objectAlias = ts.isIdentifier(base) ? objectMutationAliases.get(base.text) : undefined;
+      const mutationNamespace =
+        isFsNamespaceExpression(base) ||
+        isPromiseNamespaceExpression(base) ||
+        objectAlias !== undefined;
+      if (ts.isElementAccessExpression(expression) && mutationNamespace && names.length !== 1)
+        assert.fail(
+          `${name} mutation callee cannot be statically resolved before generated-only classification`,
+        );
+      if (names.length !== 1) return [];
+      const [member] = names;
+      if (isFsNamespaceExpression(base)) return directMutationPathArguments.get(member) ?? [];
+      if (isPromiseNamespaceExpression(base)) return promiseMutationPathArguments.get(member) ?? [];
+      const objectIndexes = objectAlias?.get(member);
+      if (objectIndexes) return objectIndexes;
+      return directMutationPathArguments.get(member) ?? [];
+    };
     function mutationTargetIndexes(call) {
       const expression = call.expression;
       if (ts.isIdentifier(expression)) {
@@ -565,28 +661,19 @@ export function assertAssuranceVerdictIntegrity() {
         const imported = promiseMutationImports.get(expression.text);
         return imported ? (promiseMutationPathArguments.get(imported) ?? []) : [];
       }
-      if (!ts.isPropertyAccessExpression(expression)) return [];
+      if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
+        return [];
+      const names = staticMemberNames(expression);
       if (
         ts.isIdentifier(expression.expression) &&
         mutationGuardBindings.has(expression.expression.text) &&
-        (expression.name.text === 'writeFileSync' || expression.name.text === 'appendFileSync')
+        names.length === 1 &&
+        (names[0] === 'writeFileSync' || names[0] === 'appendFileSync')
       ) {
         guardedMutations++;
         return [];
       }
-      const direct = directMutationPathArguments.get(expression.name.text);
-      if (direct) return direct;
-      if (
-        ts.isIdentifier(expression.expression) &&
-        promiseMutationNamespaces.has(expression.expression.text)
-      )
-        return promiseMutationPathArguments.get(expression.name.text) ?? [];
-      if (
-        ts.isPropertyAccessExpression(expression.expression) &&
-        expression.expression.name.text === 'promises'
-      )
-        return promiseMutationPathArguments.get(expression.name.text) ?? [];
-      return [];
+      return memberMutationIndexes(expression);
     }
     const add = (map, key, value) => {
       const values = map.get(key) ?? [];
@@ -611,12 +698,12 @@ export function assertAssuranceVerdictIntegrity() {
         const promiseImported = promiseMutationImports.get(expression.text);
         return promiseImported ? (promiseMutationPathArguments.get(promiseImported) ?? []) : [];
       }
-      if (!ts.isPropertyAccessExpression(expression)) return [];
-      if (isFsNamespaceExpression(expression.expression))
-        return directMutationPathArguments.get(expression.name.text) ?? [];
-      if (isPromiseNamespaceExpression(expression.expression))
-        return promiseMutationPathArguments.get(expression.name.text) ?? [];
-      return [];
+      return memberMutationIndexes(expression);
+    };
+    const objectPropertyNames = (nameNode) => {
+      if (ts.isComputedPropertyName(nameNode)) return resolve(nameNode.expression);
+      const name = propertyNameText(nameNode);
+      return name === undefined ? [] : [name];
     };
     function discover(node) {
       if (ts.isVariableDeclaration(node) && node.initializer) aliasDeclarations.push(node);
@@ -713,6 +800,29 @@ export function assertAssuranceVerdictIntegrity() {
         const aliasIndexes = aliasedMutationIndexes(declaration.initializer);
         if (aliasIndexes.length > 0 && !mutationAliases.has(declaration.name.text)) {
           mutationAliases.set(declaration.name.text, aliasIndexes);
+          changed = true;
+        }
+        let objectAlias;
+        if (ts.isObjectLiteralExpression(declaration.initializer)) {
+          objectAlias = new Map();
+          for (const property of declaration.initializer.properties) {
+            let indexes = [];
+            let propertyNames = [];
+            if (ts.isPropertyAssignment(property)) {
+              propertyNames = objectPropertyNames(property.name);
+              indexes = aliasedMutationIndexes(property.initializer);
+            } else if (ts.isShorthandPropertyAssignment(property)) {
+              propertyNames = [property.name.text];
+              indexes = aliasedMutationIndexes(property.name);
+            }
+            if (indexes.length > 0)
+              for (const propertyName of propertyNames) objectAlias.set(propertyName, indexes);
+          }
+        } else if (ts.isIdentifier(declaration.initializer)) {
+          objectAlias = objectMutationAliases.get(declaration.initializer.text);
+        }
+        if (objectAlias?.size && !objectMutationAliases.has(declaration.name.text)) {
+          objectMutationAliases.set(declaration.name.text, new Map(objectAlias));
           changed = true;
         }
       }

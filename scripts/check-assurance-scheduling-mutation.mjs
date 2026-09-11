@@ -176,6 +176,15 @@ try {
     /load-aware TLC worker budget/u,
   );
   expectSchedulingFailure(
+    'high-core TLC worker budget ignores host load',
+    (text) =>
+      text.replace(
+        'Math.floor(Math.max(2, logicalCpus - currentLoad) / 2)',
+        'Math.floor(logicalCpus / 2)',
+      ),
+    /twelve-worker ceiling load-aware/u,
+  );
+  expectSchedulingFailure(
     'lost TLC workspace isolation preflight',
     (text) =>
       text.replace(

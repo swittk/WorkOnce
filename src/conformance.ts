@@ -328,7 +328,6 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         next: { ...row!, revision: row!.revision + 2 },
         value: null,
       })),
-      'next revision must equal expectedRevision exactly',
     );
     await assert.rejects(
       store.atomic(snapshot.id, (row) => ({

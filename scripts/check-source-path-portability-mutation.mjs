@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
@@ -13,6 +13,21 @@ const target = path.join(root, 'scripts/formal-implementation-surface.cjs');
 const original = fs.readFileSync(target, 'utf8');
 const stableReturn = 'return `node_modules/typescript/lib/${tail}`;';
 const legacyReturn = "return path.relative(root, absolute).split(path.sep).join('/');";
+function selfTest(flag) {
+  return spawnSync(process.execPath, [target, flag], {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+    timeout: 15_000,
+  });
+}
+if (process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED !== String(process.ppid)) {
+  requireSuccessfulProcess(selfTest('--self-test-source-paths'), 'baseline compiler source paths');
+  requireSuccessfulProcess(
+    selfTest('--self-test-trivia-ordinals'),
+    'baseline type identity trivia',
+  );
+}
 
 try {
   assert.equal(
@@ -22,12 +37,7 @@ try {
   );
   const mutant = original.replace(stableReturn, legacyReturn);
   mutationFiles.writeFileSync(target, mutant);
-  const result = spawnSync(process.execPath, [target, '--self-test-source-paths'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
+  const result = selfTest('--self-test-source-paths');
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   requireExpectedProcessFailure(
     result,
@@ -54,12 +64,7 @@ try {
     'export-alias resolver mutation anchor is stale or not unique',
   );
   mutationFiles.writeFileSync(target, original.replace(aliasAnchor, 'return symbol;'));
-  const result = spawnSync(process.execPath, [target, '--self-test-trivia-ordinals'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
+  const result = selfTest('--self-test-trivia-ordinals');
   requireExpectedProcessFailure(
     result,
     'unresolved root-export alias mutant',

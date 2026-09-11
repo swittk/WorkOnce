@@ -63,6 +63,31 @@ test('shared conformance accepts adapter-specific invalid-write rejection messag
   assert.equal(passed.length, 18);
 });
 
+test('shared conformance remains message-agnostic when an adapter uses the old assertion label verbatim', async () => {
+  let clock = 100_000;
+  const passed = await runConformance(() => {
+    const base = createMemoryStore({ now: () => clock });
+    return {
+      store: {
+        ...base,
+        async atomic(id, decide) {
+          try {
+            return await base.atomic(id, decide);
+          } catch (error) {
+            if (/revision/u.test(error?.message ?? ''))
+              throw new Error('next revision must equal expectedRevision exactly');
+            throw error;
+          }
+        },
+      },
+      advance(ms) {
+        clock += ms;
+      },
+    };
+  });
+  assert.equal(passed.length, 18);
+});
+
 test('shared conformance rejects adapters that deduplicate duplicate getMany ids', async () => {
   await assert.rejects(
     runConformance(() => {

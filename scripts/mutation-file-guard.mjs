@@ -22,9 +22,13 @@ export function createMutationFileGuard() {
     if (failures.length)
       throw new AggregateError(failures, 'Mutation file guard could not restore every target');
   };
+  const restoreFailureDiagnostic = (error) => {
+    const primary = error instanceof Error ? (error.stack ?? error.message) : String(error);
+    if (!(error instanceof AggregateError)) return primary;
+    return [primary, ...error.errors.map(restoreFailureDiagnostic)].join('\n');
+  };
   const reportRestoreFailure = (error) => {
-    const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
-    process.stderr.write(`${message}\n`);
+    fs.writeSync(2, `${restoreFailureDiagnostic(error)}\n`);
   };
   const terminate = (code) => {
     if (terminating) return;

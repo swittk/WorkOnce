@@ -79,6 +79,51 @@ for (const [signal, expectedCode] of [
   });
 }
 
+test('mutation file guard synchronously reports a signal-path restore failure to piped stderr', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-signal-failure-'));
+  const target = join(directory, 'tracked.txt');
+  writeFileSync(target, 'original\n');
+  const guardModule = new URL('../scripts/mutation-file-guard.mjs', import.meta.url).href;
+  const code = `
+    import { createMutationFileGuard } from ${JSON.stringify(guardModule)};
+    const guard = createMutationFileGuard();
+    guard.writeFileSync(process.env.WORKONCE_MUTATION_TARGET, 'mutated\\n');
+    process.stdout.write('ready\\n');
+    setInterval(() => {}, 1000);
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', code], {
+    cwd: process.cwd(),
+    env: { ...process.env, WORKONCE_MUTATION_TARGET: target },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+  try {
+    await waitForReady(child);
+    rmSync(target);
+    mkdirSync(target);
+    child.kill('SIGTERM');
+    const [exitCode, exitSignal] = await once(child, 'exit', {
+      signal: AbortSignal.timeout(5000),
+    });
+    assert.equal(exitSignal, null);
+    assert.equal(exitCode, 143);
+    assert.match(stderr, /Failed to restore mutation target/u);
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
+      child.kill('SIGKILL');
+      await exited;
+    }
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('mutation file guard restores original bytes on unhandled exit', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-exit-'));
   const target = join(directory, 'tracked.txt');

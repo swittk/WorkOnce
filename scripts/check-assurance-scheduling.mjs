@@ -242,8 +242,8 @@ assert.match(
 );
 assert.match(
   text,
-  /logicalCpus >= 16[\s\S]{0,32}\? 12/u,
-  'High-core HPSERVER assurance must use the measured twelve-worker TLC ceiling.',
+  /Math\.min\(12, logicalCpus, Math\.floor\(Math\.max\(2, logicalCpus - currentLoad\) \/ 2\)\)/u,
+  'High-core HPSERVER assurance must keep the twelve-worker ceiling load-aware.',
 );
 assert.match(
   text,

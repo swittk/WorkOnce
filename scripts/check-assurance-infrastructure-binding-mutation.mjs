@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,6 +28,22 @@ function run(script, ...args) {
 function output(result) {
   return `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
 }
+
+requireSuccessfulProcess(
+  run('scripts/check-formal-implementation-conformance.mjs', '--check-infrastructure-binding-only'),
+  'baseline assurance infrastructure binding',
+);
+requireSuccessfulProcess(
+  run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only'),
+  'baseline bounded-trace evidence binding',
+);
+requireSuccessfulProcess(
+  run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-semantic-environment-binding-only',
+  ),
+  'baseline semantic-environment binding',
+);
 
 try {
   mutationFiles.writeFileSync(target, `${original}\n// assurance-infrastructure-binding-mutant\n`);

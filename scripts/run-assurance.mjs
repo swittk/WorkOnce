@@ -15,9 +15,7 @@ const unitTestConcurrency = String(
     : Math.max(4, Math.min(8, logicalCpus, availableTestCpus)),
 );
 const tlcWorkers = String(
-  logicalCpus >= 16
-    ? 12
-    : Math.max(2, Math.min(8, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
+  Math.max(2, Math.min(12, logicalCpus, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
 );
 process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
 process.env.NODE_NO_WARNINGS = '1';
@@ -311,7 +309,18 @@ await runParallel([
     process.execPath,
     ['scripts/check-tlc-workspace-isolation.mjs'],
   ],
+  [
+    'type identity trivia baseline',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
+  ],
+  [
+    'compiler source-path portability baseline',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
+  ],
 ]);
+process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = String(process.pid);
 run('internal semantic topology mutation guard', process.execPath, [
   'scripts/check-internal-semantic-inventory-mutation.mjs',
 ]);
@@ -345,16 +354,6 @@ await runParallel([
     'formal config parser',
     process.execPath,
     ['scripts/check-formal-implementation-conformance.mjs', '--self-test-config-checks'],
-  ],
-  [
-    'type identity trivia',
-    process.execPath,
-    ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
-  ],
-  [
-    'compiler source-path portability',
-    process.execPath,
-    ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
   ],
   ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
   [
