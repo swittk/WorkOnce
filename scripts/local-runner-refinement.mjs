@@ -366,7 +366,7 @@ async function dynamicArrivalSample() {
       return snapshots.every((snapshot) => snapshot?.phase.state === 'succeeded');
     });
     stop.abort();
-    await running;
+    await within(running, 'dynamic-arrival runner exit');
     return {
       kind: 'dynamicArrival',
       allTen: counts.size === 10 && [...counts.values()].every((count) => count === 1),
@@ -375,7 +375,7 @@ async function dynamicArrivalSample() {
     };
   } finally {
     stop.abort();
-    await Promise.allSettled([running]);
+    await within(Promise.allSettled([running]), 'dynamic-arrival runner cleanup');
   }
 }
 
@@ -415,7 +415,7 @@ async function handledClaimRecoverySample() {
   try {
     await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
     stop.abort();
-    await running;
+    await within(running, 'handled-recovery runner exit');
     return {
       kind: 'handledRecovery',
       exactErrors: observed.length === 3 && observed.every((error) => error === failure),
@@ -423,7 +423,7 @@ async function handledClaimRecoverySample() {
     };
   } finally {
     stop.abort();
-    await Promise.allSettled([running]);
+    await within(Promise.allSettled([running]), 'handled-recovery runner cleanup');
   }
 }
 
@@ -514,7 +514,7 @@ async function completionOrderLane(reverse) {
   release[order[0]].resolve();
   await nextTurn();
   release[order[1]].resolve();
-  await running;
+  await within(running, 'completion-order runner exit');
   const projection = (await queue.inspectMany(['a', 'b'])).map(semanticSnapshot);
   await queue.ensure('future', { key: 'future' });
   const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
@@ -549,21 +549,27 @@ async function handledVsAbortLane(handled) {
   await queue.ensure(null, { key: 'job' });
   const stop = new AbortController();
   if (!handled) stop.abort(new Error('graceful-stop'));
-  await queue.run(
+  const running = queue.run(
     {
       workerId: 'history',
       idleMs: 1,
       signal: stop.signal,
       onError(error) {
-        assert.equal(error, failure);
         stop.abort(new Error('handled-stop'));
+        assert.equal(error, failure);
       },
     },
     async (run) => run.succeed(),
   );
-  const durable = semanticSnapshot(await queue.inspect('job'));
-  const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
-  return { durable, future: future.status };
+  try {
+    await within(running, `history-${handled} runner exit`);
+    const durable = semanticSnapshot(await queue.inspect('job'));
+    const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
+    return { durable, future: future.status };
+  } finally {
+    stop.abort(new Error('history-cleanup'));
+    await within(Promise.allSettled([running]), `history-${handled} runner cleanup`);
+  }
 }
 
 async function handledAbortCongruenceSample() {
@@ -622,7 +628,7 @@ async function backoffLane(mode) {
   try {
     await waitUntil(async () => (await queue.inspect('job')).phase.state === 'succeeded');
     stop.abort();
-    await running;
+    await within(running, 'observer-backoff runner exit');
     const durable = semanticSnapshot(await queue.inspect('job'));
     await queue.ensure(null, { key: 'future' });
     const [future] = await queue.runAvailable({ workerId: 'future' }, async (run) => run.succeed());
@@ -630,7 +636,7 @@ async function backoffLane(mode) {
   } finally {
     release.resolve();
     stop.abort();
-    await Promise.allSettled([running]);
+    await within(Promise.allSettled([running]), 'observer-backoff runner cleanup');
   }
 }
 
@@ -689,7 +695,7 @@ async function lateClaimStopSample() {
     releaseFirstHandler.resolve();
     await nextTurn();
     releaseSecondClaim.resolve();
-    await running;
+    await within(running, 'late-claim-stop runner exit');
     const late = await queue.inspect('b');
     return {
       kind: 'lateClaimStop',
@@ -700,7 +706,7 @@ async function lateClaimStopSample() {
     stop.abort(new Error('late-claim-stop-cleanup'));
     releaseFirstHandler.resolve();
     releaseSecondClaim.resolve();
-    await Promise.allSettled([running]);
+    await within(Promise.allSettled([running]), 'late-claim-stop runner cleanup');
   }
 }
 
@@ -779,7 +785,7 @@ async function timerBoundarySample() {
     );
     await sleep(5);
     stop.abort(new Error('stop huge idle'));
-    await running;
+    await within(running, 'huge-idle runner exit');
     return performance.now() - started < 250;
   }
   return {

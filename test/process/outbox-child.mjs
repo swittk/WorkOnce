@@ -4,6 +4,7 @@ import { createSqliteStore } from '../../dist/sqlite.js';
 const [path, mode, parentId] = process.argv.slice(2);
 const base = createSqliteStore(path);
 let signaled = false;
+const keepAlive = setInterval(() => {}, 1000);
 const never = new Promise(() => {});
 const store = {
   ...base,
@@ -57,6 +58,7 @@ process.once('message', async (message) => {
   } catch (error) {
     process.send?.({ error: String(error), code: error?.code });
   } finally {
+    clearInterval(keepAlive);
     base.close();
     process.disconnect?.();
   }
