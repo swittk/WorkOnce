@@ -328,6 +328,8 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         next: { ...row!, revision: row!.revision + 2 },
         value: null,
       })),
+      () => true,
+      'skipped revision must be rejected by the store contract',
     );
     await assert.rejects(
       store.atomic(snapshot.id, (row) => ({

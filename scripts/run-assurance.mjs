@@ -72,6 +72,16 @@ function terminateProcessTree(child) {
     );
   }
 }
+const activeParallelChildren = new Set();
+function terminateActiveParallelChildren(signal) {
+  for (const child of activeParallelChildren) {
+    const failure = terminateProcessTree(child);
+    if (failure) console.error(`[assurance] ${failure.message}`);
+  }
+  process.exit(signal === 'SIGINT' ? 130 : 143);
+}
+process.once('SIGINT', () => terminateActiveParallelChildren('SIGINT'));
+process.once('SIGTERM', () => terminateActiveParallelChildren('SIGTERM'));
 async function runParallel(entries) {
   const started = performance.now();
   const children = new Set();
@@ -98,6 +108,7 @@ async function runParallel(entries) {
             detached: process.platform !== 'win32',
           });
           children.add(child);
+          activeParallelChildren.add(child);
           let settled = false;
           let cleanupTimer;
           const finish = (settler, value) => {
@@ -106,6 +117,7 @@ async function runParallel(entries) {
             if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
             pending.delete(child);
             children.delete(child);
+            activeParallelChildren.delete(child);
             settler(value);
           };
           const resolveOnce = () => finish(resolvePromise);

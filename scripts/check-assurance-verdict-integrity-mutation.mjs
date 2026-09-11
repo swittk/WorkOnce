@@ -181,6 +181,13 @@ mutate(
   /must (?:import|use) spawnSync/u,
 );
 mutate(
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  "import { spawnSync } from 'node:child_process';",
+  "import { spawn } from 'child_process';",
+  'unprefixed mutation checker bypasses bounded spawnSync controls',
+  /must (?:import|use) spawnSync/u,
+);
+mutate(
   'scripts/check-assurance-scheduling-mutation.mjs',
   '        timeout: 5_000,\n',
   '',

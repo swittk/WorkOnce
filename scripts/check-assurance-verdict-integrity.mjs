@@ -126,10 +126,10 @@ export function assertAssuranceVerdictIntegrity() {
   ];
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
-    if (!/node:child_process/u.test(source)) continue;
+    if (!/(?:node:)?child_process/u.test(source)) continue;
     assert.match(
       source,
-      /import\s*\{[^}]*\bspawnSync\b[^}]*\}\s*from ['"]node:child_process['"]/u,
+      /import\s*\{[^}]*\bspawnSync\b[^}]*\}\s*from ['"](?:node:)?child_process['"]/u,
       `${name} must import spawnSync so the shared bounded/fail-closed subprocess controls apply`,
     );
     assert.match(

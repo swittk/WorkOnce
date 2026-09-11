@@ -232,6 +232,11 @@ test('SQLite opens only the current schema and never adopts an old development t
       failure = error;
     }
     assert.ok(failure instanceof Error, 'old development schema must not be silently adopted');
+    assert.equal(
+      failure.message,
+      'no such column: scope',
+      'old development schema must fail because the current schema columns are absent',
+    );
     reopened = new DatabaseSync(path);
     const after = reopened
       .prepare('PRAGMA table_info(workonce)')

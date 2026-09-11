@@ -100,7 +100,7 @@ requireRed(
     '--eval',
     "import { runConformance } from './dist/conformance.js'; import { createMemoryStore } from './dist/memory.js'; let clock = 100000; await runConformance(() => { const store = createMemoryStore({ now: () => clock }); return { store, advance(ms) { clock += ms; }, close() { store.close?.(); } }; });",
   ],
-  /Missing expected rejection/u,
+  /skipped revision must be rejected by the store contract/u,
 );
 requireRed(
   'dist/sqlite.js',

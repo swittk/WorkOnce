@@ -5,13 +5,15 @@ import {
   runPolicyRefinementSamples,
 } from '../scripts/policy-refinement.mjs';
 
+const policyRefinementSamplesPromise = runPolicyRefinementSamples();
+
 test('compiled retry/defer policy observations cover temporal races, receipt identity, adapters and boundaries', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   assertPolicyRefinementSamples(samples);
 });
 
 test('policy refinement rejects wake adapter substitution without a count change', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   const sqliteIndex = samples.findIndex(
     (sample) => sample.kind === 'wakeCompetition' && sample.adapter === 'sqlite',
   );
@@ -28,7 +30,7 @@ test('policy refinement rejects wake adapter substitution without a count change
 });
 
 test('policy refinement rejects count-preserving sample-kind substitution', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   const historyIndex = samples.findIndex((sample) => sample.kind === 'historyCongruence');
   const receipt = samples.find((sample) => sample.kind === 'receiptSplit');
   assert.notEqual(historyIndex, -1);
@@ -41,7 +43,7 @@ test('policy refinement rejects count-preserving sample-kind substitution', asyn
 });
 
 test('policy refinement rejects count-preserving backoff category substitution', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   const maxFiniteIndex = samples.findIndex(
     (sample) => sample.kind === 'backoffFinite' && sample.category === 'maxFiniteCap',
   );
@@ -56,7 +58,7 @@ test('policy refinement rejects count-preserving backoff category substitution',
 });
 
 test('policy refinement rejects collapsed adapter-equivalence coverage', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   assert.ok(samples.some((sample) => sample.kind === 'adapterEquivalence'));
   const mutant = samples.map((sample) =>
     sample.kind === 'adapterEquivalence' ? { ...sample, adapters: 'memory' } : sample,
@@ -68,7 +70,7 @@ test('policy refinement rejects collapsed adapter-equivalence coverage', async (
 });
 
 test('policy refinement rejects count-preserving outcome and race lane substitutions', async () => {
-  const samples = await runPolicyRefinementSamples();
+  const samples = await policyRefinementSamplesPromise;
   const outcomeMutant = samples.map((sample) =>
     sample.kind === 'adapterEquivalence' ? { ...sample, outcomeKind: 'retry' } : sample,
   );
