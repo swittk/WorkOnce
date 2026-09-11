@@ -88,11 +88,16 @@ function assertSpawnSyncTimeouts(name, source) {
   };
   let calls = 0;
   function visit(node) {
-    if (
+    const spawnSyncCall =
       ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'spawnSync'
-    ) {
+      ((ts.isIdentifier(node.expression) && node.expression.text === 'spawnSync') ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === 'spawnSync') ||
+        (ts.isElementAccessExpression(node.expression) &&
+          node.expression.argumentExpression &&
+          ts.isStringLiteralLike(node.expression.argumentExpression) &&
+          node.expression.argumentExpression.text === 'spawnSync'));
+    if (spawnSyncCall) {
       calls++;
       const options = node.arguments[2];
       assert.ok(
@@ -717,6 +722,14 @@ export function assertAssuranceVerdictIntegrity() {
       ['truncateSync', [0]],
       ['writeSync', [0]],
       ['createWriteStream', [0]],
+      ['writeFile', [0]],
+      ['appendFile', [0]],
+      ['copyFile', [1]],
+      ['cp', [1]],
+      ['rename', [0, 1]],
+      ['rm', [0]],
+      ['unlink', [0]],
+      ['truncate', [0]],
     ]);
     const promiseMutationPathArguments = new Map([
       ['writeFile', [0]],

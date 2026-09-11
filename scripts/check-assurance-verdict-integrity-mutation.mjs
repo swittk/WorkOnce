@@ -85,6 +85,20 @@ mutate(
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.writeFile(path.join(root, 'src/worker.ts'), originalStamp, () => {}); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'callback fs write hides a tracked source target beside a generated write',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  "import fs from 'node:fs';",
+  "import fs from 'node:fs';\nimport { writeFile as callbackWrite } from 'node:fs';\ncallbackWrite('src/worker.ts', 'scope-audit-probe', () => {});",
+  'named callback fs write hides a tracked source target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
   "  fs.createWriteStream(path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'write stream acquisition hides a tracked source mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
@@ -200,6 +214,13 @@ mutate(
   "import { spawn } from 'node:child_process';",
   'mutation checker bypasses bounded spawnSync controls',
   /must (?:import|use) spawnSync/u,
+);
+mutate(
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  "import { spawnSync } from 'node:child_process';",
+  "import { spawnSync } from 'node:child_process';\nimport * as childProcess from 'node:child_process';\nchildProcess.spawnSync(process.execPath, ['-e', '']);",
+  'namespace spawnSync call loses its timeout bound',
+  /spawnSync options must be an inline object so timeout bounds are auditable/u,
 );
 mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
