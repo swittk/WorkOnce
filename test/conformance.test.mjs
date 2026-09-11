@@ -144,6 +144,56 @@ test('shared conformance rejects adapters that treat validUntil equality as stil
   );
 });
 
+test('shared conformance rejects deadline-equality bugs when the storage clock advances between read and decision', async () => {
+  await assert.rejects(
+    runConformance(() => {
+      let clock = 100_000;
+      let advanceAfterMalformedDeadlineRead = false;
+      const native = createMemoryStore({ now: () => clock });
+      const badEqualityStore = createCompareExchangeStore({
+        getMany: (ids) => native.getMany(ids),
+        query: (query) => native.query(query),
+        compareExchange: (change) =>
+          native.atomic(change.id, (row, now) => {
+            if (
+              row?.revision !== change.expectedRevision ||
+              (change.validUntil !== undefined && now > change.validUntil)
+            )
+              return { value: false };
+            return { next: change.next, value: true };
+          }),
+      });
+      return {
+        store: {
+          ...badEqualityStore,
+          atomic(id, decide) {
+            return badEqualityStore.atomic(id, (row, now) => {
+              const change = decide(row, now);
+              if (Number.isNaN(change.validUntil)) advanceAfterMalformedDeadlineRead = true;
+              return change;
+            });
+          },
+          async getMany(ids) {
+            const result = await badEqualityStore.getMany(ids);
+            if (advanceAfterMalformedDeadlineRead) {
+              advanceAfterMalformedDeadlineRead = false;
+              clock += 1;
+            }
+            return result;
+          },
+        },
+        advance(ms) {
+          clock += ms;
+        },
+        close() {
+          native.close?.();
+        },
+      };
+    }),
+    /validUntil equal to the storage clock must reject/u,
+  );
+});
+
 test('shared conformance rejects adapters that accept due afterId cursors', async () => {
   await assert.rejects(
     runConformance(() => {

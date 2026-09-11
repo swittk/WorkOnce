@@ -30,6 +30,11 @@ test('lifecycle proof is source/model bound and critical compiled mutants are ki
   assert.match(mutations, /retry reset retaining old receipt/u);
 });
 
+test('lifecycle proof binding covers the TLC outcome classifier control corpus', () => {
+  const binding = JSON.parse(fs.readFileSync('assurance/lifecycle-proof-binding.json', 'utf8'));
+  assert.ok(binding.evidenceFiles.includes('test/tlc-outcome.test.mjs'));
+});
+
 test('lifecycle binding write mode ignores mutation-only digest injection', () => {
   const target = 'assurance/lifecycle-proof-binding.json';
   const original = fs.readFileSync(target, 'utf8');

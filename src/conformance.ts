@@ -389,11 +389,10 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         value: null,
       })),
     );
-    const boundaryNow = (await store.getMany([snapshot.id])).now;
     await assert.rejects(
-      store.atomic(snapshot.id, (row) => ({
+      store.atomic(snapshot.id, (row, clock) => ({
         next: { ...row!, revision: row!.revision + 1 },
-        validUntil: boundaryNow,
+        validUntil: clock,
         value: null,
       })),
       () => true,

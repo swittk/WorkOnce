@@ -33,6 +33,7 @@ const evidenceFiles = [
   'scripts/lifecycle-formal.mjs',
   'scripts/build-source-binding.mjs',
   'scripts/tlc-outcome.mjs',
+  'test/tlc-outcome.test.mjs',
   'scripts/tlc-workspace.mjs',
   'test/tlc-workspace.test.mjs',
   'scripts/check-lifecycle-proof-binding.mjs',

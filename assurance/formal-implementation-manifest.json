@@ -11367,7 +11367,7 @@
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "ff146d5164ed87d36ad882a738cf186cd3c945c8f3f78c01f765506320b87b8f",
+      "sourceDigest": "565ce5c9c8956f249cded41ea3b6e208c2d76efef808d4a43651aadc56eebd6e",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "0e9499beb7f888325bf01857dc7f5bb078dac4a1c030800f6532364482ac64fc",
+    "assuranceInfrastructureDigest": "85d18582af030098ca08c40c8c1e43a09b4e02f53e4774378c2edc673c5c3d9a",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11502,6 +11502,7 @@
       "test/storage-contract-hardening.test.mjs",
       "test/storage-refinement.test.mjs",
       "test/subprocess-outcome.test.mjs",
+      "test/tlc-outcome.test.mjs",
       "test/tlc-workspace.test.mjs",
       "tsconfig.cjs.json",
       "tsconfig.json",
@@ -11544,7 +11545,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "5e02d185c791ced2a98978aef6a2543cfdb7b757c313013f5cf8e026424a83e8",
+    "sourceDigest": "13f7bca3fe415e8297a58c7e7918dc08d8397c9b92d99288e414510e2d926028",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

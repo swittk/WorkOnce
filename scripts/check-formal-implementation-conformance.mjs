@@ -286,6 +286,7 @@ const assuranceInfrastructureFiles = [
   'assurance/red-before/process-fault-test-concurrency.json',
   'assurance/red-before/unbound-assurance-runner.json',
   'scripts/tlc-outcome.mjs',
+  'test/tlc-outcome.test.mjs',
   'scripts/subprocess-outcome.mjs',
   'test/subprocess-outcome.test.mjs',
   'scripts/check-assurance-verdict-integrity.mjs',
