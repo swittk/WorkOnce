@@ -92,3 +92,27 @@ test('lifecycle refinement rejects an omitted required evidence field', async ()
     /terminalReceipt evidence fields drifted/u,
   );
 });
+
+test('lifecycle refinement rejects count-preserving reset and cancel lane substitutions', async () => {
+  const samples = await lifecycleSamples();
+  for (const [kind, field, sourceValue, replacementValue] of [
+    ['resetCheckRace', 'resetKind', 'rerun', 'retry'],
+    ['cancelOrdering', 'first', 'complete', 'cancel'],
+  ]) {
+    const sourceIndex = samples.findIndex(
+      (sample) => sample.kind === kind && sample[field] === sourceValue,
+    );
+    const replacement = samples.find(
+      (sample) => sample.kind === kind && sample[field] === replacementValue,
+    );
+    assert.notEqual(sourceIndex, -1);
+    assert.ok(replacement);
+    const mutant = samples.map((sample, index) =>
+      index === sourceIndex ? { ...replacement } : sample,
+    );
+    assert.throws(
+      () => assertLifecycleRefinementSamples(mutant),
+      new RegExp(`${kind} ${field} coverage drifted`, 'u'),
+    );
+  }
+});

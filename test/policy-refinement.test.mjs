@@ -89,3 +89,32 @@ test('policy refinement rejects count-preserving outcome and race lane substitut
     /policyRace lane coverage drifted/u,
   );
 });
+
+test('policy refinement rejects count-preserving boundary lane substitutions', async () => {
+  const samples = await policyRefinementSamplesPromise;
+  for (const [kind, predicate, replacementPredicate, pattern] of [
+    [
+      'retryBoundary',
+      (sample) => sample.deadlineLimit === true,
+      (sample) => sample.deadlineLimit === false,
+      /retryBoundary lane coverage drifted/u,
+    ],
+    [
+      'deferBoundary',
+      (sample) => sample.deferralLimit === true,
+      (sample) => sample.deferralLimit === false,
+      /deferBoundary lane coverage drifted/u,
+    ],
+  ]) {
+    const sourceIndex = samples.findIndex((sample) => sample.kind === kind && predicate(sample));
+    const replacement = samples.find(
+      (sample) => sample.kind === kind && replacementPredicate(sample),
+    );
+    assert.notEqual(sourceIndex, -1);
+    assert.ok(replacement);
+    const mutant = samples.map((sample, index) =>
+      index === sourceIndex ? { ...replacement } : sample,
+    );
+    assert.throws(() => assertPolicyRefinementSamples(mutant), pattern);
+  }
+});

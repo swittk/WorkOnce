@@ -775,6 +775,31 @@ const backoffExpectedCategories = [
   'zeroOverflow',
 ];
 
+const retryBoundaryExpectedLanes = [
+  'false:false:false:false',
+  'false:false:false:true',
+  'false:false:true:false',
+  'false:false:true:true',
+  'true:false:false:false',
+  'true:false:false:true',
+  'true:false:true:false',
+  'true:false:true:true',
+  'true:true:false:false',
+  'true:true:false:true',
+  'true:true:true:false',
+  'true:true:true:true',
+];
+const deferBoundaryExpectedLanes = [
+  'false:false:false',
+  'false:false:true',
+  'false:true:false',
+  'false:true:true',
+  'true:false:false',
+  'true:false:true',
+  'true:true:false',
+  'true:true:true',
+];
+
 const policyExpectedKindCounts = {
   retryBoundary: 12,
   deferBoundary: 8,
@@ -816,6 +841,25 @@ export function assertPolicyRefinementSamples(samples) {
       ['defer', 'retry'],
       `${kind} outcome coverage drifted`,
     );
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'retryBoundary')
+      .map(
+        (sample) =>
+          `${sample.policyAllows}:${sample.retryLimit}:${sample.attemptLimit}:${sample.deadlineLimit}`,
+      )
+      .sort(),
+    retryBoundaryExpectedLanes,
+    'retryBoundary lane coverage drifted',
+  );
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'deferBoundary')
+      .map((sample) => `${sample.attemptLimit}:${sample.deadlineLimit}:${sample.deferralLimit}`)
+      .sort(),
+    deferBoundaryExpectedLanes,
+    'deferBoundary lane coverage drifted',
+  );
   assert.deepEqual(
     samples
       .filter((sample) => sample.kind === 'policyRace')

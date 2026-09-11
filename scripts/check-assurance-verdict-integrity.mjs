@@ -444,6 +444,16 @@ export function assertAssuranceVerdictIntegrity() {
     /INVARIANT MutationBranchesEnabled/u,
     'formal mutation witness configs must check per-branch enabledness',
   );
+  assert.match(
+    formalSource,
+    /function requireObservedSample\([\s\S]{0,420}?Object\.hasOwn\(sample, field\)/u,
+    'runtime negative sample witnesses must prove their mutation field exists on a real observed sample',
+  );
+  assert.match(
+    formalSource,
+    /const badRunner = \{ \.\.\.badRunnerBase, preserved: false \};[\s\S]{0,120}?const badRead = \{ \.\.\.badReadBase, accepted: false \};/u,
+    'runtime negative samples must derive from observed samples and override only their intended field',
+  );
   for (const [name, sourceNeedle] of [
     [
       'runtime',

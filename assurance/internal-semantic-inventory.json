@@ -3095,6 +3095,64 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/kernel.ts:rerunRecord:property_delete:69693ed645f4ddc1:1",
+      "path": "src/kernel.ts",
+      "context": "rerunRecord",
+      "kind": "property_delete",
+      "ordinal": 6,
+      "excerpt": "delete next.firstStartedAt",
+      "textDigest": "7d4c7b48d96d4b65",
+      "families": [
+        "A"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Explicit rerun clears prior-generation timing/receipt state while advancing lifecycle generation; family A owns rerun/reset lifecycle semantics."
+    },
+    {
+      "id": "src/kernel.ts:rerunRecord:property_delete:dd4f05078a019fc6:1",
+      "path": "src/kernel.ts",
+      "context": "rerunRecord",
+      "kind": "property_delete",
+      "ordinal": 7,
+      "excerpt": "delete next.receipt",
+      "textDigest": "91871cb089c3f0a6",
+      "families": [
+        "A"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Explicit rerun clears prior-generation timing/receipt state while advancing lifecycle generation; family A owns rerun/reset lifecycle semantics."
+    },
+    {
+      "id": "src/kernel.ts:retryRecord:property_delete:193da5f82d738ec1:1",
+      "path": "src/kernel.ts",
+      "context": "retryRecord",
+      "kind": "property_delete",
+      "ordinal": 7,
+      "excerpt": "delete next.receipt",
+      "textDigest": "91871cb089c3f0a6",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Manual retry clears prior-attempt timing/receipt state while advancing lifecycle generation; A owns lifecycle reset semantics and F owns manual-retry policy behavior."
+    },
+    {
+      "id": "src/kernel.ts:retryRecord:property_delete:ce78217ec3c07683:1",
+      "path": "src/kernel.ts",
+      "context": "retryRecord",
+      "kind": "property_delete",
+      "ordinal": 6,
+      "excerpt": "delete next.firstStartedAt",
+      "textDigest": "7d4c7b48d96d4b65",
+      "families": [
+        "A",
+        "F"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Manual retry clears prior-attempt timing/receipt state while advancing lifecycle generation; A owns lifecycle reset semantics and F owns manual-retry policy behavior."
     }
   ]
 }

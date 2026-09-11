@@ -645,6 +645,14 @@ function tlaValue(value) {
   throw new Error('Unrepresentable runtime observation');
 }
 
+function requireObservedSample(samples, label, predicate, field) {
+  const sample = samples.find(predicate);
+  if (!sample) throw new Error(`Missing observed ${label} sample for negative witness`);
+  if (!Object.hasOwn(sample, field))
+    throw new Error(`Observed ${label} sample is missing mutation field ${field}`);
+  return sample;
+}
+
 const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
 if (nonRuntimeOnly) {
   runModel('WorkOnce', 'WorkOnce.cfg');
@@ -663,9 +671,23 @@ if (runtimeOnly) {
   const samples = await runRuntimeBoundarySamples();
   const config = resolve(tlcWorkspace, 'WorkOnceRuntime-observed.cfg');
   const observedModule = resolve(tlcWorkspace, 'WorkOnceRuntimeObserved.tla');
+  const badRunnerBase = requireObservedSample(
+    samples,
+    'runner',
+    (sample) => sample.kind === 'runner' && sample.preserved === true,
+    'preserved',
+  );
+  const badReadBase = requireObservedSample(
+    samples,
+    'read',
+    (sample) => sample.kind === 'read' && sample.matched === true && sample.accepted === true,
+    'accepted',
+  );
+  const badRunner = { ...badRunnerBase, preserved: false };
+  const badRead = { ...badReadBase, accepted: false };
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == [kind |-> \"runner\", failureValue |-> \"none\", returnedValue |-> \"none\", handled |-> FALSE, rejected |-> TRUE, preserved |-> TRUE, drained |-> TRUE, timedOut |-> FALSE, site |-> \"direct\"]\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRead == [kind |-> \"read\", matched |-> FALSE, accepted |-> TRUE, definitionError |-> FALSE, snapshotExact |-> FALSE, errorCause |-> \"none\"]\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
   );
   writeFileSync(
     config,

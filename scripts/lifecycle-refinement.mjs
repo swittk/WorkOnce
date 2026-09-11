@@ -757,6 +757,18 @@ export function assertLifecycleRefinementSamples(samples) {
     lifecycleExpectedKindCounts,
     'lifecycle sample kind coverage drifted',
   );
+  for (const [kind, field, expected] of [
+    ['resetCheckRace', 'resetKind', ['rerun', 'retry']],
+    ['cancelOrdering', 'first', ['cancel', 'complete']],
+  ])
+    assert.deepEqual(
+      samples
+        .filter((sample) => sample.kind === kind)
+        .map((sample) => sample[field])
+        .sort(),
+      expected,
+      `${kind} ${field} coverage drifted`,
+    );
   for (const kind of ['terminalReceipt', 'terminalAckLoss'])
     assert.deepEqual(
       samples
@@ -840,7 +852,6 @@ export function assertLifecycleRefinementSamples(samples) {
         ['checkOnce', 'winnerAdvanced', 'exactLateCause', 'noDoubleGeneration'],
         ['resetKind'],
       );
-      assert.ok(['retry', 'rerun'].includes(sample.resetKind), name);
     } else if (sample.kind === 'claimOrderEquivalence') {
       assertExactBooleanSample(sample, ['exactOrder', 'adaptersEquivalent'], ['adapters']);
       assert.equal(

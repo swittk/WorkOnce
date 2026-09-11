@@ -414,6 +414,14 @@ mutate(
 
 mutate(
   'scripts/formal.mjs',
+  '  if (!Object.hasOwn(sample, field))',
+  '  if (false)',
+  'runtime negative observed-sample witness stops checking target-field presence',
+  /runtime negative sample witnesses must prove their mutation field exists/u,
+);
+
+mutate(
+  'scripts/formal.mjs',
   '  if (occurrences !== 1)',
   '  if (false)',
   'observed-sample rebinding stops failing closed',

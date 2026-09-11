@@ -113,6 +113,12 @@ function constructKind(node) {
     temporalMethodNames.has(node.expression.name.text)
   )
     return `call_${node.expression.name.text}`;
+  if (ts.isDeleteExpression(node)) return 'property_delete';
+  if (
+    ts.isVariableStatement(node) &&
+    (node.declarationList.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const)) === 0
+  )
+    return 'mutable_var';
   if (ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Let) !== 0)
     return 'mutable_let';
   if (ts.isWhileStatement(node)) return 'while_loop';

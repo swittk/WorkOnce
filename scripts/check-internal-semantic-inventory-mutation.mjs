@@ -11,11 +11,13 @@ const mutationFiles = createMutationFileGuard();
 const sourcePath = path.join(root, 'src/worker.ts');
 const workSourcePath = path.join(root, 'src/work.ts');
 const externalSourcePath = path.join(root, 'src/external.ts');
+const kernelSourcePath = path.join(root, 'src/kernel.ts');
 const modelSourcePath = path.join(root, 'src/model.ts');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
 const source = fs.readFileSync(sourcePath, 'utf8');
 const workSource = fs.readFileSync(workSourcePath, 'utf8');
 const externalSource = fs.readFileSync(externalSourcePath, 'utf8');
+const kernelSource = fs.readFileSync(kernelSourcePath, 'utf8');
 const modelSource = fs.readFileSync(modelSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
@@ -39,6 +41,7 @@ try {
   mutationFiles.writeFileSync(
     sourcePath,
     `${source.slice(0, brace + 1)}
+  var internalSemanticVarMutant = 0;
   let internalSemanticInventoryMutant = 0;
   internalSemanticInventoryMutant += 1;
   internalSemanticInventoryMutant++;
@@ -66,6 +69,7 @@ ${source.slice(brace + 1)}`,
     'new mutable runner/class state unexpectedly passed inventory',
   );
   assert.match(sourceOutput, /Internal semantic inventory drifted/u);
+  assert.match(sourceOutput, /mutable_var/u);
   assert.match(sourceOutput, /mutable_let/u);
   assert.match(sourceOutput, /identifier_assignment/u);
   assert.match(sourceOutput, /identifier_update/u);
@@ -76,6 +80,21 @@ ${source.slice(brace + 1)}`,
   assert.match(sourceOutput, /mutable_property/u);
   assert.match(sourceOutput, /call_queueMicrotask/u);
   assert.match(sourceOutput, /call_mutator_Object\.assign/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
+  const deleteAnchor = '  delete next.receipt;';
+  assert.ok(kernelSource.includes(deleteAnchor), 'property delete mutation anchor is missing');
+  mutationFiles.writeFileSync(
+    kernelSourcePath,
+    kernelSource.replace(deleteAnchor, '  delete next.history;'),
+  );
+  const deleteOutput = runExpectedFailure(
+    'existing property delete semantic edit unexpectedly bypassed internal inventory',
+  );
+  assert.match(deleteOutput, /property_delete/u);
 } finally {
   mutationFiles.restoreAll();
 }
