@@ -30,6 +30,9 @@ export function createMutationFileGuard() {
   const reportRestoreFailure = (error) => {
     fs.writeSync(2, `${restoreFailureDiagnostic(error)}\n`);
   };
+  const assertActive = () => {
+    if (disposed) throw new Error('Mutation file guard is disposed');
+  };
   const terminate = (code) => {
     if (terminating) return;
     terminating = true;
@@ -56,14 +59,19 @@ export function createMutationFileGuard() {
   process.once('exit', onExit);
   return {
     writeFileSync(file, data, options) {
+      assertActive();
       remember(file);
       fs.writeFileSync(file, data, options);
     },
     appendFileSync(file, data, options) {
+      assertActive();
       remember(file);
       fs.appendFileSync(file, data, options);
     },
-    restoreAll,
+    restoreAll() {
+      assertActive();
+      restoreAll();
+    },
     dispose() {
       if (disposed) return;
       restoreAll();

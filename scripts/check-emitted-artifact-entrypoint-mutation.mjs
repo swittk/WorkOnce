@@ -283,6 +283,70 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
   );
   console.log('Emitted-artifact entrypoint ordering rejects a consumer before the single build.');
   mutationFiles.restoreAll();
+
+  const dynamicLabelAnchor = "await runParallel([\n  npmParallelEntry('format'";
+  assert.equal(
+    assuranceOriginal.split(dynamicLabelAnchor).length,
+    2,
+    'dynamic assurance label mutation anchor is stale or not unique',
+  );
+  mutationFiles.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(
+      dynamicLabelAnchor,
+      "run(`dynamic-${process.pid}`, process.execPath, ['scripts/consumer-smoke.mjs']);\n" +
+        dynamicLabelAnchor,
+    ),
+  );
+  expectCheckerFailure(
+    'interpolated top-level assurance label',
+    /label that is not statically reviewable/u,
+  );
+  console.log('Emitted-artifact entrypoint checker rejects interpolated assurance labels.');
+  mutationFiles.restoreAll();
+
+  const allPassedAnchor = "console.log('[assurance] all gates passed');";
+  assert.equal(
+    assuranceOriginal.split(allPassedAnchor).length,
+    2,
+    'dynamic runParallel array mutation anchor is stale or not unique',
+  );
+  mutationFiles.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(
+      allPassedAnchor,
+      "const lateDynamicEntries = [['late dynamic step', process.execPath, ['scripts/consumer-smoke.mjs']]];\nawait runParallel(lateDynamicEntries);\n" +
+        allPassedAnchor,
+    ),
+  );
+  expectCheckerFailure(
+    'dynamic runParallel entry array',
+    /runParallel.*inline statically reviewable entry array/u,
+  );
+  console.log('Emitted-artifact entrypoint checker rejects dynamic runParallel entry arrays.');
+  mutationFiles.restoreAll();
+
+  const storageBatch =
+    "await runParallel([\n  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],\n]);";
+  assert.equal(
+    assuranceOriginal.split(storageBatch).length,
+    2,
+    'spread runParallel entry mutation anchor is stale or not unique',
+  );
+  mutationFiles.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(
+      storageBatch,
+      "const lateSpreadEntries = [['late spread step', process.execPath, ['scripts/consumer-smoke.mjs']]];\nawait runParallel([\n  ...lateSpreadEntries,\n  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],\n]);",
+    ),
+  );
+  expectCheckerFailure(
+    'spread runParallel entry',
+    /runParallel.*entry that is not statically reviewable/u,
+  );
+  console.log('Emitted-artifact entrypoint checker rejects spread runParallel entries.');
+  mutationFiles.restoreAll();
+
   const buildEntry = "  npmParallelEntry('single build', ['run', 'build']),";
   assert.equal(
     assuranceOriginal.split(buildEntry).length,

@@ -272,9 +272,17 @@ export function assertEmittedArtifactEntrypoints() {
     stepPositions.set(label, positions);
   }
   function literalText(node) {
-    return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+    return node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
       ? node.text
       : undefined;
+  }
+  function requiredLabel(node, callee) {
+    const label = literalText(node);
+    if (label === undefined)
+      throw new Error(
+        `Full assurance step '${callee}' uses a label that is not statically reviewable.`,
+      );
+    return label;
   }
   function enclosingFunctionName(node) {
     for (let parent = node.parent; parent && parent !== sourceFile; parent = parent.parent) {
@@ -295,31 +303,40 @@ export function assertEmittedArtifactEntrypoints() {
         `Full assurance step call '${name}' is hidden inside a non-entrypoint function.`,
       );
     }
-    if (name === 'runParallel' && ts.isArrayLiteralExpression(node.arguments[0])) {
+    if (name === 'runParallel') {
+      const entries = node.arguments[0];
+      if (!ts.isArrayLiteralExpression(entries))
+        throw new Error(
+          "Full assurance step 'runParallel' must use an inline statically reviewable entry array.",
+        );
       let containsBuild = false;
-      for (const entry of node.arguments[0].elements) {
+      for (const entry of entries.elements) {
         if (
           ts.isCallExpression(entry) &&
           ts.isIdentifier(entry.expression) &&
-          entry.expression.text === 'npmParallelEntry' &&
-          literalText(entry.arguments[0]) === 'single build'
-        )
-          containsBuild = true;
-        if (!ts.isArrayLiteralExpression(entry)) continue;
-        const label = literalText(entry.elements[0]);
-        if (label) recordStep(label, entry.getStart(sourceFile));
+          entry.expression.text === 'npmParallelEntry'
+        ) {
+          if (requiredLabel(entry.arguments[0], 'npmParallelEntry') === 'single build')
+            containsBuild = true;
+          continue;
+        }
+        if (!ts.isArrayLiteralExpression(entry))
+          throw new Error(
+            "Full assurance step 'runParallel' contains an entry that is not statically reviewable.",
+          );
+        const label = requiredLabel(entry.elements[0], 'runParallel');
+        recordStep(label, entry.getStart(sourceFile));
       }
       if (containsBuild) buildBatchEnds.push(node.getEnd());
       return;
     }
     if (name === 'run') {
-      const label = literalText(node.arguments[0]);
-      if (label) recordStep(label, node.getStart(sourceFile));
+      const label = requiredLabel(node.arguments[0], 'run');
+      recordStep(label, node.getStart(sourceFile));
       return;
     }
     if (name !== 'npmParallelEntry') return;
-    const label = literalText(node.arguments[0]);
-    if (!label) return;
+    const label = requiredLabel(node.arguments[0], 'npmParallelEntry');
     if (label === 'single build') {
       buildPositions.push(node.getStart(sourceFile));
       return;

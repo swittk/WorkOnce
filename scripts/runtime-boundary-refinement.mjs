@@ -545,6 +545,14 @@ async function localHistoryCongruenceSample(pair, firstSite, secondSite, errorVa
   };
 }
 
+export function assertConcreteHistoryEvidence(expectedHistory, actualHistory, phase) {
+  assert.ok(
+    Array.isArray(expectedHistory) && expectedHistory.length > 0,
+    `read-boundary history evidence missing for phase ${phase}`,
+  );
+  assert.deepEqual(actualHistory, expectedHistory);
+}
+
 export async function runRuntimeBoundarySamples() {
   const samples = [];
   const fatalCases = [
@@ -605,7 +613,7 @@ export async function runRuntimeBoundarySamples() {
           } else if (method === 'history') {
             const stored = await store.getMany([snapshot.id]);
             const expectedHistory = stored.rows[0]?.history;
-            assert.deepEqual(result.value, expectedHistory);
+            assertConcreteHistoryEvidence(expectedHistory, result.value, phase);
             snapshotExact = true;
           } else {
             assert.deepEqual(result.value, snapshot);

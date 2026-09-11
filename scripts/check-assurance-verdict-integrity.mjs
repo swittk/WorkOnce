@@ -499,6 +499,28 @@ export function assertAssuranceVerdictIntegrity() {
     /fs\.writeSync\(2, `\$\{restoreFailureDiagnostic\(error\)\}\\n`\)/u,
     'mutation file guard must synchronously publish restore failures before forced exit',
   );
+  assert.match(
+    mutationFileGuard,
+    /writeFileSync\(file, data, options\) \{\s*assertActive\(\);/u,
+    'mutation file guard must reject writes after disposal',
+  );
+  assert.match(
+    mutationFileGuard,
+    /appendFileSync\(file, data, options\) \{\s*assertActive\(\);/u,
+    'mutation file guard must reject appends after disposal',
+  );
+  assert.match(
+    mutationFileGuard,
+    /restoreAll\(\) \{\s*assertActive\(\);\s*restoreAll\(\);/u,
+    'mutation file guard must reject public restore after disposal',
+  );
+
+  const runtimeBoundaryRefinement = read('scripts/runtime-boundary-refinement.mjs');
+  assert.match(
+    runtimeBoundaryRefinement,
+    /assertConcreteHistoryEvidence\(expectedHistory, result\.value, phase\)/u,
+    'runtime boundary history proof must require concrete persisted history evidence',
+  );
 
   const boundedDomain = read('scripts/check-bounded-trace-domain.mjs');
   assert.doesNotMatch(

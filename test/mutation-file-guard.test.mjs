@@ -175,6 +175,28 @@ test('mutation file guard restores remembered files during normal disposal', () 
   }
 });
 
+test('mutation file guard rejects public filesystem mutation after disposal', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-disposed-'));
+  const target = join(directory, 'tracked.txt');
+  writeFileSync(target, 'original\n');
+  const guard = createMutationFileGuard();
+  try {
+    guard.writeFileSync(target, 'mutated\n');
+    guard.dispose();
+    writeFileSync(target, 'legitimate-after-dispose\n');
+    for (const mutate of [
+      () => guard.writeFileSync(target, 'post-dispose-write\n'),
+      () => guard.appendFileSync(target, 'post-dispose-append\n'),
+      () => guard.restoreAll(),
+    ])
+      assert.throws(mutate, /Mutation file guard is disposed/u);
+    assert.equal(readFileSync(target, 'utf8'), 'legitimate-after-dispose\n');
+  } finally {
+    guard.dispose();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('mutation file guard restores later files even when an earlier restore fails', () => {
   const directory = mkdtempSync(join(tmpdir(), 'workonce-mutation-partial-restore-'));
   const blocked = join(directory, 'blocked.txt');

@@ -733,6 +733,20 @@ mutate(
   /synchronously publish restore failures before forced exit/u,
 );
 mutate(
+  'scripts/mutation-file-guard.mjs',
+  '    writeFileSync(file, data, options) {\n      assertActive();',
+  '    writeFileSync(file, data, options) {',
+  'mutation file guard permits writes after disposal',
+  /reject writes after disposal/u,
+);
+mutate(
+  'scripts/runtime-boundary-refinement.mjs',
+  '            assertConcreteHistoryEvidence(expectedHistory, result.value, phase);',
+  '            assert.deepEqual(result.value, expectedHistory);',
+  'runtime history proof returns to missing-on-both-sides comparison',
+  /history proof must require concrete persisted history evidence/u,
+);
+mutate(
   'scripts/lifecycle-formal.mjs',
   "  process.stdout.write(result.stdout ?? '');",
   '  void result.stdout;',

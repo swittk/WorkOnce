@@ -3,7 +3,17 @@ import assert from 'node:assert/strict';
 import {
   runRuntimeBoundarySamples,
   assertRuntimeBoundarySamples,
+  assertConcreteHistoryEvidence,
 } from '../scripts/runtime-boundary-refinement.mjs';
+
+test('runtime history evidence cannot pass when both expected and observed history are missing', () => {
+  assert.throws(
+    () => assertConcreteHistoryEvidence(undefined, undefined, 'queued'),
+    /read-boundary history evidence missing for phase queued/u,
+  );
+  const history = [{ action: 'enqueue' }];
+  assert.doesNotThrow(() => assertConcreteHistoryEvidence(history, history, 'queued'));
+});
 
 test('real local/external runners, typed reads, policy delays and race results refine runtime boundaries', async () => {
   const samples = await runRuntimeBoundarySamples();
