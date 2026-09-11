@@ -138,10 +138,32 @@ assert.match(
   /fs\.writeFileSync\(\$\{JSON\.stringify\(readyMarker\)\}, String\(process\.pid\)\)/u,
   'Process-tree descendants must report readiness before the injected parent failure.',
 );
+const descendantSectionStart = text.indexOf('const descendantCode =');
+const descendantSectionEnd = text.indexOf('const parentCode =', descendantSectionStart);
+assert.ok(
+  descendantSectionStart >= 0 && descendantSectionEnd > descendantSectionStart,
+  'Process-tree self-test descendant section is missing.',
+);
+const descendantSection = text.slice(descendantSectionStart, descendantSectionEnd);
+assert.match(
+  descendantSection,
+  /setInterval\(\(\) => \{\}, 1000\)/u,
+  'Process-tree descendants must remain alive until explicit containment kills them.',
+);
+assert.doesNotMatch(
+  descendantSection,
+  /setTimeout\(/u,
+  'Process-tree descendants must not self-expire on a scheduler-sensitive timer.',
+);
 assert.match(
   text,
   /await waitForProcessExit\(pid, label\)/u,
   'Process-tree containment self-test must directly observe each ready descendant exit.',
+);
+assert.match(
+  text,
+  /finally \{\s*await cleanupReadyDescendants\(\);\s*fs\.rmSync\(directory/u,
+  'Process-tree self-test must clean intentionally orphaned mutation descendants after verdict capture.',
 );
 
 assert.match(

@@ -193,23 +193,18 @@ async function runParallelProcessTreeSelfTest() {
     return;
   }
   const directory = fs.mkdtempSync(path.join(tmpdir(), 'workonce-assurance-tree-'));
-  const failedMarker = path.join(directory, 'failed-descendant.txt');
-  const siblingMarker = path.join(directory, 'sibling-descendant.txt');
   const failedReady = path.join(directory, 'failed-descendant-ready.txt');
   const siblingReady = path.join(directory, 'sibling-descendant-ready.txt');
   const allReady = [failedReady, siblingReady];
-  const descendantCode = (marker, readyMarker) => `
+  const descendantCode = (readyMarker) => `
     const fs = require('node:fs');
     fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));
-    setTimeout(() => {
-      fs.writeFileSync(${JSON.stringify(marker)}, 'late\\n');
-      process.exit(0);
-    }, 400);
+    setInterval(() => {}, 1000);
   `;
-  const parentCode = (marker, readyMarker, fail) => `
+  const parentCode = (readyMarker, fail) => `
     const fs = require('node:fs');
     const { spawn } = require('node:child_process');
-    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(marker, readyMarker))}], { stdio: 'ignore' });
+    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(readyMarker))}], { stdio: 'ignore' });
     ${
       fail
         ? `const ready = ${JSON.stringify(allReady)};
@@ -227,20 +222,26 @@ async function runParallelProcessTreeSelfTest() {
     }
     setInterval(() => {}, 1000);
   `;
+  async function cleanupReadyDescendants() {
+    for (const readyMarker of allReady) {
+      if (!fs.existsSync(readyMarker)) continue;
+      const pid = Number(fs.readFileSync(readyMarker, 'utf8'));
+      if (!Number.isInteger(pid) || pid <= 0) continue;
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch (error) {
+        if (error?.code === 'ESRCH') continue;
+        throw error;
+      }
+      await waitForProcessExit(pid, `self-test cleanup ${path.basename(readyMarker)}`, 1000);
+    }
+  }
   try {
     let observedFailure = false;
     try {
       const selfTestEntries = [
-        [
-          'process-tree failing parent',
-          process.execPath,
-          ['-e', parentCode(failedMarker, failedReady, true)],
-        ],
-        [
-          'process-tree sibling parent',
-          process.execPath,
-          ['-e', parentCode(siblingMarker, siblingReady, false)],
-        ],
+        ['process-tree failing parent', process.execPath, ['-e', parentCode(failedReady, true)]],
+        ['process-tree sibling parent', process.execPath, ['-e', parentCode(siblingReady, false)]],
       ];
       await runParallel(selfTestEntries);
     } catch (error) {
@@ -261,12 +262,11 @@ async function runParallelProcessTreeSelfTest() {
         throw new Error(`parallel process-tree self-test recorded invalid ${label} pid`);
       await waitForProcessExit(pid, label);
     }
-    if (fs.existsSync(failedMarker) || fs.existsSync(siblingMarker))
-      throw new Error('parallel assurance failure left an orphan descendant process running');
     console.log(
       'Parallel assurance failure contains both failed-child and sibling descendant process trees.',
     );
   } finally {
+    await cleanupReadyDescendants();
     fs.rmSync(directory, { recursive: true, force: true });
   }
 }

@@ -137,6 +137,21 @@ try {
     /descendants must report readiness/u,
   );
   expectSchedulingFailure(
+    'scheduler-sensitive self-expiring descendant',
+    (text) =>
+      text.replace(
+        '    fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));\n    setInterval(() => {}, 1000);',
+        '    fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));\n    setTimeout(() => process.exit(0), 400);',
+      ),
+    /must remain alive until explicit containment kills them|must not self-expire/u,
+  );
+  expectSchedulingFailure(
+    'lost mutation-descendant fallback cleanup',
+    (text) =>
+      text.replace('    await cleanupReadyDescendants();', '    void cleanupReadyDescendants;'),
+    /clean intentionally orphaned mutation descendants/u,
+  );
+  expectSchedulingFailure(
     'lost process-tree containment self-test',
     (text) =>
       text.replace(

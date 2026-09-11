@@ -156,6 +156,20 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
     mutationFiles.restoreAll();
   }
 
+  try {
+    const earlyIifeProducer = `(async () => { await import('./runtime-boundary-refinement.mjs'); })();\n${formalOriginal}`;
+    mutationFiles.writeFileSync(formalPath, earlyIifeProducer);
+    expectCheckerFailure(
+      'early IIFE formal producer import',
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log(
+      'Emitted-artifact entrypoint checker treats top-level IIFE bodies as module initialization.',
+    );
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

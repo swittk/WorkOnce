@@ -86,10 +86,23 @@ export function assertEmittedArtifactEntrypoints() {
       ts.isSetAccessorDeclaration(node)
     );
   }
+  function immediatelyInvokedFunctionCall(boundary) {
+    let expression = boundary;
+    let parent = boundary.parent;
+    while (parent && ts.isParenthesizedExpression(parent)) {
+      expression = parent;
+      parent = parent.parent;
+    }
+    return parent && ts.isCallExpression(parent) && parent.expression === expression
+      ? parent
+      : undefined;
+  }
   function executesDuringModuleInitialization(node, sourceFile) {
     if (isStaticallyUnreachable(node)) return false;
-    for (let parent = node.parent; parent && parent !== sourceFile; parent = parent.parent)
-      if (isFunctionBoundary(parent)) return false;
+    for (let parent = node.parent; parent && parent !== sourceFile; parent = parent.parent) {
+      if (!isFunctionBoundary(parent)) continue;
+      if (!immediatelyInvokedFunctionCall(parent)) return false;
+    }
     return true;
   }
   function staticImportCount(sourceFile, specifier) {
