@@ -38,4 +38,15 @@ test('real local/external runners, typed reads, policy delays and race results r
     () => assertRuntimeBoundarySamples(unknownMetadata),
     /runner mode\/site coverage drifted/u,
   );
+
+  const kindSubstitution = samples.map((sample) => ({ ...sample }));
+  const budgetIndex = kindSubstitution.findIndex((sample) => sample.kind === 'budget');
+  const cancelDonor = kindSubstitution.find((sample) => sample.kind === 'cancel');
+  assert.notEqual(budgetIndex, -1);
+  assert.ok(cancelDonor);
+  kindSubstitution[budgetIndex] = { ...cancelDonor };
+  assert.throws(
+    () => assertRuntimeBoundarySamples(kindSubstitution),
+    /runtime boundary sample kind coverage drifted/u,
+  );
 });

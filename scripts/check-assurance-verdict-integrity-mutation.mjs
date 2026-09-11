@@ -413,6 +413,20 @@ mutate(
   /live TLC probe must preserve the shared fail-closed process classifier/u,
 );
 mutate(
+  'scripts/check-tlc-outcome-classification.mjs',
+  "['scripts/formal.mjs', '--non-runtime-only']",
+  "['scripts/formal.mjs']",
+  'live TLC probe regresses to parent shard fan-out',
+  /live TLC probe must isolate one formal shard/u,
+);
+mutate(
+  'scripts/check-tlc-outcome-classification.mjs',
+  '    timeout: 30_000,',
+  '    timeout: 15_000,',
+  'live TLC probe loses reviewed timeout margin',
+  /live TLC probe must retain its reviewed bounded 30-second timeout/u,
+);
+mutate(
   'scripts/check-formal-implementation-conformance.mjs',
   "  requireSuccessfulProcess(result, 'formal implementation surface extractor');",
   "  if (result.status !== 0) throw new Error('surface extractor failed');",

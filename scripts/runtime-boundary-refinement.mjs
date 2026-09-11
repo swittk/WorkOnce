@@ -19,6 +19,16 @@ export const auditPhases = [
   'cancelled',
 ];
 
+const runtimeBoundaryExpectedKindCounts = Object.freeze({
+  runner: 88,
+  runnerHistory: 2,
+  read: 80,
+  readAdapter: 3,
+  backoff: 36,
+  budget: 24,
+  cancel: 2,
+});
+
 const expectedRunnerCoverage = (() => {
   const coverage = [];
   for (const mode of ['local', 'external']) {
@@ -694,6 +704,14 @@ export async function runRuntimeBoundarySamples() {
 
 export function assertRuntimeBoundarySamples(samples) {
   assert.equal(samples.length, 235, 'runtime boundary sample family unexpectedly changed');
+  const observedKindCounts = {};
+  for (const sample of samples)
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+  assert.deepEqual(
+    observedKindCounts,
+    runtimeBoundaryExpectedKindCounts,
+    'runtime boundary sample kind coverage drifted',
+  );
   assert.deepEqual(
     samples
       .filter((sample) => sample.kind === 'runner')
@@ -763,14 +781,5 @@ export function assertRuntimeBoundarySamples(samples) {
     ['external', 'local'],
     'first-fatal runner coverage drifted',
   );
-  assert.deepEqual([...new Set(samples.map((s) => s.kind))].sort(), [
-    'backoff',
-    'budget',
-    'cancel',
-    'read',
-    'readAdapter',
-    'runner',
-    'runnerHistory',
-  ]);
   return samples.length;
 }

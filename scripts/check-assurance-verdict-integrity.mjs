@@ -1282,7 +1282,16 @@ export function assertAssuranceVerdictIntegrity() {
     /requireExpectedProcessFailure\(result, 'invalid TLC jar formal-assurance probe'\)/u,
     'live TLC probe must preserve the shared fail-closed process classifier',
   );
-  assert.match(liveTlcProbe, /timeout:\s*15_000/u);
+  assert.match(
+    liveTlcProbe,
+    /spawnSync\(process\.execPath, \['scripts\/formal\.mjs', '--non-runtime-only'\]/u,
+    'live TLC probe must isolate one formal shard instead of fan-out through the parent runner',
+  );
+  assert.match(
+    liveTlcProbe,
+    /timeout: 30_000/u,
+    'live TLC probe must retain its reviewed bounded 30-second timeout',
+  );
 
   const formalConformance = read('scripts/check-formal-implementation-conformance.mjs');
   assert.match(

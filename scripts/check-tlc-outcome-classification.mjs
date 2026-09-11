@@ -11,11 +11,11 @@ const invalidJar = path.join(artifactDir, 'invalid-tlc-classification.jar');
 fs.mkdirSync(artifactDir, { recursive: true });
 try {
   fs.writeFileSync(invalidJar, 'not a jar');
-  const result = spawnSync(process.execPath, ['scripts/formal.mjs'], {
+  const result = spawnSync(process.execPath, ['scripts/formal.mjs', '--non-runtime-only'], {
     cwd: root,
     encoding: 'utf8',
     env: { ...process.env, TLA2TOOLS_JAR: invalidJar },
-    timeout: 15_000,
+    timeout: 30_000,
   });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   requireExpectedProcessFailure(result, 'invalid TLC jar formal-assurance probe');

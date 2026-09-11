@@ -51,6 +51,23 @@ const requiredOutboxSampleKinds = [
   'staleParent',
 ];
 
+test('outbox refinement rejects count-preserving kind multiplicity substitution', async () => {
+  const samples = await samplesOnce;
+  const sourceIndex = samples.findIndex(
+    (sample) => sample.kind === 'adapter' && sample.adapter === 'memory',
+  );
+  const donor = samples.find(
+    (sample) => sample.kind === 'adapterBudget' && sample.adapter === 'memory',
+  );
+  assert.notEqual(sourceIndex, -1);
+  assert.ok(donor);
+  const mutant = samples.map((sample, index) => (index === sourceIndex ? { ...donor } : sample));
+  assert.throws(
+    () => assertOutboxRefinementSamples(mutant),
+    /outbox sample kind multiplicity drifted/u,
+  );
+});
+
 test('outbox refinement kind inventory cannot silently narrow', async () => {
   const samples = await samplesOnce;
   assert.deepEqual([...outboxSampleKinds].sort(), requiredOutboxSampleKinds);

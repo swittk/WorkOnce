@@ -10,10 +10,29 @@ test('compiled storage observations cover adapters, contention, ordering, invali
   assertStorageRefinementSamples(samples);
 });
 
-test('storage refinement rejects loss of one adapter family', async () => {
+test('storage refinement rejects duplicate witness multiplicity', async () => {
   const samples = await runStorageRefinementSamples();
+  const donor = samples.find((sample) => sample.kind === 'casBoundary');
+  assert.ok(donor);
   assert.throws(
-    () => assertStorageRefinementSamples(samples.filter((sample) => sample.adapter !== 'sqlite')),
+    () => assertStorageRefinementSamples([...samples, { ...donor }]),
+    /storage refinement sample family unexpectedly changed|storage sample kind multiplicity drifted/u,
+  );
+});
+
+test('storage refinement rejects count-preserving adapter substitution', async () => {
+  const samples = await runStorageRefinementSamples();
+  const sqliteIndex = samples.findIndex(
+    (sample) => sample.kind === 'detached' && sample.adapter === 'sqlite',
+  );
+  const memory = samples.find(
+    (sample) => sample.kind === 'detached' && sample.adapter === 'memory',
+  );
+  assert.notEqual(sqliteIndex, -1);
+  assert.ok(memory);
+  const mutant = samples.map((sample, index) => (index === sqliteIndex ? { ...memory } : sample));
+  assert.throws(
+    () => assertStorageRefinementSamples(mutant),
     /storage adapter sample coverage drifted/u,
   );
 });

@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
@@ -1243,6 +1244,31 @@ export async function runOutboxRefinementSamples() {
   ]);
 }
 
+const outboxExpectedKindCounts = Object.freeze({
+  rotation: 1,
+  poison: 1,
+  restart: 1,
+  ackLoss: 1,
+  casAckLoss: 1,
+  adapter: 3,
+  adapterBudget: 3,
+  adapterFaults: 1,
+  adapterConcurrent: 1,
+  budget: 1,
+  grid: 1,
+  multiPoison: 1,
+  dynamic: 1,
+  finiteArrivals: 1,
+  concurrent: 1,
+  limitBoundary: 1,
+  staleParent: 1,
+  rotationFailure: 1,
+  multiError: 1,
+  runDispatcher: 1,
+  historyCongruence: 1,
+  historySplit: 1,
+});
+
 export const outboxSampleKinds = Object.freeze([
   'rotation',
   'poison',
@@ -1345,13 +1371,21 @@ const outboxBooleanFields = {
 const outboxMetadataFields = { adapter: ['adapter'], adapterBudget: ['adapter'] };
 
 export function assertOutboxRefinementSamples(samples) {
-  const kinds = [...new Set(samples.map((sample) => sample.kind))].sort();
+  const observedKindCounts = {};
+  for (const sample of samples)
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+  const kinds = Object.keys(observedKindCounts).sort();
   const expectedKinds = [...outboxSampleKinds].sort();
   const schemaKinds = Object.keys(outboxBooleanFields).sort();
   if (JSON.stringify(schemaKinds) !== JSON.stringify(expectedKinds))
     throw new Error(`Unexpected outbox sample schema kinds: ${JSON.stringify(schemaKinds)}`);
   if (JSON.stringify(kinds) !== JSON.stringify(expectedKinds))
     throw new Error(`Unexpected outbox sample kinds: ${JSON.stringify(kinds)}`);
+  assert.deepEqual(
+    observedKindCounts,
+    outboxExpectedKindCounts,
+    'outbox sample kind multiplicity drifted',
+  );
   const adapters = samples
     .filter((sample) => sample.kind === 'adapter' || sample.kind === 'adapterBudget')
     .map((sample) => sample.adapter)

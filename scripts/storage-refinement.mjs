@@ -525,23 +525,31 @@ export async function runStorageRefinementSamples() {
   return samples;
 }
 
+const storageExpectedKindCounts = Object.freeze({
+  detached: 3,
+  adapterHistoryCongruence: 3,
+  atomicContention: 3,
+  queryBoundary: 3,
+  invalidWrite: 3,
+  casContention: 1,
+  casExhaustion: 1,
+  casUnknown: 1,
+  casHistoryCongruence: 1,
+  casBoundary: 1,
+  sqliteBoundary: 1,
+  sqliteBusy: 1,
+});
+
 export function assertStorageRefinementSamples(samples) {
-  const kinds = new Set(samples.map((sample) => sample.kind));
-  for (const required of [
-    'detached',
-    'adapterHistoryCongruence',
-    'atomicContention',
-    'queryBoundary',
-    'invalidWrite',
-    'casContention',
-    'casExhaustion',
-    'casUnknown',
-    'casHistoryCongruence',
-    'casBoundary',
-    'sqliteBoundary',
-    'sqliteBusy',
-  ])
-    if (!kinds.has(required)) throw new Error(`Missing storage sample kind ${required}`);
+  assert.equal(samples.length, 22, 'storage refinement sample family unexpectedly changed');
+  const observedKindCounts = {};
+  for (const sample of samples)
+    observedKindCounts[sample.kind] = (observedKindCounts[sample.kind] ?? 0) + 1;
+  assert.deepEqual(
+    observedKindCounts,
+    storageExpectedKindCounts,
+    'storage sample kind multiplicity drifted',
+  );
   const adapterSamples = samples
     .filter((sample) => sample.adapter !== undefined)
     .map((sample) => `${sample.kind}:${sample.adapter}`)
