@@ -477,7 +477,7 @@ async function competingRunnersSample(adapter) {
       });
       stopA.abort();
       stopB.abort();
-      await Promise.all([runningA, runningB]);
+      await within(Promise.all([runningA, runningB]), `competing runners exit ${adapter}`);
       return {
         kind: 'competingRunners',
         adapter,
@@ -488,7 +488,10 @@ async function competingRunnersSample(adapter) {
       release.resolve();
       stopA.abort();
       stopB.abort();
-      await Promise.allSettled([runningA, runningB]);
+      await within(
+        Promise.allSettled([runningA, runningB]),
+        `competing runners cleanup ${adapter}`,
+      );
     }
   } finally {
     fixture.close();

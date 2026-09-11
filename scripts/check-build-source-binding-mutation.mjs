@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stampPath = path.join(root, '.artifacts/build-source-binding.json');
@@ -22,34 +23,32 @@ function outputOf(result) {
 }
 
 requireSuccessfulProcess(bindingCheck(), 'baseline build/source binding');
-const originalStamp = fs.readFileSync(stampPath, 'utf8');
+const mutationFiles = createMutationFileGuard();
 try {
+  const originalStamp = fs.readFileSync(stampPath, 'utf8');
   const mutant = JSON.parse(originalStamp);
   assert.equal(typeof mutant.sourceDigest, 'string', 'build/source binding stamp anchor is stale');
   mutant.sourceDigest = '0'.repeat(64);
-  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\n`);
-  const result = bindingCheck();
-  const output = outputOf(result);
+  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\n`);
+  let result = bindingCheck();
+  let output = outputOf(result);
   requireExpectedProcessFailure(result, 'source-binding mutant unexpectedly passed');
   assert.match(output, /Stale compiled WorkOnce build does not match current TypeScript sources/u);
   console.log('Build/source binding mutation guard rejects a stale compiled artifact stamp.');
-} finally {
-  fs.writeFileSync(stampPath, originalStamp);
-}
+  mutationFiles.restoreAll();
 
-for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {
-  const target = path.join(root, relative);
-  const original = fs.readFileSync(target);
-  try {
-    fs.appendFileSync(target, '\n// emitted-artifact-binding-mutant\n');
-    const result = bindingCheck();
-    const output = outputOf(result);
+  for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {
+    const target = path.join(root, relative);
+    mutationFiles.appendFileSync(target, '\n// emitted-artifact-binding-mutant\n');
+    result = bindingCheck();
+    output = outputOf(result);
     requireExpectedProcessFailure(result, `${relative} artifact mutant unexpectedly passed`);
     assert.match(output, /Compiled WorkOnce artifacts changed after the bound build/u);
     console.log(
       `Build/artifact binding mutation guard rejects post-build mutation of ${relative}.`,
     );
-  } finally {
-    fs.writeFileSync(target, original);
+    mutationFiles.restoreAll();
   }
+} finally {
+  mutationFiles.dispose();
 }

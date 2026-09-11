@@ -85,22 +85,22 @@ mutate(
 
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {",
-  "for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts', 'src/worker.ts']) {",
-  'generated-only mutation scope hides a tracked dynamic path target',
+  "  for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts']) {\n    const target = path.join(root, relative);\n    mutationFiles.appendFileSync(target, '\\n// emitted-artifact-binding-mutant\\n');",
+  "  for (const relative of ['dist/index.js', 'dist-cjs/index.js', 'dist/index.d.ts', 'src/worker.ts']) {\n    const target = path.join(root, relative);\n    fs.appendFileSync(target, '\\n// emitted-artifact-binding-mutant\\n');",
+  'generated-only mutation scope hides an unguarded tracked dynamic path target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  const writeFileSync = fs.writeFileSync; writeFileSync(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const writeFileSync = fs.writeFileSync; writeFileSync(path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'bare write call hides a tracked source target beside a generated write',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.writeFile(path.join(root, 'src/worker.ts'), originalStamp, () => {}); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.writeFile(path.join(root, 'src/worker.ts'), originalStamp, () => {}); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'callback fs write hides a tracked source target beside a generated write',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
@@ -113,29 +113,29 @@ mutate(
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.createWriteStream(path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.createWriteStream(path.join(root, 'src/worker.ts')); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'write stream acquisition hides a tracked source mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  void fs.promises.open(path.join(root, 'src/kernel.ts'), 'w'); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  void fs.promises.open(path.join(root, 'src/kernel.ts'), 'w'); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'writable file-handle acquisition hides a tracked source mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  const flags = process.env.WORKONCE_MUTATION_OPEN_FLAGS; void fs.promises.open(path.join(root, '.artifacts/probe'), flags); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const flags = process.env.WORKONCE_MUTATION_OPEN_FLAGS; void fs.promises.open(path.join(root, '.artifacts/probe'), flags); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'dynamic file-handle flags bypass fail-closed mutation classification',
   /fs open flags cannot be statically resolved before generated-only classification/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  delayedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); const delayedTrackedWrite = fs.writeFileSync; fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  delayedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); const delayedTrackedWrite = fs.writeFileSync; mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'tracked write before its later alias declaration remains classified',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
@@ -148,43 +148,43 @@ mutate(
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  const { writeFile: renamedTrackedWrite } = fs.promises; renamedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const { writeFile: renamedTrackedWrite } = fs.promises; renamedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'renamed destructured promise write hides a tracked source target beside a generated write',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.copyFileSync(stampPath, path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.copyFileSync(stampPath, path.join(root, 'src/worker.ts')); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'copyFileSync destination hides a tracked mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.renameSync(stampPath, path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.renameSync(stampPath, path.join(root, 'src/worker.ts')); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'renameSync destination hides a tracked mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.rmSync(path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.rmSync(path.join(root, 'src/worker.ts')); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'rmSync hides a tracked mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  '  fs.writeSync(1, originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  '  fs.writeSync(1, originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
   'writeSync file descriptor cannot be proven generated-only',
   /mutation target cannot be statically resolved/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs.promises.writeFile(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.promises.writeFile(path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'fs.promises.writeFile hides a tracked mutation target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
@@ -309,22 +309,22 @@ mutate(
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs['writeFileSync'](path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs['writeFileSync'](path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'computed fs mutation member hides a tracked source target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  const hiddenWrites = { tracked: fs.writeFileSync }; hiddenWrites.tracked(path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const hiddenWrites = { tracked: fs.writeFileSync }; hiddenWrites.tracked(path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'object-property fs mutation alias hides a tracked source target',
   /mutates tracked source\/config without signal-safe file restoration/u,
 );
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
-  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
-  "  fs[process.env.WORKONCE_MUTATION_METHOD](path.join(root, 'src/worker.ts'), originalStamp); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  '  mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs[process.env.WORKONCE_MUTATION_METHOD](path.join(root, 'src/worker.ts'), originalStamp); mutationFiles.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'dynamic fs mutation member must fail closed when unresolved',
   /mutation callee cannot be statically resolved/u,
 );

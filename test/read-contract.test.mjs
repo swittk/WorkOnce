@@ -40,8 +40,11 @@ function fixture(adapter) {
   return {
     store,
     close() {
-      store.close();
-      rmSync(directory, { recursive: true, force: true });
+      try {
+        store.close();
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
     },
   };
 }

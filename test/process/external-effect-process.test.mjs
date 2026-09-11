@@ -50,6 +50,13 @@ function reopen(dbPath, now) {
   });
   return { store, queue, service };
 }
+async function cleanupChild(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(childMessageTimeoutMs) });
+  if (!child.killed) child.kill('SIGKILL');
+  await exited;
+}
+
 async function killAfter(child, expectedStage) {
   assert.equal((await message(child)).ready, true);
   let stage = await message(child);
@@ -112,7 +119,7 @@ test('external effect before WorkOnce settlement may repeat after crash and recl
       opened.store.close();
     }
   } finally {
-    if (child && !child.killed) child.kill('SIGKILL');
+    await cleanupChild(child);
     rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -155,7 +162,7 @@ test('durable WorkOnce settlement before executor ACK prevents re-claim after cr
       opened.store.close();
     }
   } finally {
-    if (child && !child.killed) child.kill('SIGKILL');
+    await cleanupChild(child);
     rmSync(dir, { recursive: true, force: true });
   }
 });
