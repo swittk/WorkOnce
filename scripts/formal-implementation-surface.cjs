@@ -41,18 +41,8 @@ if (parsed.errors.length) {
       .join('\n'),
   );
 }
-const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options });
-const diagnostics = program.getSemanticDiagnostics();
-if (diagnostics.length) {
-  throw new Error(
-    ts.formatDiagnostics(diagnostics, {
-      getCanonicalFileName: (fileName) => fileName,
-      getCurrentDirectory: () => root,
-      getNewLine: () => '\n',
-    }),
-  );
-}
-const checker = program.getTypeChecker();
+let program;
+let checker;
 const formatFlags =
   ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope;
 const entrypointSources = {
@@ -272,6 +262,11 @@ function declarationOrdinal(declaration) {
   return ordinal;
 }
 if (process.argv.includes('--self-test-trivia-ordinals')) {
+  program = ts.createProgram({
+    rootNames: [path.join(root, 'src/index.ts')],
+    options: parsed.options,
+  });
+  checker = program.getTypeChecker();
   const fingerprint = (text) => {
     const source = ts.createSourceFile('synthetic.ts', text, ts.ScriptTarget.Latest, true);
     const declarations = [];
@@ -324,6 +319,19 @@ type Again = { value: boolean };
   console.log('Declaration ordinal trivia and root export alias resolution self-tests passed.');
   process.exit(0);
 }
+
+program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options });
+const diagnostics = program.getSemanticDiagnostics();
+if (diagnostics.length) {
+  throw new Error(
+    ts.formatDiagnostics(diagnostics, {
+      getCanonicalFileName: (fileName) => fileName,
+      getCurrentDirectory: () => root,
+      getNewLine: () => '\n',
+    }),
+  );
+}
+checker = program.getTypeChecker();
 
 function packageTypeIdentity(type) {
   const symbol = type.aliasSymbol ?? type.getSymbol();
