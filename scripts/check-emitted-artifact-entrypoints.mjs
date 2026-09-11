@@ -168,21 +168,41 @@ export function assertEmittedArtifactEntrypoints() {
     }
     return positions;
   }
-  function reuseEnvironmentAssignments(sourceFile) {
-    let count = 0;
+  function propertyName(node) {
+    if (ts.isIdentifier(node) || ts.isStringLiteralLike(node)) return node.text;
+    return undefined;
+  }
+  function packReuseEnvironmentBindings(sourceFile) {
+    let packCalls = 0;
+    let boundAssignments = 0;
     function visit(node) {
       if (
-        ts.isPropertyAssignment(node) &&
-        ((ts.isIdentifier(node.name) && node.name.text === 'WORKONCE_REUSE_BOUND_BUILD') ||
-          (ts.isStringLiteral(node.name) && node.name.text === 'WORKONCE_REUSE_BOUND_BUILD')) &&
-        literalText(node.initializer) === '1' &&
-        !isStaticallyUnreachable(node)
-      )
-        count += 1;
+        isIdentifierCall(node, 'execNpm') &&
+        executesDuringModuleInitialization(node, sourceFile) &&
+        ts.isArrayLiteralExpression(node.arguments[0]) &&
+        literalText(node.arguments[0].elements[0]) === 'pack'
+      ) {
+        packCalls += 1;
+        const options = node.arguments[1];
+        if (options && ts.isObjectLiteralExpression(options)) {
+          const env = options.properties.find(
+            (property) =>
+              ts.isPropertyAssignment(property) && propertyName(property.name) === 'env',
+          );
+          if (env && ts.isPropertyAssignment(env) && ts.isObjectLiteralExpression(env.initializer))
+            for (const property of env.initializer.properties)
+              if (
+                ts.isPropertyAssignment(property) &&
+                propertyName(property.name) === 'WORKONCE_REUSE_BOUND_BUILD' &&
+                literalText(property.initializer) === '1'
+              )
+                boundAssignments += 1;
+        }
+      }
       ts.forEachChild(node, visit);
     }
     visit(sourceFile);
-    return count;
+    return { packCalls, boundAssignments };
   }
 
   if (scripts.prepare !== 'node scripts/prepare-package.mjs')
@@ -192,8 +212,11 @@ export function assertEmittedArtifactEntrypoints() {
   if (prepareGuards.length !== 1)
     throw new Error('prepare-package.mjs may reuse dist only after verifying the bound build.');
   const consumerSmokeModule = parseModule('scripts/consumer-smoke.mjs');
-  if (reuseEnvironmentAssignments(consumerSmokeModule.sourceFile) !== 1)
-    throw new Error('Packed consumer must explicitly request source-bound prepare reuse.');
+  const packReuse = packReuseEnvironmentBindings(consumerSmokeModule.sourceFile);
+  if (packReuse.packCalls !== 1 || packReuse.boundAssignments !== 1)
+    throw new Error(
+      'Packed consumer npm pack call must explicitly request source-bound prepare reuse.',
+    );
 
   const formalModule = parseModule('scripts/formal.mjs');
   const formalGuards = topLevelCallPositions(formalModule.sourceFile, 'assertBuildSourceBinding');

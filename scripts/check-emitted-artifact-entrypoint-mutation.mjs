@@ -86,6 +86,31 @@ try {
     mutationFiles.restoreAll();
   }
 
+  const consumerSmokePath = path.join(root, 'scripts/consumer-smoke.mjs');
+  const consumerSmokeOriginal = fs.readFileSync(consumerSmokePath, 'utf8');
+  try {
+    const reuseAnchor = "    env: { ...process.env, WORKONCE_REUSE_BOUND_BUILD: '1' },";
+    assert.equal(
+      consumerSmokeOriginal.split(reuseAnchor).length,
+      2,
+      'packed-consumer reuse mutation anchor is stale or not unique',
+    );
+    mutationFiles.writeFileSync(
+      consumerSmokePath,
+      consumerSmokeOriginal.replace(reuseAnchor, '    env: { ...process.env },') +
+        "\nfunction dormantReuseAssignment() { return { WORKONCE_REUSE_BOUND_BUILD: '1' }; }\n",
+    );
+    expectCheckerFailure(
+      'dormant packed-consumer reuse assignment',
+      /npm pack call must explicitly request source-bound prepare reuse/u,
+    );
+    console.log(
+      'Emitted-artifact entrypoint checker binds source-bound reuse to the reachable npm pack environment.',
+    );
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const formalPath = path.join(root, 'scripts/formal.mjs');
   const formalOriginal = fs.readFileSync(formalPath, 'utf8');
   try {
