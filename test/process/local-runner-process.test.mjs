@@ -20,7 +20,9 @@ function start(path, mode, now) {
     'Local-runner child',
   );
 }
-const nextMessage = (child) => nextChildMessage(child, 15000);
+const childMessageTimeoutMs = 15_000;
+const durableObservationTimeoutMs = childMessageTimeoutMs * 2;
+const nextMessage = (child) => nextChildMessage(child, childMessageTimeoutMs);
 async function kill(child) {
   if (child.exitCode !== null || child.signalCode !== null) {
     assert.equal(
@@ -59,6 +61,24 @@ function reopen(path, leaseMs = 200, now) {
     limits: { leaseMs, maxAttempts: 4, maxElapsedMs: 60_000, maxDeferrals: 2 },
   });
   return { store, queue };
+}
+async function waitForDurableSnapshot(path, child, predicate, label, leaseMs = 200, now) {
+  const opened = reopen(path, leaseMs, now);
+  try {
+    const deadline = Date.now() + durableObservationTimeoutMs;
+    for (;;) {
+      if (child.exitCode !== null || child.signalCode !== null)
+        throw new Error(
+          `Local-runner child exited before durable ${label}: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
+        );
+      const snapshot = await opened.queue.inspect('0');
+      if (snapshot && predicate(snapshot)) return snapshot;
+      if (Date.now() >= deadline) throw new Error(`Timed out waiting for durable ${label}`);
+      await sleep(10);
+    }
+  } finally {
+    opened.store.close();
+  }
 }
 
 test('SIGKILL with three active local attempts leaves all durable leases reclaimable and fenced', async () => {
@@ -131,9 +151,20 @@ test('SIGKILL after heartbeat commit but before reply preserves renewed lease an
     let oldRef;
     try {
       assert.equal((await nextMessage(child)).ready, true);
-      const stage = await nextMessage(child);
-      assert.equal(stage.stage, 'heartbeat-committed');
-      oldRef = stage.ref;
+      const started = await nextMessage(child);
+      assert.equal(started.stage, 'heartbeat-started');
+      const renewed = await waitForDurableSnapshot(
+        path,
+        child,
+        (snapshot) =>
+          snapshot.phase.state === 'running' &&
+          snapshot.phase.attempt.fence === started.attempt.fence &&
+          snapshot.phase.attempt.leaseUntil > started.attempt.leaseUntil,
+        'heartbeat commit',
+        200,
+        logicalNow,
+      );
+      oldRef = renewed.phase.attempt;
       await kill(child);
     } finally {
       await cleanupChild(child);
@@ -172,9 +203,15 @@ test('SIGKILL after settlement commit but before reply replays the exact termina
     let ref;
     try {
       assert.equal((await nextMessage(child)).ready, true);
-      const stage = await nextMessage(child);
-      assert.equal(stage.stage, 'settlement-committed');
-      ref = stage.ref;
+      const started = await nextMessage(child);
+      assert.equal(started.stage, 'settlement-started');
+      ref = started.ref;
+      await waitForDurableSnapshot(
+        path,
+        child,
+        (snapshot) => snapshot.phase.state === 'succeeded',
+        'settlement commit',
+      );
       await kill(child);
     } finally {
       await cleanupChild(child);

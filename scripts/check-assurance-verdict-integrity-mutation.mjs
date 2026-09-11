@@ -498,6 +498,41 @@ mutate(
   /heartbeat crash child must advance logical storage time after the initial claim/u,
 );
 mutate(
+  'test/process/local-runner-process.test.mjs',
+  'const childMessageTimeoutMs = 15_000;',
+  'const childMessageTimeoutMs = 0;',
+  'local-runner buffered IPC timeout becomes non-positive',
+  /local-runner buffered IPC timeout must remain explicitly bounded at 15 seconds/u,
+);
+mutate(
+  'test/process/local-runner-child.mjs',
+  "    process.send?.({ stage: 'heartbeat-started', attempt: run.attempt });",
+  "    process.send?.({ stage: 'heartbeat-started', ref: run.ref });",
+  'heartbeat crash fixture loses the original durable lease deadline',
+  /heartbeat crash child must expose the immutable claimed attempt including its original lease deadline/u,
+);
+mutate(
+  'test/process/local-runner-process.test.mjs',
+  '          snapshot.phase.attempt.leaseUntil > started.attempt.leaseUntil,',
+  '          true,',
+  'heartbeat crash fixture stops proving a durable renewal',
+  /heartbeat crash fixture must observe the renewed durable lease/u,
+);
+mutate(
+  'test/process/local-runner-process.test.mjs',
+  "        (snapshot) => snapshot.phase.state === 'succeeded',",
+  '        () => true,',
+  'settlement crash fixture stops proving durable success',
+  /settlement crash fixture must observe durable success/u,
+);
+mutate(
+  'test/process/local-runner-child.mjs',
+  '          if (renewed || settled) await forever;',
+  '          void renewed; void settled;',
+  'local-runner crash child stops at post-commit/pre-reply boundary',
+  /must remain blocked after durable heartbeat\/settlement commit and before reply/u,
+);
+mutate(
   'test/process/external-effect-process.test.mjs',
   'const fixtureLeaseMs = childMessageTimeoutMs * 2;',
   'const fixtureLeaseMs = Math.floor(childMessageTimeoutMs / 2);',

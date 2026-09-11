@@ -39,13 +39,7 @@ const store =
             mode === 'settle-ack' &&
             before?.phase?.state === 'running' &&
             next?.phase?.state === 'succeeded';
-          if (renewed || settled) {
-            process.send?.({
-              stage: renewed ? 'heartbeat-committed' : 'settlement-committed',
-              ref: renewed ? next.phase.attempt : before.phase.attempt,
-            });
-            await forever;
-          }
+          if (renewed || settled) await forever;
           return value;
         },
       }
@@ -73,13 +67,15 @@ if (mode === 'multi-active') {
   );
 } else if (mode === 'heartbeat-ack') {
   await queue.runAvailable({ workerId: 'heartbeat-worker', heartbeatMs: 10 }, async (run) => {
+    process.send?.({ stage: 'heartbeat-started', attempt: run.attempt });
     await forever;
     return run.succeed();
   });
 } else if (mode === 'settle-ack') {
-  await queue.runAvailable({ workerId: 'settle-worker', heartbeatMs: 100 }, async (run) =>
-    run.succeed(),
-  );
+  await queue.runAvailable({ workerId: 'settle-worker', heartbeatMs: 100 }, async (run) => {
+    process.send?.({ stage: 'settlement-started', ref: run.ref });
+    return run.succeed();
+  });
 } else {
   throw new Error(`Unknown local runner process mode: ${mode}`);
 }

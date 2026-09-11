@@ -1373,7 +1373,16 @@ export function assertAssuranceVerdictIntegrity() {
     'local-runner process fixture must use the shared buffered IPC inbox',
   );
   assert.match(messageHelper, /forkWithInbox\(/u);
-  assert.match(messageHelper, /nextChildMessage\(child, 15000\)/u);
+  assert.match(
+    messageHelper,
+    /const childMessageTimeoutMs = 15_000/u,
+    'local-runner buffered IPC timeout must remain explicitly bounded at 15 seconds',
+  );
+  assert.match(
+    messageHelper,
+    /nextChildMessage\(child, childMessageTimeoutMs\)/u,
+    'local-runner buffered IPC waits must use the reviewed shared timeout constant',
+  );
 
   const multiFixture = boundedSection(
     processTest,
@@ -1421,6 +1430,36 @@ export function assertAssuranceVerdictIntegrity() {
     processTest,
     /seed\(path, 1, 200, logicalNow\)[\s\S]{0,160}?start\(path, 'heartbeat-ack', logicalNow\)/u,
     'heartbeat crash parent must seed and start the child on one shared logical storage clock',
+  );
+  assert.match(
+    processTest,
+    /const durableObservationTimeoutMs = childMessageTimeoutMs \* 2/u,
+    'local-runner crash fixtures must bound durable observation separately from IPC liveness',
+  );
+  assert.match(
+    processTest,
+    /started\.stage, 'heartbeat-started'[\s\S]{0,520}?waitForDurableSnapshot\([\s\S]{0,360}?snapshot\.phase\.attempt\.leaseUntil > started\.attempt\.leaseUntil/u,
+    'heartbeat crash fixture must observe the renewed durable lease instead of post-commit IPC',
+  );
+  assert.match(
+    processTest,
+    /started\.stage, 'settlement-started'[\s\S]{0,360}?waitForDurableSnapshot\([\s\S]{0,180}?snapshot\.phase\.state === 'succeeded'/u,
+    'settlement crash fixture must observe durable success instead of post-commit IPC',
+  );
+  assert.match(
+    processChild,
+    /stage: 'heartbeat-started', attempt: run\.attempt/u,
+    'heartbeat crash child must expose the immutable claimed attempt including its original lease deadline before renewal',
+  );
+  assert.doesNotMatch(
+    processChild,
+    /heartbeat-committed|settlement-committed/u,
+    'local-runner crash child must not use post-commit IPC as durability evidence',
+  );
+  assert.match(
+    processChild,
+    /if \(renewed \|\| settled\) await forever/u,
+    'local-runner crash child must remain blocked after durable heartbeat/settlement commit and before reply',
   );
 
   const killHelper = boundedSection(
