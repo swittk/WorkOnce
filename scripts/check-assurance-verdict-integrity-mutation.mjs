@@ -630,6 +630,21 @@ mutate(
   /must prove baseline compiler source paths before standalone mutants/u,
 );
 mutate(
+  'scripts/outbox-refinement.mjs',
+  '  let observedWithinDeadline;\n',
+  '  let observedWithinDeadline = false;\n',
+  'outbox refinement turns scheduler delay into false semantic evidence',
+  /derive liveness evidence from observed state instead of scheduler time/u,
+);
+mutate(
+  'scripts/external-transport-refinement.mjs',
+  '  let observedWithinDeadline;\n',
+  '  let observedWithinDeadline = true;\n',
+  'external refinement fabricates scheduler-deadline semantic evidence',
+  /derive liveness evidence from observed state instead of scheduler time/u,
+);
+
+mutate(
   'scripts/run-assurance.mjs',
   'process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = String(process.pid);',
   "process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = '1';",

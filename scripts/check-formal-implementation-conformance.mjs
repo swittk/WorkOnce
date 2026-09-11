@@ -346,6 +346,7 @@ const assuranceInfrastructureFiles = [
   'test/process/external-effect-process.test.mjs',
   'formal/WorkOnceExternal.tla',
   'formal/WorkOnceExternal.cfg',
+  'scripts/refinement-liveness.mjs',
   'scripts/outbox-refinement.mjs',
   'scripts/check-outbox-source-model-binding-mutation.mjs',
   'scripts/check-outbox-implementation-mutations.mjs',

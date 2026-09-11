@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "b171f54f7d1a4fa66be2ddb8654337afde1f65089d2f1518ed25cbc00f4b7e29",
+    "assuranceInfrastructureDigest": "c031980c58a81d451c068bdeee172394f5a147b084774ebba24bfcddf8daf3fd",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11471,6 +11471,7 @@
       "scripts/prepare-package.mjs",
       "scripts/read-boundary-refinement.mjs",
       "scripts/read-history-refinement.mjs",
+      "scripts/refinement-liveness.mjs",
       "scripts/refinement-sample-schema.mjs",
       "scripts/refinement-sqlite-fixture.mjs",
       "scripts/run-assurance.mjs",

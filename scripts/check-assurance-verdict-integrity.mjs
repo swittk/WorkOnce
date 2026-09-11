@@ -259,6 +259,29 @@ export function assertAssuranceVerdictIntegrity() {
       `${name} validates only evidence fields that happen to be present instead of an exact sample schema`,
     );
   }
+  for (const name of [
+    'scripts/outbox-refinement.mjs',
+    'scripts/external-transport-refinement.mjs',
+  ]) {
+    const source = read(name);
+    assert.match(
+      source,
+      /waitForRefinementObservation/u,
+      `${name} must use the shared fail-closed refinement liveness guard`,
+    );
+    assert.doesNotMatch(
+      source,
+      /observedWithinDeadline\s*=\s*(?:true|false)\b/u,
+      `${name} must derive liveness evidence from observed state instead of scheduler time`,
+    );
+  }
+  const refinementLiveness = read('scripts/refinement-liveness.mjs');
+  assert.match(
+    refinementLiveness,
+    /throw new Error\(`refinement timed out waiting for \$\{label\}`\)/u,
+    'refinement liveness timeout must fail closed instead of emitting false evidence',
+  );
+
   const heartbeatLocalRunnerRefinement = read('scripts/local-runner-refinement.mjs');
   const localHeartbeatAttempts = [
     ...heartbeatLocalRunnerRefinement.matchAll(/await within\(heartbeatAttempted\.promise/gu),

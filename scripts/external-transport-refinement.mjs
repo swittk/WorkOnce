@@ -3,6 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce, runExternal, runExternalAvailable } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
+import { waitForRefinementObservation } from './refinement-liveness.mjs';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
 
@@ -362,35 +363,39 @@ async function syntheticCapacitySample() {
       return { state: 'succeeded', result: null };
     },
   };
-  let observedWithinDeadline = true;
-  const deadline = setTimeout(() => {
-    observedWithinDeadline = false;
-    stop.abort(new Error('capacity sample deadline'));
-  }, 3000);
   let managed;
+  const managedPromise = observe(
+    runExternal(
+      transport,
+      {
+        workerId: 'relay',
+        concurrency: 2,
+        idleMs: 1,
+        signal: stop.signal,
+        onError(error) {
+          observedExact ||= error === sentinel;
+        },
+      },
+      async (run, input) => {
+        starts.push(input.id);
+        if (input.id === 'bad') throw sentinel;
+        if (input.id === 'healthy-1') await sleep(40);
+        return run.succeed();
+      },
+    ),
+  );
+  let observedWithinDeadline;
   try {
-    managed = await observe(
-      runExternal(
-        transport,
-        {
-          workerId: 'relay',
-          concurrency: 2,
-          idleMs: 1,
-          signal: stop.signal,
-          onError(error) {
-            observedExact ||= error === sentinel;
-          },
-        },
-        async (run, input) => {
-          starts.push(input.id);
-          if (input.id === 'bad') throw sentinel;
-          if (input.id === 'healthy-1') await sleep(40);
-          return run.succeed();
-        },
-      ),
+    observedWithinDeadline = await waitForRefinementObservation(
+      () => settled.includes('healthy-1') && settled.includes('healthy-2'),
+      'external capacity healthy settlements',
     );
+    stop.abort();
+    managed = await within(managedPromise, 'capacity runner shutdown');
   } finally {
-    clearTimeout(deadline);
+    stop.abort();
+    if (managed === undefined)
+      await within(managedPromise, 'capacity runner cleanup').catch(() => {});
   }
   return {
     kind: 'capacityFairness',

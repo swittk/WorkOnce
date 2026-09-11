@@ -47,6 +47,7 @@
     "formal/WorkOncePolicy.cfg",
     "scripts/check-policy-source-model-binding-mutation.mjs",
     "scripts/check-policy-implementation-mutations.mjs",
+    "scripts/refinement-liveness.mjs",
     "scripts/outbox-refinement.mjs",
     "scripts/check-outbox-source-model-binding-mutation.mjs",
     "scripts/check-outbox-implementation-mutations.mjs",
@@ -118,7 +119,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "5df4446f21ae8497d19d9d38dc594ad7ffd825030e25a7e76254960ce5e00383",
+  "evidenceDigest": "092f8b338cbaa561efcdeb76b6434f8f5ebca331afa04314c8d039f5420011a6",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

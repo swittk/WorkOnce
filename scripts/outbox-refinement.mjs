@@ -2,6 +2,7 @@ import { createCompareExchangeStore } from '../dist/cas.js';
 import { createWorkOnce } from '../dist/index.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createRefinementSqliteFixture } from './refinement-sqlite-fixture.mjs';
+import { waitForRefinementObservation } from './refinement-liveness.mjs';
 import { assertExactBooleanSample } from './refinement-sample-schema.mjs';
 
 function within(promise, label, timeoutMs = 3000) {
@@ -789,17 +790,16 @@ async function runDispatcherPoisonSample() {
       errors.push(error?.code ?? error?.name ?? String(error));
     },
   });
-  const deadline = performance.now() + 2000;
-  let observedWithinDeadline = false;
-  while (performance.now() < deadline) {
-    if ((await child.inspect('healthy')) && (await child.inspect('neighbor'))) {
-      observedWithinDeadline = true;
-      break;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 2));
+  let observedWithinDeadline;
+  try {
+    observedWithinDeadline = await waitForRefinementObservation(
+      async () => Boolean((await child.inspect('healthy')) && (await child.inspect('neighbor'))),
+      'run-dispatcher healthy deliveries',
+    );
+  } finally {
+    controller.abort();
+    await within(pumping, 'run-dispatcher shutdown');
   }
-  controller.abort();
-  await within(pumping, 'run-dispatcher shutdown');
   return {
     kind: 'runDispatcher',
     observedWithinDeadline,

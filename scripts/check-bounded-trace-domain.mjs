@@ -77,6 +77,7 @@ const evidenceFiles = [
   'formal/WorkOncePolicy.cfg',
   'scripts/check-policy-source-model-binding-mutation.mjs',
   'scripts/check-policy-implementation-mutations.mjs',
+  'scripts/refinement-liveness.mjs',
   'scripts/outbox-refinement.mjs',
   'scripts/check-outbox-source-model-binding-mutation.mjs',
   'scripts/check-outbox-implementation-mutations.mjs',

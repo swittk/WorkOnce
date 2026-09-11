@@ -108,8 +108,8 @@
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **123**
-- Content digest: `b171f54f7d1a4fa66be2ddb8654337afde1f65089d2f1518ed25cbc00f4b7e29`
+- Bound proof/checker files: **124**
+- Content digest: `c031980c58a81d451c068bdeee172394f5a147b084774ebba24bfcddf8daf3fd`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 
