@@ -199,12 +199,12 @@ export function discoverInternalSemanticTopology() {
           excerpt,
           textDigest,
         });
-      } else if (ts.isCallExpression(node)) {
+      } else if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const full = node.getText(source).replace(/\r\n?/gu, '\n').trim();
         const textDigest = semanticTextDigest(full);
         const context = contextName(node);
         const ordinal = nextSemanticOrdinal(context);
-        const called = callName(node) ?? '<dynamic>';
+        const called = callName(node) ?? newName(node) ?? '<dynamic>';
         const key = `${relative}\0${context}\0${called}\0${textDigest}`;
         const occurrence = (unclassifiedOccurrences.get(key) ?? 0) + 1;
         unclassifiedOccurrences.set(key, occurrence);

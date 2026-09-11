@@ -9,6 +9,8 @@
 
 ## Model actions
 
+- Checked invariants: `AcceptedFenceIsCurrentOrClear`, `CurrentFenceUnique`, `NoLostContinuation`, `PendingFollowupIsTerminal`, `ResetStatesHaveNoPendingFollowup`, `RunningHasNoWaitCause`, `RunningOwnerTokenIssued`, `SuccessUsesCurrentFence`, `TypeOK`, `WaitingHasCause`
+
 - `Claim`: `external.ExternalWorkService.claim`, `external.ExternalWorkTransport.claim`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.claimRecord`, `root.ExternalWorkService.claim`, `root.ExternalWorkTransport.claim`, `root.WorkQueue.claim`, `root.WorkQueue.handoff`, `root.WorkQueue.process`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`
 - `Renew`: `external.ExternalWorkService.heartbeat`, `external.ExternalWorkTransport.heartbeat`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.renewRecord`, `root.ExternalWorkService.heartbeat`, `root.ExternalWorkTransport.heartbeat`, `root.WorkQueue.handoff`, `root.WorkQueue.heartbeat`, `root.WorkQueue.process`, `root.WorkQueue.renew`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.WorkRun.heartbeat`, `root.WorkRun.renew`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`
 - `Success`: `external.ExternalWorkRun.succeed`, `external.ExternalWorkService.settle`, `external.ExternalWorkTransport.settle`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.settleRecord`, `root.ExternalWorkRun.succeed`, `root.ExternalWorkService.settle`, `root.ExternalWorkTransport.settle`, `root.WorkQueue.handoff`, `root.WorkQueue.process`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.WorkQueue.settle`, `root.WorkRun.settle`, `root.WorkRun.succeed`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `root.succeed`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`
@@ -109,7 +111,7 @@
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
 - Bound proof/checker files: **124**
-- Content digest: `e87c4ba9a02ce91fdbc20b11f43f01b5cf64257e11e72c287a81b4f7bf872623`
+- Content digest: `22cf6705105a2a5631f92357096884dee54bee46b1478345390972ba24bd857c`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 

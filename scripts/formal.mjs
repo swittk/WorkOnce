@@ -620,6 +620,16 @@ if (!runtimeOnly && !nonRuntimeOnly) {
   process.exit(0);
 }
 
+function bindObservedSamples(configText) {
+  const marker = 'CONSTANT Samples = {}';
+  const occurrences = configText.split(marker).length - 1;
+  if (occurrences !== 1)
+    throw new Error(
+      `Observed-sample config must contain exactly one ${marker} binding; found ${occurrences}.`,
+    );
+  return configText.replace(marker, 'CONSTANT Samples <- ObservedSamples');
+}
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -719,10 +729,7 @@ MutantSpec == Init /\ [][MutantNext]_vars
   );
   writeFileSync(
     readHistoryConfig,
-    `${readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8').replace(
-      'CONSTANT Samples = {}',
-      'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT ReadHistorySamplesConform\nINVARIANT ReadHistoryNegativeSampleMutantRejected\n`,
+    `${bindObservedSamples(readFileSync('formal/WorkOnceReadHistory.cfg', 'utf8'))}\nINVARIANT ReadHistorySamplesConform\nINVARIANT ReadHistoryNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC read-history boundary receives ${readHistorySamples.length} fresh compiled observations.`,
@@ -803,10 +810,7 @@ MutantSpec == Init /\ [][HistorySensitiveNext]_vars
   );
   writeFileSync(
     localRunnerConfig,
-    `${readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8').replace(
-      'CONSTANT Samples = {}',
-      'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT LocalRunnerSamplesConform\nINVARIANT LocalRunnerNegativeSampleMutantRejected\n`,
+    `${bindObservedSamples(readFileSync('formal/WorkOnceLocalRunner.cfg', 'utf8'))}\nINVARIANT LocalRunnerSamplesConform\nINVARIANT LocalRunnerNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC local-runner boundary receives ${localRunnerSamples.length} fresh compiled public API observations.`,
@@ -840,10 +844,7 @@ if (nonRuntimeOnly) {
   );
   writeFileSync(
     policyConfig,
-    `${readFileSync('formal/WorkOncePolicy.cfg', 'utf8').replace(
-      'CONSTANT Samples = {}',
-      'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT PolicySamplesConform\nINVARIANT PolicyNegativeSampleMutantRejected\n`,
+    `${bindObservedSamples(readFileSync('formal/WorkOncePolicy.cfg', 'utf8'))}\nINVARIANT PolicySamplesConform\nINVARIANT PolicyNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC policy boundary receives ${policySamples.length} fresh compiled public API observations.`,
@@ -949,10 +950,7 @@ if (runtimeOnly) {
   );
   writeFileSync(
     externalConfig,
-    `${readFileSync('formal/WorkOnceExternal.cfg', 'utf8').replace(
-      'CONSTANT Samples = {}',
-      'CONSTANT Samples <- ObservedSamples',
-    )}\nINVARIANT ExternalSamplesConform\nINVARIANT ExternalNegativeSampleMutantRejected\n`,
+    `${bindObservedSamples(readFileSync('formal/WorkOnceExternal.cfg', 'utf8'))}\nINVARIANT ExternalSamplesConform\nINVARIANT ExternalNegativeSampleMutantRejected\n`,
   );
   console.log(
     `TLC external transport boundary receives ${externalSamples.length} fresh compiled public API observations.`,

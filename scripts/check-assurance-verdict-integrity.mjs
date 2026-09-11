@@ -516,6 +516,21 @@ export function assertAssuranceVerdictIntegrity() {
     /if \(!specSwapped\)\s*throw new Error\('Mutation witness config found no SPECIFICATION Spec line to rebind'\)/u,
     'formal mutation witness config must fail closed when SPECIFICATION Spec is absent',
   );
+  assert.match(
+    formalSource,
+    /function bindObservedSamples\(configText\)[\s\S]{0,260}?const occurrences = configText\.split\(marker\)\.length - 1;[\s\S]{0,140}?if \(occurrences !== 1\)/u,
+    'observed-sample config rebinding must fail closed unless the exact binding appears once',
+  );
+  assert.equal(
+    (formalSource.match(/bindObservedSamples\(/gu) ?? []).length,
+    5,
+    'all four observed-model config writers must use the guarded sample rebinding helper',
+  );
+  assert.equal(
+    (formalSource.match(/'CONSTANT Samples = \{\}'/gu) ?? []).length,
+    1,
+    'raw Samples binding marker must live only inside the guarded rebinding helper',
+  );
   const storageFormalSource = read('scripts/storage-formal.mjs');
   assert.ok(
     storageFormalSource.includes(

@@ -160,6 +160,28 @@ try {
 }
 
 try {
+  const constructorAnchor = 'return new WorkItem(this, input, this.key(input, explicitKey));';
+  assert.equal(
+    workSource.split(constructorAnchor).length,
+    2,
+    'unclassified constructor mutation anchor must be unique',
+  );
+  mutationFiles.writeFileSync(
+    workSourcePath,
+    workSource.replace(
+      constructorAnchor,
+      'return new WorkQueue(this, input, this.key(input, explicitKey));',
+    ),
+  );
+  const constructorOutput = runExpectedFailure(
+    'unclassified constructor change unexpectedly bypassed internal semantic inventory',
+  );
+  assert.match(constructorOutput, /unclassified call surface drifted/u);
+} finally {
+  mutationFiles.restoreAll();
+}
+
+try {
   const suffixAnchor = '          active.delete(pending);';
   assert.equal(
     externalSource.split(suffixAnchor).length,

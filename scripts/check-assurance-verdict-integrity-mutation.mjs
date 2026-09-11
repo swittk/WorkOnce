@@ -392,6 +392,13 @@ mutate(
 );
 
 mutate(
+  'scripts/formal.mjs',
+  '  if (occurrences !== 1)',
+  '  if (false)',
+  'observed-sample rebinding stops failing closed',
+  /observed-sample config rebinding must fail closed/u,
+);
+mutate(
   'scripts/lifecycle-formal.mjs',
   '  let specSwapped = false;',
   '  let specSwapped = true;',

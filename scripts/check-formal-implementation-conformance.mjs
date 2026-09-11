@@ -1544,6 +1544,8 @@ function renderReport(manifest) {
     '',
     '## Model actions',
     '',
+    `- Checked invariants: ${manifest.model.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    '',
   ];
   for (const action of manifest.model.actions) {
     const owners = [...manifest.callables, ...manifest.callableFields]
