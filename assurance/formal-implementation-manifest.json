@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "f0da189f1258ddfcdb34fc39ab03a3c4cf37693b5385dbd8870a749ad11e0375",
+    "assuranceInfrastructureDigest": "b5e3f551ae3d9af0919564b6fea716a0c3c8fba7f714b15dc000aea806f76c1f",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",

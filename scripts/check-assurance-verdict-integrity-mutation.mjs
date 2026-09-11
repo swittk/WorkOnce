@@ -845,6 +845,13 @@ mutate(
   /test\/tlc-workspace\.test\.mjs has an unbounded spawnSync/u,
 );
 mutate(
+  'test/tlc-workspace.test.mjs',
+  "    const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {\n      cwd: process.cwd(),\n      env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: workspace },\n      encoding: 'utf8',\n      timeout: 15_000,\n    });",
+  "    const runTlcChild = spawnSync;\n    const result = runTlcChild(process.execPath, ['--input-type=module', '-e', code], {\n      cwd: process.cwd(),\n      env: { ...process.env, WORKONCE_TLC_ARTIFACT_DIR: workspace },\n      encoding: 'utf8',\n    });",
+  'aliased TLC workspace test child loses its timeout bound',
+  /test\/tlc-workspace\.test\.mjs has an unbounded spawnSync/u,
+);
+mutate(
   'scripts/lifecycle-refinement.mjs',
   "    kind: 'claimOrderEquivalence',\n    adapters: lifecycleAdapters.join(','),",
   "    kind: 'claimOrderEquivalence',\n    adapters: 'memory,sqlite,cas',",

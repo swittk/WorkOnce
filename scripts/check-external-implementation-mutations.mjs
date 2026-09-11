@@ -18,6 +18,20 @@ function restore() {
   fs.writeFileSync(externalPath, externalOriginal);
   fs.writeFileSync(workPath, workOriginal);
 }
+function replaceOccurrence(source, needle, replacement, occurrence, label) {
+  const positions = [];
+  let from = 0;
+  while (true) {
+    const index = source.indexOf(needle, from);
+    if (index < 0) break;
+    positions.push(index);
+    from = index + needle.length;
+  }
+  assert.equal(positions.length, 2, `${label} mutation anchor occurrence count drifted`);
+  const index = positions[occurrence];
+  assert.notEqual(index, undefined, `${label} mutation occurrence is missing`);
+  return source.slice(0, index) + replacement + source.slice(index + needle.length);
+}
 function requireInlineRed(label, code, pattern) {
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
     cwd: root,
@@ -31,17 +45,45 @@ function requireInlineRed(label, code, pattern) {
 try {
   {
     const needle = 'throw controller.signal.reason;';
-    assert.equal(
-      externalOriginal.includes(needle),
-      true,
-      'heartbeat-cause mutation anchor is stale',
-    );
     fs.writeFileSync(
       externalPath,
-      externalOriginal.replaceAll(needle, "throw new Error('External ownership lost');"),
+      replaceOccurrence(
+        externalOriginal,
+        needle,
+        'void controller.signal.reason;',
+        0,
+        'pre-handler abort gate',
+      ),
     );
     requireInlineRed(
-      'heartbeat cause erasure',
+      'pre-handler abort gate removal',
+      `import assert from 'node:assert/strict';
+       import { runExternalAvailable } from '${importRoot}/index.js';
+       const stop=new AbortController(); const stopped=new Error('stopped before handler'); let handlers=0;
+       const lease={input:null,attempt:{workId:'x',generation:1,fence:1},observedAt:0,leaseUntil:1000};
+       const transport={async claim(){stop.abort(stopped);return [lease]},async heartbeat(){throw new Error('unexpected heartbeat')},async settle(){throw new Error('unexpected settle')}};
+       const [result]=await runExternalAvailable(transport,{workerId:'r',signal:stop.signal},async run=>{handlers++;return run.succeed();});
+       assert.equal(handlers,0,'pre-aborted external lease must not enter its handler');
+       assert.equal(result.status,'interrupted');
+       assert.equal(result.error,stopped);`,
+      /pre-aborted external lease must not enter its handler/u,
+    );
+    restore();
+  }
+  {
+    const needle = 'throw controller.signal.reason;';
+    fs.writeFileSync(
+      externalPath,
+      replaceOccurrence(
+        externalOriginal,
+        needle,
+        "throw new Error('External ownership lost');",
+        1,
+        'post-handler abort cause',
+      ),
+    );
+    requireInlineRed(
+      'post-handler heartbeat cause erasure',
       `import assert from 'node:assert/strict';
        import { runExternalAvailable } from '${importRoot}/index.js';
        import { setTimeout as sleep } from 'node:timers/promises';
@@ -125,21 +167,50 @@ try {
   }
   {
     const needle = '            signal: options.signal,';
-    assert.equal(externalOriginal.includes(needle), true, 'claim-signal mutation anchor is stale');
     fs.writeFileSync(
       externalPath,
-      externalOriginal.replaceAll(needle, '            signal: undefined,'),
+      replaceOccurrence(
+        externalOriginal,
+        needle,
+        '            signal: undefined,',
+        0,
+        'runExternalAvailable claim signal',
+      ),
     );
     requireInlineRed(
-      'transport claim abort-signal erasure',
+      'runExternalAvailable claim abort-signal erasure',
       `import assert from 'node:assert/strict';
        import { runExternalAvailable } from '${importRoot}/index.js';
        const stop=new AbortController();
        let exact=false;
        const transport={async claim(request){exact=request.signal===stop.signal;return []},async heartbeat(){throw new Error('unexpected')},async settle(){throw new Error('unexpected')}};
        await runExternalAvailable(transport,{workerId:'r',signal:stop.signal},async run=>run.succeed());
-       assert.equal(exact,true,'external transport must receive the caller stop signal');`,
-      /external transport must receive the caller stop signal/u,
+       assert.equal(exact,true,'bounded external transport must receive the caller stop signal');`,
+      /bounded external transport must receive the caller stop signal/u,
+    );
+    restore();
+  }
+  {
+    const needle = '            signal: options.signal,';
+    fs.writeFileSync(
+      externalPath,
+      replaceOccurrence(
+        externalOriginal,
+        needle,
+        '            signal: undefined,',
+        1,
+        'runExternal claim signal',
+      ),
+    );
+    requireInlineRed(
+      'runExternal claim abort-signal erasure',
+      `import assert from 'node:assert/strict';
+       import { runExternal } from '${importRoot}/external.js';
+       const stop=new AbortController(); let received;
+       const transport={async claim(request){received=request.signal;stop.abort(new Error('stop'));return []},async heartbeat(){throw new Error('unexpected')},async settle(){throw new Error('unexpected')}};
+       await runExternal(transport,{workerId:'r',signal:stop.signal},async run=>run.succeed());
+       assert.equal(received,stop.signal,'managed external transport must receive the caller stop signal');`,
+      /managed external transport must receive the caller stop signal/u,
     );
     restore();
   }

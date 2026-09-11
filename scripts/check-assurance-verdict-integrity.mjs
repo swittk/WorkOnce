@@ -239,7 +239,7 @@ export function assertAssuranceVerdictIntegrity() {
     .filter((name) => name.endsWith('.mjs'))
     .sort()) {
     const source = read(`test/${relative}`);
-    if (!/\bspawnSync\(/u.test(source)) continue;
+    if (!/\bspawnSync\b/u.test(source)) continue;
     assertSpawnSyncTimeouts(`test/${relative}`, source);
   }
 
