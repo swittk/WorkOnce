@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { runConformance } from '../dist/conformance.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
+import { createCompareExchangeStore } from '../dist/cas.js';
 for (const adapter of ['memory', 'sqlite'])
   test(`${adapter}: shared adversarial conformance`, async () => {
     const passed = await runConformance(() => {
@@ -86,6 +87,38 @@ test('shared conformance remains message-agnostic when an adapter uses the old a
     };
   });
   assert.equal(passed.length, 19);
+});
+
+test('shared conformance rejects adapters that treat validUntil equality as still writable', async () => {
+  let clock = 100_000;
+  await assert.rejects(
+    runConformance(() => {
+      const native = createMemoryStore({ now: () => clock });
+      const store = createCompareExchangeStore({
+        getMany: (ids) => native.getMany(ids),
+        query: (query) => native.query(query),
+        compareExchange: (change) =>
+          native.atomic(change.id, (row, now) => {
+            if (
+              row?.revision !== change.expectedRevision ||
+              (change.validUntil !== undefined && now > change.validUntil)
+            )
+              return { value: false };
+            return { next: change.next, value: true };
+          }),
+      });
+      return {
+        store,
+        advance(ms) {
+          clock += ms;
+        },
+        close() {
+          native.close?.();
+        },
+      };
+    }),
+    /validUntil equal to the storage clock must reject/u,
+  );
 });
 
 test('shared conformance rejects adapters that accept due afterId cursors', async () => {

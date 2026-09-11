@@ -146,17 +146,34 @@ function configuredInvariants(configText) {
   const result = [];
   let reading = false;
   for (const line of lines) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    const single = /^INVARIANT\s+([A-Za-z_][A-Za-z0-9_]*)$/u.exec(trimmed);
+    if (single) {
+      result.push(single[1]);
+      reading = false;
+      continue;
+    }
+    if (trimmed === 'INVARIANTS') {
       reading = true;
       continue;
     }
     if (!reading) continue;
     const match = /^\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/u.exec(line);
-    if (!match) break;
-    result.push(match[1]);
+    if (match) result.push(match[1]);
+    else if (trimmed) reading = false;
   }
   return result;
 }
+const configuredInvariantParserProbe = configuredInvariants(
+  'INVARIANT SingleInvariant\nINVARIANTS\n  FirstGroupedInvariant\n\n  SecondGroupedInvariant\nCHECK_DEADLOCK FALSE\n',
+);
+if (
+  JSON.stringify(configuredInvariantParserProbe) !==
+  JSON.stringify(['SingleInvariant', 'FirstGroupedInvariant', 'SecondGroupedInvariant'])
+)
+  throw new Error(
+    'Storage configured-invariant parser must preserve single and blank-separated forms',
+  );
 const storageConfigured = configuredInvariants(
   readFileSync('formal/WorkOnceStorage.cfg', 'utf8'),
 ).sort();

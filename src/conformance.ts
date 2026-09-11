@@ -389,7 +389,23 @@ export async function runConformance(create: ConformanceFactory): Promise<string
         value: null,
       })),
     );
+    const boundaryNow = (await store.getMany([snapshot.id])).now;
+    await assert.rejects(
+      store.atomic(snapshot.id, (row) => ({
+        next: { ...row!, revision: row!.revision + 1 },
+        validUntil: boundaryNow,
+        value: null,
+      })),
+      () => true,
+      'validUntil equal to the storage clock must reject',
+    );
     assert.equal(canonical((await store.getMany([snapshot.id])).rows), before);
+    const accepted = await store.atomic(snapshot.id, (row) => ({
+      next: { ...row!, revision: row!.revision + 1 },
+      validUntil: boundaryNow + 1,
+      value: 'accepted-before-deadline',
+    }));
+    assert.equal(accepted, 'accepted-before-deadline');
   });
   return completed;
 }

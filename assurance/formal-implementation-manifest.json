@@ -11367,7 +11367,7 @@
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "2fd0d932a0e0c12bfade7dd8c9ce93cff58a0c65970a7bbc9cc0f07859250cc4",
+      "sourceDigest": "8145d8c3094d668bac7c19bfb3b1d93a56aea3baa165db68824aca68a9931942",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "33be39b77b7c51a3d2a03bb9fc93c9ee98fa30ed00ea1700f9e1ffe5adeea9c9",
+    "assuranceInfrastructureDigest": "abbaf5756b1b0cf4d31b608b55bc56edaf9f23e986a6e6f0a430c45b9a344b5d",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11544,7 +11544,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "f9b350e8be5f3889a6779a0beeae689395a476e1767bd0068750dd8ad13479ef",
+    "sourceDigest": "c4cf2c0ddf07f8af616687a20d6afb25cbb7db64db3914f5e0c18cd5d186ad45",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",
