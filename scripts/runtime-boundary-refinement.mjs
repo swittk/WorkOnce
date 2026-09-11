@@ -19,6 +19,27 @@ export const auditPhases = [
   'cancelled',
 ];
 
+const expectedRunnerCoverage = (() => {
+  const coverage = [];
+  for (const mode of ['local', 'external']) {
+    coverage.push(`${mode}:firstFatal:errorA`);
+    for (const failureValue of ['undefined', 'null', 'zero', 'empty', 'errorA', 'errorB'])
+      for (const site of ['claim', 'claimObserver', 'active', 'activeObserver'])
+        coverage.push(`${mode}:${site}:${failureValue}`);
+    for (const failureValue of ['undefined', 'errorA', 'errorB']) {
+      for (const site of ['handledClaim', 'handledActive']) coverage.push(`${mode}:${site}:none`);
+      for (const site of ['backoffBefore', 'backoffDuring'])
+        coverage.push(`${mode}:${site}:${failureValue}`);
+    }
+    for (const failureValue of ['undefined', 'errorA', 'errorB']) {
+      coverage.push(`${mode}:drain:${failureValue}`);
+      coverage.push(`${mode}:claimGate:${failureValue}`);
+    }
+  }
+  coverage.push('local:abortClaimReply:none', 'local:abortActive:none');
+  return coverage.sort();
+})();
+
 export async function seedAuditPhase(store, scope, phase) {
   const queue = createWorkOnce({ store, scope }).define('job', {
     version: '1',
@@ -673,6 +694,14 @@ export async function runRuntimeBoundarySamples() {
 
 export function assertRuntimeBoundarySamples(samples) {
   assert.equal(samples.length, 235, 'runtime boundary sample family unexpectedly changed');
+  assert.deepEqual(
+    samples
+      .filter((sample) => sample.kind === 'runner')
+      .map((sample) => `${sample.mode}:${sample.site}:${sample.failureValue}`)
+      .sort(),
+    expectedRunnerCoverage,
+    'runtime boundary runner mode/site coverage drifted',
+  );
   const firstFatalModes = [];
   for (const s of samples) {
     const name = JSON.stringify(s);

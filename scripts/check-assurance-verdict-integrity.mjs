@@ -565,13 +565,13 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(
     formalSource,
-    /const badRunner = \{ \.\.\.badRunnerBase, preserved: false \};[\s\S]{0,120}?const badRead = \{ \.\.\.badReadBase, accepted: false \};/u,
+    /const badRunner = \{ \.\.\.badRunnerBase, preserved: false \};[\s\S]{0,260}?const badRunnerSite = \{ \.\.\.badRunnerBase, site: 'unknown' \};[\s\S]{0,180}?const badRunnerMode = \{ \.\.\.badRunnerBase, mode: 'unknown' \};[\s\S]{0,180}?const badRead = \{ \.\.\.badReadBase, accepted: false \};/u,
     'runtime negative samples must derive from observed samples and override only their intended field',
   );
   for (const [name, sourceNeedle] of [
     [
       'runtime',
-      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform',
+      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform',
     ],
     [
       'read-history',

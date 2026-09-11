@@ -684,10 +684,12 @@ if (runtimeOnly) {
     'accepted',
   );
   const badRunner = { ...badRunnerBase, preserved: false };
+  const badRunnerSite = { ...badRunnerBase, site: 'unknown' };
+  const badRunnerMode = { ...badRunnerBase, mode: 'unknown' };
   const badRead = { ...badReadBase, accepted: false };
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
   );
   writeFileSync(
     config,
@@ -708,7 +710,7 @@ if (runtimeOnly) {
 
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
   console.log(
-    'TLC mutation guard: RuntimeSamplesConform rejects all 3 injected sample mutations in the observed-model run.',
+    'TLC mutation guard: RuntimeSamplesConform rejects all 5 injected sample mutations in the observed-model run.',
   );
 
   // Keep the realistic late-admission mutant in addition to the one-step activity check above.

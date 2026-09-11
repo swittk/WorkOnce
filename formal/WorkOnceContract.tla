@@ -13,6 +13,13 @@ DeferralStopReason(attemptLimit, elapsedLimit, deferLimit) ==
 \* bounded runner abstraction still preserves representative payload identities exactly.
 RunnerFailureValues == {"undefined", "null", "zero", "empty", "errorA", "errorB"}
 RunnerFailureDomain == RunnerFailureValues \cup {"none"}
+RunnerModes == {"local", "external"}
+RunnerSites == {
+  "firstFatal",
+  "claim", "claimObserver", "active", "activeObserver",
+  "handledClaim", "handledActive", "backoffBefore", "backoffDuring",
+  "drain", "claimGate", "abortClaimReply", "abortActive"
+}
 RunnerRejects(fatalPresent) == fatalPresent
 ReadAllowed(definitionMatches) == definitionMatches
 BackoffDelay(initial, factor, steps, cap) == MinValue(cap, initial * (factor ^ steps))
@@ -20,6 +27,8 @@ BackoffDelay(initial, factor, steps, cap) == MinValue(cap, initial * (factor ^ s
 \* These records are fresh observations of compiled public APIs, not modeled test doubles.
 BoundarySampleOK(s) ==
   CASE s.kind = "runner" ->
+       /\ s.mode \in RunnerModes
+       /\ s.site \in RunnerSites
        /\ s.failureValue \in RunnerFailureDomain
        /\ s.returnedValue \in RunnerFailureDomain
        /\ s.rejected = RunnerRejects(~s.handled)
