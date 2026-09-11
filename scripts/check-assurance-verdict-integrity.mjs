@@ -289,6 +289,16 @@ export function assertAssuranceVerdictIntegrity() {
       `${label} source/model mutation guard must prove a green baseline before creating mutants`,
     );
   }
+  const readHistoryImplementationMutation = read('scripts/check-read-history-mutations.mjs');
+  const readHistoryBaseline =
+    "requireSuccessfulProcess(runHistorySuite(), 'baseline read-history refinement');";
+  const readHistoryMutation = 'fs.writeFileSync(kernelPath';
+  assert.ok(
+    readHistoryImplementationMutation.indexOf(readHistoryBaseline) >= 0 &&
+      readHistoryImplementationMutation.indexOf(readHistoryBaseline) <
+        readHistoryImplementationMutation.indexOf(readHistoryMutation),
+    'read-history implementation mutation guard must prove a green baseline before creating mutants',
+  );
   const sourcePathPortabilityMutation = read('scripts/check-source-path-portability-mutation.mjs');
   assert.match(
     sourcePathPortabilityMutation,

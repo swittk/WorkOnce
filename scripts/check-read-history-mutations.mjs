@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const kernelPath = path.join(root, 'dist/kernel.js');
@@ -15,16 +15,20 @@ const originals = new Map([
 function restore() {
   for (const [file, text] of originals) fs.writeFileSync(file, text);
 }
-function runExpectedFailure(label, pattern) {
-  const result = spawnSync(process.execPath, ['--test', 'test/read-history-refinement.test.mjs'], {
+function runHistorySuite() {
+  return spawnSync(process.execPath, ['--test', 'test/read-history-refinement.test.mjs'], {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
     timeout: 10_000,
   });
+}
+function runExpectedFailure(label, pattern) {
+  const result = runHistorySuite();
   requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   console.log(`Read-history implementation mutation guard rejects ${label}.`);
 }
+requireSuccessfulProcess(runHistorySuite(), 'baseline read-history refinement');
 try {
   {
     const original = originals.get(kernelPath);

@@ -11360,7 +11360,7 @@
         "StorageTypeOK",
         "UnknownOutcomeStopsRetry"
       ],
-      "modelDigest": "9ebafd1bf50da415547d2ccf29f69c61ad0413563c1eb52ef5ebb77d612b6a6b",
+      "modelDigest": "3262e65941ebe86866b8e7b27eb098f340d4e997a83c4e8d66cd4837c8d3e5e5",
       "modelFiles": [
         "formal/WorkOnceStorage.tla",
         "formal/WorkOnceStorage.cfg"
@@ -11381,7 +11381,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "949a132df04b6c4fa743609a49baac3032aee110e4d80b9bf9fe023f8a4fedf4",
+    "assuranceInfrastructureDigest": "20411dfc9e9602f38ffe2ee516a058662f5cf7116558e638595cb18eba3f7095",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11509,7 +11509,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "e82b073cede8fc76a4158fc7be19512f6fbbf0a3729bbbde5e9ce2a46647ecdc",
+    "modelDigest": "1dfc9a240a94aad3cf368a25a52a879ee79a2fac2128d86ec70e089299a98e26",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

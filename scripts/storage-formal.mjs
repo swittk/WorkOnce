@@ -106,6 +106,9 @@ if (!duplicateSlotTarget || !Object.hasOwn(duplicateSlotTarget, 'duplicateSlotsE
 const duplicateSlotMutantSamples = samples.map((sample) =>
   sample === duplicateSlotTarget ? { ...sample, duplicateSlotsExact: false } : sample,
 );
+const adapterCoverageMutantSamples = samples.filter(
+  (sample) => sample.adapter === undefined || sample.adapter === 'memory',
+);
 const observedModule = resolve(tlcWorkspace, 'WorkOnceStorageObserved.tla');
 const observedConfig = resolve(tlcWorkspace, 'WorkOnceStorageObserved.cfg');
 writeFileSync(
@@ -116,9 +119,11 @@ writeFileSync(
       `ObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}`,
       String.raw`InvalidSamples == ObservedSamples \cup {[kind |-> "invalid"]}`,
       `DuplicateSlotSamples == {\n${duplicateSlotMutantSamples.map(tlaValue).join(',\n')}\n}`,
+      `AdapterCoverageSamples == {\n${adapterCoverageMutantSamples.map(tlaValue).join(',\n')}\n}`,
       'InvalidSampleCheck == INSTANCE WorkOnceStorage WITH Samples <- InvalidSamples, MaxConflicts <- MaxConflicts',
       'DuplicateSlotCheck == INSTANCE WorkOnceStorage WITH Samples <- DuplicateSlotSamples, MaxConflicts <- MaxConflicts',
-      'StorageNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!StorageSamplesConform /\\ ~DuplicateSlotCheck!StorageSamplesConform',
+      'AdapterCoverageCheck == INSTANCE WorkOnceStorage WITH Samples <- AdapterCoverageSamples, MaxConflicts <- MaxConflicts',
+      'StorageNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!StorageSamplesConform /\\ ~DuplicateSlotCheck!StorageSamplesConform /\\ ~AdapterCoverageCheck!StorageSamplesConform',
     ].join('\n'),
   ),
 );

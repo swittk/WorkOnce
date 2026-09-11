@@ -126,6 +126,7 @@ StorageSampleOK(s) ==
     [] s.kind = "sqliteBusy" ->
        /\ s.messageBusyRetried /\ s.nativeBusyCodeRetried /\ s.nativeLockedCodeRetried
     [] OTHER -> FALSE
+AdapterSetFor(kind) == {sample.adapter : sample \in {candidate \in Samples : candidate.kind = kind}}
 StorageSamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
@@ -133,5 +134,10 @@ StorageSamplesConform ==
        "casContention", "casExhaustion", "casUnknown", "casHistoryCongruence",
        "casBoundary", "sqliteBoundary", "sqliteBusy"
      }
+  /\ AdapterSetFor("detached") = {"memory", "sqlite", "cas"}
+  /\ AdapterSetFor("adapterHistoryCongruence") = {"memory", "sqlite", "cas"}
+  /\ AdapterSetFor("atomicContention") = {"memory", "sqlite", "cas"}
+  /\ AdapterSetFor("queryBoundary") = {"memory", "sqlite", "cas"}
+  /\ AdapterSetFor("invalidWrite") = {"memory", "sqlite", "cas"}
   /\ \A s \in Samples : StorageSampleOK(s)
 =============================================================================
