@@ -51,9 +51,14 @@ async function restartAliasWitness(workApi, memoryApi, label) {
   });
   const queue = work.define('job');
   const queued = await queue.ensure(null, { key: 'job' });
-  await assert.doesNotReject(
-    queue.restart({ key: 'job', expectedGeneration: queued.generation }),
-    `${label}.restart must not reject outside terminal states`,
+  let restarted;
+  await assert.doesNotReject(async () => {
+    restarted = await queue.restart({ key: 'job', expectedGeneration: queued.generation });
+  }, `${label}.restart must not reject outside terminal states`);
+  assert.deepEqual(
+    restarted,
+    queued,
+    `${label}.restart must preserve the queued snapshot outside terminal states`,
   );
 }
 

@@ -74,17 +74,35 @@ function configuredInvariants(configText) {
   const result = [];
   let reading = false;
   for (const line of configText.replace(/\r\n?/gu, '\n').split('\n')) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    const single = /^INVARIANT\s+([A-Za-z_][A-Za-z0-9_]*)$/u.exec(trimmed);
+    if (single) {
+      result.push(single[1]);
+      reading = false;
+      continue;
+    }
+    if (trimmed === 'INVARIANTS') {
       reading = true;
       continue;
     }
     if (!reading) continue;
     const match = /^\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/u.exec(line);
-    if (!match) break;
-    result.push(match[1]);
+    if (match) result.push(match[1]);
+    else if (trimmed) reading = false;
   }
   return result;
 }
+
+const configuredInvariantParserProbe = configuredInvariants(
+  'INVARIANT SingleInvariant\nINVARIANTS\n  FirstGroupedInvariant\n\n  SecondGroupedInvariant\nCHECK_DEADLOCK FALSE\n',
+);
+if (
+  JSON.stringify(configuredInvariantParserProbe) !==
+  JSON.stringify(['SingleInvariant', 'FirstGroupedInvariant', 'SecondGroupedInvariant'])
+)
+  throw new Error(
+    'Lifecycle configured-invariant parser must preserve single and blank-separated forms',
+  );
 
 const mutationWitnessInvariants = [
   'INVARIANT MutationWitnesses',
@@ -97,15 +115,17 @@ function mutationWitnessConfig(configText) {
   let inserted = false;
   let specSwapped = false;
   for (const line of configText.replace(/\r\n?/gu, '\n').split('\n')) {
-    if (line.trim() === 'INVARIANTS') {
+    const trimmed = line.trim();
+    if (/^INVARIANT\s+[A-Za-z_][A-Za-z0-9_]*$/u.test(trimmed)) continue;
+    if (trimmed === 'INVARIANTS') {
       skipping = true;
       continue;
     }
     if (skipping) {
-      if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line)) continue;
+      if (/^\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u.test(line) || trimmed === '') continue;
       skipping = false;
     }
-    if (line.trim() === 'SPECIFICATION Spec') {
+    if (trimmed === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION BatchSpec');
       specSwapped = true;
       continue;

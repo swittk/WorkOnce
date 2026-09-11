@@ -225,6 +225,20 @@ mutate(
 mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
   "import { spawnSync } from 'node:child_process';",
+  "import { spawnSync } from 'node:child_process';\nconst aliasedSpawnSync = spawnSync;\naliasedSpawnSync(process.execPath, ['-e', ''], { encoding: 'utf8' });",
+  'aliased spawnSync call loses its timeout bound',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  "import { spawnSync } from 'node:child_process';",
+  "import { spawnSync } from 'node:child_process';\nconst processTools = { run: spawnSync };\nconst { run: nestedSpawnSync } = processTools;\nnestedSpawnSync(process.execPath, ['-e', ''], { encoding: 'utf8' });",
+  'object/destructured spawnSync alias loses its timeout bound',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
+  'scripts/check-local-runner-implementation-mutations.mjs',
+  "import { spawnSync } from 'node:child_process';",
   "import { spawn } from 'child_process';",
   'unprefixed mutation checker bypasses bounded spawnSync controls',
   /must (?:import|use) spawnSync/u,

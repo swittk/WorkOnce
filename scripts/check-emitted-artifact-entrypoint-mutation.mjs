@@ -170,6 +170,62 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
     mutationFiles.restoreAll();
   }
 
+  try {
+    const importAnchor =
+      "  const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');";
+    assert.equal(
+      formalOriginal.split(importAnchor).length,
+      2,
+      'constant-false formal producer import mutation anchor is stale or not unique',
+    );
+    mutationFiles.writeFileSync(
+      formalPath,
+      formalOriginal.replace(
+        importAnchor,
+        "  let dormantRuntimeProducer;\n  if (0) dormantRuntimeProducer = await import('./runtime-boundary-refinement.mjs');\n  const { runRuntimeBoundarySamples } = dormantRuntimeProducer ?? {};",
+      ),
+    );
+    expectCheckerFailure(
+      'constant-false formal producer import',
+      /formal\.mjs must verify the bound build before importing/u,
+    );
+    console.log('Emitted-artifact entrypoint checker ignores constant-false producer imports.');
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
+  try {
+    const packedConsumerEntry =
+      "  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],\n";
+    const storageBatchAnchor =
+      "await runParallel([\n  ['TLC storage/conformance + mutation guards'";
+    assert.equal(
+      assuranceOriginal.split(packedConsumerEntry).length,
+      2,
+      'dormant packed-consumer entry anchor is stale or not unique',
+    );
+    assert.equal(
+      assuranceOriginal.split(storageBatchAnchor).length,
+      2,
+      'dormant packed-consumer batch anchor is stale or not unique',
+    );
+    const dormantConsumer = assuranceOriginal
+      .replace(packedConsumerEntry, '')
+      .replace(
+        storageBatchAnchor,
+        "async function dormantPackedConsumer() {\n  await runParallel([['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']]]);\n}\nvoid dormantPackedConsumer;\n" +
+          storageBatchAnchor,
+      );
+    mutationFiles.writeFileSync(assurancePath, dormantConsumer);
+    expectCheckerFailure(
+      'dormant packed consumer',
+      /required step 'packed consumer'.*exactly once/u,
+    );
+    console.log('Emitted-artifact entrypoint checker ignores dormant assurance consumers.');
+  } finally {
+    mutationFiles.restoreAll();
+  }
+
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

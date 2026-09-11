@@ -57,19 +57,33 @@ export function assertEmittedArtifactEntrypoints() {
     }
     return positions;
   }
+  function staticBoolean(expression) {
+    while (ts.isParenthesizedExpression(expression)) expression = expression.expression;
+    if (expression.kind === ts.SyntaxKind.TrueKeyword) return true;
+    if (expression.kind === ts.SyntaxKind.FalseKeyword) return false;
+    if (ts.isNumericLiteral(expression)) return Number(expression.text) !== 0;
+    if (ts.isStringLiteralLike(expression)) return expression.text.length > 0;
+    if (
+      ts.isPrefixUnaryExpression(expression) &&
+      expression.operator === ts.SyntaxKind.ExclamationToken
+    ) {
+      const nested = staticBoolean(expression.operand);
+      return nested === undefined ? undefined : !nested;
+    }
+    return undefined;
+  }
   function isStaticallyUnreachable(node) {
     let child = node;
     for (let parent = node.parent; parent; child = parent, parent = parent.parent) {
       if (ts.isIfStatement(parent)) {
-        if (parent.thenStatement === child && parent.expression.kind === ts.SyntaxKind.FalseKeyword)
-          return true;
-        if (parent.elseStatement === child && parent.expression.kind === ts.SyntaxKind.TrueKeyword)
-          return true;
+        const condition = staticBoolean(parent.expression);
+        if (parent.thenStatement === child && condition === false) return true;
+        if (parent.elseStatement === child && condition === true) return true;
       }
       if (
         ts.isWhileStatement(parent) &&
         parent.statement === child &&
-        parent.expression.kind === ts.SyntaxKind.FalseKeyword
+        staticBoolean(parent.expression) === false
       )
         return true;
     }
@@ -240,7 +254,12 @@ export function assertEmittedArtifactEntrypoints() {
       : undefined;
   }
   function inspectCall(node) {
-    if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return;
+    if (
+      !ts.isCallExpression(node) ||
+      !ts.isIdentifier(node.expression) ||
+      !executesDuringModuleInitialization(node, sourceFile)
+    )
+      return;
     const name = node.expression.text;
     if (name === 'runParallel' && ts.isArrayLiteralExpression(node.arguments[0])) {
       let containsBuild = false;
@@ -283,6 +302,14 @@ export function assertEmittedArtifactEntrypoints() {
       `Full assurance must execute exactly one build barrier; found ${buildPositions.length} build steps in ${buildBatchEnds.length} build batches.`,
     );
   const [buildBatchEnd] = buildBatchEnds;
+  const requiredPostBuildSteps = ['packed consumer'];
+  for (const step of requiredPostBuildSteps) {
+    const positions = stepPositions.get(step) ?? [];
+    if (positions.length !== 1)
+      throw new Error(
+        `Full assurance required step '${step}' must execute exactly once; found ${positions.length}.`,
+      );
+  }
   const preBuildExemptions = new Set(['format', 'type-contract tests']);
   for (const [step, positions] of stepPositions) {
     if (positions.length !== 1)

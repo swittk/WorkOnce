@@ -86,17 +86,92 @@ function assertSpawnSyncTimeouts(name, source) {
       return identifierHasPositiveValue(property.name, property);
     return false;
   };
+  const spawnSyncAliases = new Set(['spawnSync']);
+  const objectSpawnSyncAliases = new Map();
+  const aliasDeclarations = [];
+  const staticMemberName = (expression) => {
+    if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
+    if (
+      ts.isElementAccessExpression(expression) &&
+      expression.argumentExpression &&
+      ts.isStringLiteralLike(expression.argumentExpression)
+    )
+      return expression.argumentExpression.text;
+    return undefined;
+  };
+  const resolvesSpawnSync = (expression) => {
+    if (ts.isIdentifier(expression)) return spawnSyncAliases.has(expression.text);
+    if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
+      return false;
+    const member = staticMemberName(expression);
+    if (member === 'spawnSync') return true;
+    return (
+      member !== undefined &&
+      ts.isIdentifier(expression.expression) &&
+      (objectSpawnSyncAliases.get(expression.expression.text)?.has(member) ?? false)
+    );
+  };
+  function discoverAliases(node) {
+    if (ts.isVariableDeclaration(node) && node.initializer) aliasDeclarations.push(node);
+    ts.forEachChild(node, discoverAliases);
+  }
+  discoverAliases(sourceFile);
+  function resolveAlias(declaration) {
+    let changed = false;
+    if (ts.isIdentifier(declaration.name) && declaration.initializer) {
+      if (
+        resolvesSpawnSync(declaration.initializer) &&
+        !spawnSyncAliases.has(declaration.name.text)
+      ) {
+        spawnSyncAliases.add(declaration.name.text);
+        changed = true;
+      }
+      let objectAlias;
+      if (ts.isObjectLiteralExpression(declaration.initializer)) {
+        objectAlias = new Set();
+        for (const property of declaration.initializer.properties) {
+          if (ts.isPropertyAssignment(property) && resolvesSpawnSync(property.initializer)) {
+            const propertyName = propertyNameText(property.name);
+            if (propertyName !== undefined) objectAlias.add(propertyName);
+          } else if (ts.isShorthandPropertyAssignment(property) && resolvesSpawnSync(property.name))
+            objectAlias.add(property.name.text);
+        }
+      } else if (ts.isIdentifier(declaration.initializer))
+        objectAlias = objectSpawnSyncAliases.get(declaration.initializer.text);
+      if (objectAlias?.size && !objectSpawnSyncAliases.has(declaration.name.text)) {
+        objectSpawnSyncAliases.set(declaration.name.text, new Set(objectAlias));
+        changed = true;
+      }
+    }
+    if (ts.isObjectBindingPattern(declaration.name) && declaration.initializer) {
+      const sourceAlias = ts.isIdentifier(declaration.initializer)
+        ? objectSpawnSyncAliases.get(declaration.initializer.text)
+        : undefined;
+      for (const element of declaration.name.elements) {
+        if (!ts.isIdentifier(element.name)) continue;
+        const member = propertyNameText(element.propertyName ?? element.name);
+        if (
+          member !== undefined &&
+          (member === 'spawnSync' || sourceAlias?.has(member)) &&
+          !spawnSyncAliases.has(element.name.text)
+        ) {
+          spawnSyncAliases.add(element.name.text);
+          changed = true;
+        }
+      }
+    }
+    return changed;
+  }
+  let aliasesChanged;
+  do {
+    aliasesChanged = false;
+    for (const declaration of aliasDeclarations)
+      if (resolveAlias(declaration)) aliasesChanged = true;
+  } while (aliasesChanged);
+
   let calls = 0;
   function visit(node) {
-    const spawnSyncCall =
-      ts.isCallExpression(node) &&
-      ((ts.isIdentifier(node.expression) && node.expression.text === 'spawnSync') ||
-        (ts.isPropertyAccessExpression(node.expression) &&
-          node.expression.name.text === 'spawnSync') ||
-        (ts.isElementAccessExpression(node.expression) &&
-          node.expression.argumentExpression &&
-          ts.isStringLiteralLike(node.expression.argumentExpression) &&
-          node.expression.argumentExpression.text === 'spawnSync'));
+    const spawnSyncCall = ts.isCallExpression(node) && resolvesSpawnSync(node.expression);
     if (spawnSyncCall) {
       calls++;
       const options = node.arguments[2];

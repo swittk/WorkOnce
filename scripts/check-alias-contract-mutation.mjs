@@ -80,6 +80,45 @@ try {
   mutationFiles.restoreAll();
 }
 
+const restartReturnMutants = [
+  [
+    'dist/work.js',
+    'if (!next)\n                return { value: this.snapshot(row, now) };',
+    'if (!next)\n                return { value: null };',
+  ],
+  [
+    'dist-cjs/work.js',
+    'if (!next)\n                return { value: this.snapshot(row, now) };',
+    'if (!next)\n                return { value: null };',
+  ],
+];
+try {
+  for (const [relative, anchor, replacement] of restartReturnMutants) {
+    const target = path.join(root, relative);
+    const current = fs.readFileSync(target, 'utf8');
+    assert.equal(
+      current.split(anchor).length,
+      2,
+      `${relative} restart return mutation anchor is stale or not unique`,
+    );
+    mutationFiles.writeFileSync(target, current.replace(anchor, replacement));
+  }
+  const result = runNode(runtimeWitnessArgs);
+  requireExpectedProcessFailure(result, 'restart return-contract mutant unexpectedly passed');
+  const diagnostics = output(result);
+  for (const pattern of [
+    /esm\.restart must preserve the queued snapshot/u,
+    /commonjs\.restart must preserve the queued snapshot/u,
+  ])
+    assert.match(
+      diagnostics,
+      pattern,
+      `restart return-contract mutant did not trip ${String(pattern)}`,
+    );
+} finally {
+  mutationFiles.restoreAll();
+}
+
 const typeMutants = [
   [
     'src/work.ts',
