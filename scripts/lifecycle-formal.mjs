@@ -7,7 +7,7 @@ import {
   assertLifecycleRefinementSamples,
   runLifecycleRefinementSamples,
 } from './lifecycle-refinement.mjs';
-import { classifyTlcOutcome, requireExpectedInvariantViolation } from './tlc-outcome.mjs';
+import { classifyTlcOutcome } from './tlc-outcome.mjs';
 import { acquireTlcWorkspace, cleanupTlcWorkspaceOnSuccess } from './tlc-workspace.mjs';
 
 assertBuildSourceBinding();
@@ -68,19 +68,6 @@ function runModel(model, config, modulePath = `${model}.tla`, heap = 384) {
     const reason = outcome.reason ?? outcome.kind;
     throw new Error(`TLC ${model} failed: ${reason}\n${outcome.output.slice(-2000)}`);
   }
-}
-
-function requireInvariantRejects(model, config, modulePath, invariant) {
-  mkdirSync(resolve(tlcWorkspace, model), { recursive: true });
-  const result = spawnSync('java', tlcArgs(model, config, modulePath, 256), {
-    cwd: 'formal',
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-    timeout: timeoutMs,
-    killSignal: 'SIGKILL',
-  });
-  requireExpectedInvariantViolation(result, invariant);
-  console.log(`Lifecycle sample mutation guard: ${invariant} rejects its intended counterexample.`);
 }
 
 function configuredInvariants(configText) {

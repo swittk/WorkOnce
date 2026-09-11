@@ -1042,8 +1042,13 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(
     lifecycleFormal,
-    /requireExpectedInvariantViolation\(result, invariant\)/u,
-    'lifecycle formal runner must preserve fail-closed invariant-violation classification',
+    /const outcome = classifyTlcOutcome\(result\);[\s\S]{0,220}?if \(outcome\.kind !== 'success'\)/u,
+    'lifecycle formal runModel must fail closed on every non-success TLC outcome',
+  );
+  assert.doesNotMatch(
+    lifecycleFormal,
+    /function requireInvariantRejects\(/u,
+    'lifecycle formal must not retain an unreachable invariant-rejection helper as assurance evidence',
   );
   assert.doesNotMatch(lifecycleFormal, /const semanticFailure\s*=/u);
   assert.match(

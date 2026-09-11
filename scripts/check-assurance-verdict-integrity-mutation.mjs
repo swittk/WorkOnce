@@ -308,10 +308,10 @@ mutate(
 );
 mutate(
   'scripts/lifecycle-formal.mjs',
-  '  requireExpectedInvariantViolation(result, invariant);',
-  '  void result;',
-  'weak lifecycle TLC mutation classification',
-  /lifecycle formal runner must preserve fail-closed invariant-violation classification/u,
+  "  if (outcome.kind !== 'success') {",
+  '  if (false) {',
+  'active lifecycle TLC runModel accepts non-success outcomes',
+  /lifecycle formal runModel must fail closed on every non-success TLC outcome/u,
 );
 mutate(
   'scripts/lifecycle-formal.mjs',
