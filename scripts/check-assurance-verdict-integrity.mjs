@@ -693,6 +693,8 @@ export function assertAssuranceVerdictIntegrity() {
     const directMutationImports = new Map();
     const mutationAliases = new Map();
     const objectMutationAliases = new Map();
+    const openAliases = new Set();
+    const objectOpenAliases = new Map();
     const fsNamespaces = new Set();
     const directMutationPathArguments = new Map([
       ['writeFileSync', [0]],
@@ -704,6 +706,7 @@ export function assertAssuranceVerdictIntegrity() {
       ['unlinkSync', [0]],
       ['truncateSync', [0]],
       ['writeSync', [0]],
+      ['createWriteStream', [0]],
     ]);
     const promiseMutationPathArguments = new Map([
       ['writeFile', [0]],
@@ -720,6 +723,32 @@ export function assertAssuranceVerdictIntegrity() {
       if (!ts.isElementAccessExpression(expression) || !expression.argumentExpression) return [];
       return resolve(expression.argumentExpression);
     };
+    const readOnlyOpenFlags = new Set(['r', 'rs', 'sr']);
+    const writableOpenTargetIndexes = (call) => {
+      const flags = call.arguments[1];
+      assert.ok(flags, `${name} fs open call must provide statically reviewable flags`);
+      const resolvedFlags = resolve(flags);
+      assert.ok(
+        resolvedFlags.length > 0,
+        `${name} fs open flags cannot be statically resolved before generated-only classification`,
+      );
+      return resolvedFlags.every((flag) => readOnlyOpenFlags.has(flag)) ? [] : [0];
+    };
+    const memberOpenAcquisition = (expression) => {
+      if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
+        return false;
+      const names = staticMemberNames(expression);
+      if (names.length !== 1) return false;
+      const [member] = names;
+      const base = expression.expression;
+      if (isFsNamespaceExpression(base)) return member === 'open' || member === 'openSync';
+      if (isPromiseNamespaceExpression(base)) return member === 'open';
+      if (ts.isIdentifier(base)) return objectOpenAliases.get(base.text)?.has(member) ?? false;
+      return false;
+    };
+    const openAcquisition = (expression) =>
+      (ts.isIdentifier(expression) && openAliases.has(expression.text)) ||
+      memberOpenAcquisition(expression);
     const memberMutationIndexes = (expression) => {
       if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
         return [];
@@ -745,6 +774,7 @@ export function assertAssuranceVerdictIntegrity() {
     function mutationTargetIndexes(call) {
       const expression = call.expression;
       if (ts.isIdentifier(expression)) {
+        if (openAliases.has(expression.text)) return writableOpenTargetIndexes(call);
         const alias = mutationAliases.get(expression.text);
         if (alias) return alias;
         const direct = directMutationPathArguments.get(expression.text);
@@ -756,6 +786,7 @@ export function assertAssuranceVerdictIntegrity() {
       }
       if (!(ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)))
         return [];
+      if (memberOpenAcquisition(expression)) return writableOpenTargetIndexes(call);
       const names = staticMemberNames(expression);
       if (
         ts.isIdentifier(expression.expression) &&
@@ -813,7 +844,8 @@ export function assertAssuranceVerdictIntegrity() {
           if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
             for (const element of clause.namedBindings.elements) {
               const imported = element.propertyName?.text ?? element.name.text;
-              if (promiseMutationPathArguments.has(imported))
+              if (imported === 'open') openAliases.add(element.name.text);
+              else if (promiseMutationPathArguments.has(imported))
                 promiseMutationImports.set(element.name.text, imported);
             }
         }
@@ -825,6 +857,8 @@ export function assertAssuranceVerdictIntegrity() {
             for (const element of clause.namedBindings.elements) {
               const imported = element.propertyName?.text ?? element.name.text;
               if (imported === 'promises') promiseMutationNamespaces.add(element.name.text);
+              else if (imported === 'open' || imported === 'openSync')
+                openAliases.add(element.name.text);
               else if (directMutationPathArguments.has(imported))
                 directMutationImports.set(element.name.text, imported);
             }
@@ -840,6 +874,7 @@ export function assertAssuranceVerdictIntegrity() {
           mutationGuardBindings.add(node.name.text);
         if (isPromiseNamespaceExpression(node.initializer))
           promiseMutationNamespaces.add(node.name.text);
+        if (openAcquisition(node.initializer)) openAliases.add(node.name.text);
         const aliasIndexes = aliasedMutationIndexes(node.initializer);
         if (aliasIndexes.length > 0) mutationAliases.set(node.name.text, aliasIndexes);
       }
@@ -855,6 +890,13 @@ export function assertAssuranceVerdictIntegrity() {
           const imported = element.propertyName?.getText(sourceFile) ?? element.name.text;
           if (directSource && imported === 'promises') {
             promiseMutationNamespaces.add(element.name.text);
+            continue;
+          }
+          if (
+            (directSource && (imported === 'open' || imported === 'openSync')) ||
+            (promiseSource && imported === 'open')
+          ) {
+            openAliases.add(element.name.text);
             continue;
           }
           const indexes = directSource
@@ -890,14 +932,20 @@ export function assertAssuranceVerdictIntegrity() {
           promiseMutationNamespaces.add(declaration.name.text);
           changed = true;
         }
+        if (openAcquisition(declaration.initializer) && !openAliases.has(declaration.name.text)) {
+          openAliases.add(declaration.name.text);
+          changed = true;
+        }
         const aliasIndexes = aliasedMutationIndexes(declaration.initializer);
         if (aliasIndexes.length > 0 && !mutationAliases.has(declaration.name.text)) {
           mutationAliases.set(declaration.name.text, aliasIndexes);
           changed = true;
         }
         let objectAlias;
+        let objectOpenAlias;
         if (ts.isObjectLiteralExpression(declaration.initializer)) {
           objectAlias = new Map();
+          objectOpenAlias = new Set();
           for (const property of declaration.initializer.properties) {
             let indexes = [];
             let propertyNames = [];
@@ -908,14 +956,26 @@ export function assertAssuranceVerdictIntegrity() {
               propertyNames = [property.name.text];
               indexes = aliasedMutationIndexes(property.name);
             }
+            const initializer = ts.isPropertyAssignment(property)
+              ? property.initializer
+              : ts.isShorthandPropertyAssignment(property)
+                ? property.name
+                : undefined;
+            if (initializer && openAcquisition(initializer))
+              for (const propertyName of propertyNames) objectOpenAlias.add(propertyName);
             if (indexes.length > 0)
               for (const propertyName of propertyNames) objectAlias.set(propertyName, indexes);
           }
         } else if (ts.isIdentifier(declaration.initializer)) {
           objectAlias = objectMutationAliases.get(declaration.initializer.text);
+          objectOpenAlias = objectOpenAliases.get(declaration.initializer.text);
         }
         if (objectAlias?.size && !objectMutationAliases.has(declaration.name.text)) {
           objectMutationAliases.set(declaration.name.text, new Map(objectAlias));
+          changed = true;
+        }
+        if (objectOpenAlias?.size && !objectOpenAliases.has(declaration.name.text)) {
+          objectOpenAliases.set(declaration.name.text, new Set(objectOpenAlias));
           changed = true;
         }
       }
@@ -932,6 +992,16 @@ export function assertAssuranceVerdictIntegrity() {
           ) {
             promiseMutationNamespaces.add(element.name.text);
             changed = true;
+            continue;
+          }
+          if (
+            (directSource && (imported === 'open' || imported === 'openSync')) ||
+            (promiseSource && imported === 'open')
+          ) {
+            if (!openAliases.has(element.name.text)) {
+              openAliases.add(element.name.text);
+              changed = true;
+            }
             continue;
           }
           const indexes = directSource

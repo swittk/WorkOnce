@@ -85,6 +85,27 @@ mutate(
 mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  fs.createWriteStream(path.join(root, 'src/worker.ts')); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'write stream acquisition hides a tracked source mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  void fs.promises.open(path.join(root, 'src/kernel.ts'), 'w'); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'writable file-handle acquisition hides a tracked source mutation target',
+  /mutates tracked source\/config without signal-safe file restoration/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
+  "  const flags = process.env.WORKONCE_MUTATION_OPEN_FLAGS; void fs.promises.open(path.join(root, '.artifacts/probe'), flags); fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
+  'dynamic file-handle flags bypass fail-closed mutation classification',
+  /fs open flags cannot be statically resolved before generated-only classification/u,
+);
+mutate(
+  'scripts/check-build-source-binding-mutation.mjs',
+  '  fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);',
   "  delayedTrackedWrite(path.join(root, 'src/worker.ts'), originalStamp); const delayedTrackedWrite = fs.writeFileSync; fs.writeFileSync(stampPath, `${JSON.stringify(mutant, null, 2)}\\n`);",
   'tracked write before its later alias declaration remains classified',
   /mutates tracked source\/config without signal-safe file restoration/u,
