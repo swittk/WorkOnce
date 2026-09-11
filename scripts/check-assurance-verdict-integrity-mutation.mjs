@@ -273,6 +273,13 @@ mutate(
   /unbounded spawnSync mutation subprocess/u,
 );
 mutate(
+  'scripts/check-build-input-binding-mutation.mjs',
+  "const mutationFiles = createMutationFileGuard();\n\nfunction bindingCheck() {\n  return spawnSync(process.execPath, ['scripts/formal.mjs', '--binding-check-only'], {\n    cwd: root,\n    encoding: 'utf8',\n    env: process.env,\n    timeout: 15_000,",
+  "const mutationFiles = createMutationFileGuard();\nconst timeoutMs = 15_000;\n\nfunction bindingCheck() {\n  const timeoutMs = 0;\n  return spawnSync(process.execPath, ['scripts/formal.mjs', '--binding-check-only'], {\n    cwd: root,\n    encoding: 'utf8',\n    env: process.env,\n    timeout: timeoutMs,",
+  'shadowed spawnSync timeout resolves an unrelated outer declaration',
+  /unbounded spawnSync mutation subprocess/u,
+);
+mutate(
   'scripts/check-alias-contract-mutation.mjs',
   '    45_000,',
   '    0,',

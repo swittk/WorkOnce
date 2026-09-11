@@ -44,13 +44,50 @@ function assertSpawnSyncTimeouts(name, source) {
     collect(sourceFile);
     return found;
   };
+  const isLexicalScope = (node) =>
+    ts.isBlock(node) ||
+    ts.isSourceFile(node) ||
+    ts.isCaseBlock(node) ||
+    ts.isForStatement(node) ||
+    ts.isForInStatement(node) ||
+    ts.isForOfStatement(node);
+  const variableScope = (declaration) => {
+    const list = declaration.parent;
+    if (!ts.isVariableDeclarationList(list)) return undefined;
+    const blockScoped = (list.flags & ts.NodeFlags.BlockScoped) !== 0;
+    for (let current = list.parent; current; current = current.parent) {
+      if (
+        blockScoped
+          ? isLexicalScope(current)
+          : ts.isFunctionLike(current) || ts.isSourceFile(current)
+      )
+        return current;
+    }
+    return undefined;
+  };
+  const variableBindings = [];
+  const collectVariableBindings = (node) => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      const scope = variableScope(node);
+      if (scope) variableBindings.push({ name: node.name.text, declaration: node, scope });
+    }
+    ts.forEachChild(node, collectVariableBindings);
+  };
+  collectVariableBindings(sourceFile);
   const identifierHasPositiveValue = (identifier, context) => {
     for (let current = context; current; current = current.parent) {
-      if (!ts.isFunctionLike(current)) continue;
-      const parameterIndex = current.parameters.findIndex(
-        (parameter) => ts.isIdentifier(parameter.name) && parameter.name.text === identifier.text,
+      const bindings = variableBindings.filter(
+        (binding) => binding.scope === current && binding.name === identifier.text,
       );
-      if (parameterIndex < 0) continue;
+      const parameterIndex = ts.isFunctionLike(current)
+        ? current.parameters.findIndex(
+            (parameter) =>
+              ts.isIdentifier(parameter.name) && parameter.name.text === identifier.text,
+          )
+        : -1;
+      if (bindings.length === 0 && parameterIndex < 0) continue;
+      if (bindings.length + (parameterIndex >= 0 ? 1 : 0) !== 1) return false;
+      if (bindings.length === 1) return positiveNumber(bindings[0].declaration.initializer);
       const parameter = current.parameters[parameterIndex];
       if (!positiveNumber(parameter.initializer)) return false;
       if (!current.name || !ts.isIdentifier(current.name)) return false;
@@ -61,19 +98,7 @@ function assertSpawnSyncTimeouts(name, source) {
         return argument === undefined ? true : positiveNumber(argument);
       });
     }
-    let declaration;
-    const findDeclaration = (node) => {
-      if (
-        declaration === undefined &&
-        ts.isVariableDeclaration(node) &&
-        ts.isIdentifier(node.name) &&
-        node.name.text === identifier.text
-      )
-        declaration = node;
-      ts.forEachChild(node, findDeclaration);
-    };
-    findDeclaration(sourceFile);
-    return declaration !== undefined && positiveNumber(declaration.initializer);
+    return false;
   };
   const positiveTimeoutProperty = (property) => {
     if (ts.isPropertyAssignment(property) && propertyNameText(property.name) === 'timeout')

@@ -1,2 +1,5 @@
-import { writeFileSync } from 'node:fs';
-writeFileSync(new URL('../dist-cjs/package.json', import.meta.url), '{"type":"commonjs"}\n');
+import { mkdirSync, writeFileSync } from 'node:fs';
+
+const directory = new URL('../dist-cjs/', import.meta.url);
+mkdirSync(directory, { recursive: true });
+writeFileSync(new URL('package.json', directory), '{"type":"commonjs"}\n');
