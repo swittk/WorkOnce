@@ -4,6 +4,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { availableParallelism, loadavg, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { requireSuccessfulProcess } from './subprocess-outcome.mjs';
+import { assertParallelEntriesReadOnly } from './assurance-parallel-safety.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const logicalCpus = availableParallelism();
@@ -76,6 +77,7 @@ function terminateActiveParallelChildren(signal) {
 process.once('SIGINT', () => terminateActiveParallelChildren('SIGINT'));
 process.once('SIGTERM', () => terminateActiveParallelChildren('SIGTERM'));
 async function runParallel(entries) {
+  assertParallelEntriesReadOnly(entries);
   const started = performance.now();
   const children = new Set();
   const pending = new Map();
@@ -367,6 +369,8 @@ await runParallel([
     process.execPath,
     ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],
   ],
+  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],
+  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
 ]);
 await runParallel([
   [
@@ -438,8 +442,6 @@ run('assurance scheduling mutation guard', process.execPath, [
 ]);
 await runParallel([
   ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
-  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],
-  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
 ]);
 run('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [
   'scripts/formal.mjs',

@@ -10,6 +10,22 @@ test('successful TLC exit is success', () => {
   assert.equal(classifyTlcOutcome(result({ status: 0 })).kind, 'success');
 });
 
+test('status-zero TLC output with an invariant diagnostic is still a semantic counterexample', () => {
+  const outcome = classifyTlcOutcome(
+    result({ status: 0, stdout: 'Invariant ContinuedWitness is violated.\n' }),
+  );
+  assert.equal(outcome.kind, 'semantic_counterexample');
+  assert.equal(outcome.reason, 'invariant_violation');
+  assert.deepEqual(outcome.invariants, ['ContinuedWitness']);
+  assert.equal(
+    requireExpectedInvariantViolation(
+      result({ status: 0, stdout: 'Invariant ContinuedWitness is violated.\n' }),
+      'ContinuedWitness',
+    ).kind,
+    'semantic_counterexample',
+  );
+});
+
 test('explicit invariant violation is the only invariant semantic counterexample', () => {
   const outcome = classifyTlcOutcome(
     result({ stdout: 'Error: Invariant NoLostContinuation is violated.\n' }),

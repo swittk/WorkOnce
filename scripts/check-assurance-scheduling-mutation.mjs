@@ -212,8 +212,8 @@ try {
     'cross-family TLC concurrency',
     (text) =>
       text.replace(
-        "  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],\n]);\nrun('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [\n  'scripts/formal.mjs',\n]);",
-        "  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],\n  ['TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, ['scripts/formal.mjs']],\n]);",
+        "  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],\n]);\nrun('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [\n  'scripts/formal.mjs',\n]);",
+        "  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],\n  ['TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, ['scripts/formal.mjs']],\n]);",
       ),
     /storage-formal and formal\.mjs must never be co-scheduled/u,
   );
@@ -221,8 +221,8 @@ try {
     'process faults overlap compiler/mapping work',
     (text) =>
       text.replace(
-        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n]);",
-        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],\n]);",
+        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],",
+        "  [\n    'implementation traces',\n    process.execPath,\n    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],\n  ],\n  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],\n  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],",
       ),
     /Expected exactly one bounded process-fault parallel group|must not overlap compiler\/mapping work/u,
   );
@@ -234,6 +234,11 @@ try {
         "['real process faults', process.execPath, ['--test', ...processTests]],",
       ),
     /full assurance must cap process-fault file concurrency at three/u,
+  );
+  expectSchedulingFailure(
+    'lost resolved parallel mutation gate',
+    (text) => text.replace('  assertParallelEntriesReadOnly(entries);\n', ''),
+    /reject resolved mutating entry points/u,
   );
   expectSchedulingFailure(
     'parallel source-mutating guards',

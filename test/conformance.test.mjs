@@ -39,6 +39,29 @@ for (const adapter of ['memory', 'sqlite'])
     console.log(adapter, passed);
   });
 
+test('shared conformance derives accepted write deadlines from the atomic decision clock', async () => {
+  let clock = 100_000;
+  const passed = await runConformance(() => {
+    const base = createMemoryStore({ now: () => clock });
+    return {
+      store: {
+        ...base,
+        atomic(id, decide) {
+          return base.atomic(id, (row, now) => {
+            const change = decide(row, now);
+            if (change.value === 'accepted-before-deadline') clock += 2;
+            return change;
+          });
+        },
+      },
+      advance(ms) {
+        clock += ms;
+      },
+    };
+  });
+  assert.equal(passed.length, 19);
+});
+
 test('shared conformance accepts adapter-specific invalid-write rejection messages', async () => {
   let clock = 100_000;
   const passed = await runConformance(() => {

@@ -400,9 +400,9 @@ export async function runConformance(create: ConformanceFactory): Promise<string
       'validUntil equal to the storage clock must reject',
     );
     assert.equal(canonical((await store.getMany([snapshot.id])).rows), before);
-    const accepted = await store.atomic(snapshot.id, (row) => ({
+    const accepted = await store.atomic(snapshot.id, (row, clock) => ({
       next: { ...row!, revision: row!.revision + 1 },
-      validUntil: boundaryNow + 1,
+      validUntil: clock + 60_000,
       value: 'accepted-before-deadline',
     }));
     assert.equal(accepted, 'accepted-before-deadline');

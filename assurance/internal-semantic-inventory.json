@@ -4,7 +4,7 @@
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
     "count": 998,
-    "digest": "3ce2f53528ab38e0"
+    "digest": "101ab0afe0326188"
   },
   "entries": [
     {

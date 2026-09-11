@@ -120,6 +120,11 @@ assert.match(
 );
 assert.match(
   text,
+  /async function runParallel\(entries\) \{\s*assertParallelEntriesReadOnly\(entries\);/u,
+  'Parallel assurance must reject resolved mutating entry points before spawning any parallel child.',
+);
+assert.match(
+  text,
   /const outcomes = await Promise\.allSettled\(/u,
   'Parallel assurance must wait for every direct child to settle before propagating a failure.',
 );
@@ -223,6 +228,12 @@ assert.equal(
   true,
   'Read-only implementation traces must overlap the public mapping batch for assurance performance.',
 );
+for (const label of ['bounded-domain audit', 'packed consumer'])
+  assert.equal(
+    implementationBlocks[0].text.includes(`'${label}'`),
+    true,
+    `Read-only implementation batch must overlap ${label} instead of serializing it after proof mutation guards.`,
+  );
 assert.equal(
   implementationBlocks[0].text.includes('lifecycle formal proof wrapper'),
   false,
@@ -317,6 +328,12 @@ assert.equal(
   false,
   'storage-formal and formal.mjs must never be co-scheduled in one parallel group',
 );
+for (const label of ['bounded-domain audit', 'packed consumer'])
+  assert.equal(
+    storageBlocks[0].text.includes(`'${label}'`),
+    false,
+    `${label} must not remain serialized behind the source-mutating assurance phase.`,
+  );
 const formalRun = text.indexOf(
   "run('TLC lifecycle/runtime/read/policy boundaries + mutation guards'",
 );

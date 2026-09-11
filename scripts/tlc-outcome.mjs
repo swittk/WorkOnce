@@ -54,8 +54,6 @@ export function classifyTlcOutcome(result) {
     };
   }
 
-  if (result.status === 0) return { kind: 'success', invariants, output };
-
   const infrastructure = infrastructureReason(result, output);
   if (infrastructure !== 'unclassified_nonzero_exit') {
     return {
@@ -80,6 +78,7 @@ export function classifyTlcOutcome(result) {
   if (/Deadlock reached\.|Error: Deadlock reached/iu.test(output)) {
     return { kind: 'semantic_counterexample', reason: 'deadlock', invariants, output };
   }
+  if (result.status === 0) return { kind: 'success', invariants, output };
 
   return {
     kind: 'infrastructure_failure',
