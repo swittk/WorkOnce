@@ -10,6 +10,7 @@ function run(script) {
     encoding: 'utf8',
     env: process.env,
     timeout: 300000,
+    maxBuffer: 64 * 1024 * 1024,
   });
   return requireSuccessfulProcess(result, `${script} child`);
 }
@@ -42,6 +43,7 @@ test('lifecycle binding write mode ignores mutation-only digest injection', () =
         encoding: 'utf8',
         env: { ...process.env, WORKONCE_LIFECYCLE_BINDING_MUTANT: 'src/work.ts' },
         timeout: 300000,
+        maxBuffer: 64 * 1024 * 1024,
       },
     );
     requireSuccessfulProcess(result, 'lifecycle binding write child');

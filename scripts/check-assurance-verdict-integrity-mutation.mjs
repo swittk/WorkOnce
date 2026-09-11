@@ -570,10 +570,10 @@ mutate(
 );
 mutate(
   'test/process/policy-process.test.mjs',
-  'const fixtureLeaseMs = childMessageTimeoutMs * 2;',
+  'const fixtureLeaseMs = harnessWaitBudgetMs;',
   'const fixtureLeaseMs = Math.floor(childMessageTimeoutMs / 2);',
-  'policy fixture lease no longer outlives IPC liveness ceiling',
-  /policy crash fixture lease must be derived to outlive its IPC liveness ceiling/u,
+  'policy fixture lease no longer covers the full IPC harness wait budget',
+  /policy crash fixture lease must be derived from the full IPC harness wait budget/u,
 );
 mutate(
   'test/process/policy-process.test.mjs',

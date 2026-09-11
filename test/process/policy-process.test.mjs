@@ -18,8 +18,8 @@ function start(path, mode, outcomeKind) {
   );
 }
 const childMessageTimeoutMs = 15_000;
-const fixtureLeaseMs = childMessageTimeoutMs * 2;
 const harnessWaitBudgetMs = childMessageTimeoutMs * 3;
+const fixtureLeaseMs = harnessWaitBudgetMs;
 const fixtureMaxElapsedMs = harnessWaitBudgetMs * 2;
 const message = (child) => nextChildMessage(child, childMessageTimeoutMs);
 const jobDefinition = {

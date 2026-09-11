@@ -1607,8 +1607,8 @@ export function assertAssuranceVerdictIntegrity() {
   const policyProcess = read('test/process/policy-process.test.mjs');
   assert.match(
     policyProcess,
-    /const childMessageTimeoutMs = 15_000;[\s\S]{0,80}?const fixtureLeaseMs = childMessageTimeoutMs \* 2;/u,
-    'policy crash fixture lease must be derived to outlive its IPC liveness ceiling',
+    /const childMessageTimeoutMs = 15_000;[\s\S]{0,120}?const harnessWaitBudgetMs = childMessageTimeoutMs \* 3;[\s\S]{0,80}?const fixtureLeaseMs = harnessWaitBudgetMs;/u,
+    'policy crash fixture lease must be derived from the full IPC harness wait budget',
   );
   assert.match(
     policyProcess,

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { acquireTlcWorkspace, createTlcWorkspace } from '../scripts/tlc-workspace.mjs';
+import { requireSuccessfulProcess } from '../scripts/subprocess-outcome.mjs';
 
 test('concurrent TLC invocations receive disjoint generated-module namespaces', () => {
   const first = createTlcWorkspace('isolation');
@@ -69,7 +70,7 @@ test('successful child preserves an inherited parent-owned TLC workspace', () =>
       encoding: 'utf8',
       timeout: 15_000,
     });
-    assert.equal(result.status, 0, result.stderr);
+    requireSuccessfulProcess(result, 'tlc workspace cleanup child');
     assert.equal(readFileSync(marker, 'utf8'), 'KEEP');
     assert.equal(existsSync(workspace), true);
   } finally {

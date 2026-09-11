@@ -39,8 +39,11 @@ for (let trial = 0; trial < 3; trial++) {
       jobsPerSecond: (count * 1000) / (end - start),
     });
   } finally {
-    store.close();
-    rmSync(directory, { recursive: true, force: true });
+    try {
+      store.close();
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   }
 }
 const median = (field) => [...trials].sort((a, b) => a[field] - b[field])[1][field];
