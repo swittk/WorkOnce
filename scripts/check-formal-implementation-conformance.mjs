@@ -501,7 +501,7 @@ function directiveTargetTokenOrdinal(source, end) {
     const token = scanner.scan();
     if (token === ts.SyntaxKind.EndOfFileToken) return 'eof';
     if (token >= ts.SyntaxKind.FirstTriviaToken && token <= ts.SyntaxKind.LastTriviaToken) continue;
-    if (scanner.getTokenPos() >= end) return ordinal;
+    if (scanner.getTokenStart() >= end) return ordinal;
     ordinal++;
   }
 }

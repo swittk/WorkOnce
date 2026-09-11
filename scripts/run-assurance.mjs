@@ -254,6 +254,7 @@ async function runParallelProcessTreeSelfTest() {
       if (!Number.isInteger(pid) || pid <= 0)
         throw new Error(`parallel process-tree self-test recorded invalid ${label} pid`);
       await waitForProcessExit(pid, label);
+      fs.rmSync(readyMarker, { force: true });
     }
     console.log(
       'Parallel assurance failure contains both failed-child and sibling descendant process trees.',
