@@ -254,15 +254,28 @@ runMutationWitnessBatch({
 
 const samples = await runLifecycleRefinementSamples();
 assertLifecycleRefinementSamples(samples);
+const lifecycleAdapterDomainMutationKinds = [
+  ['claimScanContinuation', 'ClaimScanContinuationMissingAdapterSamples'],
+  ['stolenPageContinuation', 'StolenPageContinuationMissingAdapterSamples'],
+  ['claimLimit', 'ClaimLimitMissingAdapterSamples'],
+  ['finiteClaimDrain', 'FiniteClaimDrainMissingAdapterSamples'],
+];
+const lifecycleAdapterDomainMutants = lifecycleAdapterDomainMutationKinds.map(([kind, name]) => {
+  const matching = samples.filter((sample) => sample.kind === kind);
+  const adapters = matching.map((sample) => sample.adapter).sort();
+  if (JSON.stringify(adapters) !== JSON.stringify(['cas', 'memory', 'sqlite']))
+    throw new Error(`Lifecycle adapter-domain mutation source drifted for ${kind}`);
+  return { kind, name };
+});
 const observedModule = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.tla');
 const observedConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.cfg');
 writeFileSync(
   observedModule,
-  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nBadSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadFieldSamples == ObservedSamples \\cup {[kind |-> \"leaseFenceCause\", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\nLifecycleNegativeSampleMutantsRejected == /\\ ~LifecycleSamplesConform(BadSamples) /\\ ~LifecycleSamplesConform(BadFieldSamples)\n====\n`,
+  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nBadSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadFieldSamples == ObservedSamples \\cup {[kind |-> \"leaseFenceCause\", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\n${lifecycleAdapterDomainMutants.map(({ kind, name }) => `${name} == {s \\in ObservedSamples : ~(s.kind = ${JSON.stringify(kind)} /\\ s.adapter = \"cas\")}`).join('\n')}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\nLifecycleNegativeSampleMutantsRejected == /\\ ~LifecycleSamplesConform(BadSamples) /\\ ~LifecycleSamplesConform(BadFieldSamples)\nLifecycleAdapterDomainMutantsRejected ==\n${lifecycleAdapterDomainMutants.map(({ name }) => `  /\\ ~LifecycleSamplesConform(${name})`).join('\n')}\n====\n`,
 );
 writeFileSync(
   observedConfig,
-  'SPECIFICATION Spec\nINVARIANT LifecycleSamplesObserved\nINVARIANT LifecycleNegativeSampleMutantsRejected\nCHECK_DEADLOCK FALSE\n',
+  'SPECIFICATION Spec\nINVARIANT LifecycleSamplesObserved\nINVARIANT LifecycleNegativeSampleMutantsRejected\nINVARIANT LifecycleAdapterDomainMutantsRejected\nCHECK_DEADLOCK FALSE\n',
 );
 console.log(
   `TLC lifecycle boundary receives ${samples.length} fresh compiled implementation observations.`,
@@ -270,7 +283,7 @@ console.log(
 runModel('WorkOnceLifecycleObserved', observedConfig, observedModule, 256);
 
 console.log(
-  'Lifecycle sample mutation guards reject invalid-kind and false-field witnesses in the observed-model TLC run.',
+  'Lifecycle sample mutation guards reject invalid-kind, false-field and missing-adapter witnesses in the observed-model TLC run.',
 );
 
 console.log('Lifecycle temporal, claim-scan, observation and mutation gates passed.');

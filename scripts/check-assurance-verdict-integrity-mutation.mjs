@@ -287,7 +287,7 @@ mutate(
 );
 mutate(
   'test/process/lifecycle-process.test.mjs',
-  "    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });",
+  "    const exited = once(child, 'exit', { signal: AbortSignal.timeout(childExitTimeoutMs) });",
   "    const exited = once(child, 'exit');",
   'unbounded child exit wait family',
   /unbounded child exit wait/u,
@@ -369,6 +369,28 @@ mutate(
   'scoped assurance section loses its start anchor',
   /finite-drain sample start anchor is missing/u,
 );
+mutate(
+  'scripts/lifecycle-formal.mjs',
+  "  ['finiteClaimDrain', 'FiniteClaimDrainMissingAdapterSamples'],\n",
+  '',
+  'lifecycle adapter-domain mutation set loses finite drain',
+  /lifecycle adapter-domain mutation set must cover finiteClaimDrain/u,
+);
+mutate(
+  'test/policy-refinement.test.mjs',
+  'void policyRefinementSamplesPromise.catch(() => {});\n',
+  '',
+  'shared policy refinement promise loses rejection observer',
+  /shared policy refinement sample promise must attach an immediate rejection observer/u,
+);
+mutate(
+  'test/process/lifecycle-process.test.mjs',
+  'const lifecycleLeaseMs = lifecycleHarnessWaitBudgetMs + childMessageTimeoutMs;',
+  'const lifecycleLeaseMs = childMessageTimeoutMs * 2;',
+  'lifecycle process lease falls inside aggregate harness wait budget',
+  /lifecycle process lease must stay beyond the aggregate harness wait budget/u,
+);
+
 mutate(
   'scripts/lifecycle-formal.mjs',
   '  let specSwapped = false;',
@@ -549,8 +571,8 @@ mutate(
 );
 mutate(
   'test/process/lifecycle-process.test.mjs',
-  'const nextMessage = (child) => nextChildMessage(child, 15000);',
-  "const nextMessage = async (child) => (await once(child, 'message', { signal: AbortSignal.timeout(15000) }))[0];",
+  'const nextMessage = (child) => nextChildMessage(child, childMessageTimeoutMs);',
+  "const nextMessage = async (child) => (await once(child, 'message', { signal: AbortSignal.timeout(childMessageTimeoutMs) }))[0];",
   'lifecycle process fixture returns to one-shot IPC waits',
   /lossy one-shot child IPC message wait/u,
 );

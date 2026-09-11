@@ -259,6 +259,57 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     await run!.settle(outcome);
     assert.equal((await a.inspect('job'))!.pendingFollowups, 0);
   });
+  await test('storage cursors are exclusive for all/outbox and rejected for due', async ({
+    store,
+  }) => {
+    const scope = 'cursor-contract';
+    const work = createWorkOnce({ store, scope });
+    const parent = work.define('parent');
+    const child = work.define('child');
+    const snapshots = [];
+    for (const key of ['delta', 'alpha', 'charlie', 'bravo'])
+      snapshots.push(await parent.ensure(null, { key }));
+    const expected = snapshots.map((snapshot) => snapshot.id).sort();
+    const firstId = expected[0]!;
+    await assert.rejects(
+      store.query({ scope, kind: 'parent', select: 'due', limit: 1, afterId: firstId }),
+      () => true,
+      'due queries must reject the id-only afterId cursor',
+    );
+
+    async function assertExclusivePages(select: 'all' | 'outbox') {
+      const actual: string[] = [];
+      let afterId: string | undefined;
+      let terminated = false;
+      for (let page = 0; page <= expected.length; page++) {
+        const result = await store.query({
+          scope,
+          kind: 'parent',
+          select,
+          limit: 2,
+          ...(afterId === undefined ? {} : { afterId }),
+        });
+        assert.ok(result.rows.length <= 2, `${select} cursor page exceeded its limit`);
+        if (result.rows.length === 0) {
+          terminated = true;
+          break;
+        }
+        actual.push(...result.rows.map((row) => row.id));
+        afterId = result.rows.at(-1)!.id;
+      }
+      assert.equal(terminated, true, `${select} cursor pagination did not terminate`);
+      assert.deepEqual(actual, expected, `${select} afterId must be exclusive and ordered`);
+    }
+
+    await assertExclusivePages('all');
+    const runs = await parent.claim({ workerId: 'cursor-owner', limit: expected.length });
+    assert.equal(runs.length, expected.length);
+    for (let index = 0; index < runs.length; index++)
+      await runs[index]!.settle(
+        runs[index]!.succeed(null, { next: [child.request(null, { key: `next-${index}` })] }),
+      );
+    await assertExclusivePages('outbox');
+  });
   await test('invalid follow-up never commits parent success', async ({ store }) => {
     const work = createWorkOnce({ store, scope: 't' });
     const a = work.define('one');

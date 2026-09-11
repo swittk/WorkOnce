@@ -9,18 +9,25 @@ import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
 const childUrl = new URL('./lifecycle-child.mjs', import.meta.url);
+const childMessageTimeoutMs = 15_000;
+const childExitTimeoutMs = 15_000;
+const lifecycleHarnessWaitBudgetMs = childMessageTimeoutMs * 2 + childExitTimeoutMs;
+const lifecycleLeaseMs = lifecycleHarnessWaitBudgetMs + childMessageTimeoutMs;
+const lifecycleMaxElapsedMs = lifecycleLeaseMs * 2;
 function start(path, mode, detail = '') {
   return forkWithInbox(
     childUrl,
-    [path, mode, detail],
+    [path, mode, detail, String(lifecycleLeaseMs), String(lifecycleMaxElapsedMs)],
     { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] },
     'Lifecycle child',
   );
 }
-const nextMessage = (child) => nextChildMessage(child, 15000);
+const nextMessage = (child) => nextChildMessage(child, childMessageTimeoutMs);
 async function cleanupChild(child) {
   if (child.exitCode !== null || child.signalCode !== null) return;
-  const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) }).catch(() => undefined);
+  const exited = once(child, 'exit', { signal: AbortSignal.timeout(childExitTimeoutMs) }).catch(
+    () => undefined,
+  );
   if (!child.killed) child.kill('SIGKILL');
   await exited;
 }
@@ -40,7 +47,7 @@ async function killAfterStage(path, mode, detail, expectedStage) {
       throw new Error(
         `Lifecycle child exited before SIGKILL: code=${String(child.exitCode)} signal=${String(child.signalCode)}`,
       );
-    const exited = once(child, 'exit', { signal: AbortSignal.timeout(15000) });
+    const exited = once(child, 'exit', { signal: AbortSignal.timeout(childExitTimeoutMs) });
     child.kill('SIGKILL');
     const [, signal] = await exited;
     assert.equal(signal, 'SIGKILL');
@@ -52,7 +59,12 @@ async function killAfterStage(path, mode, detail, expectedStage) {
 function open(path) {
   const store = createSqliteStore(path);
   const queue = createWorkOnce({ store, scope: 'lifecycle-process' }).define('job', {
-    limits: { leaseMs: 30000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
+    limits: {
+      leaseMs: lifecycleLeaseMs,
+      maxAttempts: 4,
+      maxElapsedMs: lifecycleMaxElapsedMs,
+      maxDeferrals: 4,
+    },
   });
   return { store, queue };
 }

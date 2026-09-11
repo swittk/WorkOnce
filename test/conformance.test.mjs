@@ -34,7 +34,7 @@ for (const adapter of ['memory', 'sqlite'])
         },
       };
     });
-    assert.equal(passed.length, 18);
+    assert.equal(passed.length, 19);
     console.log(adapter, passed);
   });
 
@@ -60,7 +60,7 @@ test('shared conformance accepts adapter-specific invalid-write rejection messag
       },
     };
   });
-  assert.equal(passed.length, 18);
+  assert.equal(passed.length, 19);
 });
 
 test('shared conformance remains message-agnostic when an adapter uses the old assertion label verbatim', async () => {
@@ -85,8 +85,63 @@ test('shared conformance remains message-agnostic when an adapter uses the old a
       },
     };
   });
-  assert.equal(passed.length, 18);
+  assert.equal(passed.length, 19);
 });
+
+test('shared conformance rejects adapters that accept due afterId cursors', async () => {
+  await assert.rejects(
+    runConformance(() => {
+      let clock = 100_000;
+      const base = createMemoryStore({ now: () => clock });
+      return {
+        store: {
+          ...base,
+          async query(query) {
+            if (query.select === 'due' && query.afterId !== undefined) {
+              const { afterId: _ignored, ...withoutCursor } = query;
+              return base.query(withoutCursor);
+            }
+            return base.query(query);
+          },
+        },
+        advance(ms) {
+          clock += ms;
+        },
+      };
+    }),
+    /due queries must reject the id-only afterId cursor/u,
+  );
+});
+
+for (const select of ['all', 'outbox'])
+  test(`shared conformance rejects adapters that ignore ${select} afterId cursors`, async () => {
+    await assert.rejects(
+      runConformance(() => {
+        let clock = 100_000;
+        const base = createMemoryStore({ now: () => clock });
+        return {
+          store: {
+            ...base,
+            async query(query) {
+              if (
+                query.scope === 'cursor-contract' &&
+                query.select === select &&
+                query.afterId !== undefined
+              ) {
+                const { afterId: _ignored, ...withoutCursor } = query;
+                return base.query(withoutCursor);
+              }
+              return base.query(query);
+            },
+          },
+          advance(ms) {
+            clock += ms;
+          },
+        };
+      }),
+      new RegExp(`${select} cursor pagination did not terminate`, 'u'),
+    );
+  });
 
 test('shared conformance rejects adapters that deduplicate duplicate getMany ids', async () => {
   await assert.rejects(
@@ -128,5 +183,5 @@ test('a conforming store may linearize completion before an earlier invoked canc
       },
     };
   });
-  assert.equal(passed.length, 18);
+  assert.equal(passed.length, 19);
 });

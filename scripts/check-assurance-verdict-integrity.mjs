@@ -319,6 +319,34 @@ export function assertAssuranceVerdictIntegrity() {
     'direct external heartbeat test must synchronize on the attempted heartbeat and abort',
   );
 
+  const lifecycleProcessTest = read('test/process/lifecycle-process.test.mjs');
+  assert.match(
+    lifecycleProcessTest,
+    /const lifecycleHarnessWaitBudgetMs = childMessageTimeoutMs \* 2 \+ childExitTimeoutMs/u,
+    'lifecycle process harness must account for both message waits plus process exit',
+  );
+  assert.match(
+    lifecycleProcessTest,
+    /const lifecycleLeaseMs = lifecycleHarnessWaitBudgetMs \+ childMessageTimeoutMs/u,
+    'lifecycle process lease must stay beyond the aggregate harness wait budget',
+  );
+  assert.match(
+    lifecycleProcessTest,
+    /\[path, mode, detail, String\(lifecycleLeaseMs\), String\(lifecycleMaxElapsedMs\)\]/u,
+    'lifecycle parent must pass the authoritative timing contract to the child',
+  );
+  const lifecycleProcessChild = read('test/process/lifecycle-child.mjs');
+  assert.match(
+    lifecycleProcessChild,
+    /const \[path, mode, detail, leaseMsArg, maxElapsedMsArg\] = process\.argv\.slice\(2\)/u,
+    'lifecycle child must consume the parent timing contract instead of duplicating lease literals',
+  );
+  assert.match(
+    lifecycleProcessChild,
+    /limits: \{ leaseMs, maxAttempts: 4, maxElapsedMs, maxDeferrals: 4 \}/u,
+    'lifecycle child definition must use the parent-supplied lease and elapsed budget',
+  );
+
   const childIpcInbox = read('test/process/child-ipc-inbox.mjs');
   assert.match(
     childIpcInbox,
@@ -462,6 +490,27 @@ export function assertAssuranceVerdictIntegrity() {
     /WorkOnceLifecycleSamples(?:FalseField)?Mutant\.tla/u,
     'lifecycle bad-sample witnesses regressed to one JVM per mutation',
   );
+  for (const [kind, mutantName] of [
+    ['claimScanContinuation', 'ClaimScanContinuationMissingAdapterSamples'],
+    ['stolenPageContinuation', 'StolenPageContinuationMissingAdapterSamples'],
+    ['claimLimit', 'ClaimLimitMissingAdapterSamples'],
+    ['finiteClaimDrain', 'FiniteClaimDrainMissingAdapterSamples'],
+  ]) {
+    assert.match(
+      lifecycleFormalSource,
+      new RegExp(`\\['${kind}', '${mutantName}'\\]`, 'u'),
+      `lifecycle adapter-domain mutation set must cover ${kind}`,
+    );
+  }
+  assert.ok(
+    lifecycleFormalSource.includes('~LifecycleSamplesConform(${name})'),
+    'lifecycle adapter-domain mutant table must feed the shared rejection invariant',
+  );
+  assert.match(
+    lifecycleFormalSource,
+    /INVARIANT LifecycleAdapterDomainMutantsRejected/u,
+    'lifecycle observed-model config must execute adapter-domain nonvacuity mutants',
+  );
   assert.match(
     formalSource,
     /if \(!specSwapped\)\s*throw new Error\('Mutation witness config found no SPECIFICATION Spec line to rebind'\)/u,
@@ -532,6 +581,12 @@ export function assertAssuranceVerdictIntegrity() {
     policyRefinementSource,
     /finally \{\s*release\.resolve\(\);\s*if \(pending\) await observe\(pending\);\s*fixture\.close\(\);/u,
     'policy async-race cleanup must settle the pending promise before fixture close',
+  );
+  const policyRefinementTest = read('test/policy-refinement.test.mjs');
+  assert.match(
+    policyRefinementTest,
+    /const policyRefinementSamplesPromise = runPolicyRefinementSamples\(\);\s*void policyRefinementSamplesPromise\.catch\(\(\) => \{\}\);/u,
+    'shared policy refinement sample promise must attach an immediate rejection observer',
   );
 
   const conformance = read('scripts/check-formal-implementation-conformance.mjs');

@@ -25,9 +25,7 @@ function requireInlineRed(label, code, pattern) {
     env: process.env,
     timeout: 15_000,
   });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  requireExpectedProcessFailure(result, `${label} mutant unexpectedly passed`);
-  assert.match(output, pattern, `${label} failed for an unrelated reason`);
+  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
   console.log(`Lifecycle implementation mutation guard rejects ${label}.`);
 }
 try {

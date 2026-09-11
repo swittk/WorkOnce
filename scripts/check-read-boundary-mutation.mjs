@@ -25,9 +25,11 @@ try {
     ],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  requireExpectedProcessFailure(result, 'compiled read-definition mutant unexpectedly passed');
-  assert.match(output, /Error: Typed read refinement failed: memory\.definitionFenceExact/u);
+  requireExpectedProcessFailure(
+    result,
+    'compiled read-definition mutant',
+    /Error: Typed read refinement failed: memory\.definitionFenceExact/u,
+  );
   console.log(
     'Typed-read mutation guard rejects a compiled implementation with the definition fence disabled.',
   );

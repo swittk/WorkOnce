@@ -3,8 +3,8 @@
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
-    "count": 880,
-    "digest": "4af6be6e12e32d44"
+    "count": 901,
+    "digest": "7db24fafe777e68a"
   },
   "entries": [
     {
@@ -184,7 +184,7 @@
       ],
       "classification": "APPLICABLE",
       "reason": "Adapter conformance intentionally mutates fixture copies and completion bookkeeping; family G owns semantic parity while I owns the conformance proof control flow.",
-      "ordinal": 273
+      "ordinal": 292
     },
     {
       "id": "src/conformance.ts:<callback>:property_assignment:56fb15fe0ff456ae:1",
@@ -2915,6 +2915,186 @@
       "classification": "APPLICABLE",
       "reason": "Destructuring assignment participates in shared adapter-conformance execution; G owns adapter semantics and I owns proof/conformance control flow.",
       "ordinal": 83
+    },
+    {
+      "id": "src/conformance.ts:<callback>:call_mutator_push:d10d05fea1459633:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "call_mutator_push",
+      "ordinal": 223,
+      "excerpt": "snapshots.push(await parent.ensure(null, { key }))",
+      "textDigest": "2d1ec71803788409",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:call_snapshots.map((snapshot) => snapshot.id).sort:fd40e184a1158b30:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "call_snapshots.map((snapshot) => snapshot.id).sort",
+      "ordinal": 225,
+      "excerpt": "snapshots.map((snapshot) => snapshot.id).sort()",
+      "textDigest": "fcaced4a6a7ad843",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:for_loop:1c4b52e7cdecc431:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "for_loop",
+      "ordinal": 232,
+      "excerpt": "for (let index = 0; index < runs.length; index++)\n      await runs[index]!.settle(\n        runs[index]!.succeed(null, { next: [child.request(null, { key: `next-${index}` })] }),\n      );",
+      "textDigest": "4591d4ebee4984de",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:for_of_loop:b114d1e39a726bc3:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "for_of_loop",
+      "ordinal": 222,
+      "excerpt": "for (const key of ['delta', 'alpha', 'charlie', 'bravo'])\n      snapshots.push(await parent.ensure(null, { key }));",
+      "textDigest": "0258285529ea029e",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:identifier_update:7c020f7a11d8480c:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "identifier_update",
+      "ordinal": 233,
+      "excerpt": "index++",
+      "textDigest": "525f9f3fe4711782",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:call_mutator_push:48d67a41c005f7eb:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "call_mutator_push",
+      "ordinal": 8,
+      "excerpt": "actual.push(...result.rows.map((row) => row.id))",
+      "textDigest": "39a6bc860a9777bc",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:for_loop:02499fe0b21b351d:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "for_loop",
+      "ordinal": 3,
+      "excerpt": "for (let page = 0; page <= expected.length; page++) {\n        const result = await store.query({\n          scope,\n          kind: 'parent',\n          select,\n          limit: 2,\n          ...(afterId === undefined ? {} : { afterId }),\n     ",
+      "textDigest": "637a22214ed525ad",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:identifier_assignment:adf081b54b7e309d:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "identifier_assignment",
+      "ordinal": 7,
+      "excerpt": "terminated = true",
+      "textDigest": "4cc0f5fcc2c0d0c5",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:identifier_assignment:d208c80665e17238:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "identifier_assignment",
+      "ordinal": 10,
+      "excerpt": "afterId = result.rows.at(-1)!.id",
+      "textDigest": "aa49183da3d6cf14",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:identifier_update:3e23ea4f318f84a7:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "identifier_update",
+      "ordinal": 4,
+      "excerpt": "page++",
+      "textDigest": "0069256a6d11539a",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:mutable_let:2761d382dc7dc764:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "mutable_let",
+      "ordinal": 1,
+      "excerpt": "let afterId: string | undefined;",
+      "textDigest": "ce61abd67d302bd9",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
+    },
+    {
+      "id": "src/conformance.ts:assertExclusivePages:mutable_let:95d23f4b696d4c04:1",
+      "path": "src/conformance.ts",
+      "context": "assertExclusivePages",
+      "kind": "mutable_let",
+      "ordinal": 2,
+      "excerpt": "let terminated = false;",
+      "textDigest": "d0b9722fefebbac9",
+      "families": [
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Cursor conformance control flow exercises family G storage semantics while family I owns executable proof control flow."
     }
   ]
 }

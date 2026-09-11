@@ -1,7 +1,13 @@
 import { createWorkOnce } from '../../dist/index.js';
 import { createSqliteStore } from '../../dist/sqlite.js';
 
-const [path, mode, detail] = process.argv.slice(2);
+const [path, mode, detail, leaseMsArg, maxElapsedMsArg] = process.argv.slice(2);
+const leaseMs = Number(leaseMsArg);
+const maxElapsedMs = Number(maxElapsedMsArg);
+if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0)
+  throw new Error('Lifecycle child requires a positive safe-integer lease');
+if (!Number.isSafeInteger(maxElapsedMs) || maxElapsedMs <= leaseMs)
+  throw new Error('Lifecycle child requires a safe elapsed budget beyond the lease');
 const base = createSqliteStore(path);
 const forever = new Promise(() => {});
 setInterval(() => {}, 1000);
@@ -45,7 +51,7 @@ const store = {
 };
 
 const queue = createWorkOnce({ store, scope: 'lifecycle-process' }).define('job', {
-  limits: { leaseMs: 30000, maxAttempts: 4, maxElapsedMs: 60000, maxDeferrals: 4 },
+  limits: { leaseMs, maxAttempts: 4, maxElapsedMs, maxDeferrals: 4 },
 });
 
 if (mode === 'ensure-after-commit') {

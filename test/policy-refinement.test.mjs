@@ -6,6 +6,7 @@ import {
 } from '../scripts/policy-refinement.mjs';
 
 const policyRefinementSamplesPromise = runPolicyRefinementSamples();
+void policyRefinementSamplesPromise.catch(() => {});
 
 test('compiled retry/defer policy observations cover temporal races, receipt identity, adapters and boundaries', async () => {
   const samples = await policyRefinementSamplesPromise;
