@@ -276,14 +276,25 @@ export function assertEmittedArtifactEntrypoints() {
       ? node.text
       : undefined;
   }
+  function enclosingFunctionName(node) {
+    for (let parent = node.parent; parent && parent !== sourceFile; parent = parent.parent) {
+      if (!isFunctionBoundary(parent)) continue;
+      return ts.isFunctionDeclaration(parent) && parent.name ? parent.name.text : undefined;
+    }
+    return undefined;
+  }
   function inspectCall(node) {
-    if (
-      !ts.isCallExpression(node) ||
-      !ts.isIdentifier(node.expression) ||
-      !executesDuringModuleInitialization(node, sourceFile)
-    )
-      return;
+    if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return;
     const name = node.expression.text;
+    if (
+      (name === 'run' || name === 'runParallel' || name === 'npmParallelEntry') &&
+      !executesDuringModuleInitialization(node, sourceFile)
+    ) {
+      if (enclosingFunctionName(node) === 'runParallelProcessTreeSelfTest') return;
+      throw new Error(
+        `Full assurance step call '${name}' is hidden inside a non-entrypoint function.`,
+      );
+    }
     if (name === 'runParallel' && ts.isArrayLiteralExpression(node.arguments[0])) {
       let containsBuild = false;
       for (const entry of node.arguments[0].elements) {

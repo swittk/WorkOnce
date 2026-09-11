@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   assertOutboxRefinementSamples,
+  outboxSampleKinds,
   runOutboxRefinementSamples,
 } from '../scripts/outbox-refinement.mjs';
 
@@ -23,4 +24,42 @@ test('outbox refinement rejects count-preserving adapter substitution', async ()
   assert.ok(memory);
   const mutant = samples.map((sample, index) => (index === sqliteIndex ? { ...memory } : sample));
   assert.throws(() => assertOutboxRefinementSamples(mutant), /Unexpected outbox adapter set/u);
+});
+
+const requiredOutboxSampleKinds = [
+  'ackLoss',
+  'adapter',
+  'adapterBudget',
+  'adapterConcurrent',
+  'adapterFaults',
+  'budget',
+  'casAckLoss',
+  'concurrent',
+  'dynamic',
+  'finiteArrivals',
+  'grid',
+  'historyCongruence',
+  'historySplit',
+  'limitBoundary',
+  'multiError',
+  'multiPoison',
+  'poison',
+  'restart',
+  'rotation',
+  'rotationFailure',
+  'runDispatcher',
+  'staleParent',
+];
+
+test('outbox refinement kind inventory cannot silently narrow', async () => {
+  const samples = await samplesOnce;
+  assert.deepEqual([...outboxSampleKinds].sort(), requiredOutboxSampleKinds);
+  for (const kind of requiredOutboxSampleKinds) {
+    const mutant = samples.filter((sample) => sample.kind !== kind);
+    assert.throws(
+      () => assertOutboxRefinementSamples(mutant),
+      /Unexpected outbox sample kinds/u,
+      `missing ${kind} must invalidate the outbox refinement corpus`,
+    );
+  }
 });

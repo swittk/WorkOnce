@@ -30,13 +30,6 @@ function run(label, command, args) {
   requireSuccessfulProcess(result, label);
   console.log(`[assurance] ${label}: ${Math.round(performance.now() - started)} ms`);
 }
-function runNpm(label, args) {
-  if (process.platform === 'win32') {
-    run(label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]);
-    return;
-  }
-  run(label, 'npm', args);
-}
 function npmParallelEntry(label, args) {
   if (process.platform === 'win32')
     return [label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]];

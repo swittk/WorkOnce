@@ -244,13 +244,26 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
     mutationFiles.writeFileSync(assurancePath, dormantConsumer);
     expectCheckerFailure(
       'dormant packed consumer',
-      /required step 'packed consumer'.*exactly once/u,
+      /Full assurance step call 'runParallel' is hidden inside a non-entrypoint function/u,
     );
-    console.log('Emitted-artifact entrypoint checker ignores dormant assurance consumers.');
+    console.log('Emitted-artifact entrypoint checker rejects dormant assurance consumers.');
   } finally {
     mutationFiles.restoreAll();
   }
 
+  const hiddenStepAnchor = "await runParallel([\n  npmParallelEntry('format'";
+  const hiddenPrebuildStep =
+    "function hiddenPrebuildConsumer() {\n  run('hidden packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']);\n}\nhiddenPrebuildConsumer();\n";
+  mutationFiles.writeFileSync(
+    assurancePath,
+    assuranceOriginal.replace(hiddenStepAnchor, hiddenPrebuildStep + hiddenStepAnchor),
+  );
+  expectCheckerFailure(
+    'hidden pre-build assurance consumer',
+    /Full assurance step call 'run' is hidden inside a non-entrypoint function/u,
+  );
+  console.log('Emitted-artifact entrypoint checker rejects hidden assurance-step wrappers.');
+  mutationFiles.restoreAll();
   const buildAnchor = "await runParallel([\n  npmParallelEntry('format'";
   assert.equal(
     assuranceOriginal.split(buildAnchor).length,

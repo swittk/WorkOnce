@@ -1243,6 +1243,31 @@ export async function runOutboxRefinementSamples() {
   ]);
 }
 
+export const outboxSampleKinds = Object.freeze([
+  'rotation',
+  'poison',
+  'restart',
+  'ackLoss',
+  'casAckLoss',
+  'adapter',
+  'adapterBudget',
+  'adapterFaults',
+  'adapterConcurrent',
+  'budget',
+  'grid',
+  'multiPoison',
+  'dynamic',
+  'finiteArrivals',
+  'concurrent',
+  'limitBoundary',
+  'staleParent',
+  'rotationFailure',
+  'multiError',
+  'runDispatcher',
+  'historyCongruence',
+  'historySplit',
+]);
+
 const outboxBooleanFields = {
   ackLoss: ['childDurableBeforeAck', 'exactFailure', 'parentIntentRetained', 'retryConverged'],
   adapter: ['firstParentDrained', 'laterParentReached', 'threePassesSent', 'wrapped'],
@@ -1321,7 +1346,10 @@ const outboxMetadataFields = { adapter: ['adapter'], adapterBudget: ['adapter'] 
 
 export function assertOutboxRefinementSamples(samples) {
   const kinds = [...new Set(samples.map((sample) => sample.kind))].sort();
-  const expectedKinds = Object.keys(outboxBooleanFields).sort();
+  const expectedKinds = [...outboxSampleKinds].sort();
+  const schemaKinds = Object.keys(outboxBooleanFields).sort();
+  if (JSON.stringify(schemaKinds) !== JSON.stringify(expectedKinds))
+    throw new Error(`Unexpected outbox sample schema kinds: ${JSON.stringify(schemaKinds)}`);
   if (JSON.stringify(kinds) !== JSON.stringify(expectedKinds))
     throw new Error(`Unexpected outbox sample kinds: ${JSON.stringify(kinds)}`);
   const adapters = samples

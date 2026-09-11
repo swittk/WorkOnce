@@ -105,10 +105,9 @@ test('mutation file guard synchronously reports a signal-path restore failure to
     await waitForReady(child);
     rmSync(target);
     mkdirSync(target);
+    const closed = once(child, 'close', { signal: AbortSignal.timeout(5000) });
     child.kill('SIGTERM');
-    const [exitCode, exitSignal] = await once(child, 'exit', {
-      signal: AbortSignal.timeout(5000),
-    });
+    const [exitCode, exitSignal] = await closed;
     assert.equal(exitSignal, null);
     assert.equal(exitCode, 143);
     assert.match(stderr, /Failed to restore mutation target/u);

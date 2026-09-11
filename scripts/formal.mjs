@@ -889,9 +889,8 @@ if (nonRuntimeOnly) {
 }
 
 if (nonRuntimeOnly) {
-  const { runOutboxRefinementSamples, assertOutboxRefinementSamples } = await import(
-    './outbox-refinement.mjs'
-  );
+  const { runOutboxRefinementSamples, assertOutboxRefinementSamples, outboxSampleKinds } =
+    await import('./outbox-refinement.mjs');
   // WorkOnceOutboxObserved runs the same base Spec and every base invariant below, so a separate
   // WorkOnceOutbox JVM would duplicate the identical state graph. The budget model remains distinct.
   runModel('WorkOnceOutboxBudget', 'WorkOnceOutboxBudget.cfg');
@@ -901,7 +900,7 @@ if (nonRuntimeOnly) {
   const outboxConfig = resolve(tlcWorkspace, 'WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
-    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {"rotation", "poison", "restart", "ackLoss", "casAckLoss", "adapter", "adapterBudget", "adapterFaults", "adapterConcurrent", "budget", "grid", "multiPoison", "dynamic", "finiteArrivals", "concurrent", "limitBoundary", "staleParent", "rotationFailure", "multiError", "runDispatcher", "historyCongruence", "historySplit"}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n====\n`,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {${outboxSampleKinds.map((kind) => JSON.stringify(kind)).join(', ')}}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n====\n`,
   );
   writeFileSync(
     outboxConfig,
