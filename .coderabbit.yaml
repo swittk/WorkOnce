@@ -1,0 +1,39 @@
+language: en-US
+reviews:
+  profile: assertive
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: 'src/**'
+      instructions: |
+        Focus on real ownership/fencing, clock, crash recovery, durable continuation, API correctness and performance defects.
+        The root API is a strongly typed developer API. Do not add redundant string/type revalidation without a real untrusted boundary.
+        Storage serialization and numeric overflow/deadline checks are real runtime boundaries.
+        Do not suggest arbitrary settle(async domainCallback) APIs: an earlier lease check cannot fence later unrelated writes.
+        Do not demand external exactly-once execution; require accurate at-least-once/idempotency documentation.
+        Distinguish single-process embedded adapters from genuinely cross-process storage. Do not weaken conformance to make adapters pass.
+    - path: 'test/**'
+      instructions: |
+        Treat tests as evidence for product/runtime/storage/conformance correctness, not as production availability code. Prioritize whether tests exercise and reject broken supported WorkOnce product behavior.
+        Report a test/harness issue only when it can make a real product-semantic defect pass unnoticed, can reproducibly make a valid supported implementation fail a canonical required gate, or can falsify crash/recovery/conformance evidence.
+        Do not report hypothetical test-helper crashes, cleanup-timeout masking, fail-fast/error-message quality, nicer diagnostics, optional temp-directory setup already guaranteed by npm/build/assurance entrypoints, direct-file invocation ergonomics, or maintainability-only cleanup.
+        A crashed audit/developer machine is not the WorkOnce worker-crash contract. Do not request recovery hardening for interrupted audits; keep real worker-crash, lease-reclaim and durable-replay product tests.
+        If the old and proposed behavior both fail the same semantic witness, do not spend a finding on how that failure is presented. Prefer findings backed by a failing product test, a false-green mutation, a real supported adapter counterexample, or a supported runtime path.
+    - path: 'scripts/**'
+      instructions: |
+        Treat assurance scripts as verdict machinery, not a general code-cleanup target. Focus on false-greens or false-negatives that can certify broken supported product/runtime/storage/conformance behavior or reproducibly reject a correct supported implementation.
+        Do not report cosmetic, readability, byte-preserving, refactor-only, failure-message-quality, or hypothetical cleanup/timeout improvements that cannot change the semantic verdict.
+        Do not request crash-safe audit journals, cache/stamp recovery, automatic stale-artifact repair, or recomputation of unchanged evidence solely because an audit host might crash or be interrupted. Interrupted developer audits are not durable product services.
+        A hypothetical crash or unsupported audit invocation is not sufficient evidence, even if manually arranged to produce stale state. Report normal supported-path proof reuse of changed semantic inputs or an actual product-witness false-green instead.
+        Canonical build/test/assurance entrypoints may establish prerequisites such as .artifacts; do not require every internal helper or test file to be independently runnable unless that is an explicit repository contract.
+        Before reporting a process/path/setup concern, demonstrate it through a canonical required entrypoint or show a concrete false-green/false-negative witness. Focus review budget on product/runtime/conformance semantics and tests that actually distinguish them.
+    - path: 'formal/**'
+      instructions: |
+        Focus on semantic model errors, vacuity, unreachable witnesses, source/model drift, and refinement gaps that can falsely certify supported WorkOnce behavior.
+        Do not request redundant assumptions, stylistic model cleanup, or duplicate checks when the committed CFG plus executable mutation/non-vacuity controls already enforce the same bound.
+    - path: 'assurance/**'
+      instructions: |
+        Review whether evidence actually distinguishes broken supported product behavior and binds the semantic inputs used by normal required gates.
+        Do not demand transactional audit bookkeeping, crash-safe certificates/caches, recovery from an interrupted developer audit, or blanket recomputation of unchanged inputs for hypothetical host crashes.
+        Existing required checks and genuine normal-path stale-input false-greens remain in scope; the excluded task is hardening the audit environment against every imagined interruption, not WorkOnce worker-crash durability.

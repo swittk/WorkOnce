@@ -1,0 +1,16 @@
+{
+  "kind": "assurance_infrastructure_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "defect": "The expanded implementation test corpus and real process-fault corpus are no longer reliable when co-scheduled as two Node test runners.",
+  "reproduction": {
+    "unitExit": 0,
+    "processExit": 1,
+    "processPass": 26,
+    "processCancelled": 3,
+    "cancelledReason": "Promise resolution is still pending but the event loop has already resolved",
+    "cancelledFamily": "local-runner SIGKILL/heartbeat/settlement process proofs"
+  },
+  "requiredFix": "Keep implementation traces and real process faults in separate scheduling phases."
+}

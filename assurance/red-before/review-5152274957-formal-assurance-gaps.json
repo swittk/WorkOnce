@@ -1,0 +1,23 @@
+{
+  "reviewId": 5152274957,
+  "reviewHead": "7412bc67b898b105b14216e956d910ba885cf1f3",
+  "capturedAt": "2026-09-09T09:46:45Z",
+  "defects": [
+    {
+      "family": "runtimeRunnerFailureRelation",
+      "redBefore": "TLC exited 0 for BoundarySampleOK([kind |-> \"runner\", handled |-> FALSE, rejected |-> TRUE, failureValue |-> \"none\", returnedValue |-> \"none\", preserved |-> TRUE, drained |-> TRUE, timedOut |-> FALSE, site |-> \"direct\"])"
+    },
+    {
+      "family": "lifecycleRequiredEvidenceFields",
+      "redBefore": "assertLifecycleRefinementSamples accepted a terminalReceipt sample with resetClearsReceipt deleted while cardinality remained unchanged"
+    },
+    {
+      "family": "localRunnerAdapterCoverage",
+      "redBefore": "assertLocalRunnerRefinementSamples accepted replacing settleCause/sqlite with a duplicate settleCause/memory lane while sample count stayed 24"
+    },
+    {
+      "family": "policyAdapterEquivalenceCoverage",
+      "redBefore": "assertPolicyRefinementSamples accepted adapterEquivalence samples whose adapters field was collapsed from memory,sqlite,cas to memory"
+    }
+  ]
+}

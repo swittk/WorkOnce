@@ -1,0 +1,168 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
+import { createMutationFileGuard } from './mutation-file-guard.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mutationFiles = createMutationFileGuard();
+const target = path.join(root, 'scripts/formal.mjs');
+const original = fs.readFileSync(target, 'utf8');
+const runnerTarget = path.join(root, 'scripts/run-assurance.mjs');
+const runnerOriginal = fs.readFileSync(runnerTarget, 'utf8');
+const parallelSafetyTarget = path.join(root, 'scripts/assurance-parallel-safety.mjs');
+const parallelSafetyOriginal = fs.readFileSync(parallelSafetyTarget, 'utf8');
+const configTarget = path.join(root, 'tsconfig.json');
+const configOriginal = fs.readFileSync(configTarget, 'utf8');
+const conformanceTarget = path.join(root, 'scripts/check-formal-implementation-conformance.mjs');
+const conformanceOriginal = fs.readFileSync(conformanceTarget, 'utf8');
+
+function run(script, ...args) {
+  return spawnSync(process.execPath, [script, ...args], {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+    timeout: 15_000,
+  });
+}
+function output(result) {
+  return `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+}
+
+requireSuccessfulProcess(
+  run('scripts/check-formal-implementation-conformance.mjs', '--check-infrastructure-binding-only'),
+  'baseline assurance infrastructure binding',
+);
+requireSuccessfulProcess(
+  run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only'),
+  'baseline bounded-trace evidence binding',
+);
+requireSuccessfulProcess(
+  run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-semantic-environment-binding-only',
+  ),
+  'baseline semantic-environment binding',
+);
+
+try {
+  mutationFiles.writeFileSync(target, `${original}\n// assurance-infrastructure-binding-mutant\n`);
+
+  const manifest = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(manifest, 'formal manifest accepted a changed proof runner');
+  assert.match(output(manifest), /Assurance infrastructure digest drifted/u);
+
+  const bounded = run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only');
+  requireExpectedProcessFailure(bounded, 'bounded trace report accepted a changed proof runner');
+  assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
+  mutationFiles.restoreAll();
+  mutationFiles.writeFileSync(
+    parallelSafetyTarget,
+    `${parallelSafetyOriginal}\n// assurance-parallel-safety-binding-mutant\n`,
+  );
+  const parallelSafetyBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    parallelSafetyBinding,
+    'formal manifest accepted a changed assurance parallel-safety guard',
+  );
+  assert.match(output(parallelSafetyBinding), /Assurance infrastructure digest drifted/u);
+  mutationFiles.restoreAll();
+  const relativeRunnerNeedle = "'./assurance-parallel-safety.mjs'";
+  assert.equal(
+    runnerOriginal.split(relativeRunnerNeedle).length,
+    2,
+    'relative assurance runner mutation anchor is not unique',
+  );
+  mutationFiles.writeFileSync(
+    runnerTarget,
+    runnerOriginal.replace(relativeRunnerNeedle, "'./unbound-assurance-mutant.mjs'"),
+  );
+  const relativeRunnerBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    relativeRunnerBinding,
+    'formal manifest accepted an unbound relative assurance runner import',
+  );
+  assert.match(
+    output(relativeRunnerBinding),
+    /Full assurance invokes unbound proof\/checker scripts/u,
+  );
+  mutationFiles.restoreAll();
+  const runnerNeedle = "'scripts/check-assurance-scheduling.mjs'";
+  assert.equal(
+    runnerOriginal.split(runnerNeedle).length,
+    2,
+    'assurance runner mutation anchor is not unique',
+  );
+  const runnerMutant = runnerOriginal.replace(
+    runnerNeedle,
+    "'scripts/check-unbound-assurance-mutant.mjs'",
+  );
+  mutationFiles.writeFileSync(runnerTarget, runnerMutant);
+  const runnerBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    runnerBinding,
+    'formal manifest accepted an unbound assurance runner',
+  );
+  assert.match(output(runnerBinding), /Full assurance invokes unbound proof\/checker scripts/u);
+  mutationFiles.restoreAll();
+  const infrastructureNeedle = "  'scripts/run-assurance.mjs',";
+  assert.equal(
+    conformanceOriginal.split(infrastructureNeedle).length,
+    2,
+    'assurance infrastructure duplicate mutation anchor is not unique',
+  );
+  mutationFiles.writeFileSync(
+    conformanceTarget,
+    conformanceOriginal.replace(
+      infrastructureNeedle,
+      `${infrastructureNeedle}
+  'scripts/run-assurance.mjs',`,
+    ),
+  );
+  const duplicateBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    duplicateBinding,
+    'duplicate assurance infrastructure path unexpectedly passed',
+    /assuranceInfrastructureFiles contains duplicate bound paths/u,
+  );
+  mutationFiles.restoreAll();
+  const configMutant = configOriginal.replace('\"target\": \"ES2018\"', '\"target\": \"ES2020\"');
+  assert.notEqual(configMutant, configOriginal, 'compiler target mutation anchor is missing');
+  mutationFiles.writeFileSync(configTarget, configMutant);
+  const configBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-semantic-environment-binding-only',
+  );
+  requireExpectedProcessFailure(
+    configBinding,
+    'ordinary manifest update accepted compiler-config drift',
+  );
+  assert.match(
+    output(configBinding),
+    /Bound compiler\/toolchain semantics changed without explicit source\/model review/u,
+  );
+
+  console.log(
+    'Assurance infrastructure binding rejects proof-runner/parallel-safety mutation, unbound absolute/relative full-gate checkers, and unacknowledged compiler/toolchain drift.',
+  );
+} finally {
+  mutationFiles.restoreAll();
+}
+mutationFiles.dispose();

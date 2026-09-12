@@ -1,0 +1,55 @@
+{
+  "family": "systemic-assurance-20260912",
+  "reviewId": 5185572448,
+  "governingHead": "4754644b8c07a2ee1c29f5313b484f2325e04355",
+  "classification": "assurance-only; runtime unchanged",
+  "findings": [
+    {
+      "kind": "implementation-mutation-causality",
+      "redBefore": "Incorrect stale-error expectation and impossible pre-handler count each made the real unmutated runtime witness fail while the corresponding complete mutation guard exited zero.",
+      "repair": "Exact same green baseline and expected red mutant through one shared restoration-safe control across six sibling families.",
+      "executableEvidence": [
+        "test/implementation-mutation-causality.test.mjs",
+        "scripts/check-lifecycle-implementation-mutations.mjs",
+        "scripts/check-external-implementation-mutations.mjs",
+        "scripts/check-local-runner-implementation-mutations.mjs",
+        "scripts/check-policy-implementation-mutations.mjs",
+        "scripts/check-outbox-implementation-mutations.mjs",
+        "scripts/check-storage-contract-mutation.mjs"
+      ]
+    },
+    {
+      "kind": "independent-boolean-model-clauses",
+      "redBefore": "Removing settleCause.exactCause from WorkOnceLocalRunner left the entire runtime formal shard green. New independent checks also exposed actual omitted read-history mode and external observed-deadline predicates.",
+      "repair": "1318 fresh single-boolean negative controls across all eight observed boundaries, checked by executable validators and real TLC predicates inside existing JVMs.",
+      "executableEvidence": [
+        "scripts/formal-sample-mutations.mjs",
+        "test/formal-sample-mutations.test.mjs",
+        "scripts/formal.mjs",
+        "scripts/lifecycle-formal.mjs",
+        "scripts/storage-formal.mjs"
+      ]
+    },
+    {
+      "kind": "continuation-obligation-lifecycle",
+      "redBefore": "All configured WorkOnce invariants accepted CreateChild without pendingNext and, independently, ManualRetry and Rerun retaining prior-generation childCreated.",
+      "repair": "ChildEvidenceRequiresIntent rejects all three exact semantic mutants while unmodified base model stays green; dedicated real-action mutation in existing invariant batch.",
+      "executableEvidence": ["formal/WorkOnce.tla", "formal/WorkOnce.cfg", "scripts/formal.mjs"]
+    },
+    {
+      "kind": "reachable-witness-domain",
+      "redBefore": "Changing outbox MaxPasses from 4 to 2 left the entire non-runtime formal shard green: synthetic unsafe transitions escaped the legal poststate bound and falsely certified third-pass coverage.",
+      "repair": "Both reachable-mutation families constrain unsafe poststates to their actual type/bound invariant, require live domain-escape sentinels to remain true, and reject every unexpected TLC -continue invariant violation. MaxPasses=2 now fails for missing third-pass witness; removal of domain filtering fails the exact sentinel.",
+      "executableEvidence": ["scripts/formal.mjs"]
+    },
+    {
+      "kind": "native-mutation-path-scheduling",
+      "redBefore": "Four bounded regression calls with Windows absolute, Windows relative and POSIX absolute mutation paths bypassed the parallel-safety guard.",
+      "repair": "Normalize native separators and recognize explicit mutating entries by exact path suffix; readonly native path remains accepted.",
+      "executableEvidence": [
+        "scripts/assurance-parallel-safety.mjs",
+        "test/assurance-parallel-safety.test.mjs"
+      ]
+    }
+  ]
+}

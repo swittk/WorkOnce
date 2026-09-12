@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "family": "I.assuranceInfrastructure",
+  "defect": "The formal runner forwarded an arbitrary nonzero TLC exit without classifying semantic counterexamples separately from TLC/JVM/model infrastructure failures.",
+  "preFixHead": "f7042c0fb46f021a46177f57d067e666ba14b4be",
+  "probe": {
+    "setup": "Build current TypeScript, then invoke scripts/formal.mjs with TLA2TOOLS_JAR pointing to a deliberately invalid local file.",
+    "observedExit": 1,
+    "observedTail": "Error: Could not find or load main class tlc2.TLC; Caused by: java.lang.ClassNotFoundException: tlc2.TLC",
+    "oldRunnerClassification": "unclassified nonzero process exit"
+  },
+  "requiredFix": "Unknown nonzero TLC exits must fail closed as infrastructure/tool failures. Only explicit TLC invariant/property/deadlock diagnostics may count as semantic counterexamples, and named mutation guards must require the intended invariant."
+}

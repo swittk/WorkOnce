@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "family": "C.localManagedRunner",
+  "baseCommit": "b8ab8bdd74dfab89681e76964d8cd3d92f69485d",
+  "classification": [
+    "runtimeSemanticBug",
+    "assuranceFrameworkDefect"
+  ],
+  "scenario": "A managed local runAvailable claim loses ownership because heartbeat storage rejects with a specific Error after the handler starts. The handler observes abort but returns an outcome anyway.",
+  "expected": {
+    "status": "interrupted",
+    "error": "exact heartbeat rejection identity"
+  },
+  "observedBeforeFix": {
+    "status": "interrupted",
+    "exactHeartbeatErrorIdentity": false,
+    "errorName": "Error",
+    "errorMessage": "Worker ownership lost"
+  },
+  "siblingRisk": "AbortController.abort(undefined) cannot by itself preserve the distinction between an explicit undefined ownership-loss rejection and an untagged abort, so ownership-loss presence must be tracked separately from payload value.",
+  "whyOldAssuranceWasGreen": "Existing local worker tests asserted only that renewal loss interrupted the handler or matched the generic Worker ownership lost message. The runtime TLA distinguished representative fatal values at the outer managed-runner level but did not bind heartbeat-originated ownership loss to the exact RunAvailableResult.error value.",
+  "fixContract": "Local processClaim tracks ownership-loss presence separately from its unknown payload, preserves the exact heartbeat/expiry cause including undefined, and preserves caller AbortSignal.reason on graceful caller stop. Compiled refinement, cross-adapter observations and implementation mutants enforce the distinction."
+}

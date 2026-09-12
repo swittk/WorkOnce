@@ -1,0 +1,11 @@
+{
+  "base": "88697ad5ad8995d959cb6ba4550ea5ec29a29fd3",
+  "classification": "assurance-framework portability defect",
+  "oldAssuranceWasGreenInIsolatedCandidate": true,
+  "integratedAuthoritativeAssuranceWasRed": true,
+  "failure": "Formal implementation manifest drifted on the same commit after moving from an isolated proof worktree to the authoritative worktree.",
+  "cause": "Owned WorkConflict fields inherited from TypeScript Error serialized path.relative(root, lib.es5.d.ts), so the same compiler library was recorded as ../WorkOnces/node_modules/typescript/lib/lib.es5.d.ts in a sibling worktree and node_modules/typescript/lib/lib.es5.d.ts in the authoritative checkout.",
+  "affectedRows": 3,
+  "typeHashUnchanged": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
+  "requiredFix": "Normalize TypeScript standard-library source identity independently of repository/worktree install topology and mutation/self-test that normalization in the complete gate."
+}

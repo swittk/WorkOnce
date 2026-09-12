@@ -1,0 +1,449 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { availableParallelism, loadavg, tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { requireSuccessfulProcess } from './subprocess-outcome.mjs';
+import { assertParallelEntriesReadOnly } from './assurance-parallel-safety.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const logicalCpus = availableParallelism();
+const currentLoad = loadavg()[0];
+const availableTestCpus = Math.floor(logicalCpus - currentLoad);
+const unitTestConcurrency = String(
+  logicalCpus <= 2
+    ? Math.max(1, logicalCpus)
+    : Math.max(4, Math.min(8, logicalCpus, availableTestCpus)),
+);
+const tlcWorkers = String(
+  Math.max(2, Math.min(12, logicalCpus, Math.floor(Math.max(2, logicalCpus - currentLoad) / 2))),
+);
+process.env.WORKONCE_TLC_WORKERS = tlcWorkers;
+process.env.NODE_NO_WARNINGS = '1';
+function run(label, command, args) {
+  const started = performance.now();
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env: process.env,
+    stdio: 'inherit',
+    shell: false,
+  });
+  requireSuccessfulProcess(result, label);
+  console.log(`[assurance] ${label}: ${Math.round(performance.now() - started)} ms`);
+}
+function npmParallelEntry(label, args) {
+  if (process.platform === 'win32')
+    return [label, process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm', ...args]];
+  return [label, 'npm', args];
+}
+const processTreeCleanupWaitMs = 3000;
+function terminateProcessTree(child) {
+  const pid = child.pid;
+  if (!Number.isInteger(pid)) return undefined;
+  if (process.platform === 'win32') {
+    const result = spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    if (result.error)
+      return new Error(`process-tree termination failed for pid ${pid}: ${result.error.message}`, {
+        cause: result.error,
+      });
+    if (result.status !== 0 && result.status !== 128)
+      return new Error(
+        `process-tree termination failed for pid ${pid}: taskkill exited with status ${String(result.status)}`,
+      );
+    return undefined;
+  }
+  try {
+    process.kill(-pid, 'SIGKILL');
+    return undefined;
+  } catch (error) {
+    if (error?.code === 'ESRCH') return undefined;
+    return new Error(
+      `process-tree termination failed for pid ${pid}: ${error?.message ?? String(error)}`,
+      { cause: error },
+    );
+  }
+}
+const activeParallelChildren = new Set();
+function terminateActiveParallelChildren(signal) {
+  for (const child of activeParallelChildren) {
+    const failure = terminateProcessTree(child);
+    if (failure) console.error(`[assurance] ${failure.message}`);
+  }
+  process.exit(signal === 'SIGINT' ? 130 : 143);
+}
+process.once('SIGINT', () => terminateActiveParallelChildren('SIGINT'));
+process.once('SIGTERM', () => terminateActiveParallelChildren('SIGTERM'));
+async function runParallel(entries) {
+  assertParallelEntriesReadOnly(entries);
+  const started = performance.now();
+  const children = new Set();
+  const pending = new Map();
+  const containmentFailures = [];
+  let primaryError;
+  const terminateAllProcessTrees = () => {
+    for (const child of children) {
+      const terminationFailure = terminateProcessTree(child);
+      if (terminationFailure) containmentFailures.push(terminationFailure);
+      pending.get(child)?.armCleanupTimeout();
+    }
+  };
+  const outcomes = await Promise.allSettled(
+    entries.map(
+      ([label, command, args]) =>
+        new Promise((resolvePromise, rejectPromise) => {
+          const childStarted = performance.now();
+          const child = spawn(command, args, {
+            cwd: root,
+            env: process.env,
+            stdio: 'inherit',
+            shell: false,
+            detached: process.platform !== 'win32',
+          });
+          children.add(child);
+          activeParallelChildren.add(child);
+          let settled = false;
+          let cleanupTimer;
+          const finish = (settler, value) => {
+            if (settled) return;
+            settled = true;
+            if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
+            pending.delete(child);
+            children.delete(child);
+            activeParallelChildren.delete(child);
+            settler(value);
+          };
+          const resolveOnce = () => finish(resolvePromise);
+          const rejectOnce = (error) => finish(rejectPromise, error);
+          const armCleanupTimeout = () => {
+            if (settled || cleanupTimer !== undefined) return;
+            cleanupTimer = setTimeout(() => {
+              const error = new Error(
+                `${label} did not exit within ${processTreeCleanupWaitMs} ms after process-tree termination`,
+              );
+              containmentFailures.push(error);
+              rejectOnce(error);
+            }, processTreeCleanupWaitMs);
+          };
+          pending.set(child, { armCleanupTimeout });
+          const fail = (error) => {
+            const isPrimary = primaryError === undefined;
+            if (isPrimary) {
+              primaryError = error;
+              terminateAllProcessTrees();
+            }
+            rejectOnce(error);
+          };
+          child.once('error', fail);
+          child.once('exit', (code, signal) => {
+            if (signal) {
+              fail(new Error(`${label} terminated by ${signal}`));
+              return;
+            }
+            if (code !== 0) {
+              fail(new Error(`${label} exited with status ${String(code)}`));
+              return;
+            }
+            console.log(`[assurance] ${label}: ${Math.round(performance.now() - childStarted)} ms`);
+            resolveOnce();
+          });
+        }),
+    ),
+  );
+  if (primaryError !== undefined) {
+    if (containmentFailures.length > 0)
+      throw new AggregateError(
+        [primaryError, ...containmentFailures],
+        `${primaryError.message}; process-tree containment also failed: ${containmentFailures
+          .map((error) => error.message)
+          .join('; ')}`,
+      );
+    throw primaryError;
+  }
+  const unexpectedFailure = outcomes.find((outcome) => outcome.status === 'rejected');
+  if (unexpectedFailure) throw unexpectedFailure.reason;
+  console.log(`[assurance] parallel batch: ${Math.round(performance.now() - started)} ms`);
+}
+async function waitForProcessExit(pid, label, timeoutMs = 1000) {
+  const deadline = performance.now() + timeoutMs;
+  for (;;) {
+    try {
+      process.kill(pid, 0);
+    } catch (error) {
+      if (error?.code === 'ESRCH') return;
+      throw error;
+    }
+    if (performance.now() >= deadline)
+      throw new Error(
+        `parallel assurance failure left an orphan descendant process running: ${label}`,
+      );
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 20));
+  }
+}
+async function runParallelProcessTreeSelfTest() {
+  if (process.platform === 'win32') {
+    console.log('Parallel assurance process-tree containment uses taskkill /t on Windows.');
+    return;
+  }
+  const directory = fs.mkdtempSync(path.join(tmpdir(), 'workonce-assurance-tree-'));
+  const failedReady = path.join(directory, 'failed-descendant-ready.txt');
+  const siblingReady = path.join(directory, 'sibling-descendant-ready.txt');
+  const allReady = [failedReady, siblingReady];
+  const descendantCode = (readyMarker) => `
+    const fs = require('node:fs');
+    fs.writeFileSync(${JSON.stringify(readyMarker)}, String(process.pid));
+    setInterval(() => {}, 1000);
+  `;
+  const parentCode = (readyMarker, fail) => `
+    const fs = require('node:fs');
+    const { spawn } = require('node:child_process');
+    spawn(process.execPath, ['-e', ${JSON.stringify(descendantCode(readyMarker))}], { stdio: 'ignore' });
+    ${
+      fail
+        ? `const ready = ${JSON.stringify(allReady)};
+    const deadline = Date.now() + 5000;
+    const readiness = setInterval(() => {
+      if (ready.every((file) => fs.existsSync(file))) {
+        clearInterval(readiness);
+        process.exit(17);
+      } else if (Date.now() >= deadline) {
+        clearInterval(readiness);
+        process.exit(18);
+      }
+    }, 5);`
+        : ''
+    }
+    setInterval(() => {}, 1000);
+  `;
+  async function cleanupReadyDescendants() {
+    for (const readyMarker of allReady) {
+      if (!fs.existsSync(readyMarker)) continue;
+      const pid = Number(fs.readFileSync(readyMarker, 'utf8'));
+      if (!Number.isInteger(pid) || pid <= 0) continue;
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch (error) {
+        if (error?.code === 'ESRCH') continue;
+        throw error;
+      }
+      await waitForProcessExit(pid, `self-test cleanup ${path.basename(readyMarker)}`, 1000);
+    }
+  }
+  try {
+    let observedFailure = false;
+    try {
+      const selfTestEntries = [
+        ['process-tree failing parent', process.execPath, ['-e', parentCode(failedReady, true)]],
+        ['process-tree sibling parent', process.execPath, ['-e', parentCode(siblingReady, false)]],
+      ];
+      await runParallel(selfTestEntries);
+    } catch (error) {
+      if (!/process-tree failing parent exited with status 17/u.test(String(error?.message)))
+        throw error;
+      observedFailure = true;
+    }
+    if (!observedFailure)
+      throw new Error('parallel process-tree self-test did not observe parent failure');
+    for (const [readyMarker, label] of [
+      [failedReady, 'failed-child descendant'],
+      [siblingReady, 'sibling descendant'],
+    ]) {
+      if (!fs.existsSync(readyMarker))
+        throw new Error(`parallel process-tree self-test did not observe ${label} readiness`);
+      const pid = Number(fs.readFileSync(readyMarker, 'utf8'));
+      if (!Number.isInteger(pid) || pid <= 0)
+        throw new Error(`parallel process-tree self-test recorded invalid ${label} pid`);
+      await waitForProcessExit(pid, label);
+      fs.rmSync(readyMarker, { force: true });
+    }
+    console.log(
+      'Parallel assurance failure contains both failed-child and sibling descendant process trees.',
+    );
+  } finally {
+    await cleanupReadyDescendants();
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+if (process.argv.includes('--self-test-process-tree')) {
+  await runParallelProcessTreeSelfTest();
+  process.exit(0);
+}
+const unitTests = fs
+  .readdirSync(path.join(root, 'test'))
+  .filter((name) => name.endsWith('.test.mjs'))
+  .filter((name) => name !== 'lifecycle-proof-controls.test.mjs')
+  .filter((name) => name !== 'lifecycle-formal.test.mjs')
+  .sort()
+  .map((name) => `test/${name}`);
+const processTests = fs
+  .readdirSync(path.join(root, 'test/process'))
+  .filter((name) => name.endsWith('.test.mjs'))
+  .sort()
+  .map((name) => `test/process/${name}`);
+await runParallel([
+  npmParallelEntry('format', ['run', 'format:check']),
+  [
+    'type-contract tests',
+    process.execPath,
+    ['node_modules/typescript/bin/tsc', '--noEmit', '-p', 'tsconfig.tests.json'],
+  ],
+  npmParallelEntry('single build', ['run', 'build']),
+]);
+await runParallel([
+  [
+    'internal semantic topology audit',
+    process.execPath,
+    ['scripts/check-internal-semantic-inventory.mjs'],
+  ],
+  [
+    'TLC outcome classification live probe',
+    process.execPath,
+    ['scripts/check-tlc-outcome-classification.mjs'],
+  ],
+  [
+    'emitted-artifact entrypoint audit',
+    process.execPath,
+    ['scripts/check-emitted-artifact-entrypoints.mjs'],
+  ],
+  [
+    'assurance verdict integrity audit',
+    process.execPath,
+    ['scripts/check-assurance-verdict-integrity.mjs'],
+  ],
+  [
+    'TLC workspace isolation audit',
+    process.execPath,
+    ['scripts/check-tlc-workspace-isolation.mjs'],
+  ],
+  [
+    'type identity trivia baseline',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-trivia-ordinals'],
+  ],
+  [
+    'compiler source-path portability baseline',
+    process.execPath,
+    ['scripts/formal-implementation-surface.cjs', '--self-test-source-paths'],
+  ],
+]);
+process.env.WORKONCE_SOURCE_PATH_BASELINE_CERTIFIED = String(process.pid);
+run('internal semantic topology mutation guard', process.execPath, [
+  'scripts/check-internal-semantic-inventory-mutation.mjs',
+]);
+run('formal config mutation coverage inventory guard', process.execPath, [
+  'scripts/check-formal-config-coverage-mutation.mjs',
+]);
+run('build/source freshness mutation guard', process.execPath, [
+  'scripts/check-build-source-binding-mutation.mjs',
+]);
+run('package build-input freshness mutation guard', process.execPath, [
+  'scripts/check-build-input-binding-mutation.mjs',
+]);
+run('emitted-artifact entrypoint mutation guard', process.execPath, [
+  'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+]);
+run('alias runtime/type mutation guard', process.execPath, [
+  'scripts/check-alias-contract-mutation.mjs',
+]);
+run('compiler source-path portability mutation guard', process.execPath, [
+  'scripts/check-source-path-portability-mutation.mjs',
+]);
+run('assurance verdict integrity mutation guard', process.execPath, [
+  'scripts/check-assurance-verdict-integrity-mutation.mjs',
+]);
+run('TLC workspace isolation mutation guard', process.execPath, [
+  'scripts/check-tlc-workspace-isolation-mutation.mjs',
+]);
+await runParallel([
+  npmParallelEntry('ES2018 Web Worker', ['run', 'check:web']),
+  [
+    'formal config parser',
+    process.execPath,
+    ['scripts/check-formal-implementation-conformance.mjs', '--self-test-config-checks'],
+  ],
+  ['public mapping', process.execPath, ['scripts/check-formal-implementation-conformance.mjs']],
+  [
+    'implementation traces',
+    process.execPath,
+    ['--test', '--test-concurrency', unitTestConcurrency, ...unitTests],
+  ],
+  ['bounded-domain audit', process.execPath, ['scripts/check-bounded-trace-domain.mjs']],
+  ['packed consumer', process.execPath, ['scripts/consumer-smoke.mjs']],
+]);
+await runParallel([
+  [
+    'lifecycle formal proof wrapper',
+    process.execPath,
+    ['--test', 'test/lifecycle-formal.test.mjs'],
+  ],
+  ['real process faults', process.execPath, ['--test', '--test-concurrency', '3', ...processTests]],
+]);
+run('lifecycle proof binding', process.execPath, ['scripts/check-lifecycle-proof-binding.mjs']);
+run('lifecycle source/model mutation guard', process.execPath, [
+  'scripts/check-lifecycle-source-model-mutation.mjs',
+]);
+run('lifecycle implementation mutation guards', process.execPath, [
+  'scripts/check-lifecycle-implementation-mutations.mjs',
+]);
+run('typed-read definition-fence mutation guard', process.execPath, [
+  'scripts/check-read-boundary-mutation.mjs',
+]);
+run('typed-read source/model mutation guard', process.execPath, [
+  'scripts/check-read-source-model-binding-mutation.mjs',
+]);
+run('typed-read route/order mutation guard', process.execPath, [
+  'scripts/check-read-contract-mutation.mjs',
+]);
+run('read-history retention/order mutation guard', process.execPath, [
+  'scripts/check-read-history-mutations.mjs',
+]);
+run('policy source/model mutation guard', process.execPath, [
+  'scripts/check-policy-source-model-binding-mutation.mjs',
+]);
+run('policy implementation mutation guards', process.execPath, [
+  'scripts/check-policy-implementation-mutations.mjs',
+]);
+run('local-runner source/model mutation guard', process.execPath, [
+  'scripts/check-local-runner-source-model-mutation.mjs',
+]);
+run('local-runner implementation mutation guards', process.execPath, [
+  'scripts/check-local-runner-implementation-mutations.mjs',
+]);
+run('external source/model mutation guard', process.execPath, [
+  'scripts/check-external-source-model-mutation.mjs',
+]);
+run('external implementation mutation guards', process.execPath, [
+  'scripts/check-external-implementation-mutations.mjs',
+]);
+run('outbox source/model mutation guard', process.execPath, [
+  'scripts/check-outbox-source-model-binding-mutation.mjs',
+]);
+run('outbox implementation mutation guard', process.execPath, [
+  'scripts/check-outbox-implementation-mutations.mjs',
+]);
+run('storage implementation mutation guard', process.execPath, [
+  'scripts/check-storage-contract-mutation.mjs',
+]);
+run('storage source/model mutation guard', process.execPath, [
+  'scripts/check-storage-source-model-mutation.mjs',
+]);
+run('assurance infrastructure binding mutation guard', process.execPath, [
+  'scripts/check-assurance-infrastructure-binding-mutation.mjs',
+]);
+run('parallel process-tree containment self-test', process.execPath, [
+  'scripts/run-assurance.mjs',
+  '--self-test-process-tree',
+]);
+run('assurance scheduling audit', process.execPath, ['scripts/check-assurance-scheduling.mjs']);
+run('assurance scheduling mutation guard', process.execPath, [
+  'scripts/check-assurance-scheduling-mutation.mjs',
+]);
+await runParallel([
+  ['TLC storage/conformance + mutation guards', process.execPath, ['scripts/storage-formal.mjs']],
+]);
+run('TLC lifecycle/runtime/read/policy boundaries + mutation guards', process.execPath, [
+  'scripts/formal.mjs',
+]);
+console.log('[assurance] all gates passed');

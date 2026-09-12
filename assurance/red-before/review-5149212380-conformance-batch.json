@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "family": "I.conformance-and-proof-verdict-integrity",
+  "reviewId": 5149212380,
+  "preFixHead": "a5a23d83215cadadcf2d382d1a221343ca1424a4",
+  "nodeVersion": "22.22.1",
+  "defects": [
+    {
+      "kind": "adapter_conformance_false_green",
+      "evidence": "A deliberately broken WorkStore wrapper deduplicated duplicate ids in getMany(). The pre-fix shared runConformance suite accepted all 18 scenarios because it never asserted batch slot cardinality or the duplicate third slot.",
+      "observed": "BROKEN_DEDUP_ADAPTER_ACCEPTED=18",
+      "streakRelevant": true
+    },
+    {
+      "kind": "proof_hang_or_false_green",
+      "evidence": "Review 5149212380 identified non-binding due-limit evidence, unchecked scoped assurance anchors, an unverified lifecycle mutation-spec substitution, unbounded deferred/process waits, and other harness paths that could hang or misstate the verdict.",
+      "streakRelevant": true
+    }
+  ],
+  "requiredFix": "Shared conformance must reject duplicate-slot collapse; proof/refinement controls must bind the intended limit/specification/section and terminate boundedly on regressions."
+}

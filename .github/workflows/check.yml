@@ -1,0 +1,61 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        node: [24.14.1]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch pinned official TLC tool
+        run: |
+          mkdir -p .artifacts
+          curl --fail --location --retry 3 --output .artifacts/tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+          echo '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  .artifacts/tla2tools.jar' | sha256sum --check -
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm test
+      - run: npm run test:process
+      - run: npm run test:consumer
+  formal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22.22.1
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch pinned official TLC tool
+        run: |
+          mkdir -p .artifacts
+          curl --fail --location --retry 3 --output .artifacts/tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+          echo '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  .artifacts/tla2tools.jar' | sha256sum --check -
+      - run: npm ci --ignore-scripts
+      - run: npm run assurance

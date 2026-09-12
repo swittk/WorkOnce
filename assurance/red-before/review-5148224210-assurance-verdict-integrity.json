@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "family": "I.assuranceInfrastructure",
+  "reviewId": 5148224210,
+  "preFixHead": "8e4b0f8db225ff2c457dbbe723d291ba63d733ca",
+  "defects": [
+    {
+      "kind": "mutation_false_kill",
+      "evidence": "Multiple mutation guards accepted result.status != 0 without first rejecting spawnSync error, signal, or status=null; null != 0 therefore counted timeout/signal infrastructure failure as a killed mutant."
+    },
+    {
+      "kind": "tlc_cause_drift",
+      "evidence": "lifecycle-formal duplicated TLC outcome parsing instead of using the shared infrastructure-vs-semantic classifier and exact expected-invariant helper."
+    },
+    {
+      "kind": "fabricated_observation",
+      "evidence": "storage refinement returned literal true values for oneAccepted/maxSafeAccepted and described contention difference from requested operation counts instead of observed completion/durable state."
+    },
+    {
+      "kind": "proof_hang",
+      "evidence": "reset-race entry was signaled after assertions, finite claim drain was unbounded, and process-test exit waits could remain pending after an already-fired exit."
+    }
+  ],
+  "requiredFix": "All mutation subprocess verdicts must fail closed on infrastructure outcomes, TLC paths must share exact outcome classification, proof booleans must derive from observations, and known race/drain/process waits must be explicitly bounded. The normal assurance gate must mutation-kill representative regressions of every class."
+}

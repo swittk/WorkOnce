@@ -1,0 +1,36 @@
+{
+  "family": "review-5186355143-first-stop-and-discriminator-coverage",
+  "reviewId": 5186355143,
+  "governingHead": "14029c64ad602f15e0780b326e7d322ea27a1022",
+  "findings": [
+    {
+      "commentId": 3996141253,
+      "classification": "supported-product-semantic-defect",
+      "kind": "local-worker-first-stop-cause-overwrite",
+      "redBefore": "A conforming WorkStore let automatic heartbeat IO remain pending. The caller AbortSignal aborted first with Error(\"caller-cancelled-first\"), then the pending heartbeat rejected with Error(\"late-heartbeat-failure\"). run.signal.reason retained the caller error, but runAvailable returned the later heartbeat error. This used createWorkOnce/runAvailable and normal adapter operations; no database tampering or audit-host interruption.",
+      "repair": "The heartbeat catch records ownership loss only when the claim controller is not already aborted, preserving caller cancellation or confirmed lease expiry as the first stop cause.",
+      "executableEvidence": [
+        "test/worker.test.mjs",
+        "scripts/local-runner-refinement.mjs",
+        "scripts/check-local-runner-implementation-mutations.mjs",
+        "formal/WorkOnceLocalRunner.tla"
+      ],
+      "formalGap": "The previous local-runner observation set did not encode cancellation-before-late-heartbeat ordering. A firstStopCause observation now binds exact returned cause, exact signal cause, and durable running state; restoring the old overwrite is a causal compiled-runtime mutant and each boolean is independently mutation-checked by TLC."
+    },
+    {
+      "commentId": 3996141250,
+      "classification": "assurance-correctness-defect",
+      "kind": "formal-discriminator-matrix-not-independently-bound",
+      "redBefore": "Re-running the new missing-coverage controls against the exact pre-fix WorkOnceRuntime.tla and WorkOncePolicy.tla made each formal shard fail with an initial-state invariant violation: the old predicates accepted a missing local abortActive runner mode/site and accepted missing defer coverage in dual-outcome policy families.",
+      "repair": "RuntimeSamplesConform now requires the exact producer mode/site set (11 common sites for local/external plus two local-only abort sites). PolicySamplesConform now requires retry+defer for casAckLoss, receiptAcrossAttempts, and adapterEquivalence.",
+      "executableEvidence": [
+        "formal/WorkOnceRuntime.tla",
+        "formal/WorkOncePolicy.tla",
+        "scripts/formal.mjs"
+      ],
+      "formalNegativeControls": "Runtime observed TLC removes the sole local abortActive sample; policy observed TLC independently removes defer from each of the three dual-outcome families. All must be rejected."
+    }
+  ],
+  "siblingAudit": "Equivalent cross-dimensional coverage in local-runner, outbox, read-history, and storage predicates already binds exact adapter/mode or per-kind adapter domains. The current review exposed runtime mode/site and policy outcome-kind as the missing same-invariant cases; no audit-host crash/recovery hardening was added.",
+  "documentation": "The duplicate storage-doc note was applied as neutral public-contract wording: due queries reject afterId; all/outbox support it."
+}

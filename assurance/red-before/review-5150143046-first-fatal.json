@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "family": "managed-runner-first-fatal-preservation",
+  "reviewId": 5150143046,
+  "reviewHead": "01280183c15ee4942c94bf00b4acd20ee04e5754",
+  "preFixHead": "01280183c15ee4942c94bf00b4acd20ee04e5754",
+  "findings": [
+    {
+      "commentId": 3964968470,
+      "defect": "Two concurrently active supported local jobs can fail A then B, and the managed runner overwrites its stored fatal value so the terminal rejection returns B instead of the documented first fatal A.",
+      "redBefore": {
+        "publicPath": "createWorkOnce(...).define(...).run({concurrency:2}, handler)",
+        "firstFailure": "first-fatal-A",
+        "secondFailure": "second-fatal-B",
+        "returnedFailure": "second-fatal-B",
+        "returnedFirst": false,
+        "returnedSecond": true,
+        "probeExitCode": 17
+      },
+      "formalGap": "WorkOnceRuntime.ActiveDone and WorkOnceLocalRunner.ActiveDone also replaced their representative fatal value on every later unhandled active failure, so the abstraction represented the same incorrect overwrite and could not prove first-fatal preservation.",
+      "streakRelevant": true
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "family": "formal-temporal-and-public-surface-coverage",
+  "reviewHead": "a5a23d83215cadadcf2d382d1a221343ca1424a4",
+  "preFixHead": "ad315eb7188a36447426fd7cdd031cb3a2201a57",
+  "findings": [
+    {
+      "commentId": 3964279406,
+      "defect": "WorkOnceLifecycleTemporal declared waiting but no normal transition entered waiting, so Wake-from-waiting was unreachable in that temporal model.",
+      "streakRelevant": true
+    },
+    {
+      "commentId": 3964279451,
+      "defect": "Root declaration-only type re-exports are TypeScript Alias symbols whose direct declaration is an ExportSpecifier; exported-type traversal must resolve the alias before declaration/type inspection.",
+      "redBefore": {
+        "FollowUpOptionsRootDeclaration": "ExportSpecifier",
+        "ResolvedDeclaration": "InterfaceDeclaration",
+        "ResolvedSource": "src/outcomes.ts"
+      },
+      "streakRelevant": true
+    }
+  ]
+}

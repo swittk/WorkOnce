@@ -1,0 +1,15 @@
+{
+  "kind": "assurance_framework_red_before",
+  "family": "I",
+  "date": "2026-09-09",
+  "baseHead": "8ded77a75f0f7150bab4ff75e9996283a24c5cc5",
+  "defect": "The full assurance runner executed check-alias-contract-mutation.mjs but that checker was absent from the assurance-infrastructure content digest.",
+  "preFixEvidence": {
+    "fullGateScriptLiterals": 31,
+    "boundScriptLiterals": 30,
+    "onlyUnbound": "scripts/check-alias-contract-mutation.mjs"
+  },
+  "impact": "Changing or weakening the alias mutation-kill checker itself did not change the reviewed assurance-infrastructure digest, so the proof harness was not fully source-bound.",
+  "fix": "Bind the alias checker and AST-discover every scripts/*.mjs or scripts/*.cjs literal in run-assurance.mjs, failing closed when any invoked checker is absent from assuranceInfrastructureFiles.",
+  "mutationKill": "check-assurance-infrastructure-binding-mutation.mjs rewrites an actual bound runner script literal to an unbound checker and requires the conformance gate to fail specifically for an unbound proof/checker script."
+}
