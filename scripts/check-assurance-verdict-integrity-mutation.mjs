@@ -77,7 +77,7 @@ mutate(
 );
 mutate(
   'scripts/check-tlc-outcome-classification.mjs',
-  "const invalidJar = path.join(artifactDir, 'invalid-tlc-classification.jar');",
+  'const invalidJar = path.join(artifactDir, `invalid-tlc-classification-${process.pid}.jar`);',
   "const invalidJar = path.join(root, 'src/work.ts');",
   'live TLC classifier writes outside generated artifact roots',
   /check-tlc-outcome-classification\.mjs mutates tracked source\/config without signal-safe file restoration/u,
@@ -798,6 +798,20 @@ mutate(
   '  void specSwapped;',
   'formal mutation witness config loses missing-spec fail-closed guard',
   /formal mutation witness config must fail closed when SPECIFICATION Spec is absent/u,
+);
+mutate(
+  'scripts/formal.mjs',
+  "  if (!specSwapped)\n    throw new Error('Single-invariant config found no SPECIFICATION Spec line to rebind');",
+  '  void specSwapped;',
+  'formal single-invariant config loses missing-spec fail-closed guard',
+  /formal single-invariant config must fail closed when SPECIFICATION Spec is absent/u,
+);
+mutate(
+  'scripts/check-tlc-outcome-classification.mjs',
+  '`invalid-tlc-classification-${process.pid}.jar`',
+  "'invalid-tlc-classification.jar'",
+  'live TLC probe regresses to a shared invalid-JAR pathname',
+  /live TLC probe must use a collision-free per-process invalid-JAR pathname/u,
 );
 
 mutate(

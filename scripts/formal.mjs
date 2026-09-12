@@ -196,6 +196,7 @@ function singleInvariantConfig(configText, invariant) {
   const output = [];
   let skipping = false;
   let inserted = false;
+  let specSwapped = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (/^INVARIANT\s+[A-Za-z_][A-Za-z0-9_]*$/u.test(trimmed)) continue;
@@ -209,6 +210,7 @@ function singleInvariantConfig(configText, invariant) {
     }
     if (trimmed === 'SPECIFICATION Spec') {
       output.push('SPECIFICATION MutantSpec');
+      specSwapped = true;
       continue;
     }
     if (trimmed === 'CHECK_DEADLOCK FALSE' && !inserted) {
@@ -218,7 +220,16 @@ function singleInvariantConfig(configText, invariant) {
     output.push(line);
   }
   if (!inserted) output.push(`INVARIANT ${invariant}`);
+  if (!specSwapped)
+    throw new Error('Single-invariant config found no SPECIFICATION Spec line to rebind');
   return `${output.join('\n').trimEnd()}\n`;
+}
+
+try {
+  singleInvariantConfig('SPECIFICATION WrongSpec\nCHECK_DEADLOCK FALSE\n', 'ProbeInvariant');
+  throw new Error('Single-invariant config missing-spec self-test unexpectedly passed');
+} catch (error) {
+  if (!/found no SPECIFICATION Spec line to rebind/u.test(error?.message ?? '')) throw error;
 }
 
 function mutationCoveragePlan(configPath, mutants, additionalGuards = []) {
@@ -802,10 +813,7 @@ MutantSpec == Init /\ [][HistorySensitiveNext]_vars
   );
   writeFileSync(
     readHistoryInfluenceMutantConfig,
-    singleInvariantConfig(baseReadHistoryConfig, 'CurrentProjectionCongruent').replace(
-      'SPECIFICATION Spec',
-      'SPECIFICATION MutantSpec',
-    ),
+    singleInvariantConfig(baseReadHistoryConfig, 'CurrentProjectionCongruent'),
   );
   requireInvariantRejects(
     'WorkOnceReadHistoryInfluenceMutant',

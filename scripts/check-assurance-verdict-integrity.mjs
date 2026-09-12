@@ -699,13 +699,18 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.match(
     formalSource,
+    /if \(!specSwapped\)\s*throw new Error\('Single-invariant config found no SPECIFICATION Spec line to rebind'\)/u,
+    'formal single-invariant config must fail closed when SPECIFICATION Spec is absent',
+  );
+  assert.match(
+    formalSource,
     /function bindObservedSamples\(configText\)[\s\S]{0,260}?const occurrences = configText\.split\(marker\)\.length - 1;[\s\S]{0,140}?if \(occurrences !== 1\)/u,
     'observed-sample config rebinding must fail closed unless the exact binding appears once',
   );
   assert.equal(
     (formalSource.match(/bindObservedSamples\(/gu) ?? []).length,
     5,
-    'all four observed-model config writers must use the guarded sample rebinding helper',
+    'bindObservedSamples must appear exactly five times: one helper definition plus four observed-model config writer calls',
   );
   assert.equal(
     (formalSource.match(/'CONSTANT Samples = \{\}'/gu) ?? []).length,
@@ -1328,6 +1333,11 @@ export function assertAssuranceVerdictIntegrity() {
     liveTlcProbe,
     /requireExpectedProcessFailure\(result, 'invalid TLC jar formal-assurance probe'\)/u,
     'live TLC probe must preserve the shared fail-closed process classifier',
+  );
+  assert.match(
+    liveTlcProbe,
+    /invalid-tlc-classification-\$\{process\.pid\}\.jar/u,
+    'live TLC probe must use a collision-free per-process invalid-JAR pathname',
   );
   assert.match(
     liveTlcProbe,

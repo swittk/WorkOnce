@@ -7,7 +7,7 @@ import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const artifactDir = path.join(root, '.artifacts');
-const invalidJar = path.join(artifactDir, 'invalid-tlc-classification.jar');
+const invalidJar = path.join(artifactDir, `invalid-tlc-classification-${process.pid}.jar`);
 fs.mkdirSync(artifactDir, { recursive: true });
 try {
   fs.writeFileSync(invalidJar, 'not a jar');
