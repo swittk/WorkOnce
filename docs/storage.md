@@ -22,7 +22,8 @@ interface CompareExchangePort {
 
 `getMany` returns detached rows in the caller's order, with the trusted storage clock even when
 no records exist. `query` applies scope, kind, definition, due time, cursor and limit in storage.
-Candidate discovery is not ownership. The later compare-and-swap must recheck the exact version.
+The `afterId` cursor applies only to `all` and `outbox`; `due` orders by `(dueAt, id)` and rejects
+`afterId`. Candidate discovery is not ownership. The later compare-and-swap must recheck the exact version.
 
 `compareExchange` receives the stable id, expected revision (absent means insert-if-absent),
 complete next record and optional exclusive `validUntil`. It must atomically require both the

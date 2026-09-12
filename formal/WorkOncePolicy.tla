@@ -186,6 +186,10 @@ PolicySampleOK(s) ==
        /\ s.exactBothError /\ s.invalidTimingNoWrite
     [] OTHER -> FALSE
 
+PolicyOutcomeCoverage(kind) ==
+  {s.outcomeKind : s \in {sample \in Samples : sample.kind = kind}}
+PolicyDualOutcomeKinds == {"casAckLoss", "receiptAcrossAttempts", "adapterEquivalence"}
+
 PolicySamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
@@ -194,5 +198,6 @@ PolicySamplesConform ==
        "historyCongruence", "wakeCompetition", "adapterEquivalence", "timingBoundary"
      }
   /\ {s.adapter : s \in {x \in Samples : x.kind = "wakeCompetition"}} = {"memory", "sqlite", "cas"}
+  /\ \A kind \in PolicyDualOutcomeKinds : PolicyOutcomeCoverage(kind) = {"retry", "defer"}
   /\ \A s \in Samples : PolicySampleOK(s)
 =============================================================================

@@ -563,13 +563,20 @@ export function assertAssuranceVerdictIntegrity() {
   );
 
   const heartbeatLocalRunnerRefinement = read('scripts/local-runner-refinement.mjs');
-  const localHeartbeatAttempts = [
-    ...heartbeatLocalRunnerRefinement.matchAll(/await within\(heartbeatAttempted\.promise/gu),
-  ].length;
-  assert.equal(
-    localHeartbeatAttempts,
-    2,
-    'local runner cause-precision witnesses must synchronize on both defined and undefined heartbeat attempts',
+  assert.match(
+    heartbeatLocalRunnerRefinement,
+    /await within\(heartbeatAttempted\.promise, `\$\{adapter\}-heartbeat storage attempt`\)[\s\S]{0,180}?await waitForAbort\(run\.signal, `\$\{adapter\}-heartbeat ownership abort`\)/u,
+    'local defined-heartbeat cause witness must synchronize on the storage attempt and ownership abort',
+  );
+  assert.match(
+    heartbeatLocalRunnerRefinement,
+    /await within\(heartbeatAttempted\.promise, `\$\{adapter\}-undefined-heartbeat storage attempt`\)[\s\S]{0,180}?await waitForAbort\(run\.signal, `\$\{adapter\}-undefined-heartbeat ownership abort`\)/u,
+    'local undefined-heartbeat cause witness must synchronize on the storage attempt and ownership abort',
+  );
+  assert.match(
+    heartbeatLocalRunnerRefinement,
+    /await within\(heartbeatAttempted\.promise, 'first-stop-cause heartbeat attempt'\)[\s\S]{0,140}?stop\.abort\(callerStop\);[\s\S]{0,100}?rejectHeartbeat\(lateHeartbeatFailure\)/u,
+    'local first-stop-cause witness must prove caller abort happens before the pending heartbeat rejects',
   );
   assert.match(
     heartbeatLocalRunnerRefinement,
@@ -759,7 +766,7 @@ export function assertAssuranceVerdictIntegrity() {
   for (const [name, sourceNeedle] of [
     [
       'runtime',
-      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform /\\\\ ~MissingReadAdapterCheck!RuntimeSamplesConform',
+      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform /\\\\ ~MissingReadAdapterCheck!RuntimeSamplesConform /\\\\ ~MissingRunnerModeSiteCheck!RuntimeSamplesConform',
     ],
     [
       'read-history',
@@ -769,7 +776,10 @@ export function assertAssuranceVerdictIntegrity() {
       'local-runner',
       'LocalRunnerNegativeSampleMutantRejected == ~InvalidSampleCheck!LocalRunnerSamplesConform',
     ],
-    ['policy', 'PolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform'],
+    [
+      'policy',
+      'PolicyNegativeSampleMutantRejected == /\\\\ ~InvalidSampleCheck!PolicySamplesConform /\\\\ ~MissingCasAckLossOutcomeCheck!PolicySamplesConform /\\\\ ~MissingReceiptAcrossAttemptsOutcomeCheck!PolicySamplesConform /\\\\ ~MissingAdapterEquivalenceOutcomeCheck!PolicySamplesConform',
+    ],
     ['outbox', 'OutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)'],
     [
       'external',

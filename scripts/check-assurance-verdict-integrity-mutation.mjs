@@ -355,7 +355,21 @@ mutate(
   '          await within(heartbeatAttempted.promise, `${adapter}-heartbeat storage attempt`);',
   '          await sleep(35);',
   'local heartbeat cause witness returns to scheduler-delay synchronization',
-  /local runner cause-precision witnesses must synchronize on both defined and undefined heartbeat attempts/u,
+  /local defined-heartbeat cause witness must synchronize on the storage attempt and ownership abort/u,
+);
+mutate(
+  'scripts/local-runner-refinement.mjs',
+  '    await within(heartbeatAttempted.promise, `${adapter}-undefined-heartbeat storage attempt`);',
+  '    await sleep(35);',
+  'local undefined heartbeat cause witness returns to scheduler-delay synchronization',
+  /local undefined-heartbeat cause witness must synchronize on the storage attempt and ownership abort/u,
+);
+mutate(
+  'scripts/local-runner-refinement.mjs',
+  '      stop.abort(callerStop);\n      rejectHeartbeat(lateHeartbeatFailure);',
+  '      rejectHeartbeat(lateHeartbeatFailure);\n      stop.abort(callerStop);',
+  'local first-stop cause witness reverses abort and late-heartbeat ordering',
+  /local first-stop-cause witness must prove caller abort happens before the pending heartbeat rejects/u,
 );
 mutate(
   'scripts/external-transport-refinement.mjs',

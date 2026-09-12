@@ -11126,14 +11126,14 @@
         "LocalTypeOK",
         "LossPresenceExact"
       ],
-      "modelDigest": "19de916cd4bfb894b7a334bac55dcad8157c9a3835001b601a3903f09845e36f",
+      "modelDigest": "702649394416a346412ad48632ec50bf9c0080460bc666a0bbd63df1a63780ab",
       "modelFiles": [
         "formal/WorkOnceLocalRunner.tla",
         "formal/WorkOnceLocalRunner.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/local-runner-refinement.mjs",
-      "sourceDigest": "6166cc0206d3d91651842fac19965dfdb1b6e207b3bca4ef8d71c825d0b7564f",
+      "sourceDigest": "f0b550762ade0e7b0040a8cd01c857f612445977a32170683e017c6332dbb0f9",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -11211,7 +11211,7 @@
         "StalePolicyCannotPublish",
         "SupersededReceiptRejectsOld"
       ],
-      "modelDigest": "744c811b803756cdb38c3ae0bd123497e16010a68795ad5179400ba1c1f42a9e",
+      "modelDigest": "74614455e4db7c77ec61f23bfaadb6a0899cfa4e3ebe35a5f851021ea471cb41",
       "modelFiles": [
         "formal/WorkOncePolicy.tla",
         "formal/WorkOncePolicy.cfg"
@@ -11329,7 +11329,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "f26f822990e3d80ba8c79d2bffa455639ec74347b8f0b5adaa185aa85060e0e7",
+      "modelDigest": "2a78fb9dfe4d03f988e46a882869b62e277e1a793bfd9c9f757fa57ab74007ae",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -11339,7 +11339,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "139c0b8c819ab98bc5e7f5f4f8e1cf751cd54c85098569e55efc59ed42ceb6d0",
+      "sourceDigest": "1a9eb63d9b9d1a2b480ea3777c43fd012e8e20dc87684dada0a6ed30096d1bdc",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -11383,7 +11383,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "d9a04a95f9a3ee14c4655cda12b3dea346c297a786cab2bc647772de4e85389d",
+    "assuranceInfrastructureDigest": "2e665163144b1b48e675b2e3a91cfece787a68121e7a02e2e91759d2a8ebbbb8",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11405,6 +11405,7 @@
       "assurance/red-before/review-5153101114-assurance-verdict-scope.json",
       "assurance/red-before/review-5185958026-assurance-integrity.json",
       "assurance/red-before/review-5186097145-product-witness-gaps.json",
+      "assurance/red-before/review-5186355143-first-stop-and-discriminator-coverage.json",
       "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
       "assurance/red-before/source-semantic-hash-collision.json",
       "assurance/red-before/storage-conformance-baseline.json",
@@ -11519,7 +11520,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "e29c55cd065e93c35651d207f6f5a641e0b597e99151e9b77b9ad11152b34f9d",
+    "modelDigest": "aecf54f5ff79054b35dca55110f6865fbbb0b9094d09127a34c3dd4ec0338763",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -11554,7 +11555,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "13f7bca3fe415e8297a58c7e7918dc08d8397c9b92d99288e414510e2d926028",
+    "sourceDigest": "89a53ba1089d68f60dcddb8cef14f1d6a144d0e692a52b45967cafafbfac728d",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

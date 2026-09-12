@@ -166,7 +166,7 @@ async function runParallel(entries) {
   if (unexpectedFailure) throw unexpectedFailure.reason;
   console.log(`[assurance] parallel batch: ${Math.round(performance.now() - started)} ms`);
 }
-async function waitForProcessExit(pid, label, timeoutMs = 2500) {
+async function waitForProcessExit(pid, label, timeoutMs = 1000) {
   const deadline = performance.now() + timeoutMs;
   for (;;) {
     try {

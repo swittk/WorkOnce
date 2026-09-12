@@ -93,8 +93,10 @@ async function processClaim<I, O, R extends string>(
           }, heartbeatMs);
       }
     } catch (error) {
-      ownershipLoss = { error };
-      controller.abort(error);
+      if (!controller.signal.aborted) {
+        ownershipLoss = { error };
+        controller.abort(error);
+      }
     }
   }
   try {

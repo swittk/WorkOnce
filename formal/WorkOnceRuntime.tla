@@ -91,8 +91,20 @@ DrainedBeforeReturn == pc = "done" => active = 0
 FatalReturnRejects == pc = "done" => (result = "rejected") = RunnerRejects(fatalPresent)
 FatalValuePreserved == pc = "done" => returnValue = failureValue
 AdapterSetFor(kind) == {sample.adapter : sample \in {candidate \in Samples : candidate.kind = kind}}
+RuntimeCommonRunnerSites == {
+  "firstFatal",
+  "claim", "claimObserver", "active", "activeObserver",
+  "handledClaim", "handledActive", "backoffBefore", "backoffDuring",
+  "drain", "claimGate"
+}
+RuntimeExpectedRunnerModeSites ==
+  {<<mode, site>> : mode \in RunnerModes, site \in RuntimeCommonRunnerSites}
+  \cup {<<"local", "abortClaimReply">>, <<"local", "abortActive">>}
+RuntimeRunnerModeSites ==
+  {<<sample.mode, sample.site>> : sample \in {candidate \in Samples : candidate.kind = "runner"}}
 RuntimeSamplesConform == /\ Samples # {}
                         /\ {s.kind : s \in Samples} = {"runner", "runnerHistory", "read", "readAdapter", "backoff", "budget", "cancel"}
                         /\ AdapterSetFor("readAdapter") = ReadAdapterDomain
+                        /\ RuntimeRunnerModeSites = RuntimeExpectedRunnerModeSites
                         /\ \A s \in Samples : BoundarySampleOK(s)
 =============================================================================

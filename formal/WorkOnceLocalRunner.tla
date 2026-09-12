@@ -169,6 +169,7 @@ LocalRunnerSampleOK(s) ==
        /\ s.adapter \in {"memory", "sqlite", "cas"}
        /\ s.bothOwners /\ s.exactlyOnce
     [] s.kind = "firstFatal" -> s.bothActive /\ s.exactFirst
+    [] s.kind = "firstStopCause" -> s.exactCause /\ s.signalCauseExact /\ s.leftRunning
     [] s.kind = "dynamicArrival" ->
        /\ s.allTen /\ s.boundedCapacity /\ s.refilledAroundSlow
     [] s.kind = "handledRecovery" -> s.exactErrors /\ s.eventuallyRanOnce
@@ -186,7 +187,7 @@ LocalRunnerSamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {
        "stopReclaim", "undefinedHeartbeat", "settleCause", "competingRunners",
-       "firstFatal", "dynamicArrival", "handledRecovery", "completionOrder", "handledAbortHistory",
+       "firstFatal", "firstStopCause", "dynamicArrival", "handledRecovery", "completionOrder", "handledAbortHistory",
        "backoffHistory", "lateClaimStop", "timerBoundary", "wakePoll"
      }
   /\ {<<s.adapter, s.mode>> : s \in {x \in Samples : x.kind = "stopReclaim"}} = StopReclaimAdapterModes

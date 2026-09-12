@@ -47,6 +47,24 @@ try {
     fs.writeFileSync(target, original);
   }
   {
+    const guarded = `if (!controller.signal.aborted) {\n                ownershipLoss = { error };\n                controller.abort(error);\n            }`;
+    assert.equal(
+      original.split(guarded).length,
+      2,
+      'first-stop-cause guard mutation anchor must be unique',
+    );
+    fs.writeFileSync(
+      target,
+      original.replace(guarded, `ownershipLoss = { error };\n        controller.abort(error);`),
+    );
+    runExpectedFailure(
+      'late heartbeat overwrites first stop cause',
+      'firstStopCause',
+      /firstStopCause:[^\n]*"exactCause":false/u,
+    );
+    fs.writeFileSync(target, original);
+  }
+  {
     const needle = `if (ownershipLoss !== undefined)\n                throw ownershipLoss.error;`;
     assert.equal(original.includes(needle), true, 'ownership-cause mutation anchor is stale');
     fs.writeFileSync(

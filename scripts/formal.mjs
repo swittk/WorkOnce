@@ -777,9 +777,17 @@ if (runtimeOnly) {
   );
   if (missingReadAdapterSamples.length !== samples.length - 1)
     throw new Error('Runtime missing-adapter mutation did not remove exactly one CAS sample.');
+  const missingRunnerModeSiteSamples = samples.filter(
+    (sample) =>
+      !(sample.kind === 'runner' && sample.mode === 'local' && sample.site === 'abortActive'),
+  );
+  if (missingRunnerModeSiteSamples.length !== samples.length - 1)
+    throw new Error(
+      'Runtime runner mode/site mutation did not remove exactly one local abortActive sample.',
+    );
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime, TLC, Sequences\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nMissingReadAdapterSamples == {\n${missingReadAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nMissingReadAdapterCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingReadAdapterSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform /\\ ~MissingReadAdapterCheck!RuntimeSamplesConform\n${renderBooleanSampleMutationChecks(samples, assertRuntimeBoundarySamples, tlaValue, 'BoundarySampleOK', excludeRuntimeBooleanInput)}\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime, TLC, Sequences\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nMissingReadAdapterSamples == {\n${missingReadAdapterSamples.map(tlaValue).join(',\n')}\n}\nMissingRunnerModeSiteSamples == {\n${missingRunnerModeSiteSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nMissingReadAdapterCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingReadAdapterSamples\nMissingRunnerModeSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingRunnerModeSiteSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform /\\ ~MissingReadAdapterCheck!RuntimeSamplesConform /\\ ~MissingRunnerModeSiteCheck!RuntimeSamplesConform\n${renderBooleanSampleMutationChecks(samples, assertRuntimeBoundarySamples, tlaValue, 'BoundarySampleOK', excludeRuntimeBooleanInput)}\n====\n`,
   );
   writeFileSync(
     config,
@@ -800,7 +808,7 @@ if (runtimeOnly) {
 
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
   console.log(
-    'TLC mutation guard: RuntimeSamplesConform rejects all 6 injected sample mutations in the observed-model run.',
+    'TLC mutation guard: RuntimeSamplesConform rejects all 7 injected sample mutations, including missing runner mode/site coverage.',
   );
 
   // Keep the realistic late-admission mutant in addition to the one-step activity check above.
@@ -959,9 +967,18 @@ if (nonRuntimeOnly) {
   assertPolicyRefinementSamples(policySamples);
   const policyObserved = resolve(tlcWorkspace, 'WorkOncePolicyObserved.tla');
   const policyConfig = resolve(tlcWorkspace, 'WorkOncePolicy-observed.cfg');
+  const missingPolicyOutcomeSamples = {};
+  for (const kind of ['casAckLoss', 'receiptAcrossAttempts', 'adapterEquivalence']) {
+    const mutant = policySamples.filter(
+      (sample) => !(sample.kind === kind && sample.outcomeKind === 'defer'),
+    );
+    if (mutant.length !== policySamples.length - 1)
+      throw new Error(`Policy ${kind} outcome mutation did not remove exactly one defer sample.`);
+    missingPolicyOutcomeSamples[kind] = mutant;
+  }
   writeFileSync(
     policyObserved,
-    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy, TLC, Sequences\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOncePolicy WITH Samples <- InvalidSamples\nPolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform\n${renderBooleanSampleMutationChecks(policySamples, assertPolicyRefinementSamples, tlaValue, 'PolicySampleOK', excludePolicyBooleanInput)}\n====\n`,
+    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy, TLC, Sequences\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\nMissingCasAckLossOutcomeSamples == {\n${missingPolicyOutcomeSamples.casAckLoss.map(tlaValue).join(',\n')}\n}\nMissingReceiptAcrossAttemptsOutcomeSamples == {\n${missingPolicyOutcomeSamples.receiptAcrossAttempts.map(tlaValue).join(',\n')}\n}\nMissingAdapterEquivalenceOutcomeSamples == {\n${missingPolicyOutcomeSamples.adapterEquivalence.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOncePolicy WITH Samples <- InvalidSamples\nMissingCasAckLossOutcomeCheck == INSTANCE WorkOncePolicy WITH Samples <- MissingCasAckLossOutcomeSamples\nMissingReceiptAcrossAttemptsOutcomeCheck == INSTANCE WorkOncePolicy WITH Samples <- MissingReceiptAcrossAttemptsOutcomeSamples\nMissingAdapterEquivalenceOutcomeCheck == INSTANCE WorkOncePolicy WITH Samples <- MissingAdapterEquivalenceOutcomeSamples\nPolicyNegativeSampleMutantRejected == /\\ ~InvalidSampleCheck!PolicySamplesConform /\\ ~MissingCasAckLossOutcomeCheck!PolicySamplesConform /\\ ~MissingReceiptAcrossAttemptsOutcomeCheck!PolicySamplesConform /\\ ~MissingAdapterEquivalenceOutcomeCheck!PolicySamplesConform\n${renderBooleanSampleMutationChecks(policySamples, assertPolicyRefinementSamples, tlaValue, 'PolicySampleOK', excludePolicyBooleanInput)}\n====\n`,
   );
   writeFileSync(
     policyConfig,
@@ -981,7 +998,7 @@ if (nonRuntimeOnly) {
   });
 
   console.log(
-    'TLC mutation guard: PolicySamplesConform rejects its injected bad sample in the observed-model run.',
+    'TLC mutation guard: PolicySamplesConform rejects invalid samples and missing retry/defer coverage for all three dual-outcome families.',
   );
 }
 

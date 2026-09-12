@@ -127,6 +127,54 @@ test('loss of renewal aborts the local handler and cannot manufacture success', 
   assert.equal((await q.inspect('job')).phase.state, 'running');
 });
 
+test('a late heartbeat failure cannot replace an earlier caller cancellation cause', async () => {
+  const base = createMemoryStore();
+  let heartbeatReject;
+  const heartbeatReply = new Promise((_, reject) => {
+    heartbeatReject = reject;
+  });
+  let heartbeatStartedResolve;
+  const heartbeatStarted = new Promise((resolve) => {
+    heartbeatStartedResolve = resolve;
+  });
+  let interceptHeartbeat = false;
+  const store = {
+    ...base,
+    atomic(id, decide) {
+      if (interceptHeartbeat) {
+        interceptHeartbeat = false;
+        heartbeatStartedResolve();
+        return heartbeatReply;
+      }
+      return base.atomic(id, decide);
+    },
+  };
+  const q = createWorkOnce({ store, scope: 'first-stop-cause' }).define('work', {
+    limits: { leaseMs: 500 },
+  });
+  await q.ensure(null, { key: 'job' });
+  const stop = new AbortController();
+  const callerStop = new Error('caller stopped first');
+  const lateHeartbeatFailure = new Error('heartbeat failed later');
+  let signalCause;
+  const [result] = await q.runAvailable(
+    { workerId: 'worker', heartbeatMs: 10, signal: stop.signal },
+    async (run) => {
+      interceptHeartbeat = true;
+      await heartbeatStarted;
+      stop.abort(callerStop);
+      heartbeatReject(lateHeartbeatFailure);
+      await new Promise((resolve) => setImmediate(resolve));
+      signalCause = run.signal.reason;
+      return run.succeed();
+    },
+  );
+  assert.equal(signalCause, callerStop);
+  assert.equal(result.status, 'interrupted');
+  assert.equal(result.error, callerStop);
+  assert.equal((await q.inspect('job')).phase.state, 'running');
+});
+
 test('managed runner wakes an empty poll when an active claim becomes fatal', async () => {
   const base = createMemoryStore();
   const renewalFailure = new Error('renewal storage down');

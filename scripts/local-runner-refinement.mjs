@@ -212,6 +212,53 @@ async function stopReclaimSample(adapter, mode) {
   }
 }
 
+async function firstStopCauseSample() {
+  const base = createMemoryStore();
+  const heartbeatAttempted = deferred();
+  let rejectHeartbeat;
+  const heartbeatReply = new Promise((_, reject) => {
+    rejectHeartbeat = reject;
+  });
+  let interceptHeartbeat = false;
+  const store = {
+    ...base,
+    atomic(id, decide) {
+      if (interceptHeartbeat) {
+        interceptHeartbeat = false;
+        heartbeatAttempted.resolve();
+        return heartbeatReply;
+      }
+      return base.atomic(id, decide);
+    },
+  };
+  const queue = createWorkOnce({ store, scope: 'runner-first-stop-cause' }).define('job', {
+    limits: { leaseMs: 500, maxAttempts: 3, maxElapsedMs: 1000, maxDeferrals: 2 },
+  });
+  await queue.ensure(null, { key: 'job' });
+  const stop = new AbortController();
+  const callerStop = new Error('runner caller stopped first');
+  const lateHeartbeatFailure = new Error('runner heartbeat failed later');
+  let signalCauseExact = false;
+  const [result] = await queue.runAvailable(
+    { workerId: 'A', heartbeatMs: 10, signal: stop.signal },
+    async (run) => {
+      interceptHeartbeat = true;
+      await within(heartbeatAttempted.promise, 'first-stop-cause heartbeat attempt');
+      stop.abort(callerStop);
+      rejectHeartbeat(lateHeartbeatFailure);
+      await nextTurn();
+      signalCauseExact = run.signal.reason === callerStop;
+      return run.succeed();
+    },
+  );
+  return {
+    kind: 'firstStopCause',
+    exactCause: result.status === 'interrupted' && result.error === callerStop,
+    signalCauseExact,
+    leftRunning: (await queue.inspect('job')).phase.state === 'running',
+  };
+}
+
 async function undefinedHeartbeatSample(adapter) {
   const fixture = adapterFixture(adapter);
   let failHeartbeat = false;
@@ -884,6 +931,13 @@ export async function assertLocalRunnerMutationWitness(kind) {
     }
     return;
   }
+  if (kind === 'firstStopCause') {
+    const sample = await firstStopCauseSample();
+    assert.equal(sample.exactCause, true, `firstStopCause:${JSON.stringify(sample)}`);
+    assert.equal(sample.signalCauseExact, true, `firstStopCause:${JSON.stringify(sample)}`);
+    assert.equal(sample.leftRunning, true, `firstStopCause:${JSON.stringify(sample)}`);
+    return;
+  }
   if (kind === 'firstFatal') {
     const sample = await firstFatalPreservationSample();
     assert.equal(sample.bothActive, true, `firstFatal:${JSON.stringify(sample)}`);
@@ -920,6 +974,7 @@ export async function runLocalRunnerRefinementSamples() {
     samples.push(await competingRunnersSample(adapter));
   }
   samples.push(await firstFatalPreservationSample());
+  samples.push(await firstStopCauseSample());
   samples.push(await dynamicArrivalSample());
   samples.push(await handledClaimRecoverySample());
   samples.push(await completionOrderSample());
@@ -932,7 +987,7 @@ export async function runLocalRunnerRefinementSamples() {
 }
 
 export function assertLocalRunnerRefinementSamples(samples) {
-  assert.equal(samples.length, 24, 'local runner refinement sample family unexpectedly changed');
+  assert.equal(samples.length, 25, 'local runner refinement sample family unexpectedly changed');
   assert.deepEqual(
     samples.map((sample) => sample.kind).sort(),
     [
@@ -943,6 +998,7 @@ export function assertLocalRunnerRefinementSamples(samples) {
       'completionOrder',
       'dynamicArrival',
       'firstFatal',
+      'firstStopCause',
       'handledAbortHistory',
       'handledRecovery',
       'lateClaimStop',
@@ -993,6 +1049,7 @@ export function assertLocalRunnerRefinementSamples(samples) {
     settleCause: ['exactCause', 'stillRunning'],
     competingRunners: ['bothOwners', 'exactlyOnce'],
     firstFatal: ['bothActive', 'exactFirst'],
+    firstStopCause: ['exactCause', 'signalCauseExact', 'leftRunning'],
     dynamicArrival: ['allTen', 'boundedCapacity', 'refilledAroundSlow'],
     handledRecovery: ['exactErrors', 'eventuallyRanOnce'],
     completionOrder: ['sameProjection', 'sameFuture'],
