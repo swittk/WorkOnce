@@ -64,9 +64,10 @@ Defer ==
 Wake(expectedRevision) ==
   /\ phase \in {"queued", "waiting"}
   /\ expectedRevision \in 1..MaxRevision
-  /\ Record("wake", IF expectedRevision = revision /\ revision < MaxRevision THEN "ok" ELSE "generation_conflict")
+  /\ revision < MaxRevision
+  /\ Record("wake", IF expectedRevision = revision THEN "ok" ELSE "generation_conflict")
   /\ lastExpectedRevision' = expectedRevision
-  /\ IF expectedRevision = revision /\ revision < MaxRevision
+  /\ IF expectedRevision = revision
        THEN revision' = revision + 1
        ELSE UNCHANGED revision
   /\ UNCHANGED <<phase, generation, fence, receiptGeneration, receiptFence, receiptHash,
@@ -140,6 +141,10 @@ RejectedWakeDoesNotWrite ==
   lastOp = "wake" /\ lastResult = "generation_conflict" =>
     /\ revision = lastBeforeRevision
     /\ phase = lastBeforePhase
+
+RejectedWakeUsesStaleRevision ==
+  lastOp = "wake" /\ lastResult = "generation_conflict" =>
+    lastExpectedRevision # lastBeforeRevision
 
 TerminalCancelDoesNotWrite ==
   lastOp = "cancel_terminal" =>

@@ -42,6 +42,6 @@
     "test/process/sqlite-process.test.mjs"
   ],
   "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
-  "modelDigest": "b14fd7811a6d2e76bd625590b41c438402c0415893e0d3dd71a6f09d85c02642",
-  "evidenceDigest": "03303ff7f2a4005a91ab85dc8c4243029d8c48c3c80b5326b63488e81b5c70cb"
+  "modelDigest": "4c93b73adb3b59adf9f2749302d5c61678bff09baae149eaf9e6cd317052c824",
+  "evidenceDigest": "8203dc3b28cee5b5758e4bc8bfd034e6b1c42f7831fd2b4d0f073c06cc377f7a"
 }

@@ -11106,6 +11106,7 @@
         "LifecycleTemporalTypeOK",
         "ReceiptBelongsToCurrentGeneration",
         "RejectedWakeDoesNotWrite",
+        "RejectedWakeUsesStaleRevision",
         "ReplayUsesReceiptIdentity",
         "ResetClearsReceipt",
         "TerminalCancelDoesNotWrite"
@@ -11510,7 +11511,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "fbdbc1bad41799f0e5ff9227e3de67e0153eb5d80007064bb65c9ed0c0308edb",
+    "modelDigest": "675b78d61b1fdc3715efda218b8631046354d634fc965b4a1725e4b41f72090c",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

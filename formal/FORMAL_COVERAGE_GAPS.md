@@ -57,7 +57,7 @@
 ## Lifecycle temporal model
 
 - Spec: `formal/WorkOnceLifecycleTemporal.tla`
-- Checked invariants: `AcceptedDeferProducesWaiting`, `AcceptedWakeUsesCurrentRevision`, `LifecycleTemporalTypeOK`, `ReceiptBelongsToCurrentGeneration`, `RejectedWakeDoesNotWrite`, `ReplayUsesReceiptIdentity`, `ResetClearsReceipt`, `TerminalCancelDoesNotWrite`
+- Checked invariants: `AcceptedDeferProducesWaiting`, `AcceptedWakeUsesCurrentRevision`, `LifecycleTemporalTypeOK`, `ReceiptBelongsToCurrentGeneration`, `RejectedWakeDoesNotWrite`, `RejectedWakeUsesStaleRevision`, `ReplayUsesReceiptIdentity`, `ResetClearsReceipt`, `TerminalCancelDoesNotWrite`
 - TLC + mutation binding: `scripts/lifecycle-formal.mjs`
 
 ## Claim-scan bounded-progress model
