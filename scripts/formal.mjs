@@ -389,9 +389,6 @@ const lifecycleMutants = {
   /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, now, available, attempts, retries,
                  deferrals, firstStarted, manualRetryAllowed, stopReason, tokens, childCreated,
                  terminalNeedsNext, lastAcceptedFence>>`,
-  NoLostContinuation: String.raw`  /\ terminalNeedsNext' = TRUE /\ pendingNext' = FALSE /\ childCreated' = FALSE
-  /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, now, available, attempts, retries,
-                 deferrals, firstStarted, manualRetryAllowed, stopReason, tokens, lastAcceptedFence>>`,
 };
 
 const runtimeMutants = {
@@ -550,7 +547,9 @@ const policyMutants = {
   /\ submission' = "implicit" /\ reply' = "staleOld"`,
 };
 
-const lifecycleMutationPlan = mutationCoveragePlan('formal/WorkOnce.cfg', lifecycleMutants);
+const lifecycleMutationPlan = mutationCoveragePlan('formal/WorkOnce.cfg', lifecycleMutants, [
+  'NoLostContinuation',
+]);
 const runtimeMutationPlan = mutationCoveragePlan('formal/WorkOnceRuntime.cfg', runtimeMutants, [
   'RuntimeSamplesConform',
 ]);
@@ -673,6 +672,34 @@ if (nonRuntimeOnly) {
     baseConfig: lifecycleConfig,
     plan: lifecycleMutationPlan,
   });
+  const ackChildMutant = resolve(tlcWorkspace, 'WorkOnceAckChildWithoutCreatedGuardMutant.tla');
+  const ackChildMutantConfig = resolve(
+    tlcWorkspace,
+    'WorkOnceAckChildWithoutCreatedGuardMutant.cfg',
+  );
+  writeFileSync(
+    ackChildMutant,
+    String.raw`---- MODULE WorkOnceAckChildWithoutCreatedGuardMutant ----
+EXTENDS WorkOnce
+AckChildWithoutCreatedGuard ==
+  /\ pendingNext
+  /\ pendingNext' = FALSE
+  /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, now, available, attempts, retries,
+                 deferrals, firstStarted, manualRetryAllowed, stopReason, tokens, childCreated,
+                 terminalNeedsNext, lastAcceptedFence>>
+MutantNext == Next \/ AckChildWithoutCreatedGuard
+MutantSpec == Init /\ [][MutantNext]_vars
+====
+`,
+  );
+  writeFileSync(ackChildMutantConfig, singleInvariantConfig(lifecycleConfig, 'NoLostContinuation'));
+  requireInvariantRejects(
+    'WorkOnceAckChildWithoutCreatedGuardMutant',
+    ackChildMutantConfig,
+    ackChildMutant,
+    'NoLostContinuation',
+  );
+  markExtraMutationWitness(lifecycleMutationPlan, 'NoLostContinuation');
 }
 
 if (runtimeOnly) {

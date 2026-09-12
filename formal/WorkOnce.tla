@@ -132,10 +132,10 @@ CreateChild ==
                  tokens, pendingNext, terminalNeedsNext, lastAcceptedFence>>
 AckChild ==
   /\ pendingNext /\ childCreated
-  /\ pendingNext' = FALSE /\ terminalNeedsNext' = FALSE
+  /\ pendingNext' = FALSE
   /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, now, available,
                  attempts, retries, deferrals, firstStarted, manualRetryAllowed, stopReason,
-                 tokens, childCreated, lastAcceptedFence>>
+                 tokens, childCreated, terminalNeedsNext, lastAcceptedFence>>
 Tick ==
   /\ now < MaxTime /\ now' = now + 1
   /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, available,

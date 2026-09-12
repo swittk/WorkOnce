@@ -11382,7 +11382,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "f3b834efb64cb746ed9079219233dec29c4fbfd5cbb091ae2f6de791c0269a41",
+    "assuranceInfrastructureDigest": "a141c429d0db045ba9b63ed9cea3ade79485e344980c645728342f0abb0047f1",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11511,7 +11511,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "675b78d61b1fdc3715efda218b8631046354d634fc965b4a1725e4b41f72090c",
+    "modelDigest": "42c4148664297a9b805e3814a00f518f7cdbec6bc3708c1bc41189657a1cb8cf",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
