@@ -346,6 +346,26 @@ export function assertAssuranceVerdictIntegrity() {
       `${label} source/model mutation guard must prove a green baseline before creating mutants`,
     );
   }
+  const readContractMutation = read('scripts/check-read-contract-mutation.mjs');
+  const readContractBaseline =
+    "requireSuccessfulProcess(runReadContract(), 'baseline read-contract mutation suite');";
+  const readContractMutationStart = "requireRed(\n    'inspectId definition fence'";
+  assert.ok(
+    readContractMutation.indexOf(readContractBaseline) >= 0 &&
+      readContractMutation.indexOf(readContractBaseline) <
+        readContractMutation.indexOf(readContractMutationStart),
+    'read-contract mutation guard must prove a green baseline before creating mutants',
+  );
+  const readBoundaryMutation = read('scripts/check-read-boundary-mutation.mjs');
+  const readBoundaryBaseline =
+    "requireSuccessfulProcess(runTypedReadBoundary(), 'baseline typed-read boundary refinement');";
+  const readBoundaryMutationStart = 'fs.writeFileSync(target, mutant);';
+  assert.ok(
+    readBoundaryMutation.indexOf(readBoundaryBaseline) >= 0 &&
+      readBoundaryMutation.indexOf(readBoundaryBaseline) <
+        readBoundaryMutation.indexOf(readBoundaryMutationStart),
+    'typed-read boundary mutation guard must prove a green baseline before creating mutants',
+  );
   const readHistoryImplementationMutation = read('scripts/check-read-history-mutations.mjs');
   const readHistoryBaseline =
     "requireSuccessfulProcess(runHistorySuite(), 'baseline read-history refinement');";

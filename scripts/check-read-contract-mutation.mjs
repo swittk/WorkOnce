@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/work.js');
@@ -17,6 +17,8 @@ function runReadContract() {
     timeout: 15_000,
   });
 }
+requireSuccessfulProcess(runReadContract(), 'baseline read-contract mutation suite');
+
 function requireRed(label, anchor, replacement, pattern) {
   assert.equal(
     original.split(anchor).length,

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/work.js');
@@ -14,9 +14,8 @@ const matches = [...original.matchAll(new RegExp(pattern.source, `${pattern.flag
 assert.equal(matches.length, 1, 'read-definition mutant must match exactly one compiled WorkQueue');
 const mutant = original.replace(pattern, replacement);
 assert.notEqual(mutant, original, 'read-definition mutant did not match compiled WorkQueue');
-try {
-  fs.writeFileSync(target, mutant);
-  const result = spawnSync(
+const runTypedReadBoundary = () =>
+  spawnSync(
     process.execPath,
     [
       '--input-type=module',
@@ -25,6 +24,10 @@ try {
     ],
     { cwd: root, encoding: 'utf8', env: process.env, timeout: 15_000 },
   );
+requireSuccessfulProcess(runTypedReadBoundary(), 'baseline typed-read boundary refinement');
+try {
+  fs.writeFileSync(target, mutant);
+  const result = runTypedReadBoundary();
   requireExpectedProcessFailure(
     result,
     'compiled read-definition mutant',

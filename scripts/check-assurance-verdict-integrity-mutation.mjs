@@ -887,6 +887,20 @@ mutate(
   /build-input mutation guard must establish a green baseline/u,
 );
 mutate(
+  'scripts/check-read-contract-mutation.mjs',
+  "requireSuccessfulProcess(runReadContract(), 'baseline read-contract mutation suite');\n\n",
+  '',
+  'read-contract mutation checker loses its green baseline',
+  /read-contract mutation guard must prove a green baseline/u,
+);
+mutate(
+  'scripts/check-read-boundary-mutation.mjs',
+  "requireSuccessfulProcess(runTypedReadBoundary(), 'baseline typed-read boundary refinement');\n",
+  '',
+  'typed-read boundary mutation checker loses its green baseline',
+  /typed-read boundary mutation guard must prove a green baseline/u,
+);
+mutate(
   'test/tlc-workspace.test.mjs',
   '      timeout: 15_000,\n',
   '',
