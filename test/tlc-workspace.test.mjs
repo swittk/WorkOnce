@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -36,6 +44,28 @@ test('inherited TLC workspace must stay inside the private artifact root', () =>
   } finally {
     if (previous === undefined) delete process.env.WORKONCE_TLC_ARTIFACT_DIR;
     else process.env.WORKONCE_TLC_ARTIFACT_DIR = previous;
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('inherited TLC workspace rejects a symlinked ancestor that escapes the artifact root', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'workonce-symlink-tlc-'));
+  const marker = join(outside, 'keep.txt');
+  writeFileSync(marker, 'KEEP');
+  const link = createTlcWorkspace('symlink-escape');
+  rmSync(link, { recursive: true, force: true });
+  symlinkSync(outside, link, 'dir');
+  const escapedChild = join(outside, 'escaped-child');
+  const previous = process.env.WORKONCE_TLC_ARTIFACT_DIR;
+  try {
+    process.env.WORKONCE_TLC_ARTIFACT_DIR = join(link, 'escaped-child');
+    assert.throws(() => acquireTlcWorkspace('child'), /must not traverse symbolic links/u);
+    assert.equal(existsSync(escapedChild), false);
+    assert.equal(readFileSync(marker, 'utf8'), 'KEEP');
+  } finally {
+    if (previous === undefined) delete process.env.WORKONCE_TLC_ARTIFACT_DIR;
+    else process.env.WORKONCE_TLC_ARTIFACT_DIR = previous;
+    unlinkSync(link);
     rmSync(outside, { recursive: true, force: true });
   }
 });

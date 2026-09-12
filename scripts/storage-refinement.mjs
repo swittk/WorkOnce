@@ -434,13 +434,24 @@ function sqliteBoundarySample() {
   function open(value) {
     const directory = mkdtempSync(join(tmpdir(), 'workonce-sqlite-boundary-'));
     const path = join(directory, 'queue.sqlite');
+    const originalExec = DatabaseSync.prototype.exec;
+    let effectiveBusyTimeout;
+    DatabaseSync.prototype.exec = function observedExec(sql) {
+      const result = originalExec.call(this, sql);
+      if (/^PRAGMA busy_timeout=/u.test(String(sql).trim())) {
+        const row = this.prepare('PRAGMA busy_timeout').get();
+        effectiveBusyTimeout = Number(Object.values(row ?? {})[0]);
+      }
+      return result;
+    };
     try {
       const store = createSqliteStore(path, { busyTimeoutMs: value });
       store.close();
-      return { accepted: true };
+      return { accepted: true, effectiveBusyTimeout };
     } catch (error) {
-      return { accepted: false, error };
+      return { accepted: false, error, effectiveBusyTimeout };
     } finally {
+      DatabaseSync.prototype.exec = originalExec;
       rmSync(directory, { recursive: true, force: true });
     }
   }
@@ -451,7 +462,7 @@ function sqliteBoundarySample() {
   return {
     kind: 'sqliteBoundary',
     zeroAccepted: zero.accepted,
-    maxSafeAccepted: max.accepted,
+    maxSafeAccepted: max.accepted && max.effectiveBusyTimeout === 2_147_483_647,
     negativeExact:
       !negative.accepted &&
       negative.error instanceof RangeError &&

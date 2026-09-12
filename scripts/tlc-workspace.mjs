@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { lstatSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 const baseDirectory = resolve('.artifacts/tlc');
@@ -26,6 +26,21 @@ function insideBase(target) {
   );
 }
 
+function rejectSymlinkAncestors(target) {
+  const relativePath = relative(baseDirectory, target);
+  let current = baseDirectory;
+  for (const segment of relativePath.split(sep)) {
+    current = resolve(current, segment);
+    try {
+      if (lstatSync(current).isSymbolicLink())
+        throw new Error('WORKONCE_TLC_ARTIFACT_DIR must not traverse symbolic links');
+    } catch (error) {
+      if (error?.code === 'ENOENT') return;
+      throw error;
+    }
+  }
+}
+
 /** Use a parent-provided private TLC workspace or allocate one for this process. */
 export function acquireTlcWorkspace(label = 'tlc') {
   const inherited = process.env.WORKONCE_TLC_ARTIFACT_DIR;
@@ -33,6 +48,7 @@ export function acquireTlcWorkspace(label = 'tlc') {
   const workspace = resolve(inherited);
   if (!insideBase(workspace))
     throw new Error('WORKONCE_TLC_ARTIFACT_DIR must be a private descendant of .artifacts/tlc');
+  rejectSymlinkAncestors(workspace);
   mkdirSync(workspace, { recursive: true });
   return workspace;
 }
