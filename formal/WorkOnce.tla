@@ -169,5 +169,6 @@ WaitingHasCause == state = "waiting" => waitCause \in {"retry", "defer"}
 RunningHasNoWaitCause == state = "running" => waitCause = "none"
 PendingFollowupIsTerminal == pendingNext => state \in {"succeeded", "failed"}
 ResetStatesHaveNoPendingFollowup == state \in {"queued", "running", "waiting"} => ~pendingNext
+ChildEvidenceRequiresIntent == childCreated => terminalNeedsNext
 NoLostContinuation == terminalNeedsNext => pendingNext \/ childCreated
 =============================================================================

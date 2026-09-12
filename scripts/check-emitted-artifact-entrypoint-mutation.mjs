@@ -114,7 +114,7 @@ try {
   const formalPath = path.join(root, 'scripts/formal.mjs');
   const formalOriginal = fs.readFileSync(formalPath, 'utf8');
   try {
-    const importAnchor = "await import('./runtime-boundary-refinement.mjs')";
+    const importAnchor = "await import(\n    './runtime-boundary-refinement.mjs'\n  )";
     assert.equal(
       formalOriginal.split(importAnchor).length,
       2,
@@ -137,7 +137,7 @@ try {
   }
 
   try {
-    const importAnchor = "await import('./runtime-boundary-refinement.mjs')";
+    const importAnchor = "await import(\n    './runtime-boundary-refinement.mjs'\n  )";
     const dormantProducer = formalOriginal.replace(
       importAnchor,
       `await Promise.resolve({});
@@ -197,7 +197,7 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
 
   try {
     const importAnchor =
-      "  const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');";
+      "  const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(\n    './runtime-boundary-refinement.mjs'\n  );";
     assert.equal(
       formalOriginal.split(importAnchor).length,
       2,
@@ -207,7 +207,7 @@ async function dormantRuntimeProducer() { return import('./runtime-boundary-refi
       formalPath,
       formalOriginal.replace(
         importAnchor,
-        "  let dormantRuntimeProducer;\n  if (0) dormantRuntimeProducer = await import('./runtime-boundary-refinement.mjs');\n  const { runRuntimeBoundarySamples } = dormantRuntimeProducer ?? {};",
+        "  let dormantRuntimeProducer;\n  if (0) dormantRuntimeProducer = await import('./runtime-boundary-refinement.mjs');\n  const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = dormantRuntimeProducer ?? {};",
       ),
     );
     expectCheckerFailure(

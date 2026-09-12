@@ -77,7 +77,7 @@ Additional tests cover expiry between read and the actual native write, unknown 
 
 The model retains **every issued attempt token**, including older attempts from the same worker. Claims append tokens; success/failure/retry/defer/renew select an individual token and must match the current generation/fence and unexpired lease.
 
-The checked bounds are two workers, five time ticks, four fences, two generations, two claims per generation, one automatic retry, one deferral and a three-tick elapsed budget. The current graph is **228,573 generated / 133,714 distinct states**, complete depth **17**, with no invariant violation. The 10 configured invariants cover state/counter typing, uniqueness of the issued current fence, proof that a running owner token was actually issued, accepted-fence currentness, current-fence success, wait-cause consistency, terminal-only pending follow-ups, no reset state retaining prior pending intent, and no lost continuation obligation. Generation restart explicitly clears generation-local child evidence so an old child cannot satisfy a later continuation.
+The checked bounds are two workers, five time ticks, four fences, two generations, two claims per generation, one automatic retry, one deferral and a three-tick elapsed budget. The current graph is **228,573 generated / 133,714 distinct states**, complete depth **17**, with no invariant violation. The 11 configured invariants cover state/counter typing, uniqueness of the issued current fence, proof that a running owner token was actually issued, accepted-fence currentness, current-fence success, wait-cause consistency, terminal-only pending follow-ups, no reset state retaining prior pending intent, no lost continuation obligation, and child evidence requiring current-generation continuation intent. Generation restart explicitly clears generation-local child evidence so an old child cannot satisfy a later continuation.
 
 This is bounded abstract safety evidence, **not a complete machine-checked refinement proof from every TypeScript instruction to TLA+**. `Renew` is bounded by the modeled per-generation deadline, but `Spec` intentionally declares no fairness or liveness property; eventual scheduling/delivery is therefore not a TLC-proven claim. The compiler map plus executable refinement/fuzz corpus is the implementation bridge; native adapter/fault tests cover storage behavior outside the abstract machine. External side effects remain at-least-once unless their own system participates in idempotency/fencing.
 
@@ -96,13 +96,13 @@ error observers, active completion, interruptible backoff, shutdown, draining an
 Failure presence is independent of the rejection payload, including JavaScript `undefined`. When
 execution first stops, the model records the number of already-active handlers; that count may
 fall while draining but can never increase, so a claim response arriving after abort/fatal stop
-cannot be admitted. Its eight invariants cover control-state typing, failure presence and representative failure-value
+cannot be admitted. Its nine invariants cover control-state typing, failure presence and representative failure-value
 identity, fatal backoff, admission after stop, draining, rejection and agreement with fresh
 implementation observations. The bounded graph has 949 generated / 126 distinct states, complete
 depth 9, with local capacity at most two.
 
-`scripts/runtime-boundary-refinement.mjs` collects **233 observations from the real compiled public
-APIs**: 86 runner/error/race cases, two local alternate-history congruence comparisons, 80
+`scripts/runtime-boundary-refinement.mjs` collects **235 observations from the real compiled public
+APIs**: 88 runner/error/race cases, two local alternate-history congruence comparisons, 80
 definition-bound reads plus three cross-adapter typed-read bundles, 36 backoff inputs, 24 overlapping
 budget cases and both cancel/completion
 orders. The runner observations include exact representative rejection identities (`undefined`,
@@ -151,13 +151,46 @@ guard is required to fail this entrypoint audit.
 Configured formal invariants are fail-closed too. `scripts/formal.mjs` compares its mutation maps to
 the exact invariant names parsed from the lifecycle, runtime, local-runner and policy CFG files, so adding or
 removing a configured invariant without a corresponding mutation control fails. The current gate
-injects one-transition violating states for all ten lifecycle invariants, all eight runtime
-invariants, all six local-runner invariants and all six policy/receipt invariants and requires TLC to report the intended invariant
-violation. `RuntimeSamplesConform`, `LocalRunnerSamplesConform` and `PolicySamplesConform` each get a deliberately invalid
-observed sample set, while `NoAdmissionAfterStop` additionally keeps the realistic late-admission
-mutant. Independent tiny mutation graphs are run concurrently with bounded one-worker heaps; this
-reduces wall time without dropping any mutant. These controls prove that each configured invariant
-is active; they do not replace the real bounded state-space runs.
+covers eleven durable lifecycle invariants (ten transition witnesses and the semantic
+`AckChild` guard mutation), nine runtime invariants (eight transition witnesses and the
+observed-sample contract), eight local-runner invariants (seven transition witnesses and
+its sample contract), and seven policy invariants (six transition witnesses and its sample
+contract). `NoAdmissionAfterStop` additionally keeps the realistic late-admission mutant.
+These controls establish predicate sensitivity; they do not by themselves establish that
+a counterexample belongs to the legal transition domain. The real bounded state-space
+runs remain required.
+
+The shared reachable-mutation checker for outbox and external execution requires the
+unsafe poststate to satisfy the model's actual type/bound invariant. Its live domain-escape
+sentinel must never be violated. Every reported TLC `-continue` invariant violation must
+belong to the exact expected witness set, so an unrelated failure cannot be hidden behind
+an expected counterexample or status zero. Reducing the outbox bound below the required
+third pass fails the actual reachable-witness gate rather than earning vacuous coverage.
+
+### Independent assurance controls
+
+Every individual implementation mutation in lifecycle, external execution, local runners,
+policy, outbox and storage first runs its **same witness** against restored original bytes.
+Only a green baseline followed by the intended red mutant earns credit; all original bytes
+are restored on exit. An already-broken witness, unrelated exception, timeout or unchanged
+mutation cannot certify a kill. The existing read/alias and source/model controls retain
+their own green-baseline checks.
+
+The eight observed TLA boundaries also exercise **1,318 individual boolean mutations**
+against fresh compiled observations. Each mutation flips exactly one asserted observation
+and must be rejected independently by both the executable validator and the actual TLA
+sample predicate. Explicit scenario inputs and conditionally irrelevant observations are
+excluded, not mistaken for unconditional guarantees. The controls run as constant checks
+inside the existing TLC invocations, without adding JVMs or inflating the state graph.
+This catches omitted semantic clauses that a single invalid-kind or multiply-invalid
+sample could not distinguish. The checked surface is these mapped boolean observations,
+not a claim of exhaustive verification of every JavaScript instruction or all possible
+mutations.
+
+`ChildEvidenceRequiresIntent` additionally ties child evidence to the current generation's
+continuation obligation. It rejects premature child creation and child evidence surviving
+either retry or rerun reset. Together with `NoLostContinuation`, this protects both sides
+of the create/acknowledge/reset lifecycle without changing supported runtime behavior.
 
 Source/model semantic digests use the pinned `typescript-ast-printer-directives-v3` schema. WorkOnce parses
 current TypeScript, prints the actual AST with ordinary comments removed, and appends canonical compiler-semantic

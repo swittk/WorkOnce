@@ -1,3 +1,4 @@
+import { renderBooleanSampleMutationChecks } from './formal-sample-mutations.mjs';
 import { availableParallelism } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -34,6 +35,7 @@ const storageSpec = readFileSync('formal/WorkOnceStorage.tla', 'utf8');
 function embeddedStorageModule(name, extra) {
   const body = storageSpec
     .replace('MODULE WorkOnceStorage', `MODULE ${name}`)
+    .replace('EXTENDS Naturals, FiniteSets', 'EXTENDS Naturals, FiniteSets, TLC, Sequences')
     .replace(/\n=+\s*$/u, '');
   return `${body}\n${extra}\n====\n`;
 }
@@ -117,6 +119,12 @@ writeFileSync(
     'WorkOnceStorageObserved',
     [
       `ObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}`,
+      renderBooleanSampleMutationChecks(
+        samples,
+        assertStorageRefinementSamples,
+        tlaValue,
+        'StorageSampleOK',
+      ),
       String.raw`InvalidSamples == ObservedSamples \cup {[kind |-> "invalid"]}`,
       `DuplicateSlotSamples == {\n${duplicateSlotMutantSamples.map(tlaValue).join(',\n')}\n}`,
       `AdapterCoverageSamples == {\n${adapterCoverageMutantSamples.map(tlaValue).join(',\n')}\n}`,

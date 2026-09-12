@@ -27,6 +27,11 @@ const modelFiles = [
   'formal/WorkOnceLifecycleContract.tla',
 ];
 const evidenceFiles = [
+  'scripts/formal-sample-mutations.mjs',
+  'test/formal-sample-mutations.test.mjs',
+  'scripts/mutation-file-guard.mjs',
+  'scripts/subprocess-outcome.mjs',
+  'test/implementation-mutation-causality.test.mjs',
   'scripts/lifecycle-refinement.mjs',
   'scripts/refinement-sample-schema.mjs',
   'scripts/refinement-sqlite-fixture.mjs',

@@ -107,7 +107,7 @@ ExternalSampleOK(s) ==
     [] s.kind = "staleForeignAttempt" ->
        /\ s.fenceAdvanced /\ s.heartbeatExact /\ s.settleExact /\ s.winnerPreserved /\ s.winnerSettled
     [] s.kind = "capacityFairness" ->
-       /\ s.exactHandledFailure /\ s.laterHealthyAdmitted /\ s.healthySettled /\ s.boundedClaims /\ s.noFatalEscape
+       /\ s.exactHandledFailure /\ s.laterHealthyAdmitted /\ s.healthySettled /\ s.boundedClaims /\ s.noFatalEscape /\ s.observedWithinDeadline
     [] s.kind = "oversizedClaim" -> /\ s.exactError /\ s.noHandlerStarted
     [] s.kind = "duplicateClaim" -> /\ s.exactError /\ s.noHandlerStarted
     [] s.kind = "stopSignal" -> /\ s.preAbortedNoClaim /\ s.sameSignalPropagated /\ s.abortDuringClaimFulfills

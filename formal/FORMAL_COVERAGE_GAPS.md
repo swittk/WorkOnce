@@ -9,7 +9,7 @@
 
 ## Model actions
 
-- Checked invariants: `AcceptedFenceIsCurrentOrClear`, `CurrentFenceUnique`, `NoLostContinuation`, `PendingFollowupIsTerminal`, `ResetStatesHaveNoPendingFollowup`, `RunningHasNoWaitCause`, `RunningOwnerTokenIssued`, `SuccessUsesCurrentFence`, `TypeOK`, `WaitingHasCause`
+- Checked invariants: `AcceptedFenceIsCurrentOrClear`, `ChildEvidenceRequiresIntent`, `CurrentFenceUnique`, `NoLostContinuation`, `PendingFollowupIsTerminal`, `ResetStatesHaveNoPendingFollowup`, `RunningHasNoWaitCause`, `RunningOwnerTokenIssued`, `SuccessUsesCurrentFence`, `TypeOK`, `WaitingHasCause`
 
 - `Claim`: `external.ExternalWorkService.claim`, `external.ExternalWorkTransport.claim`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.claimRecord`, `root.ExternalWorkService.claim`, `root.ExternalWorkTransport.claim`, `root.WorkQueue.claim`, `root.WorkQueue.handoff`, `root.WorkQueue.process`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`
 - `Renew`: `external.ExternalWorkService.heartbeat`, `external.ExternalWorkTransport.heartbeat`, `external.processExternal`, `external.runExternal`, `external.runExternalAvailable`, `kernel.renewRecord`, `root.ExternalWorkService.heartbeat`, `root.ExternalWorkTransport.heartbeat`, `root.WorkQueue.handoff`, `root.WorkQueue.heartbeat`, `root.WorkQueue.process`, `root.WorkQueue.renew`, `root.WorkQueue.run`, `root.WorkQueue.runAvailable`, `root.WorkQueue.serveExternal`, `root.WorkRun.heartbeat`, `root.WorkRun.renew`, `root.processExternal`, `root.runExternal`, `root.runExternalAvailable`, `WorkDefinition<df9ebd876c09>|src/work.ts|0|df9ebd876c09#perform`
@@ -110,8 +110,8 @@
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **125**
-- Content digest: `a141c429d0db045ba9b63ed9cea3ade79485e344980c645728342f0abb0047f1`
+- Bound proof/checker files: **129**
+- Content digest: `87a5c0e78ab5359b98f57f33b7206fb642e4fb8856e1b75797e45a3f52fa8f0e`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `c4f8d798a420c8d9a93a0f31edeef39800aa89337bcd4a113804dc50348605bb`
 

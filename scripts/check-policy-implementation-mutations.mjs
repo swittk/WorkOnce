@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireCausalMutationFailure } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const retryPath = path.join(root, 'dist/retry-policy.js');
@@ -18,21 +18,22 @@ function restore() {
   for (const [file, text] of originals) fs.writeFileSync(file, text);
 }
 function runExpectedFailure(label, witness, pattern) {
-  const result = spawnSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '--eval',
-      `import { assertPolicyMutationWitness } from './scripts/policy-refinement.mjs'; await assertPolicyMutationWitness(${JSON.stringify(witness)});`,
-    ],
-    {
-      cwd: root,
-      encoding: 'utf8',
-      env: process.env,
-      timeout: 15_000,
-    },
-  );
-  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
+  const runWitness = () =>
+    spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `import { assertPolicyMutationWitness } from './scripts/policy-refinement.mjs'; await assertPolicyMutationWitness(${JSON.stringify(witness)});`,
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: process.env,
+        timeout: 15_000,
+      },
+    );
+  requireCausalMutationFailure(originals, runWitness, label, pattern);
   console.log(`Policy implementation mutation guard rejects ${label}.`);
 }
 try {

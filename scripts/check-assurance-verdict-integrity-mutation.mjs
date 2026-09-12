@@ -32,6 +32,21 @@ function mutate(relative, from, to, label, pattern) {
 }
 
 mutate(
+  'scripts/check-external-implementation-mutations.mjs',
+  'requireCausalMutationFailure(',
+  'void (',
+  'external implementation witness bypasses causal control',
+  /must call the shared causal green-baseline\/red-mutant control exactly once/u,
+);
+mutate(
+  'scripts/formal.mjs',
+  'ExternalSampleOK',
+  'UnboundExternalPredicate',
+  'external sample boundary loses its independent predicate control',
+  /must exercise every bound boolean predicate/u,
+);
+
+mutate(
   'scripts/check-bounded-trace-domain.mjs',
   "  'formal/WorkOnceRuntime.tla',",
   "  'formal/WorkOnceRuntime-omitted.tla',",
@@ -218,8 +233,8 @@ mutate(
 );
 mutate(
   'scripts/check-local-runner-implementation-mutations.mjs',
-  'requireExpectedProcessFailure(result, `${label} mutant`, pattern);',
-  'assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',
+  'requireCausalMutationFailure(new Map([[target, original]]), runWitness, label, pattern);',
+  'const result = runWitness(); assert.notEqual(result.status, 0, `${label} mutant unexpectedly passed`);',
   'bare status-null mutation kill',
   /bare child exit-status verdict/u,
 );

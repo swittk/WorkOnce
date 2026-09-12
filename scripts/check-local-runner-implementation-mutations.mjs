@@ -3,27 +3,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireCausalMutationFailure } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'dist/worker.js');
 const original = fs.readFileSync(target, 'utf8');
 function runExpectedFailure(label, witness, pattern) {
-  const result = spawnSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '--eval',
-      `import { assertLocalRunnerMutationWitness } from './scripts/local-runner-refinement.mjs'; await assertLocalRunnerMutationWitness(${JSON.stringify(witness)});`,
-    ],
-    {
-      cwd: root,
-      encoding: 'utf8',
-      env: process.env,
-      timeout: 10_000,
-    },
-  );
-  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
+  const runWitness = () =>
+    spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `import { assertLocalRunnerMutationWitness } from './scripts/local-runner-refinement.mjs'; await assertLocalRunnerMutationWitness(${JSON.stringify(witness)});`,
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: process.env,
+        timeout: 10_000,
+      },
+    );
+  requireCausalMutationFailure(new Map([[target, original]]), runWitness, label, pattern);
   console.log(`Local-runner implementation mutation guard rejects ${label}.`);
 }
 try {

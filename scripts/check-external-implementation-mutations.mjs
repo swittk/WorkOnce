@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireCausalMutationFailure } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutantRoot = path.join(root, '.artifacts', `external-mutant-dist-${process.pid}`);
@@ -33,13 +33,22 @@ function replaceOccurrence(source, needle, replacement, occurrence, label) {
   return source.slice(0, index) + replacement + source.slice(index + needle.length);
 }
 function requireInlineRed(label, code, pattern) {
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
-  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
+  const runWitness = () =>
+    spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+      timeout: 15_000,
+    });
+  requireCausalMutationFailure(
+    new Map([
+      [externalPath, externalOriginal],
+      [workPath, workOriginal],
+    ]),
+    runWitness,
+    label,
+    pattern,
+  );
   console.log(`External implementation mutation guard rejects ${label}.`);
 }
 try {

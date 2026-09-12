@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { requireExpectedProcessFailure, requireSuccessfulProcess } from './subprocess-outcome.mjs';
 
 /** Track mutation targets and restore their original bytes if the checker is interrupted. */
 export function createMutationFileGuard() {
@@ -81,4 +83,41 @@ export function createMutationFileGuard() {
       process.off('exit', onExit);
     },
   };
+}
+
+/**
+ * Credit an implementation mutation only when the exact same witness first passes
+ * against its original bytes. Callers stage the mutation before this operation;
+ * both baseline failure and mutant failure restore every original target.
+ */
+export function requireCausalMutationFailure(originals, run, context, pattern) {
+  const mutants = new Map();
+  let changed = false;
+  for (const [file, original] of originals) {
+    const mutant = fs.readFileSync(file);
+    mutants.set(file, mutant);
+    if (!mutant.equals(Buffer.from(original))) changed = true;
+  }
+  assert.ok(changed, `${context} did not change implementation bytes`);
+  const restore = (contents) => {
+    const errors = [];
+    for (const [file, bytes] of contents) {
+      try {
+        fs.writeFileSync(file, bytes);
+      } catch (error) {
+        errors.push(
+          new Error(`Failed to restore causal mutation target ${file}`, { cause: error }),
+        );
+      }
+    }
+    if (errors.length) throw new AggregateError(errors, 'Causal mutation restoration failed');
+  };
+  try {
+    restore(originals);
+    requireSuccessfulProcess(run(), `baseline ${context}`);
+    restore(mutants);
+    return requireExpectedProcessFailure(run(), `${context} mutant`, pattern);
+  } finally {
+    restore(originals);
+  }
 }

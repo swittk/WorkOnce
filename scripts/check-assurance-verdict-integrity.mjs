@@ -22,6 +22,32 @@ function parsedSourceFile(name, source) {
   }
   return sourceFile;
 }
+const assuranceControlCallCache = new WeakMap();
+function assuranceControlCalls(relative, text) {
+  const source = parsedSourceFile(relative, text);
+  let result = assuranceControlCallCache.get(source);
+  if (result) return result;
+  result = { causal: 0, booleanPredicates: [] };
+  function visit(node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      if (node.expression.text === 'requireCausalMutationFailure') result.causal += 1;
+      if (node.expression.text === 'renderBooleanSampleMutationChecks') {
+        const predicate = node.arguments[3];
+        assert.ok(
+          predicate && ts.isStringLiteralLike(predicate),
+          `${relative} boolean predicate must be statically reviewable`,
+        );
+        result.booleanPredicates.push(predicate.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  result.booleanPredicates.sort();
+  assuranceControlCallCache.set(source, result);
+  return result;
+}
+
 function boundedSection(source, startAnchor, endAnchor, label) {
   const start = source.indexOf(startAnchor);
   assert.notEqual(start, -1, `${label} start anchor is missing`);
@@ -286,7 +312,7 @@ export function assertAssuranceVerdictIntegrity() {
     if (/\b[A-Za-z_$][A-Za-z0-9_$]*\.status\b/u.test(source))
       assert.match(
         source,
-        /requireExpectedProcessFailure|requireSuccessfulProcess/u,
+        /requireExpectedProcessFailure|requireSuccessfulProcess|requireCausalMutationFailure/u,
         `${name} inspects child status without the shared fail-closed subprocess classifier`,
       );
   }
@@ -344,6 +370,43 @@ export function assertAssuranceVerdictIntegrity() {
     assert.ok(
       baselinePosition >= 0 && mutationPosition >= 0 && baselinePosition < mutationPosition,
       `${label} source/model mutation guard must prove a green baseline before creating mutants`,
+    );
+  }
+  // Audit the actual call expressions, not words in comments or embedded programs.
+  for (const relative of [
+    'scripts/check-lifecycle-implementation-mutations.mjs',
+    'scripts/check-external-implementation-mutations.mjs',
+    'scripts/check-local-runner-implementation-mutations.mjs',
+    'scripts/check-policy-implementation-mutations.mjs',
+    'scripts/check-outbox-implementation-mutations.mjs',
+    'scripts/check-storage-contract-mutation.mjs',
+  ]) {
+    const calls = assuranceControlCalls(relative, read(relative));
+    assert.equal(
+      calls.causal,
+      1,
+      `${relative} must call the shared causal green-baseline/red-mutant control exactly once`,
+    );
+  }
+  for (const [relative, expected] of [
+    [
+      'scripts/formal.mjs',
+      [
+        'BoundarySampleOK',
+        'ReadHistorySampleOK',
+        'LocalRunnerSampleOK',
+        'PolicySampleOK',
+        'OutboxSampleOK',
+        'ExternalSampleOK',
+      ],
+    ],
+    ['scripts/lifecycle-formal.mjs', ['LifecycleSampleOK']],
+    ['scripts/storage-formal.mjs', ['StorageSampleOK']],
+  ]) {
+    assert.deepEqual(
+      assuranceControlCalls(relative, read(relative)).booleanPredicates,
+      [...expected].sort(),
+      `${relative} must exercise every bound boolean predicate`,
     );
   }
   const readContractMutation = read('scripts/check-read-contract-mutation.mjs');

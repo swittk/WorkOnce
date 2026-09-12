@@ -1,3 +1,4 @@
+import { renderBooleanSampleMutationChecks } from './formal-sample-mutations.mjs';
 import { availableParallelism } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -296,7 +297,7 @@ const observedModule = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.tla');
 const observedConfig = resolve(tlcWorkspace, 'WorkOnceLifecycleObserved.cfg');
 writeFileSync(
   observedModule,
-  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nBadSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadFieldSamples == ObservedSamples \\cup {[kind |-> \"leaseFenceCause\", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\n${lifecycleAdapterDomainMutants.map(({ kind, name }) => `${name} == {s \\in ObservedSamples : ~(s.kind = ${JSON.stringify(kind)} /\\ s.adapter = \"cas\")}`).join('\n')}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\nLifecycleNegativeSampleMutantsRejected == /\\ ~LifecycleSamplesConform(BadSamples) /\\ ~LifecycleSamplesConform(BadFieldSamples)\nLifecycleAdapterDomainMutantsRejected ==\n${lifecycleAdapterDomainMutants.map(({ name }) => `  /\\ ~LifecycleSamplesConform(${name})`).join('\n')}\n====\n`,
+  `---- MODULE WorkOnceLifecycleObserved ----\nEXTENDS WorkOnceLifecycleContract, TLC, Sequences\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nBadSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadFieldSamples == ObservedSamples \\cup {[kind |-> \"leaseFenceCause\", exactBoundaryExpired |-> FALSE, reclaimedFence |-> TRUE, staleRenewCause |-> TRUE, staleSettleCause |-> TRUE]}\n${lifecycleAdapterDomainMutants.map(({ kind, name }) => `${name} == {s \\in ObservedSamples : ~(s.kind = ${JSON.stringify(kind)} /\\ s.adapter = \"cas\")}`).join('\n')}\nVARIABLE dummy\nvars == <<dummy>>\nInit == dummy = 0\nNext == UNCHANGED dummy\nSpec == Init /\\ [][Next]_vars\nLifecycleSamplesObserved == LifecycleSamplesConform(ObservedSamples)\nLifecycleNegativeSampleMutantsRejected == /\\ ~LifecycleSamplesConform(BadSamples) /\\ ~LifecycleSamplesConform(BadFieldSamples)\nLifecycleAdapterDomainMutantsRejected ==\n${lifecycleAdapterDomainMutants.map(({ name }) => `  /\\ ~LifecycleSamplesConform(${name})`).join('\n')}\n${renderBooleanSampleMutationChecks(samples, assertLifecycleRefinementSamples, tlaValue, 'LifecycleSampleOK')}\n====\n`,
 );
 writeFileSync(
   observedConfig,

@@ -128,7 +128,7 @@ ReadHistorySampleOK(s) ==
        /\ s.oneStorageClock
        /\ s.perIdContractPreserved
        /\ ~s.crossIdAtomicSnapshotRequired
-       /\ (s.mode = "mixed" => s.mixedRevision)
+       /\ s.mixedRevision = (s.mode # "readerFirst")
     [] OTHER -> FALSE
 
 AdapterSetFor(kind) == {sample.adapter : sample \in {candidate \in Samples : candidate.kind = kind}}

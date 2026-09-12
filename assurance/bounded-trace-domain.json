@@ -69,6 +69,8 @@
     "scripts/check-external-source-model-mutation.mjs",
     "scripts/check-external-implementation-mutations.mjs",
     "scripts/formal.mjs",
+    "scripts/formal-sample-mutations.mjs",
+    "test/formal-sample-mutations.test.mjs",
     "formal/WorkOnceStorage.cfg",
     "formal/WorkOnceStorage.tla",
     "assurance/red-before/storage-conformance-baseline.json",
@@ -92,6 +94,7 @@
     "scripts/check-assurance-verdict-integrity.mjs",
     "scripts/check-assurance-verdict-integrity-mutation.mjs",
     "scripts/mutation-file-guard.mjs",
+    "test/implementation-mutation-causality.test.mjs",
     "assurance/red-before/review-5148224210-assurance-verdict-integrity.json",
     "scripts/tlc-workspace.mjs",
     "test/tlc-workspace.test.mjs",
@@ -119,7 +122,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "01369feb5e31b41f4d8bb21c64372a170d37187fe3ec05f9b32ff0403a8092af",
+  "evidenceDigest": "fd341e75881c0483e887e9c82c3876aacbd441f2f50e89f3b0badf5c9754ac3e",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

@@ -21,6 +21,11 @@
     "formal/WorkOnceLifecycleContract.tla"
   ],
   "evidenceFiles": [
+    "scripts/formal-sample-mutations.mjs",
+    "test/formal-sample-mutations.test.mjs",
+    "scripts/mutation-file-guard.mjs",
+    "scripts/subprocess-outcome.mjs",
+    "test/implementation-mutation-causality.test.mjs",
     "scripts/lifecycle-refinement.mjs",
     "scripts/refinement-sample-schema.mjs",
     "scripts/refinement-sqlite-fixture.mjs",
@@ -42,6 +47,6 @@
     "test/process/sqlite-process.test.mjs"
   ],
   "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
-  "modelDigest": "198793ab4b9d0c4d4aab68515817a6368b31d32af5088b231002b877c35eec20",
-  "evidenceDigest": "8203dc3b28cee5b5758e4bc8bfd034e6b1c42f7831fd2b4d0f073c06cc377f7a"
+  "modelDigest": "f5af60723065822d65fd97185268a4671dc1d36f01dca9da1123c107414b218c",
+  "evidenceDigest": "a2160adf9eef8a72fce15ff5c529c4902db21740a6b0a3a4be5b7f84a2c5fb58"
 }

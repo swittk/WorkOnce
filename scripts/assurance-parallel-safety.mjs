@@ -7,8 +7,17 @@ export function assertParallelEntriesReadOnly(entries) {
   for (const [label, , args] of entries) {
     for (const arg of args) {
       if (typeof arg !== 'string') continue;
-      if (mutatingScript.test(arg) || explicitMutatingEntries.has(arg))
-        mutating.push(`${label}: ${arg}`);
+      const normalized = arg.replaceAll('\\', '/');
+      let mutates = mutatingScript.test(normalized);
+      if (!mutates) {
+        for (const entry of explicitMutatingEntries) {
+          if (normalized === entry || normalized.endsWith(`/${entry}`)) {
+            mutates = true;
+            break;
+          }
+        }
+      }
+      if (mutates) mutating.push(`${label}: ${arg}`);
     }
   }
   if (mutating.length > 0)

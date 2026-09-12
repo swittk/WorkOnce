@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireCausalMutationFailure } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mutantRoot = path.join(root, '.artifacts', `lifecycle-mutant-dist-${process.pid}`);
@@ -19,13 +19,22 @@ function restore() {
   fs.writeFileSync(workPath, workOriginal);
 }
 function requireInlineRed(label, code, pattern) {
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
-    cwd: root,
-    encoding: 'utf8',
-    env: process.env,
-    timeout: 15_000,
-  });
-  requireExpectedProcessFailure(result, `${label} mutant`, pattern);
+  const runWitness = () =>
+    spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: root,
+      encoding: 'utf8',
+      env: process.env,
+      timeout: 15_000,
+    });
+  requireCausalMutationFailure(
+    new Map([
+      [kernelPath, original],
+      [workPath, workOriginal],
+    ]),
+    runWitness,
+    label,
+    pattern,
+  );
   console.log(`Lifecycle implementation mutation guard rejects ${label}.`);
 }
 try {

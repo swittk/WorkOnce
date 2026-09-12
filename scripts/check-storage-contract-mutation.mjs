@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { requireExpectedProcessFailure } from './subprocess-outcome.mjs';
+import { requireCausalMutationFailure } from './mutation-file-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function countAnchor(source, anchor) {
@@ -12,6 +12,8 @@ function countAnchor(source, anchor) {
   return [...source.matchAll(new RegExp(anchor.source, flags))].length;
 }
 
+// Full suites still run in assurance. Each negative control repeats only its relevant
+// public witness, identically on original and mutated bytes; unrelated tests add no causal evidence.
 function requireRed(relative, label, anchors, mutate, args, pattern) {
   const target = path.join(root, relative);
   const original = fs.readFileSync(target, 'utf8');
@@ -25,13 +27,14 @@ function requireRed(relative, label, anchors, mutate, args, pattern) {
   assert.notEqual(mutant, original, `${label} mutation anchor did not match`);
   try {
     fs.writeFileSync(target, mutant);
-    const result = spawnSync(process.execPath, args, {
-      cwd: root,
-      encoding: 'utf8',
-      env: process.env,
-      timeout: 20_000,
-    });
-    requireExpectedProcessFailure(result, `${label} mutant`, pattern);
+    const runWitness = () =>
+      spawnSync(process.execPath, args, {
+        cwd: root,
+        encoding: 'utf8',
+        env: process.env,
+        timeout: 20_000,
+      });
+    requireCausalMutationFailure(new Map([[target, original]]), runWitness, label, pattern);
   } finally {
     fs.writeFileSync(target, original);
   }
@@ -41,7 +44,12 @@ requireRed(
   'detached getMany rows',
   ['return row ? copy(row) : undefined;'],
   (text, anchor) => text.replace(anchor, 'return row ?? undefined;'),
-  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  [
+    '--test',
+    '--test-name-pattern',
+    'getMany/query rows are detached',
+    'test/storage-contract-hardening.test.mjs',
+  ],
   /getMany detached mutation leaked caller write into durable storage/u,
 );
 requireRed(
@@ -49,7 +57,12 @@ requireRed(
   'bounded compare-miss retries',
   ['conflicts < maxConflicts'],
   (text, anchor) => text.replace(anchor, 'conflicts <= maxConflicts'),
-  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  [
+    '--test',
+    '--test-name-pattern',
+    'native CAS bounded contention exhaustion',
+    'test/storage-contract-hardening.test.mjs',
+  ],
   /bounded contention exhaustion must stop after exactly maxConflicts compare attempts/u,
 );
 requireRed(
@@ -61,7 +74,12 @@ requireRed(
       anchor,
       `let applied;\n                try {\n                    applied = await port.compareExchange({$1\n                    });\n                } catch {\n                    continue;\n                }`,
     ),
-  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  [
+    '--test',
+    '--test-name-pattern',
+    'native CAS unknown acknowledgement propagates',
+    'test/storage-contract-hardening.test.mjs',
+  ],
   /unknown acknowledgement must propagate to caller/u,
 );
 requireRed(
@@ -99,7 +117,12 @@ requireRed(
   'SQLite startup busy recognition',
   ['return /database is (?:locked|busy)/iu.test(error.message);'],
   (text, anchor) => text.replace(anchor, 'return false;'),
-  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  [
+    '--test',
+    '--test-name-pattern',
+    'SQLite startup retry helper handles a one-shot',
+    'test/storage-contract-hardening.test.mjs',
+  ],
   /SQLite busy startup retry must absorb one-shot busy and complete bootstrap/u,
 );
 requireRed(
@@ -107,7 +130,12 @@ requireRed(
   'SQLite native busy primary-code recognition',
   ['if (errcode === 5 || errcode === 6)'],
   (text, anchor) => text.replace(anchor, 'if (false)'),
-  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  [
+    '--test',
+    '--test-name-pattern',
+    'SQLite startup retry recognizes native BUSY/LOCKED',
+    'test/storage-contract-hardening.test.mjs',
+  ],
   /opaque native sqlite failure/u,
 );
 console.log(

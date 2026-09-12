@@ -11035,6 +11035,7 @@
     "config": "formal/WorkOnce.cfg",
     "configuredChecks": [
       "AcceptedFenceIsCurrentOrClear",
+      "ChildEvidenceRequiresIntent",
       "CurrentFenceUnique",
       "NoLostContinuation",
       "PendingFollowupIsTerminal",
@@ -11055,7 +11056,7 @@
         "SuccessReceiptCurrent",
         "UnknownAckIsDurable"
       ],
-      "modelDigest": "7a3149aae11ab7c66f70da8aeb834340dd6e29d57f3ee36044903cef0e1ee53e",
+      "modelDigest": "16187d0f05c7642e8414a5b47f2274cf72bb5519fe25cdfcf022f12ddf9ce2e9",
       "modelFiles": [
         "formal/WorkOnceExternal.tla",
         "formal/WorkOnceExternal.cfg"
@@ -11270,7 +11271,7 @@
       ],
       "historyObservationProducer": "scripts/read-history-refinement.mjs",
       "historySpec": "formal/WorkOnceReadHistory.tla",
-      "modelDigest": "f402e058291ab57055f17c71a5706635520180c8bf5f822f46c391148cf09a80",
+      "modelDigest": "896828f73e46538eef0a0a81377c2e7a6924921918be144d1f4b285b2cf5e1b3",
       "modelFiles": [
         "formal/WorkOnceContract.tla",
         "formal/WorkOnceReadHistory.tla",
@@ -11382,7 +11383,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "a141c429d0db045ba9b63ed9cea3ade79485e344980c645728342f0abb0047f1",
+    "assuranceInfrastructureDigest": "87a5c0e78ab5359b98f57f33b7206fb642e4fb8856e1b75797e45a3f52fa8f0e",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11405,6 +11406,7 @@
       "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
       "assurance/red-before/source-semantic-hash-collision.json",
       "assurance/red-before/storage-conformance-baseline.json",
+      "assurance/red-before/systemic-assurance-20260912.json",
       "assurance/red-before/tlc-cross-invocation-workspace-collision.json",
       "assurance/red-before/tlc-infrastructure-classification.json",
       "assurance/red-before/unbound-assurance-runner.json",
@@ -11463,6 +11465,7 @@
       "scripts/external-transport-refinement.mjs",
       "scripts/formal-bounded-refinement-corpus.mjs",
       "scripts/formal-implementation-surface.cjs",
+      "scripts/formal-sample-mutations.mjs",
       "scripts/formal.mjs",
       "scripts/internal-semantic-surface.mjs",
       "scripts/local-runner-refinement.mjs",
@@ -11483,6 +11486,8 @@
       "scripts/tlc-outcome.mjs",
       "scripts/tlc-workspace.mjs",
       "test/external-transport-refinement.test.mjs",
+      "test/formal-sample-mutations.test.mjs",
+      "test/implementation-mutation-causality.test.mjs",
       "test/internal-semantic-surface.test.mjs",
       "test/local-runner-refinement.test.mjs",
       "test/outbox-cursor-control.test.mjs",
@@ -11511,7 +11516,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "42c4148664297a9b805e3814a00f518f7cdbec6bc3708c1bc41189657a1cb8cf",
+    "modelDigest": "8f722b3093185d07ff4cd5de8c42685606d5932cebbc8cc83e98b5b71c6b1f55",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

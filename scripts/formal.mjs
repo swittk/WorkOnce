@@ -1,3 +1,4 @@
+import { renderBooleanSampleMutationChecks } from './formal-sample-mutations.mjs';
 import { availableParallelism } from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -108,18 +109,27 @@ function runReachableMutationWitnessBatch({
   model,
   baseModule,
   baseConfig,
+  stateInvariant,
+  outOfDomainAction,
   witnesses,
   directInvariants = [],
 }) {
   const modulePath = resolve(tlcWorkspace, `${model}.tla`);
   const configPath = resolve(tlcWorkspace, `${model}.cfg`);
-  const definitions = [];
+  const domainSentinel = `${model}DomainEscapeWitnessAbsent`;
+  const definitions = [
+    `WithinWitnessDomain(action) == action /\\ ${stateInvariant}'`,
+    `OutOfDomainUnsafe ==\n${outOfDomainAction}`,
+    `${domainSentinel} == ~ENABLED WithinWitnessDomain(OutOfDomainUnsafe)`,
+  ];
   const expected = [];
   for (const witness of witnesses) {
     const actionName = `${witness.name}Unsafe`;
     const absentName = `${witness.name}WitnessAbsent`;
     definitions.push(`${actionName} ==\n${witness.action}`);
-    definitions.push(`${absentName} == ~ENABLED (${actionName} /\\ ~${witness.invariant}')`);
+    definitions.push(
+      `${absentName} == ~ENABLED WithinWitnessDomain(${actionName} /\\ ~${witness.invariant}')`,
+    );
     expected.push(absentName);
   }
   expected.push(...directInvariants);
@@ -129,7 +139,7 @@ function runReachableMutationWitnessBatch({
   );
   writeFileSync(
     configPath,
-    `${baseConfig.trimEnd()}\n${expected.map((name) => `INVARIANT ${name}`).join('\n')}\n`,
+    `${baseConfig.trimEnd()}\nINVARIANT ${domainSentinel}\n${expected.map((name) => `INVARIANT ${name}`).join('\n')}\n`,
   );
   const directory = resolve(tlcWorkspace, model);
   mkdirSync(directory, { recursive: true });
@@ -153,6 +163,13 @@ function runReachableMutationWitnessBatch({
     );
   }
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  // TLC -continue returns status zero even after an invariant violation. Required
+  // counterexamples are the complete permitted set, not merely a subset of output.
+  for (const match of output.matchAll(/Invariant\s+([A-Za-z_][A-Za-z0-9_]*)\s+is violated/gu))
+    if (!expected.includes(match[1]))
+      throw new Error(
+        `TLC reachable-mutation batch ${model} violated unexpected invariant ${match[1]}.`,
+      );
   for (const invariant of expected) {
     const escaped = invariant.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
     if (!new RegExp(`Invariant\\s+${escaped}\\s+is violated`, 'u').test(output))
@@ -352,6 +369,12 @@ function runMutationWitnessBatch({ model, baseModule, baseConfig, plan }) {
 }
 
 const lifecycleMutants = {
+  // This is the real CreateChild action with only its pending-intent guard removed.
+  // The same invariant also rejects stale child evidence surviving retry/rerun reset.
+  ChildEvidenceRequiresIntent: String.raw`  /\ childCreated' = TRUE
+  /\ UNCHANGED <<state, waitCause, owner, fence, generation, lease, now, available,
+                 attempts, retries, deferrals, firstStarted, manualRetryAllowed, stopReason,
+                 tokens, pendingNext, terminalNeedsNext, lastAcceptedFence>>`,
   TypeOK: String.raw`  /\ state' = "invalid"
   /\ UNCHANGED <<waitCause, owner, fence, generation, lease, now, available, attempts, retries,
                  deferrals, firstStarted, manualRetryAllowed, stopReason, tokens, pendingNext,
@@ -640,6 +663,28 @@ function bindObservedSamples(configText) {
   return configText.replace(marker, 'CONSTANT Samples <- ObservedSamples');
 }
 
+// These fields select scenarios, or are deliberately irrelevant outside a site.
+// They are not unconditional proof claims; do not manufacture false-negative controls.
+function excludeRuntimeBooleanInput(sample, field) {
+  if (sample.kind === 'budget') return field !== 'reasonPreserved';
+  if (sample.kind === 'read')
+    return (
+      (field === 'snapshotExact' && !sample.matched) ||
+      (field === 'definitionError' && sample.matched)
+    );
+  if (sample.kind === 'runner')
+    return (
+      (field === 'reclaimed' && !['abortClaimReply', 'abortActive'].includes(sample.site)) ||
+      (field === 'runSignalAborted' && sample.site !== 'abortActive')
+    );
+  return false;
+}
+function excludePolicyBooleanInput(_sample, field) {
+  return ['policyAllows', 'retryLimit', 'attemptLimit', 'deadlineLimit', 'deferralLimit'].includes(
+    field,
+  );
+}
+
 function tlaValue(value) {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   if (typeof value === 'string') return JSON.stringify(value);
@@ -705,7 +750,9 @@ MutantSpec == Init /\ [][MutantNext]_vars
 if (runtimeOnly) {
   // No per-trace TLC processes and no cached witness: check fresh compiled public API observations
   // in one separate, small control-state graph. The durable graph is not cross-product inflated.
-  const { runRuntimeBoundarySamples } = await import('./runtime-boundary-refinement.mjs');
+  const { runRuntimeBoundarySamples, assertRuntimeBoundarySamples } = await import(
+    './runtime-boundary-refinement.mjs'
+  );
   const samples = await runRuntimeBoundarySamples();
   const config = resolve(tlcWorkspace, 'WorkOnceRuntime-observed.cfg');
   const observedModule = resolve(tlcWorkspace, 'WorkOnceRuntimeObserved.tla');
@@ -732,7 +779,7 @@ if (runtimeOnly) {
     throw new Error('Runtime missing-adapter mutation did not remove exactly one CAS sample.');
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nMissingReadAdapterSamples == {\n${missingReadAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nMissingReadAdapterCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingReadAdapterSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform /\\ ~MissingReadAdapterCheck!RuntimeSamplesConform\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime, TLC, Sequences\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nMissingReadAdapterSamples == {\n${missingReadAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nMissingReadAdapterCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingReadAdapterSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform /\\ ~MissingReadAdapterCheck!RuntimeSamplesConform\n${renderBooleanSampleMutationChecks(samples, assertRuntimeBoundarySamples, tlaValue, 'BoundarySampleOK', excludeRuntimeBooleanInput)}\n====\n`,
   );
   writeFileSync(
     config,
@@ -802,7 +849,7 @@ MutantSpec == Init /\ [][MutantNext]_vars
   const readHistoryConfig = resolve(tlcWorkspace, 'WorkOnceReadHistory-observed.cfg');
   writeFileSync(
     readHistoryObserved,
-    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\nMissingRaceAdapterSamples == {\n${missingReadHistoryAdapterSamples.map(tlaValue).join(',\n')}\n}\nMissingRaceModeSamples == {\n${missingReadHistoryModeSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceReadHistory WITH Samples <- InvalidSamples\nMissingRaceAdapterCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceAdapterSamples\nMissingRaceModeCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceModeSamples\nReadHistoryNegativeSampleMutantRejected == /\\ ~InvalidSampleCheck!ReadHistorySamplesConform /\\ ~MissingRaceAdapterCheck!ReadHistorySamplesConform /\\ ~MissingRaceModeCheck!ReadHistorySamplesConform\n====\n`,
+    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory, TLC, Sequences\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\nMissingRaceAdapterSamples == {\n${missingReadHistoryAdapterSamples.map(tlaValue).join(',\n')}\n}\nMissingRaceModeSamples == {\n${missingReadHistoryModeSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceReadHistory WITH Samples <- InvalidSamples\nMissingRaceAdapterCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceAdapterSamples\nMissingRaceModeCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceModeSamples\nReadHistoryNegativeSampleMutantRejected == /\\ ~InvalidSampleCheck!ReadHistorySamplesConform /\\ ~MissingRaceAdapterCheck!ReadHistorySamplesConform /\\ ~MissingRaceModeCheck!ReadHistorySamplesConform\n${renderBooleanSampleMutationChecks(readHistorySamples, assertReadHistorySamples, tlaValue, 'ReadHistorySampleOK')}\n====\n`,
   );
   writeFileSync(
     readHistoryConfig,
@@ -880,7 +927,7 @@ MutantSpec == Init /\ [][HistorySensitiveNext]_vars
   const localRunnerConfig = resolve(tlcWorkspace, 'WorkOnceLocalRunner-observed.cfg');
   writeFileSync(
     localRunnerObserved,
-    `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceLocalRunner WITH Samples <- InvalidSamples\nLocalRunnerNegativeSampleMutantRejected == ~InvalidSampleCheck!LocalRunnerSamplesConform\n====\n`,
+    `---- MODULE WorkOnceLocalRunnerObserved ----\nEXTENDS WorkOnceLocalRunner, TLC, Sequences\nObservedSamples == {\n${localRunnerSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceLocalRunner WITH Samples <- InvalidSamples\nLocalRunnerNegativeSampleMutantRejected == ~InvalidSampleCheck!LocalRunnerSamplesConform\n${renderBooleanSampleMutationChecks(localRunnerSamples, assertLocalRunnerRefinementSamples, tlaValue, 'LocalRunnerSampleOK')}\n====\n`,
   );
   writeFileSync(
     localRunnerConfig,
@@ -914,7 +961,7 @@ if (nonRuntimeOnly) {
   const policyConfig = resolve(tlcWorkspace, 'WorkOncePolicy-observed.cfg');
   writeFileSync(
     policyObserved,
-    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOncePolicy WITH Samples <- InvalidSamples\nPolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform\n====\n`,
+    `---- MODULE WorkOncePolicyObserved ----\nEXTENDS WorkOncePolicy, TLC, Sequences\nObservedSamples == {\n${policySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOncePolicy WITH Samples <- InvalidSamples\nPolicyNegativeSampleMutantRejected == ~InvalidSampleCheck!PolicySamplesConform\n${renderBooleanSampleMutationChecks(policySamples, assertPolicyRefinementSamples, tlaValue, 'PolicySampleOK', excludePolicyBooleanInput)}\n====\n`,
   );
   writeFileSync(
     policyConfig,
@@ -950,7 +997,7 @@ if (nonRuntimeOnly) {
   const outboxConfig = resolve(tlcWorkspace, 'WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
-    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {${outboxSampleKinds.map((kind) => JSON.stringify(kind)).join(', ')}}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n====\n`,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox, TLC, Sequences\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {${outboxSampleKinds.map((kind) => JSON.stringify(kind)).join(', ')}}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n${renderBooleanSampleMutationChecks(outboxSamples, assertOutboxRefinementSamples, tlaValue, 'OutboxSampleOK')}\n====\n`,
   );
   writeFileSync(
     outboxConfig,
@@ -1002,6 +1049,9 @@ if (nonRuntimeOnly) {
   runReachableMutationWitnessBatch({
     model: 'WorkOnceOutboxReachableMutationBatch',
     baseModule: 'WorkOnceOutboxObserved',
+    stateInvariant: 'OutboxTypeOK',
+    outOfDomainAction: String.raw`  /\ passCount' = MaxPasses + 1
+  /\ UNCHANGED <<aQueue, bQueue, cursor, attempts, delivered, crashes>>`,
     baseConfig: readFileSync(outboxConfig, 'utf8'),
     witnesses: semanticMutants,
   });
@@ -1019,7 +1069,7 @@ if (runtimeOnly) {
   const externalConfig = resolve(tlcWorkspace, 'WorkOnceExternal-observed.cfg');
   writeFileSync(
     externalObserved,
-    `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceExternal WITH Samples <- InvalidSamples\nExternalNegativeSampleMutantRejected == ~InvalidSampleCheck!ExternalSamplesConform\n====\n`,
+    `---- MODULE WorkOnceExternalObserved ----\nEXTENDS WorkOnceExternal, TLC, Sequences\nObservedSamples == {\n${externalSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceExternal WITH Samples <- InvalidSamples\nExternalNegativeSampleMutantRejected == ~InvalidSampleCheck!ExternalSamplesConform\n${renderBooleanSampleMutationChecks(externalSamples, assertExternalTransportSamples, tlaValue, 'ExternalSampleOK')}\n====\n`,
   );
   writeFileSync(
     externalConfig,
@@ -1064,6 +1114,9 @@ if (runtimeOnly) {
   runReachableMutationWitnessBatch({
     model: 'WorkOnceExternalReachableMutationBatch',
     baseModule: 'WorkOnceExternalObserved',
+    stateInvariant: 'ExternalTypeOK',
+    outOfDomainAction: String.raw`  /\ fence' = 3
+  /\ UNCHANGED <<phase, exports, effects, receiptFence, lastRejectedFence, reply>>`,
     baseConfig: readFileSync(externalConfig, 'utf8'),
     witnesses: [staleEffectWitness, unknownAckMutant, successReceiptMutant],
     directInvariants: ['NoDuplicateExternalEffects'],
