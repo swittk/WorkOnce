@@ -17,6 +17,7 @@ test('typed failure keeps its diagnostic and atomically records durable follow-u
     }),
   );
   assert.equal(phase.state, 'failed');
+  assert.equal(phase.reason, 'invalid');
   assert.deepEqual(phase.result, { detail: 'safe diagnostic' });
   assert.equal((await task.inspect('x')).pendingFollowups, 1);
   await work.dispatch();

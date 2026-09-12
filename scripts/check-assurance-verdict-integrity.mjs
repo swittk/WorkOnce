@@ -8,6 +8,20 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const scriptsRoot = path.join(root, 'scripts');
 const testRoot = path.join(root, 'test');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+const parsedSourceFiles = new Map();
+function parsedSourceFile(name, source) {
+  let versions = parsedSourceFiles.get(name);
+  if (!versions) {
+    versions = new Map();
+    parsedSourceFiles.set(name, versions);
+  }
+  let sourceFile = versions.get(source);
+  if (!sourceFile) {
+    sourceFile = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+    versions.set(source, sourceFile);
+  }
+  return sourceFile;
+}
 function boundedSection(source, startAnchor, endAnchor, label) {
   const start = source.indexOf(startAnchor);
   assert.notEqual(start, -1, `${label} start anchor is missing`);
@@ -20,14 +34,24 @@ function propertyNameText(name) {
     return name.text;
   return undefined;
 }
+function importsChildProcess(name, source) {
+  const sourceFile = parsedSourceFile(name, source);
+  let found = false;
+  function visit(node) {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteralLike(node.moduleSpecifier) &&
+      (node.moduleSpecifier.text === 'node:child_process' ||
+        node.moduleSpecifier.text === 'child_process')
+    )
+      found = true;
+    if (!found) ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return found;
+}
 function assertSpawnSyncTimeouts(name, source) {
-  const sourceFile = ts.createSourceFile(
-    name,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS,
-  );
+  const sourceFile = parsedSourceFile(name, source);
   const positiveNumber = (expression) =>
     expression && ts.isNumericLiteral(expression) && Number(expression.text) > 0;
   const directCalls = (functionName) => {
@@ -223,15 +247,23 @@ export function assertAssuranceVerdictIntegrity() {
   const mutationFiles = fs
     .readdirSync(scriptsRoot)
     .filter((name) => /^check-.*mutation.*\.mjs$/u.test(name))
-    .filter((name) => name !== 'check-assurance-verdict-integrity-mutation.mjs')
     .sort();
+  assert.ok(
+    mutationFiles.includes('check-assurance-verdict-integrity-mutation.mjs'),
+    'assurance verdict integrity mutation checker must participate in its own static audits',
+  );
   const bareStatusPatterns = [
     /assert\.(?:notEqual|notStrictEqual|equal|strictEqual)\([\s\S]{0,160}?\.status\s*,\s*0\b/gu,
     /\b[A-Za-z_$][A-Za-z0-9_$]*\.status\s*(?:===|!==|==|!=)\s*0\b/gu,
   ];
   for (const name of mutationFiles) {
     const source = read(`scripts/${name}`);
-    if (!/(?:node:)?child_process/u.test(source)) continue;
+    if (
+      name === 'check-assurance-verdict-integrity-mutation.mjs'
+        ? !importsChildProcess(name, source)
+        : !/(?:node:)?child_process/u.test(source)
+    )
+      continue;
     assert.match(
       source,
       /import\s*\{[^}]*\bspawnSync\b[^}]*\}\s*from ['"](?:node:)?child_process['"]/u,
@@ -859,13 +891,7 @@ export function assertAssuranceVerdictIntegrity() {
 
   const generatedMutationRoots = ['dist', 'dist-cjs', '.artifacts'];
   function resolvedMutationWriteTargets(source, name) {
-    const sourceFile = ts.createSourceFile(
-      name,
-      source,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.JS,
-    );
+    const sourceFile = parsedSourceFile(name, source);
     const declarations = new Map();
     const domains = new Map();
     const functions = new Map();
