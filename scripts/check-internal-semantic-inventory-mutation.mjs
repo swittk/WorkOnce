@@ -21,6 +21,8 @@ const kernelSource = fs.readFileSync(kernelSourcePath, 'utf8');
 const modelSource = fs.readFileSync(modelSourcePath, 'utf8');
 const inventoryText = fs.readFileSync(inventoryPath, 'utf8');
 
+assertInternalSemanticInventory();
+
 function runExpectedFailure(label) {
   try {
     assertInternalSemanticInventory();

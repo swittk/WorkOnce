@@ -12,6 +12,8 @@ const target = path.join(root, 'scripts/formal.mjs');
 const original = fs.readFileSync(target, 'utf8');
 const runnerTarget = path.join(root, 'scripts/run-assurance.mjs');
 const runnerOriginal = fs.readFileSync(runnerTarget, 'utf8');
+const parallelSafetyTarget = path.join(root, 'scripts/assurance-parallel-safety.mjs');
+const parallelSafetyOriginal = fs.readFileSync(parallelSafetyTarget, 'utf8');
 const configTarget = path.join(root, 'tsconfig.json');
 const configOriginal = fs.readFileSync(configTarget, 'utf8');
 const conformanceTarget = path.join(root, 'scripts/check-formal-implementation-conformance.mjs');
@@ -58,6 +60,43 @@ try {
   const bounded = run('scripts/check-bounded-trace-domain.mjs', '--check-evidence-binding-only');
   requireExpectedProcessFailure(bounded, 'bounded trace report accepted a changed proof runner');
   assert.match(output(bounded), /Bounded trace evidence digest drifted/u);
+  mutationFiles.restoreAll();
+  mutationFiles.writeFileSync(
+    parallelSafetyTarget,
+    `${parallelSafetyOriginal}\n// assurance-parallel-safety-binding-mutant\n`,
+  );
+  const parallelSafetyBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    parallelSafetyBinding,
+    'formal manifest accepted a changed assurance parallel-safety guard',
+  );
+  assert.match(output(parallelSafetyBinding), /Assurance infrastructure digest drifted/u);
+  mutationFiles.restoreAll();
+  const relativeRunnerNeedle = "'./assurance-parallel-safety.mjs'";
+  assert.equal(
+    runnerOriginal.split(relativeRunnerNeedle).length,
+    2,
+    'relative assurance runner mutation anchor is not unique',
+  );
+  mutationFiles.writeFileSync(
+    runnerTarget,
+    runnerOriginal.replace(relativeRunnerNeedle, "'./unbound-assurance-mutant.mjs'"),
+  );
+  const relativeRunnerBinding = run(
+    'scripts/check-formal-implementation-conformance.mjs',
+    '--check-infrastructure-binding-only',
+  );
+  requireExpectedProcessFailure(
+    relativeRunnerBinding,
+    'formal manifest accepted an unbound relative assurance runner import',
+  );
+  assert.match(
+    output(relativeRunnerBinding),
+    /Full assurance invokes unbound proof\/checker scripts/u,
+  );
   mutationFiles.restoreAll();
   const runnerNeedle = "'scripts/check-assurance-scheduling.mjs'";
   assert.equal(
@@ -121,7 +160,7 @@ try {
   );
 
   console.log(
-    'Assurance infrastructure binding rejects proof-runner mutation, unbound full-gate checkers, and unacknowledged compiler/toolchain drift.',
+    'Assurance infrastructure binding rejects proof-runner/parallel-safety mutation, unbound absolute/relative full-gate checkers, and unacknowledged compiler/toolchain drift.',
   );
 } finally {
   mutationFiles.restoreAll();

@@ -326,6 +326,22 @@ export function assertAssuranceVerdictIntegrity() {
     assertSpawnSyncTimeouts(`test/${relative}`, source);
   }
 
+  const internalSemanticInventoryMutation = read(
+    'scripts/check-internal-semantic-inventory-mutation.mjs',
+  );
+  assert.match(
+    internalSemanticInventoryMutation,
+    /const inventoryText = fs\.readFileSync\(inventoryPath, 'utf8'\);\s+assertInternalSemanticInventory\(\);\s+function runExpectedFailure/u,
+    'internal-semantic inventory mutation guard must prove a green baseline before creating mutants',
+  );
+  const emittedArtifactEntrypointMutation = read(
+    'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+  );
+  assert.match(
+    emittedArtifactEntrypointMutation,
+    /const assuranceOriginal = fs\.readFileSync\(assurancePath, 'utf8'\);\s+assertEmittedArtifactEntrypoints\(\);\s+function expectCheckerFailure/u,
+    'emitted-artifact entrypoint mutation guard must prove a green baseline before creating mutants',
+  );
   const buildSourceBindingMutation = read('scripts/check-build-source-binding-mutation.mjs');
   assert.match(
     buildSourceBindingMutation,

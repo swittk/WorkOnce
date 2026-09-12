@@ -11383,7 +11383,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "0c93dc9e2eea3e6b40d5995a951f2b0edea3979add0b4bef809be490eeaefc5b",
+    "assuranceInfrastructureDigest": "eba9d360d3a0ae4aa583b0ceb35292760d280bf2f2a362c9a7d0fedbc3f8f200",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11403,6 +11403,7 @@
       "assurance/red-before/review-5150143046-first-fatal.json",
       "assurance/red-before/review-5152274957-formal-assurance-gaps.json",
       "assurance/red-before/review-5153101114-assurance-verdict-scope.json",
+      "assurance/red-before/review-5185958026-assurance-integrity.json",
       "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
       "assurance/red-before/source-semantic-hash-collision.json",
       "assurance/red-before/storage-conformance-baseline.json",
@@ -11424,6 +11425,7 @@
       "formal/WorkOnceStorage.tla",
       "package-lock.json",
       "package.json",
+      "scripts/assurance-parallel-safety.mjs",
       "scripts/build-source-binding.mjs",
       "scripts/check-alias-contract-mutation.mjs",
       "scripts/check-assurance-infrastructure-binding-mutation.mjs",

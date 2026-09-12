@@ -290,6 +290,7 @@ const assuranceInfrastructureFiles = [
   'scripts/tlc-outcome.mjs',
   'test/tlc-outcome.test.mjs',
   'scripts/subprocess-outcome.mjs',
+  'scripts/assurance-parallel-safety.mjs',
   'test/subprocess-outcome.test.mjs',
   'scripts/check-assurance-verdict-integrity.mjs',
   'scripts/mutation-file-guard.mjs',
@@ -402,8 +403,11 @@ function assertAssuranceRunnerScriptsBound() {
   );
   const invoked = new Set();
   function visit(node) {
-    if (ts.isStringLiteralLike(node) && /^scripts\/[A-Za-z0-9._/-]+\.(?:mjs|cjs)$/u.test(node.text))
-      invoked.add(node.text);
+    if (ts.isStringLiteralLike(node)) {
+      if (/^scripts\/[A-Za-z0-9._/-]+\.(?:mjs|cjs)$/u.test(node.text)) invoked.add(node.text);
+      else if (/^\.\/[A-Za-z0-9._-]+\.(?:mjs|cjs)$/u.test(node.text))
+        invoked.add(`scripts/${node.text.slice(2)}`);
+    }
     ts.forEachChild(node, visit);
   }
   visit(source);

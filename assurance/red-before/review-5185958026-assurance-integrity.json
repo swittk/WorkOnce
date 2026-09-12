@@ -1,0 +1,28 @@
+{
+  "family": "review-5185958026-assurance-integrity",
+  "reviewId": 5185958026,
+  "governingHead": "f9fced1d99a4c83ba3f3dc6dba5f8584e972cc4d",
+  "classification": "assurance-only; product runtime unchanged",
+  "findings": [
+    {
+      "kind": "assurance-infrastructure-relative-import-binding",
+      "redBefore": "Appending a byte to scripts/assurance-parallel-safety.mjs left --check-infrastructure-binding-only green because the helper was not in assuranceInfrastructureFiles and ./ relative runner imports were ignored.",
+      "repair": "Bind assurance-parallel-safety.mjs and normalize same-directory relative run-assurance imports into scripts/... membership checks; mutation controls cover both changed helper bytes and an unbound relative import."
+    },
+    {
+      "kind": "internal-semantic-mutation-green-baseline-causality",
+      "redBefore": "Corrupting only internal-semantic-inventory.json unclassifiedCallSurface.digest made the entire check-internal-semantic-inventory-mutation.mjs exit zero, crediting its mutants despite a broken baseline.",
+      "repair": "Require the unmutated inventory checker to pass before any mutant and mutation-pin baseline ordering; apply the identical baseline-before-mutant invariant to the emitted-artifact checker sibling."
+    },
+    {
+      "kind": "dynamic-node-fs-review-claim-rejected",
+      "redBefore": "Not applicable: a dormant const fs = await import(node:fs); fs.writeFileSync(src/work.ts, ...) probe already makes check-assurance-verdict-integrity.mjs fail on tracked mutation scope.",
+      "repair": "No change; existing member-name classification already catches the claimed tracked write."
+    },
+    {
+      "kind": "fatal-claim-fixed-delay-review-claim-stale",
+      "redBefore": "The exact fixed-delay family was already repaired on neutral head f9fced1 before this review was adjudicated.",
+      "repair": "No additional change in this batch."
+    }
+  ]
+}

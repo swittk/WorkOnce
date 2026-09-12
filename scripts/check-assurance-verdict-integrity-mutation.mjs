@@ -785,6 +785,21 @@ mutate(
 );
 
 mutate(
+  'scripts/check-internal-semantic-inventory-mutation.mjs',
+  'assertInternalSemanticInventory();\n\n',
+  '',
+  'internal-semantic mutation checker loses its green baseline',
+  /internal-semantic inventory mutation guard must prove a green baseline/u,
+);
+mutate(
+  'scripts/check-emitted-artifact-entrypoint-mutation.mjs',
+  "const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');\nassertEmittedArtifactEntrypoints();\n",
+  "const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');\n",
+  'emitted-artifact mutation checker loses its green baseline',
+  /emitted-artifact entrypoint mutation guard must prove a green baseline/u,
+);
+
+mutate(
   'scripts/check-build-source-binding-mutation.mjs',
   "requireSuccessfulProcess(bindingCheck(), 'baseline build/source binding');",
   'void bindingCheck();',

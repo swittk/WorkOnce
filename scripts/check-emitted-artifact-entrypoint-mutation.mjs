@@ -12,6 +12,7 @@ const packagePath = path.join(root, 'package.json');
 const original = fs.readFileSync(packagePath, 'utf8');
 const assurancePath = path.join(root, 'scripts/run-assurance.mjs');
 const assuranceOriginal = fs.readFileSync(assurancePath, 'utf8');
+assertEmittedArtifactEntrypoints();
 function expectCheckerFailure(context, pattern) {
   let failure;
   try {
