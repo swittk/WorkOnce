@@ -875,9 +875,25 @@ async function replayAndDynamicPolicies(coverage) {
     const secondClaimGate = new Promise((resolve) => {
       releaseSecondClaim = resolve;
     });
+    let staleSettleError;
     queue.claim = async (options) => {
       claimCalls++;
-      if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
+      if (claimCalls === 1) {
+        const claims = await originalClaim({ ...options, limit: 1 });
+        const [claimed] = claims;
+        if (claimed) {
+          const settle = claimed.settle.bind(claimed);
+          claimed.settle = async (outcome) => {
+            try {
+              return await settle(outcome);
+            } catch (error) {
+              if (error?.code === 'stale_attempt') staleSettleError = error;
+              throw error;
+            }
+          };
+        }
+        return claims;
+      }
       await secondClaimGate;
       return originalClaim({ ...options, limit: 1 });
     };
@@ -898,7 +914,10 @@ async function replayAndDynamicPolicies(coverage) {
     await waitUntil(() => started.length >= 1 && claimCalls >= 2, 'local second claim');
     await queue.cancelCurrent({ key: 'a', reason: 'revoked' });
     releaseHandler();
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await waitUntil(() => staleSettleError !== undefined, 'local stale settlement');
+    assert.equal(staleSettleError.code, 'stale_attempt');
+    // Flush the interrupted-claim continuation so fatal is recorded before claim #2 returns.
+    await new Promise((resolve) => setImmediate(resolve));
     releaseSecondClaim();
     await assert.rejects(running, /stale_attempt/);
     assert.deepEqual(started, ['a']);
@@ -935,18 +954,29 @@ async function replayAndDynamicPolicies(coverage) {
       },
     };
     const started = [];
+    let activeAbortReason;
     const stop = new AbortController();
     const running = runExternal(
       transport,
       { workerId: 'external', concurrency: 2, heartbeatMs: 20, idleMs: 1000, signal: stop.signal },
       async (run, input) => {
         started.push(input.id);
-        if (input.id === 'a') await new Promise((resolve) => setTimeout(resolve, 80));
+        if (input.id === 'a') {
+          if (!run.signal.aborted)
+            await new Promise((resolve) =>
+              run.signal.addEventListener('abort', resolve, { once: true }),
+            );
+          activeAbortReason = run.signal.reason;
+          run.signal.throwIfAborted();
+        }
         return run.succeed();
       },
     );
     await waitUntil(() => claimCalls >= 2, 'external second claim');
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await waitUntil(() => activeAbortReason !== undefined, 'external active lease abort');
+    assert.match(String(activeAbortReason), /external renewal down/);
+    // Flush the interrupted-lease continuation so fatal is recorded before claim #2 returns.
+    await new Promise((resolve) => setImmediate(resolve));
     releaseSecondClaim();
     await assert.rejects(running, /external renewal down/);
     assert.deepEqual(started, ['a']);

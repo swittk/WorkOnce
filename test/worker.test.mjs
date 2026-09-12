@@ -174,9 +174,25 @@ test('managed runner does not start claims returned after an active claim become
   const secondClaimGate = new Promise((resolve) => {
     releaseSecondClaim = resolve;
   });
+  let staleSettleError;
   q.claim = async (options) => {
     claimCalls++;
-    if (claimCalls === 1) return originalClaim({ ...options, limit: 1 });
+    if (claimCalls === 1) {
+      const claims = await originalClaim({ ...options, limit: 1 });
+      const [claimed] = claims;
+      if (claimed) {
+        const settle = claimed.settle.bind(claimed);
+        claimed.settle = async (outcome) => {
+          try {
+            return await settle(outcome);
+          } catch (error) {
+            if (error?.code === 'stale_attempt') staleSettleError = error;
+            throw error;
+          }
+        };
+      }
+      return claims;
+    }
     await secondClaimGate;
     return originalClaim({ ...options, limit: 1 });
   };
@@ -201,7 +217,14 @@ test('managed runner does not start claims returned after an active claim become
   }
   await q.cancelCurrent({ key: 'a', reason: 'revoked' });
   releaseHandler();
-  await sleep(20);
+  const fatalDeadline = performance.now() + 5000;
+  while (staleSettleError === undefined) {
+    assert.ok(performance.now() < fatalDeadline, 'runner did not observe stale settlement');
+    await sleep(1);
+  }
+  assert.equal(staleSettleError.code, 'stale_attempt');
+  // Let processClaim publish the interrupted result and runWorker record the fatal before unblocking claim #2.
+  await new Promise((resolve) => setImmediate(resolve));
   releaseSecondClaim();
   await assert.rejects(running, /stale_attempt/);
   assert.deepEqual(started, ['a']);

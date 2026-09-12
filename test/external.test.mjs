@@ -385,13 +385,21 @@ test('managed external runner does not start leases returned after an active lea
     },
   };
   const started = [];
+  let activeAbortReason;
   const stop = new AbortController();
   const running = runExternal(
     transport,
     { workerId: 'relay', concurrency: 2, heartbeatMs: 20, idleMs: 1000, signal: stop.signal },
     async (run, input) => {
       started.push(input.id);
-      if (input.id === 'a') await sleep(80);
+      if (input.id === 'a') {
+        if (!run.signal.aborted)
+          await new Promise((resolve) =>
+            run.signal.addEventListener('abort', resolve, { once: true }),
+          );
+        activeAbortReason = run.signal.reason;
+        run.signal.throwIfAborted();
+      }
       return run.succeed();
     },
   );
@@ -403,7 +411,14 @@ test('managed external runner does not start leases returned after an active lea
     );
     await sleep(1);
   }
-  await sleep(120);
+  const ownershipLossDeadline = performance.now() + 5000;
+  while (activeAbortReason === undefined) {
+    assert.ok(performance.now() < ownershipLossDeadline, 'external active lease did not abort');
+    await sleep(1);
+  }
+  assert.match(String(activeAbortReason), /external renewal down/);
+  // Let processLease publish interruption and runExternal record the fatal before claim #2 returns.
+  await new Promise((resolve) => setImmediate(resolve));
   releaseSecondClaim();
   await assert.rejects(running, /external renewal down/);
   assert.deepEqual(started, ['a']);
