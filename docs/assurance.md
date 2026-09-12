@@ -176,7 +176,7 @@ are restored on exit. An already-broken witness, unrelated exception, timeout or
 mutation cannot certify a kill. The existing read/alias and source/model controls retain
 their own green-baseline checks.
 
-The eight observed TLA boundaries also exercise **1,318 individual boolean mutations**
+The eight observed TLA boundaries also exercise **1,319 individual boolean mutations**
 against fresh compiled observations. Each mutation flips exactly one asserted observation
 and must be rejected independently by both the executable validator and the actual TLA
 sample predicate. Explicit scenario inputs and conditionally irrelevant observations are

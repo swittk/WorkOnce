@@ -590,7 +590,8 @@ async function replayAndDynamicPolicies(coverage) {
       run.succeed({ value: 1 }),
     );
     if (result.status === 'interrupted') {
-      assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+      assert.ok(result.error instanceof Error);
+      assert.equal(result.error.message, 'Confirmed lease deadline passed');
     } else {
       assert.equal(result.status, 'settled');
     }

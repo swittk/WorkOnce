@@ -1386,15 +1386,17 @@ export function assertOutboxRefinementSamples(samples) {
     outboxExpectedKindCounts,
     'outbox sample kind multiplicity drifted',
   );
-  const adapters = samples
-    .filter((sample) => sample.kind === 'adapter' || sample.kind === 'adapterBudget')
-    .map((sample) => sample.adapter)
-    .sort();
-  if (
-    JSON.stringify(adapters) !==
-    JSON.stringify(['cas', 'cas', 'memory', 'memory', 'sqlite', 'sqlite'])
-  )
-    throw new Error(`Unexpected outbox adapter set: ${JSON.stringify(adapters)}`);
+  // Do not pool the two kinds: opposite substitutions can preserve every marginal count.
+  for (const kind of ['adapter', 'adapterBudget']) {
+    const adapters = [];
+    for (const sample of samples) if (sample.kind === kind) adapters.push(sample.adapter);
+    adapters.sort();
+    assert.deepEqual(
+      adapters,
+      ['cas', 'memory', 'sqlite'],
+      `Unexpected outbox adapter set for ${kind}: ${JSON.stringify(adapters)}`,
+    );
+  }
   for (const sample of samples)
     assertExactBooleanSample(
       sample,

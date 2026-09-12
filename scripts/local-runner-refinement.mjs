@@ -713,6 +713,31 @@ async function lateClaimStopSample() {
   }
 }
 
+async function oneTickCompletionSample() {
+  const queue = createWorkOnce({
+    store: createMemoryStore({ now: () => 100 }),
+    scope: 'runner-one-tick-completion',
+  }).define('job', { limits: { leaseMs: 1 } });
+  await queue.ensure(null, { key: 'job' });
+  let handlerCalls = 0;
+  const [result] = await queue.runAvailable({ workerId: 'one-tick' }, async (run) => {
+    handlerCalls++;
+    return run.succeed();
+  });
+  const snapshot = await queue.inspect('job');
+  const settled =
+    result.status === 'settled' && handlerCalls === 1 && snapshot.phase.state === 'succeeded';
+  return {
+    settled,
+    compatible:
+      settled ||
+      (result.status === 'interrupted' &&
+        result.error instanceof Error &&
+        result.error.message === 'Confirmed lease deadline passed' &&
+        snapshot.phase.state === 'running'),
+  };
+}
+
 async function timerBoundarySample() {
   async function exactLease() {
     const q = createWorkOnce({
@@ -797,6 +822,7 @@ async function timerBoundarySample() {
     oneBelowAccepts: await justBelow(),
     hugeFiniteAccepted: await hugeTimer(),
     expiryCauseExact: await oneMsExpiry(),
+    oneTickCompletionCompatible: (await oneTickCompletionSample()).compatible,
     hugeIdleInterruptible: await hugeIdleAbort(),
   };
 }
@@ -844,6 +870,20 @@ async function wakePollSample() {
 }
 
 export async function assertLocalRunnerMutationWitness(kind) {
+  if (kind === 'oneTickCompletion') {
+    // This selector runs in an isolated mutation subprocess. Freeze only its monotonic
+    // clock to prove completion before expiry without relying on sub-millisecond CPU speed.
+    // The normal formal sample above and the delayed-expiry sibling retain real timers.
+    const originalNow = performance.now;
+    try {
+      performance.now = () => 0;
+      const sample = await oneTickCompletionSample();
+      assert.equal(sample.settled, true, `oneTickCompletion:${JSON.stringify(sample)}`);
+    } finally {
+      performance.now = originalNow;
+    }
+    return;
+  }
   if (kind === 'firstFatal') {
     const sample = await firstFatalPreservationSample();
     assert.equal(sample.bothActive, true, `firstFatal:${JSON.stringify(sample)}`);
@@ -964,6 +1004,7 @@ export function assertLocalRunnerRefinementSamples(samples) {
       'oneBelowAccepts',
       'hugeFiniteAccepted',
       'expiryCauseExact',
+      'oneTickCompletionCompatible',
       'hugeIdleInterruptible',
     ],
     wakePoll: ['exactCause', 'promptlyWoken'],

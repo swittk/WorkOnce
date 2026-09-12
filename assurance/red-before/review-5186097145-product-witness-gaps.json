@@ -1,0 +1,34 @@
+{
+  "family": "review-5186097145-product-witness-gaps",
+  "reviewId": 5186097145,
+  "governingHead": "d0109ddd126e7a914f022381abe092aa523c1272",
+  "classification": "assurance-only; supported product/runtime sources unchanged",
+  "findings": [
+    {
+      "kind": "one-tick-completion-false-green",
+      "redBefore": "Injected an error immediately before run.settle(outcome) only when leaseMs === 1 in the real compiled worker. All 15 worker/bounded-refinement/local-runner tests still passed. A separate public-API probe observed 19 injected interruptions in 20 calls. This is failed completion being accepted, not merely changed error wording.",
+      "repair": "Existing immediate one-tick assertions now accept only actual deadline expiry or settlement. Local-runner formal observations separately check immediate completion compatibility in addition to delayed exact expiry. The committed causal runtime mutant is tested under a frozen monotonic clock in its isolated child to require pre-expiry durable completion without a sub-millisecond CPU-speed assumption.",
+      "executableEvidence": [
+        "scripts/formal-bounded-refinement-corpus.mjs",
+        "test/worker.test.mjs",
+        "scripts/local-runner-refinement.mjs",
+        "scripts/check-local-runner-implementation-mutations.mjs",
+        "formal/WorkOnceLocalRunner.tla"
+      ],
+      "formalNegativeControl": "Removing s.oneTickCompletionCompatible fails the real TLC boolean predicate probe for timerBoundary.oneTickCompletionCompatible."
+    },
+    {
+      "kind": "outbox-cross-kind-adapter-coverage",
+      "redBefore": "Fresh real samples substituted memory rotation for SQLite rotation and SQLite budget for memory budget. Both kind counts and pooled adapter counts remained unchanged, so assertOutboxRefinementSamples accepted incomplete coverage.",
+      "repair": "Validate each kind/adapter pair independently; six ordered cross-kind donor substitutions reuse fresh real observations and must fail. The actual generated OutboxSamplesConformFor predicate also requires OutboxAdapterCoverage, with all six joint substitutions checked in its existing TLC JVM.",
+      "executableEvidence": [
+        "scripts/outbox-refinement.mjs",
+        "test/outbox-refinement.test.mjs",
+        "formal/WorkOnceContract.tla",
+        "scripts/formal.mjs"
+      ],
+      "formalNegativeControl": "Removing the actual OutboxAdapterCoverage(S) conjunction fails TLC on the cross-kind adapter substitution assumption."
+    }
+  ],
+  "siblingAudit": "Checked lifecycle, storage, policy, local-runner, external, typed-read and read-history coverage validators. Their analogous adapter/mode or adapter/kind checks are already independent; outbox was the pooled cross-kind case. The external one-tick witness and delayed local expiry witness already assert the expected expiry cause."
+}

@@ -11126,7 +11126,7 @@
         "LocalTypeOK",
         "LossPresenceExact"
       ],
-      "modelDigest": "7521203c5f164b68855a8962606a5293833b126930602ac5e2e298962254389e",
+      "modelDigest": "19de916cd4bfb894b7a334bac55dcad8157c9a3835001b601a3903f09845e36f",
       "modelFiles": [
         "formal/WorkOnceLocalRunner.tla",
         "formal/WorkOnceLocalRunner.cfg"
@@ -11167,7 +11167,7 @@
         "PoisonIntentRetained"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "09d376c505f6e0284068988f67be8daa08107267aa75f2846b7feb6146b6fd74",
+      "modelDigest": "bb9ef49df84d93edeff16f2bb5d4cb9ba3cf977b66313e10e2082758ff01ab8e",
       "modelFiles": [
         "formal/WorkOnceOutbox.tla",
         "formal/WorkOnceOutbox.cfg",
@@ -11271,7 +11271,7 @@
       ],
       "historyObservationProducer": "scripts/read-history-refinement.mjs",
       "historySpec": "formal/WorkOnceReadHistory.tla",
-      "modelDigest": "896828f73e46538eef0a0a81377c2e7a6924921918be144d1f4b285b2cf5e1b3",
+      "modelDigest": "feba866a8f6228799d06cadef43d7093e9f9f4fe82e8d9dcc3d9fd4fffcaa137",
       "modelFiles": [
         "formal/WorkOnceContract.tla",
         "formal/WorkOnceReadHistory.tla",
@@ -11329,7 +11329,7 @@
         "RuntimeTypeOK"
       ],
       "contract": "formal/WorkOnceContract.tla",
-      "modelDigest": "85a3f6722a68364ee72df53a94bf73478d282812c66c892b6e823b8a28a11650",
+      "modelDigest": "f26f822990e3d80ba8c79d2bffa455639ec74347b8f0b5adaa185aa85060e0e7",
       "modelFiles": [
         "formal/WorkOnceRuntime.tla",
         "formal/WorkOnceRuntime.cfg",
@@ -11383,7 +11383,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "eba9d360d3a0ae4aa583b0ceb35292760d280bf2f2a362c9a7d0fedbc3f8f200",
+    "assuranceInfrastructureDigest": "d9a04a95f9a3ee14c4655cda12b3dea346c297a786cab2bc647772de4e85389d",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11404,6 +11404,7 @@
       "assurance/red-before/review-5152274957-formal-assurance-gaps.json",
       "assurance/red-before/review-5153101114-assurance-verdict-scope.json",
       "assurance/red-before/review-5185958026-assurance-integrity.json",
+      "assurance/red-before/review-5186097145-product-witness-gaps.json",
       "assurance/red-before/review-a5a23d8-formal-surface-gaps.json",
       "assurance/red-before/source-semantic-hash-collision.json",
       "assurance/red-before/storage-conformance-baseline.json",
@@ -11518,7 +11519,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "8f722b3093185d07ff4cd5de8c42685606d5932cebbc8cc83e98b5b71c6b1f55",
+    "modelDigest": "e29c55cd065e93c35651d207f6f5a641e0b597e99151e9b77b9ad11152b34f9d",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

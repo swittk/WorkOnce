@@ -80,3 +80,38 @@ test('outbox refinement kind inventory cannot silently narrow', async () => {
     );
   }
 });
+
+for (const removed of ['memory', 'sqlite', 'cas']) {
+  for (const duplicated of ['memory', 'sqlite', 'cas']) {
+    if (removed === duplicated) continue;
+    test(`outbox rejects cross-kind ${removed}/${duplicated} substitutions with unchanged pooled coverage`, async () => {
+      const samples = await samplesOnce;
+      const rotationDonor = samples.find(
+        (sample) => sample.kind === 'adapter' && sample.adapter === duplicated,
+      );
+      const budgetDonor = samples.find(
+        (sample) => sample.kind === 'adapterBudget' && sample.adapter === removed,
+      );
+      assert.ok(rotationDonor);
+      assert.ok(budgetDonor);
+      const mutant = samples.map((sample) =>
+        sample.kind === 'adapter' && sample.adapter === removed
+          ? { ...rotationDonor }
+          : sample.kind === 'adapterBudget' && sample.adapter === duplicated
+            ? { ...budgetDonor }
+            : sample,
+      );
+      assert.deepEqual(
+        mutant
+          .filter((sample) => sample.adapter !== undefined)
+          .map((sample) => sample.adapter)
+          .sort(),
+        ['cas', 'cas', 'memory', 'memory', 'sqlite', 'sqlite'],
+      );
+      assert.throws(
+        () => assertOutboxRefinementSamples(mutant),
+        /Unexpected outbox adapter set for adapter/u,
+      );
+    });
+  }
+}

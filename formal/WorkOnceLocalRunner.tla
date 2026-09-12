@@ -178,7 +178,7 @@ LocalRunnerSampleOK(s) ==
     [] s.kind = "lateClaimStop" -> s.oneHandler /\ s.lateLeaseNotExecuted
     [] s.kind = "timerBoundary" ->
        /\ s.exactLeaseRejects /\ s.oneBelowAccepts /\ s.hugeFiniteAccepted
-       /\ s.expiryCauseExact /\ s.hugeIdleInterruptible
+       /\ s.expiryCauseExact /\ s.oneTickCompletionCompatible /\ s.hugeIdleInterruptible
     [] s.kind = "wakePoll" -> s.exactCause /\ s.promptlyWoken
     [] OTHER -> FALSE
 

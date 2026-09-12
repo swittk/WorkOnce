@@ -40,7 +40,8 @@ test('a one-millisecond lease does not fail solely because automatic heartbeat c
     return run.succeed();
   });
   if (result.status === 'interrupted') {
-    assert.doesNotMatch(String(result.error), /heartbeatMs must be shorter than the lease/);
+    assert.ok(result.error instanceof Error);
+    assert.equal(result.error.message, 'Confirmed lease deadline passed');
   } else {
     assert.equal(result.status, 'settled');
     assert.equal(handlerCalls, 1);

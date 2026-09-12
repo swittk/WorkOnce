@@ -29,6 +29,24 @@ function runExpectedFailure(label, witness, pattern) {
 }
 try {
   {
+    const needle = '        const phase = await run.settle(outcome);';
+    assert.equal(original.split(needle).length, 2, 'one-tick settlement anchor must be unique');
+    fs.writeFileSync(
+      target,
+      original.replace(
+        needle,
+        "        if (leaseMs === 1) throw new Error('Injected one-tick completion failure');\n" +
+          needle,
+      ),
+    );
+    runExpectedFailure(
+      'one-tick completion rejected without expiry',
+      'oneTickCompletion',
+      /oneTickCompletion:[^\n]*"settled":false/u,
+    );
+    fs.writeFileSync(target, original);
+  }
+  {
     const needle = `if (ownershipLoss !== undefined)\n                throw ownershipLoss.error;`;
     assert.equal(original.includes(needle), true, 'ownership-cause mutation anchor is stale');
     fs.writeFileSync(

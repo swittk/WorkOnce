@@ -63,6 +63,12 @@ BoundarySampleOK(s) ==
        /\ s.cancelState = s.state
     [] OTHER -> FALSE
 
+\* Each observation family must exercise every adapter independently. Pooled counts
+\* cannot certify SQLite rotation by substituting an unrelated SQLite budget witness.
+OutboxAdapterCoverage(S) ==
+  \A kind \in {"adapter", "adapterBudget"} :
+    {s.adapter : s \in {sample \in S : sample.kind = kind}} = {"memory", "sqlite", "cas"}
+
 \* Fresh compiled outbox observations bind the hidden cursor/parent/child scheduler.
 OutboxSampleOK(s) ==
   CASE s.kind = "rotation" ->

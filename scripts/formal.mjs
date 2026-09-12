@@ -993,11 +993,26 @@ if (nonRuntimeOnly) {
   runModel('WorkOnceOutboxBudget', 'WorkOnceOutboxBudget.cfg');
   const outboxSamples = await runOutboxRefinementSamples();
   assertOutboxRefinementSamples(outboxSamples);
+  // Six opposite adapter substitutions preserve the pooled counts but remove one
+  // real adapter from each kind. TLC must reject these too, not only the JS validator.
+  const outboxAdapterMutationControls = String.raw`
+OutboxCrossKindAdapterSwap(missing, duplicate) ==
+  {IF s.kind = "adapter"
+     THEN [s EXCEPT !.adapter = IF @ = missing THEN duplicate ELSE @]
+     ELSE IF s.kind = "adapterBudget"
+       THEN [s EXCEPT !.adapter = IF @ = duplicate THEN missing ELSE @]
+       ELSE s : s \in ObservedSamples}
+OutboxCrossKindAdapterMutantsRejected ==
+  \A missing, duplicate \in {"memory", "sqlite", "cas"} :
+    missing # duplicate =>
+      ~OutboxSamplesConformFor(OutboxCrossKindAdapterSwap(missing, duplicate))
+ASSUME Assert(OutboxCrossKindAdapterMutantsRejected,
+  "Outbox per-kind adapter coverage accepted a cross-kind substitution")`;
   const outboxObserved = resolve(tlcWorkspace, 'WorkOnceOutboxObserved.tla');
   const outboxConfig = resolve(tlcWorkspace, 'WorkOnceOutbox-observed.cfg');
   writeFileSync(
     outboxObserved,
-    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox, TLC, Sequences\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {${outboxSampleKinds.map((kind) => JSON.stringify(kind)).join(', ')}}\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n${renderBooleanSampleMutationChecks(outboxSamples, assertOutboxRefinementSamples, tlaValue, 'OutboxSampleOK')}\n====\n`,
+    `---- MODULE WorkOnceOutboxObserved ----\nEXTENDS WorkOnceOutbox, TLC, Sequences\nCONSTANT Samples\nObservedSamples == {\n${outboxSamples.map(tlaValue).join(',\n')}\n}\nOutboxSamplesConformFor(S) ==\n  /\\ S # {}\n  /\\ {s.kind : s \\in S} = {${outboxSampleKinds.map((kind) => JSON.stringify(kind)).join(', ')}}\n  /\\ OutboxAdapterCoverage(S)\n  /\\ \\A s \\in S : OutboxSampleOK(s)\nOutboxSamplesConform == OutboxSamplesConformFor(Samples)\n${outboxAdapterMutationControls}\nBadSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nOutboxNegativeSampleMutantRejected == ~OutboxSamplesConformFor(BadSamples)\n${renderBooleanSampleMutationChecks(outboxSamples, assertOutboxRefinementSamples, tlaValue, 'OutboxSampleOK')}\n====\n`,
   );
   writeFileSync(
     outboxConfig,
@@ -1009,7 +1024,7 @@ if (nonRuntimeOnly) {
   runModel('WorkOnceOutboxObserved', outboxConfig, outboxObserved);
 
   console.log(
-    'TLC mutation guard: OutboxSamplesConform rejects its injected bad sample in the observed-model run.',
+    'TLC mutation guard: OutboxSamplesConform rejects its invalid kind and all six cross-kind adapter substitutions.',
   );
 
   runMutationWitnessBatch({
