@@ -90,7 +90,9 @@ NoAdmissionAfterStop == Stopped => active <= stopActive
 DrainedBeforeReturn == pc = "done" => active = 0
 FatalReturnRejects == pc = "done" => (result = "rejected") = RunnerRejects(fatalPresent)
 FatalValuePreserved == pc = "done" => returnValue = failureValue
+AdapterSetFor(kind) == {sample.adapter : sample \in {candidate \in Samples : candidate.kind = kind}}
 RuntimeSamplesConform == /\ Samples # {}
                         /\ {s.kind : s \in Samples} = {"runner", "runnerHistory", "read", "readAdapter", "backoff", "budget", "cancel"}
+                        /\ AdapterSetFor("readAdapter") = ReadAdapterDomain
                         /\ \A s \in Samples : BoundarySampleOK(s)
 =============================================================================

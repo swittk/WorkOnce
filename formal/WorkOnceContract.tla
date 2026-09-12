@@ -22,6 +22,7 @@ RunnerSites == {
 }
 RunnerRejects(fatalPresent) == fatalPresent
 ReadAllowed(definitionMatches) == definitionMatches
+ReadAdapterDomain == {"memory", "sqlite", "cas"}
 BackoffDelay(initial, factor, steps, cap) == MinValue(cap, initial * (factor ^ steps))
 
 \* These records are fresh observations of compiled public APIs, not modeled test doubles.
@@ -47,7 +48,7 @@ BoundarySampleOK(s) ==
        /\ (s.matched => /\ s.snapshotExact /\ s.errorCause = "none")
        /\ (~s.matched => /\ s.definitionError /\ s.errorCause = "definition_changed")
     [] s.kind = "readAdapter" ->
-       /\ s.adapter \in {"memory", "sqlite", "cas"}
+       /\ s.adapter \in ReadAdapterDomain
        /\ s.definitionFenceExact /\ s.batchOrderExact /\ s.missingReadsExact
        /\ s.missingHistoryNotFound /\ s.wrongKindNotFound /\ s.wrongScopeNotFound
        /\ s.currentIdExact

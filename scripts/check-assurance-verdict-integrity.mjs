@@ -628,11 +628,11 @@ export function assertAssuranceVerdictIntegrity() {
   for (const [name, sourceNeedle] of [
     [
       'runtime',
-      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform',
+      'RuntimeNegativeSampleMutantsRejected == /\\\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\\\ ~BadRunnerCheck!RuntimeSamplesConform /\\\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\\\ ~BadReadCheck!RuntimeSamplesConform /\\\\ ~MissingReadAdapterCheck!RuntimeSamplesConform',
     ],
     [
       'read-history',
-      'ReadHistoryNegativeSampleMutantRejected == ~InvalidSampleCheck!ReadHistorySamplesConform',
+      'ReadHistoryNegativeSampleMutantRejected == /\\\\ ~InvalidSampleCheck!ReadHistorySamplesConform /\\\\ ~MissingRaceAdapterCheck!ReadHistorySamplesConform /\\\\ ~MissingRaceModeCheck!ReadHistorySamplesConform',
     ],
     [
       'local-runner',

@@ -698,9 +698,14 @@ if (runtimeOnly) {
   const badRunnerSite = { ...badRunnerBase, site: 'unknown' };
   const badRunnerMode = { ...badRunnerBase, mode: 'unknown' };
   const badRead = { ...badReadBase, accepted: false };
+  const missingReadAdapterSamples = samples.filter(
+    (sample) => !(sample.kind === 'readAdapter' && sample.adapter === 'cas'),
+  );
+  if (missingReadAdapterSamples.length !== samples.length - 1)
+    throw new Error('Runtime missing-adapter mutation did not remove exactly one CAS sample.');
   writeFileSync(
     observedModule,
-    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform\n====\n`,
+    `---- MODULE WorkOnceRuntimeObserved ----\nEXTENDS WorkOnceRuntime\nObservedSamples == {\n${samples.map(tlaValue).join(',\n')}\n}\nMissingReadAdapterSamples == {\n${missingReadAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nBadRunner == ${tlaValue(badRunner)}\nBadRunnerSamples == ObservedSamples \\cup {BadRunner}\nBadRunnerSite == ${tlaValue(badRunnerSite)}\nBadRunnerSiteSamples == ObservedSamples \\cup {BadRunnerSite}\nBadRunnerMode == ${tlaValue(badRunnerMode)}\nBadRunnerModeSamples == ObservedSamples \\cup {BadRunnerMode}\nBadRead == ${tlaValue(badRead)}\nBadReadSamples == ObservedSamples \\cup {BadRead}\nInvalidSampleCheck == INSTANCE WorkOnceRuntime WITH Samples <- InvalidSamples\nBadRunnerCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSamples\nBadRunnerSiteCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerSiteSamples\nBadRunnerModeCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadRunnerModeSamples\nBadReadCheck == INSTANCE WorkOnceRuntime WITH Samples <- BadReadSamples\nMissingReadAdapterCheck == INSTANCE WorkOnceRuntime WITH Samples <- MissingReadAdapterSamples\nRuntimeNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RuntimeSamplesConform /\\ ~BadRunnerCheck!RuntimeSamplesConform /\\ ~BadRunnerSiteCheck!RuntimeSamplesConform /\\ ~BadRunnerModeCheck!RuntimeSamplesConform /\\ ~BadReadCheck!RuntimeSamplesConform /\\ ~MissingReadAdapterCheck!RuntimeSamplesConform\n====\n`,
   );
   writeFileSync(
     config,
@@ -721,7 +726,7 @@ if (runtimeOnly) {
 
   markExtraMutationWitness(runtimeMutationPlan, 'RuntimeSamplesConform');
   console.log(
-    'TLC mutation guard: RuntimeSamplesConform rejects all 5 injected sample mutations in the observed-model run.',
+    'TLC mutation guard: RuntimeSamplesConform rejects all 6 injected sample mutations in the observed-model run.',
   );
 
   // Keep the realistic late-admission mutant in addition to the one-step activity check above.
@@ -756,11 +761,21 @@ MutantSpec == Init /\ [][MutantNext]_vars
   );
   const readHistorySamples = await runReadHistorySamples();
   assertReadHistorySamples(readHistorySamples);
+  const missingReadHistoryAdapterSamples = readHistorySamples.filter(
+    (sample) => !(sample.kind === 'inspectManyRace' && sample.adapter === 'sqlite'),
+  );
+  const missingReadHistoryModeSamples = readHistorySamples.filter(
+    (sample) => !(sample.kind === 'inspectManyRace' && sample.mode === 'writerFirst'),
+  );
+  if (missingReadHistoryAdapterSamples.length !== readHistorySamples.length - 2)
+    throw new Error('Read-history missing-adapter mutation did not remove both SQLite samples.');
+  if (missingReadHistoryModeSamples.length !== readHistorySamples.length - 2)
+    throw new Error('Read-history missing-mode mutation did not remove both writerFirst samples.');
   const readHistoryObserved = resolve(tlcWorkspace, 'WorkOnceReadHistoryObserved.tla');
   const readHistoryConfig = resolve(tlcWorkspace, 'WorkOnceReadHistory-observed.cfg');
   writeFileSync(
     readHistoryObserved,
-    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceReadHistory WITH Samples <- InvalidSamples\nReadHistoryNegativeSampleMutantRejected == ~InvalidSampleCheck!ReadHistorySamplesConform\n====\n`,
+    `---- MODULE WorkOnceReadHistoryObserved ----\nEXTENDS WorkOnceReadHistory\nObservedSamples == {\n${readHistorySamples.map(tlaValue).join(',\n')}\n}\nMissingRaceAdapterSamples == {\n${missingReadHistoryAdapterSamples.map(tlaValue).join(',\n')}\n}\nMissingRaceModeSamples == {\n${missingReadHistoryModeSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> \"invalid\"]}\nInvalidSampleCheck == INSTANCE WorkOnceReadHistory WITH Samples <- InvalidSamples\nMissingRaceAdapterCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceAdapterSamples\nMissingRaceModeCheck == INSTANCE WorkOnceReadHistory WITH Samples <- MissingRaceModeSamples\nReadHistoryNegativeSampleMutantRejected == /\\ ~InvalidSampleCheck!ReadHistorySamplesConform /\\ ~MissingRaceAdapterCheck!ReadHistorySamplesConform /\\ ~MissingRaceModeCheck!ReadHistorySamplesConform\n====\n`,
   );
   writeFileSync(
     readHistoryConfig,
@@ -826,7 +841,7 @@ MutantSpec == Init /\ [][HistorySensitiveNext]_vars
   );
 
   console.log(
-    'TLC mutation guard: ReadHistorySamplesConform rejects its injected bad sample in the observed-model run.',
+    'TLC mutation guard: ReadHistorySamplesConform rejects all 3 injected sample mutations in the observed-model run.',
   );
 
   const { runLocalRunnerRefinementSamples, assertLocalRunnerRefinementSamples } = await import(

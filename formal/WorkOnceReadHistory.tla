@@ -12,6 +12,8 @@ WaitCauses == {"none", "retry", "defer"}
 Ops == {"claim", "heartbeat", "succeed", "fail", "retry", "defer", "cancel", "wake",
          "manual_retry", "rerun"}
 HistoryWritingOps == Ops \ {"heartbeat"}
+ReadHistoryAdapterDomain == {"memory", "sqlite", "cas"}
+ReadHistoryModeDomain == {"readerFirst", "writerFirst", "mixed"}
 
 BaseProjection == [state |-> "queued", waitCause |-> "none", generation |-> 2,
                    revision |-> 10, fence |-> 3, attempts |-> 0]
@@ -118,8 +120,8 @@ ReadHistorySampleOK(s) ==
        /\ s.newestRetained
        /\ s.publicEqualsDurable
     [] s.kind = "inspectManyRace" ->
-       /\ s.adapter \in {"memory", "sqlite", "cas"}
-       /\ s.mode \in {"readerFirst", "writerFirst", "mixed"}
+       /\ s.adapter \in ReadHistoryAdapterDomain
+       /\ s.mode \in ReadHistoryModeDomain
        /\ s.callerOrderExact
        /\ s.perIdRealState
        /\ s.expectedEndpoint
@@ -129,8 +131,12 @@ ReadHistorySampleOK(s) ==
        /\ (s.mode = "mixed" => s.mixedRevision)
     [] OTHER -> FALSE
 
+AdapterSetFor(kind) == {sample.adapter : sample \in {candidate \in Samples : candidate.kind = kind}}
+ModeSetFor(kind) == {sample.mode : sample \in {candidate \in Samples : candidate.kind = kind}}
 ReadHistorySamplesConform ==
   /\ Samples # {}
   /\ {s.kind : s \in Samples} = {"historyCongruence", "historyTruncation", "inspectManyRace"}
+  /\ AdapterSetFor("inspectManyRace") = ReadHistoryAdapterDomain
+  /\ ModeSetFor("inspectManyRace") = ReadHistoryModeDomain
   /\ \A s \in Samples : ReadHistorySampleOK(s)
 =============================================================================
