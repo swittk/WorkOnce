@@ -21,7 +21,7 @@ function requireRed(relative, label, anchors, mutate, args, pattern) {
       1,
       `${label} mutation anchor is stale or not unique`,
     );
-  const mutant = mutate(original);
+  const mutant = mutate(original, ...anchors);
   assert.notEqual(mutant, original, `${label} mutation anchor did not match`);
   try {
     fs.writeFileSync(target, mutant);
@@ -40,7 +40,7 @@ requireRed(
   'dist/memory.js',
   'detached getMany rows',
   ['return row ? copy(row) : undefined;'],
-  (text) => text.replace('return row ? copy(row) : undefined;', 'return row ?? undefined;'),
+  (text, anchor) => text.replace(anchor, 'return row ?? undefined;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
   /getMany detached mutation leaked caller write into durable storage/u,
 );
@@ -48,7 +48,7 @@ requireRed(
   'dist/cas.js',
   'bounded compare-miss retries',
   ['conflicts < maxConflicts'],
-  (text) => text.replace('conflicts < maxConflicts', 'conflicts <= maxConflicts'),
+  (text, anchor) => text.replace(anchor, 'conflicts <= maxConflicts'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
   /bounded contention exhaustion must stop after exactly maxConflicts compare attempts/u,
 );
@@ -56,9 +56,9 @@ requireRed(
   'dist/cas.js',
   'unknown CAS acknowledgement propagation',
   [/const applied = await port\.compareExchange\(\{([\s\S]*?)\n\s*\}\);/u],
-  (text) =>
+  (text, anchor) =>
     text.replace(
-      /const applied = await port\.compareExchange\(\{([\s\S]*?)\n\s*\}\);/u,
+      anchor,
       `let applied;\n                try {\n                    applied = await port.compareExchange({$1\n                    });\n                } catch {\n                    continue;\n                }`,
     ),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
@@ -70,11 +70,7 @@ requireRed(
   [
     /\s*if \(change\.validUntil !== undefined\) \{[\s\S]*?throw new WorkConflict\('lease_expired'\);\s*\}/u,
   ],
-  (text) =>
-    text.replace(
-      /\s*if \(change\.validUntil !== undefined\) \{[\s\S]*?throw new WorkConflict\('lease_expired'\);\s*\}/u,
-      '',
-    ),
+  (text, anchor) => text.replace(anchor, ''),
   ['--test', 'test/storage-refinement.test.mjs'],
   /invalidWrite\.deadlineEqualityRejected: .*"deadlineEqualityRejected":false/u,
 );
@@ -82,11 +78,7 @@ requireRed(
   'dist/memory.js',
   'exclusive afterId cursor ordering',
   ['compareUtf8Text(row.id, query.afterId) > 0'],
-  (text) =>
-    text.replace(
-      'compareUtf8Text(row.id, query.afterId) > 0',
-      'compareUtf8Text(row.id, query.afterId) >= 0',
-    ),
+  (text, anchor) => text.replace(anchor, 'compareUtf8Text(row.id, query.afterId) >= 0'),
   ['--test', 'test/storage-refinement.test.mjs'],
   /detached\.cursorExact: .*"cursorExact":false/u,
 );
@@ -94,7 +86,7 @@ requireRed(
   'dist/storage-validation.js',
   'exact +1 revision validation',
   ['next.revision !== expectedRevision'],
-  (text) => text.replace('next.revision !== expectedRevision', 'next.revision < expectedRevision'),
+  (text, anchor) => text.replace(anchor, 'next.revision < expectedRevision'),
   [
     '--input-type=module',
     '--eval',
@@ -106,11 +98,18 @@ requireRed(
   'dist/sqlite.js',
   'SQLite startup busy recognition',
   ['return /database is (?:locked|busy)/iu.test(error.message);'],
-  (text) =>
-    text.replace('return /database is (?:locked|busy)/iu.test(error.message);', 'return false;'),
+  (text, anchor) => text.replace(anchor, 'return false;'),
   ['--test', 'test/storage-contract-hardening.test.mjs'],
   /SQLite busy startup retry must absorb one-shot busy and complete bootstrap/u,
 );
+requireRed(
+  'dist/sqlite.js',
+  'SQLite native busy primary-code recognition',
+  ['if (errcode === 5 || errcode === 6)'],
+  (text, anchor) => text.replace(anchor, 'if (false)'),
+  ['--test', 'test/storage-contract-hardening.test.mjs'],
+  /opaque native sqlite failure/u,
+);
 console.log(
-  'Storage mutation guard rejects detached-read, cursor/revision, CAS retry/deadline/unknown-ACK and SQLite busy regressions.',
+  'Storage mutation guard rejects detached-read, cursor/revision, CAS retry/deadline/unknown-ACK and SQLite busy/message regressions.',
 );
