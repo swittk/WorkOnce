@@ -46,7 +46,7 @@
     "test/process/child-ipc-inbox.mjs",
     "test/process/sqlite-process.test.mjs"
   ],
-  "sourceDigest": "d5415b31b068e42f3becfc88bcdbda6fcb22af5aef08823674f0fc23ab644048",
+  "sourceDigest": "d349ee5fcfd6dbe7e569d64caf05d84597ac47dcc14b53dfa18eb526ea93985a",
   "modelDigest": "f5af60723065822d65fd97185268a4671dc1d36f01dca9da1123c107414b218c",
   "evidenceDigest": "a2160adf9eef8a72fce15ff5c529c4902db21740a6b0a3a4be5b7f84a2c5fb58"
 }

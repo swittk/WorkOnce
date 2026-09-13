@@ -1,6 +1,36 @@
-import { DatabaseSync } from 'node:sqlite';
+import { createRequire } from 'node:module';
 import type { WorkQuery, WorkStore, StoreChange } from './storage.js';
 import type { WorkRecord } from './model.js';
+
+/** Scalar values WorkOnce may bind through a compatible synchronous SQLite statement. */
+type SqliteValue = null | number | bigint | string | NodeJS.ArrayBufferView;
+
+/** Minimal prepared-statement surface shared by node:sqlite and better-sqlite3. */
+interface SqliteStatement {
+  get(...parameters: SqliteValue[]): unknown;
+  all(...parameters: SqliteValue[]): unknown[];
+  run(...parameters: SqliteValue[]): { changes: number | bigint };
+}
+
+/** Minimal synchronous SQLite connection accepted by the official WorkOnce SQLite store. */
+export interface SqliteDatabase {
+  /** Execute schema, transaction, or pragma SQL synchronously on this connection. */
+  exec(sql: string): unknown;
+  /** Driver-specific prepared statement; WorkOnce validates the required get/all/run surface. */
+  prepare(sql: string): unknown;
+  /** Close the connection when ownership belongs to WorkOnce or its caller. */
+  close(): unknown;
+}
+
+/** SQLite store controls; a supplied database is borrowed unless closeDatabase is true. */
+export interface SqliteStoreOptions {
+  /** Override storage time for deterministic tests or an application-owned clock. */
+  now?: () => number;
+  /** Maximum SQLite lock wait during connection setup and ordinary database operations. */
+  busyTimeoutMs?: number;
+  /** Transfer close ownership of a caller-supplied database to the returned WorkStore. */
+  closeDatabase?: boolean;
+}
 import { canonical, copy, dueAt, integer, WorkConflict } from './kernel.js';
 import {
   parsePersistedWorkRecord,
@@ -35,16 +65,72 @@ function retryStartupBusy<T>(action: () => T, timeoutMs: number): T {
   }
 }
 
-/** A real durable store. SQLite serializes short writes; unrelated database files do not share a lock. */
+function isSqliteRow(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sqliteRow(value: unknown): Record<string, unknown> | undefined {
+  if (value === undefined) return undefined;
+  if (!isSqliteRow(value)) throw new TypeError('SQLite driver must return row objects');
+  return value;
+}
+
+function isSqliteStatement(value: unknown): value is SqliteStatement {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'get') === 'function' &&
+    typeof Reflect.get(value, 'all') === 'function' &&
+    typeof Reflect.get(value, 'run') === 'function'
+  );
+}
+
+function prepareSqlite(database: SqliteDatabase, sql: string): SqliteStatement {
+  const statement = database.prepare(sql);
+  if (!isSqliteStatement(statement))
+    throw new TypeError('SQLite driver prepare() must return get/all/run statement methods');
+  return statement;
+}
+
+function isSqliteDatabase(value: unknown): value is SqliteDatabase {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'exec') === 'function' &&
+    typeof Reflect.get(value, 'prepare') === 'function' &&
+    typeof Reflect.get(value, 'close') === 'function'
+  );
+}
+
+const nodeRequire = createRequire(process.execPath);
+function openNodeSqlite(path: string, busyTimeoutMs: number): SqliteDatabase {
+  const sqlite: unknown = nodeRequire('node:sqlite');
+  if (typeof sqlite !== 'object' || sqlite === null)
+    throw new Error('node:sqlite did not expose its module object');
+  const DatabaseSync = Reflect.get(sqlite, 'DatabaseSync');
+  if (typeof DatabaseSync !== 'function')
+    throw new Error('node:sqlite did not expose DatabaseSync');
+  const database: unknown = Reflect.construct(DatabaseSync, [path, { timeout: busyTimeoutMs }]);
+  if (!isSqliteDatabase(database))
+    throw new TypeError('node:sqlite DatabaseSync is missing the required SQLite driver surface');
+  return database;
+}
+
+/**
+ * A real durable store. Pass a path for the built-in node:sqlite connection, or pass an existing
+ * synchronous SQLite database handle (for example better-sqlite3) to reuse application storage.
+ * Caller-supplied databases are borrowed by default and remain open after store.close().
+ */
 export function createSqliteStore(
-  path: string,
-  options: { now?: () => number; busyTimeoutMs?: number } = {},
+  source: string | SqliteDatabase,
+  options: SqliteStoreOptions = {},
 ): WorkStore & { close(): void } {
   const busyTimeoutMs = Math.min(
     integer(options.busyTimeoutMs ?? 5000, 'busyTimeoutMs'),
     2_147_483_647,
   );
-  const db = new DatabaseSync(path, { timeout: busyTimeoutMs });
+  const ownsDatabase = typeof source === 'string' || options.closeDatabase === true;
+  const db = typeof source === 'string' ? openNodeSqlite(source, busyTimeoutMs) : source;
   try {
     // Set the SQLite busy handler before any startup operation that may need a schema/write lock.
     db.exec(`PRAGMA busy_timeout=${busyTimeoutMs};`);
@@ -72,16 +158,19 @@ export function createSqliteStore(
     );
 
     const storedColumns = 'id,scope,kind,definition,due_at,pending_next,body';
-    const read = db.prepare(`SELECT ${storedColumns} FROM workonce WHERE id=?`);
-    const write =
-      db.prepare(`INSERT INTO workonce(id,scope,kind,definition,due_at,pending_next,body)
+    const read = prepareSqlite(db, `SELECT ${storedColumns} FROM workonce WHERE id=?`);
+    const write = prepareSqlite(
+      db,
+      `INSERT INTO workonce(id,scope,kind,definition,due_at,pending_next,body)
     SELECT ?,?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
     ON CONFLICT(id) DO UPDATE SET
       scope=excluded.scope,kind=excluded.kind,definition=excluded.definition,
-      due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`);
-    const queries = new Map<string, ReturnType<typeof db.prepare>>();
-    const clock = db.prepare("SELECT CAST(unixepoch('subsec')*1000 AS INTEGER) AS now");
-    const now = () => integer(options.now ? options.now() : Number(clock.get()!['now']), 'clock');
+      due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`,
+    );
+    const queries = new Map<string, SqliteStatement>();
+    const clock = prepareSqlite(db, "SELECT CAST(unixepoch('subsec')*1000 AS INTEGER) AS now");
+    const now = () =>
+      integer(options.now ? options.now() : Number(sqliteRow(clock.get())!['now']), 'clock');
 
     function parseStored(value: Record<string, unknown> | undefined): WorkRecord | undefined {
       if (!value) return undefined;
@@ -104,7 +193,7 @@ export function createSqliteStore(
       ): Promise<T> {
         db.exec('BEGIN IMMEDIATE');
         try {
-          const current = parseStored(read.get(id) as Record<string, unknown> | undefined);
+          const current = parseStored(sqliteRow(read.get(id)));
           const change = decide(current ? copy(current) : undefined, now());
           // Validate/encode the returned value before commit so serialization errors roll back too.
           const value = copy(change.value);
@@ -140,9 +229,7 @@ export function createSqliteStore(
         // One bounded read transaction gives a consistent batch snapshot and clock.
         db.exec('BEGIN');
         try {
-          const rows = ids.map((id) =>
-            parseStored(read.get(id) as Record<string, unknown> | undefined),
-          );
+          const rows = ids.map((id) => parseStored(sqliteRow(read.get(id))));
           const time = now();
           db.exec('COMMIT');
           return { rows, now: time };
@@ -184,21 +271,23 @@ export function createSqliteStore(
         const sql = `SELECT ${storedColumns} FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`;
         let statement = queries.get(sql);
         if (!statement) {
-          statement = db.prepare(sql);
+          statement = prepareSqlite(db, sql);
           queries.set(sql, statement);
         }
-        const found = statement.all(...params) as Record<string, unknown>[];
-        return { rows: found.map((value) => parseStored(value)!), now: time };
+        const found = statement.all(...params);
+        return { rows: found.map((value) => parseStored(sqliteRow(value))!), now: time };
       },
       close() {
-        db.close();
+        if (ownsDatabase) db.close();
       },
     };
   } catch (error) {
-    try {
-      db.close();
-    } catch {
-      /* Preserve the original bootstrap failure. */
+    if (ownsDatabase) {
+      try {
+        db.close();
+      } catch {
+        /* Preserve the original bootstrap failure. */
+      }
     }
     throw error;
   }

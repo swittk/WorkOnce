@@ -20,6 +20,11 @@ const work = createWorkOnce({
   scope: 'my-installation',
 });
 
+// The SQLite path/name is entirely caller-chosen. To reuse an existing synchronous SQLite
+// connection (for example a better-sqlite3 Database), pass that handle instead:
+// const store = createSqliteStore(existingDatabase); // borrowed; store.close() leaves it open
+// const owned = createSqliteStore(existingDatabase, { closeDatabase: true });
+
 type Input = { assetId: string; urgent: boolean };
 type Output = { derivativeId: string };
 type Reason = 'provider_busy' | 'provider_pending' | 'invalid_source';
@@ -336,8 +341,9 @@ types**. It may not import Node builtins or third-party runtime packages, and as
 The default runtime uses standard worker/browser primitives: Promises, timers, `performance.now()`,
 `TextEncoder`, Web Crypto `crypto.subtle`, and `AbortController`. ES2018 output does not polyfill a
 missing Web API; polyfill `AbortController` in an older WebKit build if that specific environment
-lacks it. The optional `/sqlite` subpath is intentionally **Node-only (Node >= 22.16)** because it imports
-`node:sqlite`; importing the default package does not pull it into a browser or Web Worker bundle.
+lacks it. The optional `/sqlite` subpath is intentionally **Node-only (Node >= 22.16)**. Passing a
+path lazily loads `node:sqlite`; passing a compatible synchronous SQLite handle does not. Importing
+the default package does not pull SQLite support into a browser or Web Worker bundle.
 
 ## One adapter per backing store, not per job
 
@@ -346,7 +352,7 @@ not explain how to load their domain rows or persist queue fields. WorkOnce has 
 ORM dependency, HTTP framework or bundled database driver.
 
 - `/memory`: non-durable reference implementation.
-- `/sqlite`: local-file SQLite with WAL/FULL commits and independent-process tests.
+- `/sqlite`: local SQLite with WAL/FULL commits and independent-process tests; pass a path for the built-in driver or a compatible existing synchronous database handle.
 - `/cas`: framework-free adapter builder over native read/query/compare-and-swap operations.
 - `/storage`: the full atomic contract; `/conformance`: shared adversarial adapter scenarios.
 - `/kernel`: pure transitions for adapter and refinement work.
@@ -385,6 +391,7 @@ npm run formal
 ```
 
 ESM and CommonJS are built from clean output directories at the ES2018 target. Runtime core has no
-third-party dependencies. Only the optional `/sqlite` entry imports Node's `node:sqlite`.
+third-party dependencies. The optional `/sqlite` entry lazily loads Node's `node:sqlite` only when
+called with a path; caller-supplied compatible SQLite handles need no bundled driver.
 The [benchmark](docs/performance.md) records a measured SQLite control-plane baseline, not a
 promise that every application or BYO adapter became faster.
