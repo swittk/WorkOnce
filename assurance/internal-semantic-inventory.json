@@ -3,8 +3,8 @@
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
-    "count": 997,
-    "digest": "243cb86d3ebffc6f"
+    "count": 1021,
+    "digest": "87b82d48991929aa"
   },
   "entries": [
     {
@@ -892,18 +892,18 @@
       "ordinal": 5
     },
     {
-      "id": "src/sqlite.ts:createSqliteStore:new_Map:c72a5fae96d4654f:1",
+      "id": "src/sqlite.ts:createSqliteStore:new_Map:2ae0da71f413d067:1",
       "path": "src/sqlite.ts",
       "context": "createSqliteStore",
       "kind": "new_Map",
-      "excerpt": "new Map<string, ReturnType<typeof db.prepare>>()",
-      "textDigest": "d556b74a4f022d86",
+      "ordinal": 11,
+      "excerpt": "new Map<string, SqliteStatement>()",
+      "textDigest": "d6c22470e0df4644",
       "families": [
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G.",
-      "ordinal": 11
+      "reason": "Adapter ordering, bounded contention/startup retry, detached reads, persistence validation, and query state belongs to family G."
     },
     {
       "id": "src/sqlite.ts:query:call_mutator_push:ba0ef02bfc35a0d0:1",
@@ -2527,18 +2527,18 @@
       "ordinal": 8
     },
     {
-      "id": "src/sqlite.ts:query:identifier_assignment:53dffe601b087b12:1",
+      "id": "src/sqlite.ts:query:identifier_assignment:cdb308672d0c198d:1",
       "path": "src/sqlite.ts",
       "context": "query",
       "kind": "identifier_assignment",
-      "excerpt": "statement = db.prepare(sql)",
-      "textDigest": "76964cad8a551b89",
+      "ordinal": 17,
+      "excerpt": "statement = prepareSqlite(db, sql)",
+      "textDigest": "63506c305255f1cd",
       "families": [
         "G"
       ],
       "classification": "APPLICABLE",
-      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G.",
-      "ordinal": 17
+      "reason": "Identifier-local mutation affects supported adapter ordering, contention, query, or validation semantics and is owned by storage family G."
     },
     {
       "id": "src/sqlite.ts:retryStartupBusy:identifier_assignment:20e4b66200bd7692:1",

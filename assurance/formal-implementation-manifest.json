@@ -29,6 +29,33 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": true,
+      "classification": "storage-boundary",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs"
+      ],
+      "field": "now",
+      "key": "SqliteStoreOptions|src/sqlite.ts|0|eae5c7b88176#now",
+      "modelActions": [],
+      "modelConcepts": [
+        "storageAtomicity"
+      ],
+      "optional": true,
+      "signatureHash": "8c296f7fc47c364b97fe6f765ac4aee00ae22b78af227a41e5995a7591313c5d",
+      "source": "src/sqlite.ts",
+      "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
+      "typeName": "SqliteStoreOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
       "classification": "policy-callback",
       "directions": [
         "exported-type",
@@ -356,32 +383,6 @@
       "source": "src/memory.ts",
       "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
       "typeName": "anonymous@src/memory.ts#0"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "storage-boundary",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/conformance.test.mjs",
-        "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
-      ],
-      "field": "now",
-      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#now",
-      "modelActions": [],
-      "modelConcepts": [
-        "storageAtomicity"
-      ],
-      "optional": true,
-      "signatureHash": "8c296f7fc47c364b97fe6f765ac4aee00ae22b78af227a41e5995a7591313c5d",
-      "source": "src/sqlite.ts",
-      "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
-      "typeName": "anonymous@src/sqlite.ts#1"
     },
     {
       "allowsNull": false,
@@ -2745,10 +2746,70 @@
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs"
       ],
+      "key": "sqlite.SqliteDatabase.close",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "07fa92fa598166361dfee16006cfd22732e4d8a1222afbae191a8aa7961855f6"
+    },
+    {
+      "classification": "storage-boundary",
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "sqlite.SqliteDatabase.exec",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "f0c4ee8b962383c082034a8dc19ac3595aa2d32b22c1ebe9682aa3e6e6dfd2cc"
+    },
+    {
+      "classification": "storage-boundary",
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "sqlite.SqliteDatabase.prepare",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "f0c4ee8b962383c082034a8dc19ac3595aa2d32b22c1ebe9682aa3e6e6dfd2cc"
+    },
+    {
+      "classification": "storage-boundary",
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "sqlite.SqliteStoreOptions.now",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "d39205a401c5de99723362461cb6f5e304658f4ef4326df624695b52e006886d"
+    },
+    {
+      "classification": "storage-boundary",
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
       "key": "sqlite.createSqliteStore",
       "modelActions": [],
       "runtimeContracts": [],
-      "signatureHash": "85c402bc8be048f6205b12dc8f9799c9d0a2a4812654c1c12ddd5c441690d4bb"
+      "signatureHash": "9349db29e45bdd46cfb197d44588d03ddf662ab5bc3199a5ade284c906eefe9f"
     },
     {
       "classification": "storage-boundary",
@@ -4154,6 +4215,79 @@
       "source": "src/model.ts",
       "typeHash": "473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8",
       "typeName": "SettlementReceipt"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "storage-boundary",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs"
+      ],
+      "field": "busyTimeoutMs",
+      "key": "SqliteStoreOptions|src/sqlite.ts|0|eae5c7b88176#busyTimeoutMs",
+      "modelConcepts": [
+        "storageAtomicity"
+      ],
+      "optional": true,
+      "source": "src/sqlite.ts",
+      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
+      "typeName": "SqliteStoreOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "observational",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/inspection.test.mjs",
+        "test/types/api.ts"
+      ],
+      "field": "closeDatabase",
+      "key": "SqliteStoreOptions|src/sqlite.ts|0|eae5c7b88176#closeDatabase",
+      "modelConcepts": [
+        "observationOnly"
+      ],
+      "optional": true,
+      "source": "src/sqlite.ts",
+      "typeHash": "bf84d3d60e93cc959793d5c9d8308fbcf868f673cb032f461c9676f0480cc29e",
+      "typeName": "SqliteStoreOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": true,
+      "classification": "storage-boundary",
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs"
+      ],
+      "field": "now",
+      "key": "SqliteStoreOptions|src/sqlite.ts|0|eae5c7b88176#now",
+      "modelConcepts": [
+        "storageAtomicity"
+      ],
+      "optional": true,
+      "source": "src/sqlite.ts",
+      "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
+      "typeName": "SqliteStoreOptions"
     },
     {
       "allowsNull": false,
@@ -9328,54 +9462,6 @@
       "allowsNull": false,
       "allowsUndefined": false,
       "callable": false,
-      "classification": "storage-boundary",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/conformance.test.mjs",
-        "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
-      ],
-      "field": "busyTimeoutMs",
-      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#busyTimeoutMs",
-      "modelConcepts": [
-        "storageAtomicity"
-      ],
-      "optional": true,
-      "source": "src/sqlite.ts",
-      "typeHash": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-      "typeName": "anonymous@src/sqlite.ts#1"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": true,
-      "classification": "storage-boundary",
-      "directions": [
-        "input"
-      ],
-      "evidence": [
-        "test/cas.test.mjs",
-        "test/conformance.test.mjs",
-        "test/edge-regressions.test.mjs",
-        "test/process/sqlite-process.test.mjs"
-      ],
-      "field": "now",
-      "key": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004#now",
-      "modelConcepts": [
-        "storageAtomicity"
-      ],
-      "optional": true,
-      "source": "src/sqlite.ts",
-      "typeHash": "1481ec8cfb9fb3611938163aaa224055085f9de290f22bb28fd497c8225b1167",
-      "typeName": "anonymous@src/sqlite.ts#1"
-    },
-    {
-      "allowsNull": false,
-      "allowsUndefined": false,
-      "callable": false,
       "classification": "identity-retry-semantic",
       "directions": [
         "callback-argument"
@@ -11178,7 +11264,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "e981aa5c9c73f66ae2ea975875c603a1cfa14d7d70dc74e984b0328272d948a7",
+      "sourceDigest": "74e2c57fb8c160194248cbf62b1d4d48505690fcc2e9fdcb39b18fd29d9b7eb5",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -11369,7 +11455,7 @@
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "565ce5c9c8956f249cded41ea3b6e208c2d76efef808d4a43651aadc56eebd6e",
+      "sourceDigest": "f71e9744849279af345d11418e1ee10b1a7d982dd272bc317d2a2664237ad0ef",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -11383,7 +11469,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "2e665163144b1b48e675b2e3a91cfece787a68121e7a02e2e91759d2a8ebbbb8",
+    "assuranceInfrastructureDigest": "6955d0fa19f4c40eed701ff1298d5f1dd53e501d53fe2e4f8ab0b3138cbac18e",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -11555,7 +11641,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "89a53ba1089d68f60dcddb8cef14f1d6a144d0e692a52b45967cafafbfac728d",
+    "sourceDigest": "75e44edcb17c524a5596534d2448405010af7356b2ef245cfcd50020494cb429",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",
@@ -11803,6 +11889,26 @@
       "name": "SettlementReceipt",
       "shapeHash": "becc357bc4bafe27cc6c849cee0362589de85267f34cc88e4c7e35707f140e4f",
       "source": "src/model.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "SqliteDatabase|src/sqlite.ts|0|d16158ffc595",
+      "name": "SqliteDatabase",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/sqlite.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "SqliteStoreOptions|src/sqlite.ts|0|eae5c7b88176",
+      "name": "SqliteStoreOptions",
+      "shapeHash": "a3b7c47f9f57d05534ac26a275f5fd5e247cfa8d6c65508a5d91e349330aa1d7",
+      "source": "src/sqlite.ts"
     },
     {
       "directions": [
@@ -12388,15 +12494,6 @@
       "name": "anonymous@src/outcomes.ts#3",
       "shapeHash": "d78f5bfa2c362407a76cfb6be4418024acb4fc5dbb17310f25eca70aef11a3e1",
       "source": "src/outcomes.ts"
-    },
-    {
-      "directions": [
-        "input"
-      ],
-      "identity": "anonymous@src/sqlite.ts#1|src/sqlite.ts|1|d7534a9c1004",
-      "name": "anonymous@src/sqlite.ts#1",
-      "shapeHash": "6f836a78eea3552045d0e37742b3ce39eb05289ab536ae5d8cd22467c74680fe",
-      "source": "src/sqlite.ts"
     },
     {
       "directions": [

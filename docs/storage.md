@@ -114,7 +114,7 @@ separate work database needs its own coordinated backup/restore and worker fence
 does not silently add tables to an application's portable backup format or pretend domain
 reconciliation can recover every lost receipt or retry budget.
 
-The optional `/sqlite` adapter uses `node:sqlite` and requires Node >= 22.16; the default/browser graph does not import it.
+The optional `/sqlite` adapter requires Node >= 22.16. Passing a path lazily opens `node:sqlite`; passing a compatible synchronous SQLite handle reuses that connection without loading `node:sqlite`. WorkOnce creates only its own `workonce` table/indexes in that database. Caller-supplied handles remain caller-owned unless `closeDatabase: true` is requested; the default/browser graph does not import the SQLite adapter.
 
 SQLite initializes one current schema. WorkOnce is unreleased and supplies no upgrade or conversion
 path for superseded development schemas. An incompatible table is rejected; opening a database
