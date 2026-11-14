@@ -423,6 +423,9 @@ run('outbox source/model mutation guard', process.execPath, [
 run('outbox implementation mutation guard', process.execPath, [
   'scripts/check-outbox-implementation-mutations.mjs',
 ]);
+run('retention source/model mutation guard', process.execPath, [
+  'scripts/check-retention-source-model-mutation.mjs',
+]);
 run('storage implementation mutation guard', process.execPath, [
   'scripts/check-storage-contract-mutation.mjs',
 ]);

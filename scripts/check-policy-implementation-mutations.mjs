@@ -70,9 +70,11 @@ try {
   }
   {
     const original = originals.get(workPath);
-    const needle =
-      'if (row.generation !== options.generation || row.revision !== options.revision)';
-    const replacement = 'if (row.generation !== options.generation)';
+    const needle = `if (row.incarnation !== options.incarnation ||
+                row.generation !== options.generation ||
+                row.revision !== options.revision)`;
+    const replacement = `if (row.incarnation !== options.incarnation ||
+                row.generation !== options.generation)`;
     assert.equal(original.split(needle).length, 2, 'wake revision mutation anchor must be unique');
     fs.writeFileSync(workPath, original.replace(needle, replacement));
     runExpectedFailure(

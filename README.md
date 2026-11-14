@@ -324,12 +324,64 @@ receipt without rerunning policy. Once a newer receipt or generation replaces it
 callback is rejected. Use application idempotency where longer receipt retention is required.
 
 No DAG engine, cron interpreter, workflow replay, global rate limiter or built-in broker. No
-“exactly once” external effects. No row deletion/ID reuse API: that would need a deliberate
-fence/tombstone retention contract.
+“exactly once” external effects. Retention is permanent by default; finite retention deliberately
+ends deduplication when maintenance physically deletes the item. See below.
+
+## Finite retention for disposable work
+
+Work can execute durably without retaining every completed item forever. Opt in per definition
+or per request; no permanent tombstone or per-key fence record is left behind by the native stores.
+
+```ts
+const refresh = work.define<{ cacheKey: string }>('cache.refresh', {
+  key: (input) => input.cacheKey,
+  retention: { afterTerminalMs: 60 * 60 * 1000 },
+  perform: async (run, input) => {
+    await refreshCache(input.cacheKey);
+    return run.succeed();
+  },
+});
+
+await refresh.ensure({ cacheKey: 'overview' });
+await refresh.ensure({ cacheKey: 'keep-this-one' }, { retention: 'forever' });
+
+// Call from a maintenance task; examines at most 100 expired candidates.
+const removed = await work.prune({ limit: 100 });
+// Or supervise this optional loop alongside your workers:
+await work.runPruner({ signal: shutdown.signal, intervalMs: 60_000, limit: 100 });
+```
+
+`afterTerminalMs: 0` permits immediate cleanup once terminal. Omission or `'forever'` retains the
+existing permanent behavior. `queue.prune()` limits cleanup to that kind and definition version;
+`work.prune()` covers all kinds/versions in its scope. A pass returns the count actually deleted.
+No timer is started automatically, and no record is merely hidden by `inspect()`.
+
+Only succeeded, failed or cancelled items with **no pending durable follow-ups** are eligible.
+Queued/running/waiting work is never deleted by retention. The deadline is measured from terminal
+completion, not reads, heartbeat activity or maintenance time; follow-ups must drain before
+cleanup even if that deadline has already passed. Retention does not disable retries or execution
+safety budgets before deletion. It also does not remove your application's files/domain records.
+
+After deletion, `inspect()` returns `undefined`; the same scope/kind/key can be ensured as genuinely
+new work. Its finite-retention incarnation is fresh, and old heartbeat/settlement references cannot
+modify it even when generation/fence numbers repeat. Workers must carry the **whole AttemptRef**,
+including its optional `incarnation`. Guarded manual commands also carry the snapshot incarnation;
+unconditional current-key commands intentionally address whichever item exists now.
+
+Retention is fixed in the persisted request. Changing a definition's default does not silently
+rewrite old jobs; trying to ensure an existing key with a different retention policy is a conflict.
+Only a store explicitly advertising retention support can accept finite jobs. Memory and SQLite
+support it; custom CAS ports must provide exact incarnation-aware replacement/deletion. An
+unsupported adapter fails explicitly rather than accumulating supposedly disposable jobs.
+
+Finite retention intentionally gives up unlimited deduplication and receipt replay. A delayed
+producer or follow-up redelivery **after deletion** may create new work. Select a retention horizon
+that fits that work kind, and keep domain/external side effects independently idempotent where
+required. See [the retention contract](docs/retention.md) for adapter, race and disk-space details.
 
 ## Exhaustive formal implementation mapping
 
-WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. A current full run maps 142 callables, 21 callable policy/storage fields and 337 fields, then executes 43 deterministic refinement scenarios plus 96 seeded ten-step traces before the bounded TLC model checks. See [assurance](docs/assurance.md).
+WorkOnce's assurance is not limited to a hand-written TLA diagram. The compiler-generated manifest maps every public callable and every reachable package-owned input/output/callback field to reviewed semantic classifications, model concepts and executable evidence. The reviewed manifest maps 152 callables, 22 callable policy/storage fields and 382 fields, then executes 43 deterministic refinement scenarios plus 96 seeded ten-step traces before the bounded TLC model checks. See [assurance](docs/assurance.md).
 
 ## ES2018 and Web Workers
 

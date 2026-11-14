@@ -9,8 +9,17 @@ export interface WorkLimits {
   /** Waiting for a prerequisite does not consume retry count, but is still bounded. */
   maxDeferrals: number;
 }
+/** How long a terminal item remains deduplicated before explicit maintenance deletes it. */
+export type WorkRetention =
+  | 'forever'
+  | {
+      /** Milliseconds after terminal completion; zero allows immediate eligible pruning. */
+      afterTerminalMs: number;
+    };
 /** Durable work description. Input must survive a JSON round trip. No functions are stored. */
 export interface WorkRequest<I = unknown> {
+  /** Persisted retention policy; omission is permanent retention. */
+  retention?: WorkRetention;
   /** Unambiguous identity derived from scope, kind and caller key. */
   id: string;
   /** Application-controlled tenant or installation boundary. */
@@ -30,6 +39,8 @@ export interface WorkRequest<I = unknown> {
 }
 /** Carry this whole reference through an external executor. It is not an authentication credential. */
 export interface AttemptRef {
+  /** Creation identity carried unchanged by finite-retention workers, preventing ID-reuse ABA. */
+  incarnation?: string;
   /** Exact durable work identity. */
   workId: string;
   /** Explicit staff retries advance the generation. */
@@ -96,6 +107,8 @@ export interface SettlementReceipt {
 }
 /** The adapter persists the complete row in one atomic operation. */
 export interface WorkRecord extends WorkRequest {
+  /** Fresh creation identity for finite retention, preserved across manual generations. */
+  incarnation?: string;
   /** Advances on every persisted mutation, including renewals. */
   revision: number;
   /** Starts at one and advances only on explicit manual retry. */
@@ -150,6 +163,10 @@ export interface RetryContext<I, R extends string> {
 }
 /** Read result with storage time for conservative lease timers in foreign workers. */
 export interface WorkSnapshot<I = unknown, O = unknown, R extends string = string> {
+  /** Supply this with guarded commands so a deleted/recreated key is never mistaken for this item. */
+  incarnation?: string;
+  /** Persisted finite retention; omission means the item is retained permanently. */
+  retention?: WorkRetention;
   /** Idempotent business identity. */
   id: string;
   /** Caller key. */

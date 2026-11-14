@@ -9,6 +9,136 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const inventoryPath = path.join(root, 'assurance/internal-semantic-inventory.json');
 const allowedFamilies = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
+const write = process.argv.includes('--write');
+
+function classifyRetentionTopology(entry) {
+  if (
+    (entry.path === 'src/cas.ts' &&
+      /expectedIncarnation|supportsRetention|delete/u.test(entry.excerpt)) ||
+    (entry.path === 'src/memory.ts' && /expiresAt|rows\.delete/u.test(entry.excerpt)) ||
+    (entry.path === 'src/sqlite.ts' && /expires_at|expiresAt/u.test(entry.excerpt)) ||
+    (entry.path === 'src/storage-validation.ts' &&
+      /retention|incarnation|expires/u.test(entry.excerpt))
+  )
+    return {
+      families: ['G'],
+      reason:
+        'Finite-retention comparison, indexed expiry, validation, and physical deletion are storage-family G temporal semantics.',
+    };
+  if (entry.path === 'src/external.ts' && /incarnation/u.test(entry.excerpt))
+    return {
+      families: ['D'],
+      reason:
+        'External claim identity now includes creation incarnation; external-executor family D owns stale lease isolation.',
+    };
+  if (entry.path === 'src/kernel.ts' && entry.context === 'expiresAt')
+    return {
+      families: ['A', 'G'],
+      reason:
+        'Terminal expiry derives from lifecycle state and storage time; lifecycle family A and storage family G share this boundary.',
+    };
+  if (
+    entry.path === 'src/kernel.ts' &&
+    entry.context === 'settleRecord' &&
+    /incarnation|outcome\.next/u.test(entry.excerpt)
+  )
+    return entry.kind === 'property_assignment'
+      ? {
+          families: ['A', 'F'],
+          reason:
+            'Settlement receipt incarnation binds lifecycle ownership and retry replay identity across families A and F.',
+        }
+      : {
+          families: ['A', 'B', 'F'],
+          reason:
+            'Settlement validates lifecycle, retry policy, and durable finite follow-up intent across families A, B, and F.',
+        };
+  if (
+    entry.path === 'src/work.ts' &&
+    entry.context === 'claim' &&
+    /incarnation/u.test(entry.excerpt)
+  )
+    return {
+      families: ['A'],
+      reason:
+        'Claim scanning now fences candidate incarnation as part of durable lifecycle ownership in family A.',
+    };
+  if (entry.path === 'src/work.ts' && entry.context === 'dispatch' && entry.kind === 'for_of_loop')
+    return {
+      families: ['B'],
+      reason:
+        'Dispatch iteration and acknowledgement include parent incarnation fencing; continuation family B owns this topology.',
+    };
+  if (entry.path === 'src/work.ts' && ['pruneExpired', 'runPruner'].includes(entry.context))
+    return {
+      families: ['A', 'G'],
+      reason:
+        'Bounded pruning coordinates terminal lifecycle eligibility with atomic storage deletion across families A and G.',
+    };
+  if (
+    entry.path === 'src/work.ts' &&
+    ((entry.context === 'request' && /retention/u.test(entry.excerpt)) ||
+      (['retry', 'rerun', 'restart'].includes(entry.context) &&
+        /checkedIncarnation/u.test(entry.excerpt)))
+  )
+    return {
+      families: ['A'],
+      reason:
+        'Request retention and incarnation-checked generation resets are durable lifecycle identity semantics in family A.',
+    };
+  return undefined;
+}
+
+function writeReviewedInventory() {
+  const previous = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+  const topology = discoverInternalSemanticTopology();
+  const previousById = new Map(previous.entries.map((entry) => [entry.id, entry]));
+  const carriedByGroup = new Map();
+  for (const entry of previous.entries) {
+    const key = `${entry.path}\0${entry.context}\0${entry.kind}`;
+    const group = carriedByGroup.get(key) ?? [];
+    group.push(entry);
+    carriedByGroup.set(key, group);
+  }
+  for (const group of carriedByGroup.values())
+    group.sort((left, right) => left.ordinal - right.ordinal);
+  const used = new Set();
+  const entries = topology.entries.map((entry) => {
+    let reviewed = previousById.get(entry.id);
+    if (reviewed) used.add(reviewed.id);
+    let classification = classifyRetentionTopology(entry);
+    if (!reviewed && !classification) {
+      const key = `${entry.path}\0${entry.context}\0${entry.kind}`;
+      reviewed = (carriedByGroup.get(key) ?? []).find((candidate) => !used.has(candidate.id));
+      if (reviewed) used.add(reviewed.id);
+    }
+    classification ??= reviewed
+      ? { families: reviewed.families, reason: reviewed.reason }
+      : undefined;
+    if (!classification)
+      throw new Error(
+        `No deliberate topology classification for ${entry.path}:${entry.context}:${entry.kind}`,
+      );
+    return {
+      ...entry,
+      families: classification.families,
+      classification: 'APPLICABLE',
+      reason: classification.reason,
+    };
+  });
+  const value = {
+    ...previous,
+    unclassifiedCallSurface: {
+      count: topology.unclassifiedCalls.length,
+      digest: unclassifiedCallSurfaceDigest(topology.unclassifiedCalls),
+    },
+    entries,
+  };
+  fs.writeFileSync(inventoryPath, `${JSON.stringify(value, null, 2)}\n`);
+  console.log(
+    `Wrote assurance/internal-semantic-inventory.json with ${entries.length} deliberately classified constructs.`,
+  );
+}
 
 export function assertInternalSemanticInventory() {
   const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
@@ -93,5 +223,7 @@ export function assertInternalSemanticInventory() {
   );
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (write) writeReviewedInventory();
   assertInternalSemanticInventory();
+}

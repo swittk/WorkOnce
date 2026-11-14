@@ -20,7 +20,8 @@ export class WorkConflict extends Error {
       | 'retry_denied'
       | 'generation_conflict'
       | 'definition_changed'
-      | 'not_waiting',
+      | 'not_waiting'
+      | 'retention_unsupported',
   ) {
     super(code);
     this.name = 'WorkConflict';
@@ -92,13 +93,18 @@ export function sameRequest(row: WorkRequest, request: WorkRequest): boolean {
     row.id === request.id &&
     row.definition === request.definition &&
     canonical(row.input) === canonical(request.input) &&
-    canonical(row.limits) === canonical(request.limits)
+    canonical(row.limits) === canonical(request.limits) &&
+    (row.retention === 'forever' ? undefined : row.retention?.afterTerminalMs) ===
+      (request.retention === 'forever' ? undefined : request.retention?.afterTerminalMs)
   );
 }
-/** Construct the first row inside storage's atomic insertion boundary. */
-export function createRecord(request: WorkRequest, now: number): WorkRecord {
+/** Validate an inert request without allocating execution identity or performing effects. */
+function validateRequest(request: WorkRequest, now: number): void {
   integer(now, 'now');
   integer(request.availableAt, 'availableAt');
+  if (request.retention !== undefined && request.retention !== 'forever') {
+    integer(request.retention.afterTerminalMs, 'afterTerminalMs');
+  }
   integer(request.limits.leaseMs, 'leaseMs', 1);
   integer(request.limits.maxAttempts, 'maxAttempts', 1);
   integer(request.limits.maxElapsedMs, 'maxElapsedMs', 1);
@@ -107,8 +113,15 @@ export function createRecord(request: WorkRequest, now: number): WorkRecord {
   const earliestStart = Math.max(now, request.availableAt);
   add(earliestStart, request.limits.leaseMs);
   add(earliestStart, request.limits.maxElapsedMs);
+}
+/** Construct the first row using a creation nonce allocated before the retryable storage decision. */
+export function createRecord(request: WorkRequest, now: number, incarnation?: string): WorkRecord {
+  validateRequest(request, now);
+  if (request.retention !== undefined && request.retention !== 'forever' && !incarnation)
+    throw new Error('Finite retention requires a creation incarnation');
   return {
     ...copy(request),
+    ...(incarnation === undefined ? {} : { incarnation }),
     revision: 1,
     generation: 1,
     fence: 0,
@@ -133,6 +146,30 @@ export function dueAt(row: WorkRecord): number | undefined {
     default:
       return undefined;
   }
+}
+/** Indexed retention deadline; active work and undispatched durable follow-ups cannot expire. */
+export function expiresAt(row: WorkRecord): number | undefined {
+  if (row.retention === undefined || row.retention === 'forever' || row.outbox.length > 0)
+    return undefined;
+  let terminalAt: number;
+  switch (row.phase.state) {
+    case 'succeeded':
+      terminalAt = row.phase.completedAt;
+      break;
+    case 'failed':
+      terminalAt = row.phase.failedAt;
+      break;
+    case 'cancelled':
+      terminalAt = row.phase.cancelledAt;
+      break;
+    default:
+      return undefined;
+  }
+  const duration = integer(row.retention.afterTerminalMs, 'afterTerminalMs');
+  // An extreme retention duration must not make an otherwise valid settlement fail.
+  return duration >= Number.MAX_SAFE_INTEGER - terminalAt
+    ? Number.MAX_SAFE_INTEGER
+    : terminalAt + duration;
 }
 /** A single clock is used per atomic operation. Clock rollback never rewinds one item. */
 export function effectiveNow(row: WorkRecord, now: number): number {
@@ -165,6 +202,7 @@ export function changed(
 export function assertCurrent(row: WorkRecord, ref: AttemptRef, now: number): void {
   if (
     row.id !== ref.workId ||
+    row.incarnation !== ref.incarnation ||
     row.generation !== ref.generation ||
     row.fence !== ref.fence ||
     row.phase.state !== 'running'
@@ -219,6 +257,7 @@ export function claimRecord(
       startedAt: now,
       attempt: {
         workId: row.id,
+        ...(row.incarnation === undefined ? {} : { incarnation: row.incarnation }),
         generation: row.generation,
         fence,
         workerId,
@@ -258,7 +297,11 @@ export function replayReceipt(
   ref: AttemptRef,
   submissionHash: string,
 ): WorkPhase | undefined {
-  if (row.id !== ref.workId || row.generation !== ref.generation)
+  if (
+    row.id !== ref.workId ||
+    row.incarnation !== ref.incarnation ||
+    row.generation !== ref.generation
+  )
     throw new WorkConflict('stale_attempt');
   if (row.receipt?.attempt.fence !== ref.fence) return undefined;
   if (row.receipt.submissionHash !== submissionHash) throw new WorkConflict('settlement_conflict');
@@ -291,7 +334,7 @@ export function settleRecord(
           ids.has(request.id)
         )
           throw new WorkConflict('key_conflict');
-        createRecord(request, now);
+        validateRequest(request, now);
         ids.add(request.id);
       }
       phase = { state: 'succeeded', result: copy(outcome.result), completedAt: now };
@@ -307,7 +350,7 @@ export function settleRecord(
           ids.has(request.id)
         )
           throw new WorkConflict('key_conflict');
-        createRecord(request, now);
+        validateRequest(request, now);
         ids.add(request.id);
       }
       phase = {
@@ -360,7 +403,12 @@ export function settleRecord(
   }
   const next = changed({ ...row, retries, deferrals }, phase, now, outcome.type);
   next.receipt = {
-    attempt: { workId: row.id, generation: ref.generation, fence: ref.fence },
+    attempt: {
+      workId: row.id,
+      generation: ref.generation,
+      fence: ref.fence,
+      ...(row.incarnation === undefined ? {} : { incarnation: row.incarnation }),
+    },
     submissionHash,
     ...(phase.state === 'waiting' ? { phase: copy(phase) } : {}),
   };
@@ -368,8 +416,14 @@ export function settleRecord(
   return next;
 }
 /** Explicit retry uses a generation precondition and cannot discard prior durable follow-ups. */
-export function retryRecord(row: WorkRecord, generation: number, clock: number): WorkRecord {
-  if (row.generation !== generation) throw new WorkConflict('generation_conflict');
+export function retryRecord(
+  row: WorkRecord,
+  generation: number,
+  clock: number,
+  incarnation?: string,
+): WorkRecord {
+  if (row.incarnation !== incarnation || row.generation !== generation)
+    throw new WorkConflict('generation_conflict');
   if (row.phase.state !== 'failed' || !row.phase.manualRetry || row.outbox.length > 0)
     throw new WorkConflict('retry_denied');
   const now = effectiveNow(row, clock);
@@ -390,8 +444,14 @@ export function retryRecord(row: WorkRecord, generation: number, clock: number):
   return next;
 }
 /** Explicit rerun waits for prior durable follow-ups; enqueue itself never revives completed work. */
-export function rerunRecord(row: WorkRecord, generation: number, clock: number): WorkRecord {
-  if (row.generation !== generation) throw new WorkConflict('generation_conflict');
+export function rerunRecord(
+  row: WorkRecord,
+  generation: number,
+  clock: number,
+  incarnation?: string,
+): WorkRecord {
+  if (row.incarnation !== incarnation || row.generation !== generation)
+    throw new WorkConflict('generation_conflict');
   if (row.phase.state !== 'succeeded' || row.outbox.length > 0)
     throw new WorkConflict('retry_denied');
   const now = effectiveNow(row, clock);
@@ -417,8 +477,10 @@ export function cancelRecord(
   generation: number,
   reason: string,
   clock: number,
+  incarnation?: string,
 ): WorkRecord {
-  if (row.generation !== generation) throw new WorkConflict('generation_conflict');
+  if (row.incarnation !== incarnation || row.generation !== generation)
+    throw new WorkConflict('generation_conflict');
   if (
     row.phase.state === 'succeeded' ||
     row.phase.state === 'failed' ||

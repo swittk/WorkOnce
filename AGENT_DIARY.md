@@ -44,3 +44,14 @@
 - Bound `perform` lets one definition own its canonical in-process handler; `process()`/`run()` may still take an explicit override but fail before claim when neither exists.
 - External execution is now `queue.serveExternal(...)` on the authority side and `runExternal(...)`/`processExternal(...)` on the executor side. Only a handoff exports a live attempt; preparation wait/retry/fail outcomes settle locally. A dedicated real-code refinement scenario races local and external execution for one item and requires one owner.
 - The complete package now emits ES2018 syntax. The default/root graph has an assurance gate compiling with only ES2018 + WebWorker libs/no Node ambient types, rejects Node/external runtime imports, and enforces 96 KiB raw / 24 KiB gzip budgets. `/sqlite` remains an explicit Node-only subpath.
+
+
+2026-11-14 finite terminal retention
+
+- Added opt-in per-definition/per-request terminal retention and actual physical deletion. Permanent retention stays the default; zero is valid for disposable work. There are no permanent per-job tombstones.
+- Creation incarnation is allocated outside atomic decisions and carried in worker/manual references, CAS comparisons, async gates and dispatcher acknowledgements. Inert follow-up requests remain deterministic. Deleted keys can be reused intentionally without accepting an old attempt whose counters happen to repeat.
+- Eligible terminal records have no pending outbox. Maintenance uses indexed bounded discovery plus an atomic incarnation/revision/deadline recheck; explicit prune and supervised runPruner APIs expose the lifecycle without a hidden timer.
+- Memory, SQLite and capability-negotiated CAS adapters implement physical deletion. Permanent-only CAS ports reject finite writes even when another deployment already created the row. The exact published 0.3.0 SQLite schema receives an additive nullable expiry projection without rewriting existing permanent records.
+- Complete assurance passed uninterrupted: 235 implementation tests, 30 process-fault tests, compiler/type/format/consumer checks, source/model and implementation mutation guards, and bounded TLC families including the retention model. Separate packed consumer check passed ESM, CommonJS and TypeScript declarations. Earlier interrupted/failed runs were not counted.
+- Independent SQLite steady-state probe completed six batches of 80 jobs: all six retained-row counts were zero, page count remained 40, and no tombstone table was created. Scope and definition expiry discovery use their covering indexes; the ordinary due-work index remains unchanged.
+- Retention deliberately ends deduplication/replay when work is removed. External effects still need application/provider idempotency. Third-party adapters must retire auxiliary synchronization/version records as well, and may use recoverable bounded cleanup only if its temporary markers are eventually removed.

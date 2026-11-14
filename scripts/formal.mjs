@@ -512,6 +512,69 @@ const outboxBudgetMutants = {
   /\ UNCHANGED <<aQueue, bQueue, cQueue, cursor, delivered>>`,
 };
 
+const retentionMutants = {
+  RetentionTypeOK: String.raw`  /\ phase' = "invalid"
+  /\ UNCHANGED <<present, policy, incarnation, revision, terminalAt, outbox, now,
+                 created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, wrongDeletes, lastDeletePhase, lastDeletePolicy,
+                 lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation, pruneWins>>`,
+  ActualDeletion: String.raw`  /\ created' = 1 /\ deleted' = 0 /\ present' = FALSE
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  DeletionOnlyWhenEligible: String.raw`  /\ created' = 1 /\ deleted' = 1 /\ present' = FALSE
+  /\ lastDeletePhase' = "running" /\ lastDeletePolicy' = "finite"
+  /\ lastDeleteOutbox' = FALSE /\ lastDeleteNow' = 0 /\ lastDeleteDeadline' = 1
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletedIncarnation, pruneWins>>`,
+  ForeverNeverDeleted: String.raw`  /\ created' = 1 /\ deleted' = 1 /\ present' = FALSE
+  /\ lastDeletePolicy' = "forever"
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation, pruneWins>>`,
+  FreshIncarnationAfterRecreate: String.raw`  /\ present' = TRUE /\ phase' = "queued"
+  /\ policy' = "finite" /\ incarnation' = "incarnation-1"
+  /\ lastDeletedIncarnation' = "incarnation-1"
+  /\ UNCHANGED <<revision, terminalAt, outbox, now, created, deleted,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, pruneWins>>`,
+  StaleAuthorityIsolated: String.raw`  /\ staleWrites' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 wrongDeletes, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
+                 lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  StaleCandidateCannotDeleteNew: String.raw`  /\ wrongDeletes' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
+                 lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  SinglePruneWinner: String.raw`  /\ pruneWins' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, wrongDeletes, lastDeletePhase, lastDeletePolicy,
+                 lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation>>`,
+  BoundedLiveRows: String.raw`  /\ created' = 2 /\ deleted' = 0
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+};
+
 const externalMutants = {
   ExternalTypeOK: String.raw`  /\ phase' = "invalid"
   /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
@@ -598,6 +661,10 @@ const outboxBudgetMutationPlan = mutationCoveragePlan(
   'formal/WorkOnceOutboxBudget.cfg',
   outboxBudgetMutants,
 );
+const retentionMutationPlan = mutationCoveragePlan(
+  'formal/WorkOnceRetention.cfg',
+  retentionMutants,
+);
 const directMutationPlans = [
   lifecycleMutationPlan,
   runtimeMutationPlan,
@@ -607,6 +674,7 @@ const directMutationPlans = [
   externalMutationPlan,
   outboxMutationPlan,
   outboxBudgetMutationPlan,
+  retentionMutationPlan,
 ];
 const externallyGuardedFormalConfigs = [
   'formal/WorkOnceLifecycleTemporal.cfg',
@@ -745,6 +813,34 @@ MutantSpec == Init /\ [][MutantNext]_vars
     'NoLostContinuation',
   );
   markExtraMutationWitness(lifecycleMutationPlan, 'NoLostContinuation');
+  runModel('WorkOnceRetention', 'WorkOnceRetention.cfg');
+  const { runRetentionRefinementSamples, assertRetentionRefinementSamples } = await import(
+    './retention-refinement.mjs'
+  );
+  const retentionSamples = await runRetentionRefinementSamples();
+  const retentionObserved = resolve(tlcWorkspace, 'WorkOnceRetentionObserved.tla');
+  const retentionObservedConfig = resolve(tlcWorkspace, 'WorkOnceRetention-observed.cfg');
+  const missingRetentionAdapterSamples = retentionSamples.filter(
+    (sample) => sample.adapter === undefined || sample.adapter === 'memory',
+  );
+  writeFileSync(
+    retentionObserved,
+    `---- MODULE WorkOnceRetentionObserved ----\nEXTENDS WorkOnceRetention, TLC, Sequences\nObservedSamples == {\n${retentionSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nMissingAdapterSamples == {\n${missingRetentionAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSampleCheck == INSTANCE WorkOnceRetention WITH Samples <- InvalidSamples\nMissingAdapterCheck == INSTANCE WorkOnceRetention WITH Samples <- MissingAdapterSamples\nRetentionNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RetentionSamplesConform /\\ ~MissingAdapterCheck!RetentionSamplesConform\n${renderBooleanSampleMutationChecks(retentionSamples, assertRetentionRefinementSamples, tlaValue, 'RetentionSampleOK')}\n====\n`,
+  );
+  writeFileSync(
+    retentionObservedConfig,
+    `${bindObservedSamples(readFileSync('formal/WorkOnceRetention.cfg', 'utf8'))}\nINVARIANT RetentionSamplesConform\nINVARIANT RetentionNegativeSampleMutantsRejected\n`,
+  );
+  console.log(
+    `TLC retention model receives ${retentionSamples.length} fresh public-API retention observations.`,
+  );
+  runModel('WorkOnceRetentionObserved', retentionObservedConfig, retentionObserved);
+  runMutationWitnessBatch({
+    model: 'WorkOnceRetentionInvariantMutationBatch',
+    baseModule: 'WorkOnceRetention',
+    baseConfig: readFileSync('formal/WorkOnceRetention.cfg', 'utf8'),
+    plan: retentionMutationPlan,
+  });
 }
 
 if (runtimeOnly) {
@@ -1163,5 +1259,11 @@ if (runtimeOnly) {
 assertMutationPlansExecuted(
   runtimeOnly
     ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan, externalMutationPlan]
-    : [lifecycleMutationPlan, policyMutationPlan, outboxMutationPlan, outboxBudgetMutationPlan],
+    : [
+        lifecycleMutationPlan,
+        policyMutationPlan,
+        outboxMutationPlan,
+        outboxBudgetMutationPlan,
+        retentionMutationPlan,
+      ],
 );

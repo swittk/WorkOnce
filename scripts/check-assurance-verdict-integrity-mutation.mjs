@@ -45,6 +45,13 @@ mutate(
   'external sample boundary loses its independent predicate control',
   /must exercise every bound boolean predicate/u,
 );
+mutate(
+  'scripts/formal.mjs',
+  'RetentionSampleOK',
+  'UnboundRetentionPredicate',
+  'retention sample boundary loses its independent predicate control',
+  /must exercise every bound boolean predicate/u,
+);
 
 mutate(
   'scripts/check-bounded-trace-domain.mjs',
@@ -89,6 +96,13 @@ mutate(
   'void bindingCheck;',
   'external source/model mutation guard loses its green-before baseline',
   /external source\/model mutation guard must prove a green baseline before creating mutants/u,
+);
+mutate(
+  'scripts/check-retention-source-model-mutation.mjs',
+  "requireSuccessfulProcess(bindingCheck(), 'baseline retention source/model binding');",
+  'void bindingCheck;',
+  'retention source/model mutation guard loses its green-before baseline',
+  /retention source\/model mutation guard must prove a green baseline before creating mutants/u,
 );
 mutate(
   'scripts/check-tlc-outcome-classification.mjs',
