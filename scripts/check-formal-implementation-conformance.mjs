@@ -61,6 +61,8 @@ const modelFiles = [
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
   'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 const outboxSourceFiles = [
   'src/work.ts',
@@ -102,6 +104,8 @@ const retentionModelFiles = [
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
   'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 const policySourceSymbols = {
   'src/work.ts': [
@@ -391,6 +395,8 @@ const assuranceInfrastructureFiles = [
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
   'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
   'test/process/sqlite-busy-child.mjs',
   'test/process/sqlite-busy-startup.test.mjs',
   'test/storage-contract-hardening.test.mjs',
@@ -1583,6 +1589,9 @@ function buildManifest(live) {
         config: 'formal/WorkOnceRetention.cfg',
         progressConfig: 'formal/WorkOnceRetentionProgress.cfg',
         progressChecks: readConfiguredChecks('formal/WorkOnceRetentionProgress.cfg'),
+        followupSpec: 'formal/WorkOnceRetentionFollowups.tla',
+        followupConfig: 'formal/WorkOnceRetentionFollowups.cfg',
+        followupChecks: readConfiguredChecks('formal/WorkOnceRetentionFollowups.cfg'),
         configuredChecks: readConfiguredChecks('formal/WorkOnceRetention.cfg'),
         observationProducer: 'scripts/retention-refinement.mjs',
         observationBinding: 'scripts/formal.mjs',
@@ -1732,6 +1741,7 @@ function renderReport(manifest) {
     `- Spec: \`${manifest.model.retention.spec}\``,
     `- Fresh public-API observations: \`${manifest.model.retention.observationProducer}\` via \`${manifest.model.retention.observationBinding}\``,
     `- Checked invariants: ${manifest.model.retention.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Finite-child admission/recovery model: \`${manifest.model.retention.followupSpec}\` (safety + temporal property)`,
     `- Bound retention source: ${manifest.model.retention.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
     '',
     '## Assurance infrastructure binding',

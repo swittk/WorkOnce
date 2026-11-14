@@ -112,14 +112,15 @@
 - Spec: `formal/WorkOnceRetention.tla`
 - Fresh public-API observations: `scripts/retention-refinement.mjs` via `scripts/formal.mjs`
 - Checked invariants: `ActualDeletion`, `BoundedLiveRows`, `DeletionOnlyWhenEligible`, `ForeverNeverDeleted`, `FreshIncarnationAfterRecreate`, `RetentionTypeOK`, `SinglePruneWinner`, `StaleAuthorityIsolated`, `StaleCandidateCannotDeleteNew`
+- Finite-child admission/recovery model: `formal/WorkOnceRetentionFollowups.tla` (safety + temporal property)
 - Bound retention source: `src/model.ts`, `src/kernel.ts`, `src/work.ts`, `src/storage.ts`, `src/storage-validation.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`, `src/external.ts`
 
 ## Assurance infrastructure binding
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **142**
-- Content digest: `bb98156692961166815ff26e638484afa80124b536f277efeb090d7c09eec8bd`
+- Bound proof/checker files: **144**
+- Content digest: `c3eeb53477717aeb8894070faa714d3d3dd32e275a3782f151a2eef83c249660`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `25447f1461dc5af27306bac5b0cfba43eaf2813cb309e2c97f963df3038260cf`
 

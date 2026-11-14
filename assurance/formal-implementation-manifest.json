@@ -12464,7 +12464,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "6b61e9a6d852b95cfe180cc532e45087f236f6867613046dfc3bea65fe1d8cfe",
+      "sourceDigest": "57c2ec61b6091c688eca6db5e641dbfd3e6d01a9c3f02db2f91bd1023b6be6b9",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -12504,7 +12504,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/policy-refinement.mjs",
-      "sourceDigest": "6f9b5c4354cf36f38998d0f8fab1308457b5bc6749a3d9e8a7f18e7e565bb0f8",
+      "sourceDigest": "1e689238435b4c3e95307502f99e5a1d2f3e893d06843fa85340174f8a5a0a90",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -12614,11 +12614,23 @@
         "StaleAuthorityIsolated",
         "StaleCandidateCannotDeleteNew"
       ],
-      "modelDigest": "7266f029d4cfccc32ac6815f147d72f16f62c0f401089e762bd49050fb2bb177",
+      "followupChecks": [
+        "FollowupTypeOK",
+        "LegacyEventuallyDrains",
+        "LegacyIntentNotSilentlyDiscarded",
+        "RejectedAttemptPreservesLease",
+        "UnsupportedFiniteNeverCommitted",
+        "UnsupportedFiniteNeverDispatched"
+      ],
+      "followupConfig": "formal/WorkOnceRetentionFollowups.cfg",
+      "followupSpec": "formal/WorkOnceRetentionFollowups.tla",
+      "modelDigest": "44c24722ba483804edad0fdf1b6c42fe9cb837bc78b31dfc3ecddc46f122a216",
       "modelFiles": [
         "formal/WorkOnceRetention.tla",
         "formal/WorkOnceRetention.cfg",
-        "formal/WorkOnceRetentionProgress.cfg"
+        "formal/WorkOnceRetentionProgress.cfg",
+        "formal/WorkOnceRetentionFollowups.tla",
+        "formal/WorkOnceRetentionFollowups.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/retention-refinement.mjs",
@@ -12627,7 +12639,7 @@
         "RetentionTypeOK"
       ],
       "progressConfig": "formal/WorkOnceRetentionProgress.cfg",
-      "sourceDigest": "2167c04bade2518240eff0f7bff9f2240099256e979e650a51ccfcac4c540b2d",
+      "sourceDigest": "130ea6168f4b621b37ac934d2d61e36f13c0c0a5e868bf8c8c0c07723095afbe",
       "sourceFiles": [
         "src/model.ts",
         "src/kernel.ts",
@@ -12665,7 +12677,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "a17c3e009c24aad961a58f2db8e9aa722c919c9b9ea42ae2bfffcb6bb9a33f79",
+      "sourceDigest": "3be99e44d32380680a1f34da5283616597cb83aeb1dc2fd6b988eb40532b92fb",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -12709,7 +12721,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "bb98156692961166815ff26e638484afa80124b536f277efeb090d7c09eec8bd",
+    "assuranceInfrastructureDigest": "c3eeb53477717aeb8894070faa714d3d3dd32e275a3782f151a2eef83c249660",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -12751,6 +12763,8 @@
       "formal/WorkOnceReadHistory.tla",
       "formal/WorkOnceRetention.cfg",
       "formal/WorkOnceRetention.tla",
+      "formal/WorkOnceRetentionFollowups.cfg",
+      "formal/WorkOnceRetentionFollowups.tla",
       "formal/WorkOnceRetentionProgress.cfg",
       "formal/WorkOnceStorage.cfg",
       "formal/WorkOnceStorage.tla",
@@ -12855,7 +12869,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "0bec95caeffa8ab8d3612a2b4ab090eba138508313fb9a21c3e58015f2717184",
+    "modelDigest": "5fe93644377ba28f2886aac94096e36b1c26be248b00f1a09b78a669f11c44a3",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -12882,7 +12896,9 @@
       "formal/WorkOnceOutboxBudget.cfg",
       "formal/WorkOnceRetention.tla",
       "formal/WorkOnceRetention.cfg",
-      "formal/WorkOnceRetentionProgress.cfg"
+      "formal/WorkOnceRetentionProgress.cfg",
+      "formal/WorkOnceRetentionFollowups.tla",
+      "formal/WorkOnceRetentionFollowups.cfg"
     ],
     "semanticEnvironmentDigest": "25447f1461dc5af27306bac5b0cfba43eaf2813cb309e2c97f963df3038260cf",
     "semanticEnvironmentFiles": [
@@ -12893,7 +12909,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "28d228364e38279da0944dc91de7b8ba6b597f6495bd3854bb24e99d46225fb2",
+    "sourceDigest": "ce9c58cb93a43325c3fc2c9d752b7d9583a50ae03dae2fd0d1601d0c94d697a4",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

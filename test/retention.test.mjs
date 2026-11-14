@@ -538,3 +538,117 @@ test('finite retention and pruning reject a permanent-only store explicitly', as
   );
   await assert.rejects(work.prune(), (error) => error?.code === 'retention_unsupported');
 });
+
+// A custom CAS deployment may be permanent-only while the same physical backend can
+// later be upgraded to support indexed expiry and true deletion. The core must not
+// commit any finite-child intent that the current adapter can never dispatch.
+for (const adapter of ['memory', 'sqlite']) {
+  test(`non-retention ${adapter} store rejects direct and planned finite children before parent terminal commit`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), `workonce-child-capability-${adapter}-`));
+    let now = 100;
+    const native =
+      adapter === 'memory'
+        ? createMemoryStore({ now: () => now })
+        : createSqliteStore(join(directory, 'queue.sqlite'), { now: () => now });
+    const permanentOnly = {
+      atomic: (...args) => native.atomic(...args),
+      getMany: (...args) => native.getMany(...args),
+      query: (...args) => native.query(...args),
+    };
+    try {
+      const capable = createWorkOnce({ scope: 'child-capability', store: native });
+      const legacy = createWorkOnce({ scope: 'child-capability', store: permanentOnly });
+      const finiteRequest = capable
+        .define('finite-child', { retention: { afterTerminalMs: 0 } })
+        .request(null, { key: 'child' });
+      const ordinaryRequest = legacy.define('ordinary-child').request(null, { key: 'ordinary' });
+      const parent = legacy.define('direct-parent');
+      await parent.ensure(null, { key: 'direct' });
+      const [run] = await parent.claim({ workerId: 'direct-worker' });
+      const attempted = run.succeed(null, { thenDo: [finiteRequest] });
+      await assert.rejects(run.settle(attempted), { code: 'retention_unsupported' });
+      const blocked = await parent.inspect('direct');
+      assert.equal(blocked.phase.state, 'running');
+      assert.equal(blocked.pendingFollowups, 0);
+      assert.equal((await native.getMany([blocked.id])).rows[0].receipt, undefined);
+      assert.equal(await capable.define('finite-child').inspect('child'), undefined);
+      assert.equal(await legacy.dispatch(), 0);
+      // The same worker may still submit a valid permanent child before its lease expires.
+      await run.settle(run.succeed(null, { next: [ordinaryRequest] }));
+      assert.equal(await legacy.dispatch(), 1);
+      assert.equal(
+        (await legacy.define('ordinary-child').inspect('ordinary')).phase.state,
+        'queued',
+      );
+
+      let planned = 0;
+      const planner = legacy.define('planner-parent', {
+        thenDo: () => {
+          planned++;
+          return [finiteRequest];
+        },
+      });
+      await planner.ensure(null, { key: 'planned-failure' });
+      const [failedRun] = await planner.claim({ workerId: 'planner-worker' });
+      await assert.rejects(
+        failedRun.settle(failedRun.fail('planned', { result: 'typed-result' })),
+        { code: 'retention_unsupported' },
+      );
+      assert.equal(planned, 1, 'the callback-planned follow-up must be validated too');
+      assert.equal((await planner.inspect('planned-failure')).phase.state, 'running');
+      assert.equal((await planner.inspect('planned-failure')).pendingFollowups, 0);
+      assert.equal(await capable.define('finite-child').inspect('child'), undefined);
+    } finally {
+      native.close?.();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test(`pre-existing finite-child outbox can drain after an in-place ${adapter} store capability upgrade`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), `workonce-child-upgrade-${adapter}-`));
+    let now = 100;
+    const native =
+      adapter === 'memory'
+        ? createMemoryStore({ now: () => now })
+        : createSqliteStore(join(directory, 'queue.sqlite'), { now: () => now });
+    try {
+      // Simulate a parent terminal receipt written by a capable deployment, and
+      // subsequently observed by an older permanent-only adapter.
+      const capable = createWorkOnce({ scope: 'child-upgrade', store: native });
+      const permanentOnly = createWorkOnce({
+        scope: 'child-upgrade',
+        store: {
+          atomic: (...args) => native.atomic(...args),
+          getMany: (...args) => native.getMany(...args),
+          query: (...args) => native.query(...args),
+        },
+      });
+      const child = capable.define('finite', { retention: { afterTerminalMs: 0 } });
+      const parent = capable.define('parent');
+      await parent.ensure(null, { key: 'persisted' });
+      const [run] = await parent.claim({ workerId: 'old-creator' });
+      const receipt = run.succeed(null, { next: [child.request(null, { key: 'child' })] });
+      const committed = await run.settle(receipt);
+      assert.equal((await parent.inspect('persisted')).pendingFollowups, 1);
+      assert.deepEqual(
+        await permanentOnly.define('parent').settle(run.ref, receipt),
+        committed,
+        'receipt replay must remain possible even if the adapter later lacks deletion capability',
+      );
+      await assert.rejects(permanentOnly.dispatch(), { code: 'retention_unsupported' });
+      assert.equal((await parent.inspect('persisted')).pendingFollowups, 1);
+      // No silent policy weakening: switch back to the retention-capable adapter.
+      assert.equal(await capable.dispatch(), 1);
+      assert.equal((await parent.inspect('persisted')).pendingFollowups, 0);
+      const snapshot = await child.inspect('child');
+      assert.deepEqual(snapshot.retention, { afterTerminalMs: 0 });
+      const [childRun] = await child.claim({ workerId: 'upgrade-worker' });
+      await childRun.settle(childRun.succeed());
+      assert.equal(await child.prune(), 1);
+      assert.equal(await child.inspect('child'), undefined);
+    } finally {
+      native.close?.();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}

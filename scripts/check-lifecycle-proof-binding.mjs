@@ -28,6 +28,8 @@ const modelFiles = [
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
   'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 const evidenceFiles = [
   'scripts/formal-sample-mutations.mjs',

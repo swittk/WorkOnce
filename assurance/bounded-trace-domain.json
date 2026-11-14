@@ -67,6 +67,8 @@
     "formal/WorkOnceRetention.tla",
     "formal/WorkOnceRetention.cfg",
     "formal/WorkOnceRetentionProgress.cfg",
+    "formal/WorkOnceRetentionFollowups.tla",
+    "formal/WorkOnceRetentionFollowups.cfg",
     "scripts/check-retention-source-model-mutation.mjs",
     "scripts/external-transport-refinement.mjs",
     "test/external-transport-refinement.test.mjs",
@@ -131,7 +133,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "50bffaff29c5ddc26ebbb9653ae17f8bf12aa93ca0202adcc85ab74a36395098",
+  "evidenceDigest": "77ab995aa18942a6eeb0d0b975eb626ff8ed63913a1ba6baa9a7035de7d82457",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

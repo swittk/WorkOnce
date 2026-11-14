@@ -470,6 +470,19 @@ after repeated create/settle/delete cycles. The bounded-domain report content-bi
 observations, the public retention and process-crash tests, the retention model/config and the
 source/model mutation control.
 
+`formal/WorkOnceRetentionFollowups.tla` isolates one additional safety boundary: a
+permanent-only store cannot commit a terminal parent containing a finite child. It models
+success/failure child admission, rejection without changing the active parent, and correct
+dispatch eligibility. Four targeted transition mutants must produce reachable TLC counterexamples: accepting
+an unsupported finite child, dispatching it without capability, committing despite a rejected
+settlement, and silently dropping the child during an adapter upgrade. The model also starts
+from a pre-existing invalid finite-child outbox, preserves its intent, and checks conditional
+eventual drain **only if** the adapter is upgraded and dispatch is fairly scheduled. The unfair-upgrade model must fail this
+temporal property. Real memory/SQLite public-API tests cover direct and planner-generated
+follow-ups, committed receipt replay after losing capability, and successful in-place
+repair after restoring a retention-capable adapter. No automatic policy downgrading or
+silent loss of child intents is permitted.
+
 The real-process test kills a SQLite process after terminal settlement commits, then reopens the
 database, prunes the recovered row, recreates the same business key and rejects the killed worker's
 old heartbeat and settlement reference. This is bounded crash/restart evidence for local SQLite,

@@ -615,12 +615,22 @@ export class WorkQueue<I, O = null, R extends string = string> {
       });
       submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
     }
+    // Keep retryable store decisions pure. Unsupported terminal follow-ups must
+    // fail before the parent commits, but a previously committed receipt still replays.
+    const unsupportedFollowup =
+      (submitted.type === 'succeed' || submitted.type === 'fail') &&
+      submitted.next.length > 0 &&
+      this.store.retention !== true &&
+      submitted.next.some(
+        (request) => request.retention !== undefined && request.retention !== 'forever',
+      );
     // Snapshot resolved policy so a caller cannot mutate it while a external transport is awaiting IO.
     const resolved = decision === undefined ? undefined : copy(decision);
     return this.store.atomic(ref.workId, (fresh, now) => {
       this.requireRow(fresh);
       const duplicate = replayReceipt(fresh, ref, submissionHash);
       if (duplicate) return { value: duplicate as WorkPhase<O, R> };
+      if (unsupportedFollowup) throw new WorkConflict('retention_unsupported');
       const next = settleRecord(fresh, ref, submitted, submissionHash, resolved, now);
       if (fresh.phase.state !== 'running') throw new WorkConflict('stale_attempt');
       return {

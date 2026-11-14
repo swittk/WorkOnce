@@ -100,6 +100,8 @@ const evidenceFiles = [
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
   'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
   'scripts/check-retention-source-model-mutation.mjs',
   'scripts/external-transport-refinement.mjs',
   'test/external-transport-refinement.test.mjs',

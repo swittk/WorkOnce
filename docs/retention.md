@@ -67,3 +67,21 @@ Third-party adapters must remove their auxiliary per-job records too and recover
 cleanup safely. A permanent synchronization anchor per retired key would still accumulate without
 bound and is not an adequate implementation of this contract. The core does not claim that an
 adapter supports deletion merely because it can remove its visible job payload.
+
+## Follow-ups and adapter upgrades
+
+A terminal result may contain a finite-retention child even when its parent is retained forever.
+On a store without retention support, settlement rejects that result with
+`retention_unsupported` **before committing the parent's terminal state or outbox**. This
+includes direct `succeed`/`fail` follow-ups and children supplied by a `thenDo` planner.
+The attempt remains live until settled differently or its lease expires. Existing
+receipt replay is checked before the capability rejection, so a previously committed
+result is still replayable without re-running work.
+
+If an older deployment already committed an unsupported finite child to a parent's outbox,
+**do not silently delete the child or rewrite it to permanent retention**. Install a
+retention-capable adapter over the same durable records (including the native deletion,
+incarnation-fencing and expiry-query capabilities), then run `work.dispatch()` again.
+The existing parent intent stays durable until child insertion and acknowledgement succeed;
+a failed/unsupported adapter keeps the pending request visible. This is an explicit
+upgrade/migration requirement for old broken records, not a second recovery format.

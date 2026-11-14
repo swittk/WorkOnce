@@ -21,7 +21,9 @@
     "formal/WorkOnceLifecycleContract.tla",
     "formal/WorkOnceRetention.tla",
     "formal/WorkOnceRetention.cfg",
-    "formal/WorkOnceRetentionProgress.cfg"
+    "formal/WorkOnceRetentionProgress.cfg",
+    "formal/WorkOnceRetentionFollowups.tla",
+    "formal/WorkOnceRetentionFollowups.cfg"
   ],
   "evidenceFiles": [
     "scripts/formal-sample-mutations.mjs",
@@ -55,7 +57,7 @@
     "test/process/retention-child.mjs",
     "test/process/retention-process.test.mjs"
   ],
-  "sourceDigest": "d903b0e2700e7741fb2670a4ffd5c256b153ac22155a1320d714323c1f7f97b7",
-  "modelDigest": "59c8a199843dc18adf02353167004ea98585fe7979679c5fd4d6d983806ac13a",
-  "evidenceDigest": "6e7691d11fd356aae537d861027304ee3df3c751265b637b13502040a42996b4"
+  "sourceDigest": "1be7cb5502950d3eca134fee34b45e0428d5cbde1845a3c6370f0c3eb507b04c",
+  "modelDigest": "4f24ca271bd63cc50acc30c16cbab38bcf36fc03c8d224208ccad58cfb274401",
+  "evidenceDigest": "bb61764473305d463e91b5e8e5213de088cc7ce5f348f72f6df5d9341ab4d5f7"
 }

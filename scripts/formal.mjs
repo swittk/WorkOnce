@@ -682,6 +682,8 @@ const externallyGuardedFormalConfigs = [
   'formal/WorkOnceStorage.cfg',
   // A temporal property is guarded by its fairness-removal TLC witness below.
   'formal/WorkOnceRetentionProgress.cfg',
+  // Two native-guard witnesses and the unfair-upgrade liveness counterexample.
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 assertAllFormalConfigsRegistered(directMutationPlans, externallyGuardedFormalConfigs);
 if (process.argv.includes('--config-coverage-only')) {
@@ -815,6 +817,108 @@ MutantSpec == Init /\ [][MutantNext]_vars
     'NoLostContinuation',
   );
   markExtraMutationWitness(lifecycleMutationPlan, 'NoLostContinuation');
+  runModel('WorkOnceRetentionFollowups', 'WorkOnceRetentionFollowups.cfg');
+  // Old terminal parents with finite children are not rewritten. Fair adapter
+  // upgrade + dispatch is a conditional recovery promise, never an auto-conversion.
+  const followupModelSource = readFileSync('formal/WorkOnceRetentionFollowups.tla', 'utf8');
+  const followupGuards = [
+    {
+      name: 'CommitWithoutCapability',
+      original: String.raw`AcceptFinite ==
+  /\ phase = "running"
+  /\ capable`,
+      mutant: String.raw`AcceptFinite ==
+  /\ phase = "running"
+  /\ TRUE`,
+      invariant: 'UnsupportedFiniteNeverCommitted',
+    },
+    {
+      name: 'DispatchWithoutCapability',
+      original: String.raw`  /\ (outbox # "finite" \/ capable)`,
+      mutant: String.raw`  /\ TRUE`,
+      invariant: 'UnsupportedFiniteNeverDispatched',
+    },
+    {
+      name: 'RejectButCommit',
+      original: String.raw`RejectFinite ==
+  /\ phase = "running"
+  /\ ~capable
+  /\ rejected' = TRUE
+  /\ UNCHANGED <<phase, capable, outbox, receipt, legacy, replayed, delivered,`,
+      mutant: String.raw`RejectFinite ==
+  /\ phase = "running"
+  /\ ~capable
+  /\ rejected' = TRUE
+  /\ phase' = "terminal"
+  /\ receipt' = TRUE
+  /\ outbox' = "finite"
+  /\ UNCHANGED <<capable, legacy, replayed, delivered,`,
+      invariant: 'RejectedAttemptPreservesLease',
+    },
+    {
+      name: 'UpgradeLosesChild',
+      original: String.raw`Upgrade ==
+  /\ ~capable
+  /\ capable' = TRUE
+  /\ UNCHANGED <<phase, outbox, receipt, legacy, rejected, replayed, delivered,`,
+      mutant: String.raw`Upgrade ==
+  /\ ~capable
+  /\ capable' = TRUE
+  /\ outbox' = "none"
+  /\ UNCHANGED <<phase, receipt, legacy, rejected, replayed, delivered,`,
+      invariant: 'LegacyIntentNotSilentlyDiscarded',
+    },
+  ];
+  for (const guard of followupGuards) {
+    if (followupModelSource.split(guard.original).length !== 2)
+      throw new Error(`Retention follow-up ${guard.name} guard is absent or ambiguous`);
+    const name = `WorkOnceRetentionFollowups${guard.name}Mutant`;
+    const mutationFile = resolve(tlcWorkspace, `${name}.tla`);
+    const mutationConfig = resolve(tlcWorkspace, `${name}.cfg`);
+    writeFileSync(
+      mutationFile,
+      followupModelSource
+        .replace('MODULE WorkOnceRetentionFollowups', `MODULE ${name}`)
+        .replace(guard.original, guard.mutant),
+    );
+    writeFileSync(
+      mutationConfig,
+      `SPECIFICATION Spec\nINVARIANT ${guard.invariant}\nCHECK_DEADLOCK FALSE\n`,
+    );
+    requireInvariantRejects(name, mutationConfig, mutationFile, guard.invariant);
+  }
+  const unfairFollowupConfig = resolve(tlcWorkspace, 'WorkOnceRetentionFollowupsUnfair.cfg');
+  writeFileSync(
+    unfairFollowupConfig,
+    'SPECIFICATION Spec\nPROPERTY LegacyEventuallyDrains\nCHECK_DEADLOCK FALSE\n',
+  );
+  const unfairFollowup = spawnSync(
+    'java',
+    tlcArgs(
+      'WorkOnceRetentionFollowupsUnfair',
+      unfairFollowupConfig,
+      'WorkOnceRetentionFollowups.tla',
+      { heapMb: 192, workerCount: '1' },
+    ),
+    {
+      cwd: 'formal',
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
+    },
+  );
+  const unfairFollowupOutcome = classifyTlcOutcome(unfairFollowup);
+  if (
+    unfairFollowupOutcome.kind !== 'semantic_counterexample' ||
+    unfairFollowupOutcome.reason !== 'temporal_property_violation'
+  )
+    throw new Error(
+      `Old finite-child recovery unexpectedly passed without adapter-upgrade fairness: ${unfairFollowupOutcome.kind}/${unfairFollowupOutcome.reason}\n${unfairFollowupOutcome.output.slice(-1200)}`,
+    );
+  console.log(
+    'TLC finite-child admission, delivery, rejection and upgrade-intent guards reject four reachable mutants; legacy outbox recovery requires fair adapter upgrade.',
+  );
   runModel('WorkOnceRetention', 'WorkOnceRetention.cfg');
   // Fair maintenance is deliberately opt-in: no timer/scheduler means no progress
   // guarantee. Check the bounded temporal response separately from safety.
