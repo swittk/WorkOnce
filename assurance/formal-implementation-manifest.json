@@ -12614,13 +12614,19 @@
         "StaleAuthorityIsolated",
         "StaleCandidateCannotDeleteNew"
       ],
-      "modelDigest": "4e0788a24e816fbfe14140a77867aca5603ddcb33313ab5ba9fce300f8b3eadc",
+      "modelDigest": "7266f029d4cfccc32ac6815f147d72f16f62c0f401089e762bd49050fb2bb177",
       "modelFiles": [
         "formal/WorkOnceRetention.tla",
-        "formal/WorkOnceRetention.cfg"
+        "formal/WorkOnceRetention.cfg",
+        "formal/WorkOnceRetentionProgress.cfg"
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/retention-refinement.mjs",
+      "progressChecks": [
+        "EligibleEventuallyClears",
+        "RetentionTypeOK"
+      ],
+      "progressConfig": "formal/WorkOnceRetentionProgress.cfg",
       "sourceDigest": "2167c04bade2518240eff0f7bff9f2240099256e979e650a51ccfcac4c540b2d",
       "sourceFiles": [
         "src/model.ts",
@@ -12703,7 +12709,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "aa1f9a61944b350a309323ea1663c315725d28c1063926303712e337db7b1d61",
+    "assuranceInfrastructureDigest": "bb98156692961166815ff26e638484afa80124b536f277efeb090d7c09eec8bd",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -12745,6 +12751,7 @@
       "formal/WorkOnceReadHistory.tla",
       "formal/WorkOnceRetention.cfg",
       "formal/WorkOnceRetention.tla",
+      "formal/WorkOnceRetentionProgress.cfg",
       "formal/WorkOnceStorage.cfg",
       "formal/WorkOnceStorage.tla",
       "package-lock.json",
@@ -12848,7 +12855,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "5fd8f1f96abbea8edf24f2e5a546bb06402fed6478ebac4388df0832e51fa3c7",
+    "modelDigest": "0bec95caeffa8ab8d3612a2b4ab090eba138508313fb9a21c3e58015f2717184",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -12874,7 +12881,8 @@
       "formal/WorkOnceOutboxBudget.tla",
       "formal/WorkOnceOutboxBudget.cfg",
       "formal/WorkOnceRetention.tla",
-      "formal/WorkOnceRetention.cfg"
+      "formal/WorkOnceRetention.cfg",
+      "formal/WorkOnceRetentionProgress.cfg"
     ],
     "semanticEnvironmentDigest": "25447f1461dc5af27306bac5b0cfba43eaf2813cb309e2c97f963df3038260cf",
     "semanticEnvironmentFiles": [

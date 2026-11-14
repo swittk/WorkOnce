@@ -27,6 +27,7 @@ const modelFiles = [
   'formal/WorkOnceLifecycleContract.tla',
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
 ];
 const evidenceFiles = [
   'scripts/formal-sample-mutations.mjs',

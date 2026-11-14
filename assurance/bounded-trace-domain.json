@@ -66,6 +66,7 @@
     "test/process/retention-process.test.mjs",
     "formal/WorkOnceRetention.tla",
     "formal/WorkOnceRetention.cfg",
+    "formal/WorkOnceRetentionProgress.cfg",
     "scripts/check-retention-source-model-mutation.mjs",
     "scripts/external-transport-refinement.mjs",
     "test/external-transport-refinement.test.mjs",
@@ -130,7 +131,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "d1164c88788c62680a4cdbeca1757821cec5fa2632397eda1986f95172a69c00",
+  "evidenceDigest": "50bffaff29c5ddc26ebbb9653ae17f8bf12aa93ca0202adcc85ab74a36395098",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,

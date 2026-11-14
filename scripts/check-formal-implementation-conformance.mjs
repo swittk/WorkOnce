@@ -60,6 +60,7 @@ const modelFiles = [
   'formal/WorkOnceOutboxBudget.cfg',
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
 ];
 const outboxSourceFiles = [
   'src/work.ts',
@@ -97,7 +98,11 @@ const retentionSourceFiles = [
   'src/cas.ts',
   'src/external.ts',
 ];
-const retentionModelFiles = ['formal/WorkOnceRetention.tla', 'formal/WorkOnceRetention.cfg'];
+const retentionModelFiles = [
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+];
 const policySourceSymbols = {
   'src/work.ts': [
     'WorkRun.retry',
@@ -385,6 +390,7 @@ const assuranceInfrastructureFiles = [
   'test/process/retention-process.test.mjs',
   'formal/WorkOnceRetention.tla',
   'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
   'test/process/sqlite-busy-child.mjs',
   'test/process/sqlite-busy-startup.test.mjs',
   'test/storage-contract-hardening.test.mjs',
@@ -1575,6 +1581,8 @@ function buildManifest(live) {
       retention: {
         spec: 'formal/WorkOnceRetention.tla',
         config: 'formal/WorkOnceRetention.cfg',
+        progressConfig: 'formal/WorkOnceRetentionProgress.cfg',
+        progressChecks: readConfiguredChecks('formal/WorkOnceRetentionProgress.cfg'),
         configuredChecks: readConfiguredChecks('formal/WorkOnceRetention.cfg'),
         observationProducer: 'scripts/retention-refinement.mjs',
         observationBinding: 'scripts/formal.mjs',

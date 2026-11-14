@@ -680,6 +680,8 @@ const externallyGuardedFormalConfigs = [
   'formal/WorkOnceLifecycleTemporal.cfg',
   'formal/WorkOnceClaimScan.cfg',
   'formal/WorkOnceStorage.cfg',
+  // A temporal property is guarded by its fairness-removal TLC witness below.
+  'formal/WorkOnceRetentionProgress.cfg',
 ];
 assertAllFormalConfigsRegistered(directMutationPlans, externallyGuardedFormalConfigs);
 if (process.argv.includes('--config-coverage-only')) {
@@ -814,6 +816,129 @@ MutantSpec == Init /\ [][MutantNext]_vars
   );
   markExtraMutationWitness(lifecycleMutationPlan, 'NoLostContinuation');
   runModel('WorkOnceRetention', 'WorkOnceRetention.cfg');
+  // Fair maintenance is deliberately opt-in: no timer/scheduler means no progress
+  // guarantee. Check the bounded temporal response separately from safety.
+  runModel('WorkOnceRetentionProgress', 'WorkOnceRetentionProgress.cfg', 'WorkOnceRetention.tla');
+  const progressCfg = readFileSync('formal/WorkOnceRetentionProgress.cfg', 'utf8');
+  if (progressCfg.split('SPECIFICATION FairMaintenanceSpec').length !== 2)
+    throw new Error('Fair-retention progress specification changed unexpectedly');
+  const unfairCfgPath = resolve(tlcWorkspace, 'WorkOnceRetentionUnfair.cfg');
+  writeFileSync(
+    unfairCfgPath,
+    progressCfg.replace('SPECIFICATION FairMaintenanceSpec', 'SPECIFICATION Spec'),
+  );
+  const unfairResult = spawnSync(
+    'java',
+    tlcArgs('WorkOnceRetentionUnfair', unfairCfgPath, 'WorkOnceRetention.tla', {
+      heapMb: 192,
+      workerCount: '1',
+    }),
+    {
+      cwd: 'formal',
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
+    },
+  );
+  const unfairOutcome = classifyTlcOutcome(unfairResult);
+  if (
+    unfairOutcome.kind !== 'semantic_counterexample' ||
+    unfairOutcome.reason !== 'temporal_property_violation'
+  )
+    throw new Error(
+      `TLC did not reject retention maintenance without fairness: ${unfairOutcome.kind}/${unfairOutcome.reason} ${unfairOutcome.output.slice(-1500)}`,
+    );
+  console.log(
+    'TLC conditional retention progress passes with fair maintenance and fails without scheduler fairness.',
+  );
+
+  // Exercise each *actual guard* on reachable model histories. The generic nine
+  // invariant witnesses also prove the assertion formulas reject impossible
+  // states, but these seven mutants remove guards from real transition rules:
+  // a new incarnation, an older revision, old worker authority, time, outbox,
+  // live work, or permanent work. None is an arbitrary counter injection.
+  const retentionSource = readFileSync('formal/WorkOnceRetention.tla', 'utf8');
+  const retentionCfg = readFileSync('formal/WorkOnceRetention.cfg', 'utf8');
+  const retentionGuardMutants = [
+    {
+      name: 'EarlyDeadline',
+      needle: String.raw`  /\ clock >= DeadlineFor(p, at)`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'PendingOutbox',
+      needle: String.raw`  /\ ~hasOutbox`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'LiveWork',
+      needle: String.raw`  /\ state = "terminal"`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'PermanentWork',
+      needle: String.raw`  /\ FinitePolicy(p)`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'ForeverNeverDeleted',
+      maxTime: 1,
+    },
+    {
+      name: 'PruneIncarnation',
+      needle: String.raw`  /\ candidateIncarnation = incarnation
+  /\ candidateRevision = revision
+  /\ Eligible`,
+      replacement: String.raw`  /\ candidateRevision = revision
+  /\ Eligible`,
+      invariant: 'StaleCandidateCannotDeleteNew',
+    },
+    {
+      name: 'PruneRevision',
+      needle: String.raw`  /\ candidateIncarnation = incarnation
+  /\ candidateRevision = revision
+  /\ Eligible`,
+      replacement: String.raw`  /\ candidateIncarnation = incarnation
+  /\ Eligible`,
+      invariant: 'StaleCandidateCannotDeleteNew',
+    },
+    {
+      name: 'OldWorkerIncarnation',
+      needle: 'LET accepted == staleIncarnation = incarnation IN',
+      replacement: 'LET accepted == TRUE IN',
+      invariant: 'StaleAuthorityIsolated',
+    },
+  ];
+  for (const guard of retentionGuardMutants) {
+    if (retentionSource.split(guard.needle).length !== 2)
+      throw new Error(`Retention ${guard.name} guard mutation target is absent or ambiguous`);
+    const model = `WorkOnceRetentionGuard${guard.name}Mutant`;
+    const modulePath = resolve(tlcWorkspace, `${model}.tla`);
+    const configPath = resolve(tlcWorkspace, `${model}.cfg`);
+    writeFileSync(
+      modulePath,
+      retentionSource
+        .replace('MODULE WorkOnceRetention', `MODULE ${model}`)
+        .replace(guard.needle, guard.replacement),
+    );
+    // This guard mutant changes an actual Spec transition, not a synthetic MutantSpec.
+    const cfg = singleInvariantConfig(retentionCfg, guard.invariant).replace(
+      'SPECIFICATION MutantSpec',
+      'SPECIFICATION Spec',
+    );
+    if (!cfg.includes('CONSTANT MaxTime = 3'))
+      throw new Error('Retention bounded guard-mutation time domain drifted');
+    writeFileSync(
+      configPath,
+      cfg.replace('CONSTANT MaxTime = 3', `CONSTANT MaxTime = ${guard.maxTime ?? 0}`),
+    );
+    requireInvariantRejects(model, configPath, modulePath, guard.invariant);
+  }
+  console.log(
+    'TLC found seven reachable guard-removal counterexamples: active, outbox, deadline, permanent, incarnation, revision and old-worker fencing.',
+  );
   const { runRetentionRefinementSamples, assertRetentionRefinementSamples } = await import(
     './retention-refinement.mjs'
   );

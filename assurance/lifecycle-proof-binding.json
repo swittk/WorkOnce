@@ -20,7 +20,8 @@
     "formal/WorkOnceClaimScan.cfg",
     "formal/WorkOnceLifecycleContract.tla",
     "formal/WorkOnceRetention.tla",
-    "formal/WorkOnceRetention.cfg"
+    "formal/WorkOnceRetention.cfg",
+    "formal/WorkOnceRetentionProgress.cfg"
   ],
   "evidenceFiles": [
     "scripts/formal-sample-mutations.mjs",
@@ -55,6 +56,6 @@
     "test/process/retention-process.test.mjs"
   ],
   "sourceDigest": "d903b0e2700e7741fb2670a4ffd5c256b153ac22155a1320d714323c1f7f97b7",
-  "modelDigest": "34fb26abe16d6a92de41c17ca256dba61c2b6ae3f710d172cc17dd6834a609c4",
-  "evidenceDigest": "1f11785c3ce668777e37edf6d0339ea1ba079e7e407a9ce4a3becc6c92714ba9"
+  "modelDigest": "59c8a199843dc18adf02353167004ea98585fe7979679c5fd4d6d983806ac13a",
+  "evidenceDigest": "6e7691d11fd356aae537d861027304ee3df3c751265b637b13502040a42996b4"
 }

@@ -200,8 +200,12 @@ Prune ==
   /\ lastDeleteDeadline' = DeadlineFor(policy, terminalAt)
   /\ lastDeletedIncarnation' = candidateIncarnation
   /\ pruneWins' = pruneWins + 1
+  \* Derive the violation from the exact observed CAS identity, not a constant ghost flag.
+  \* A faulty missing revision/incarnation comparison would delete a stale candidate's successor.
+  /\ wrongDeletes' = wrongDeletes +
+       (IF candidateIncarnation # incarnation \/ candidateRevision # revision THEN 1 ELSE 0)
   /\ UNCHANGED <<now, created, usedIncarnations, candidateIncarnation,
-                  candidateRevision, rejected, staleWrites, wrongDeletes>>
+                  candidateRevision, rejected, staleWrites>>
 
 LostPruneRace ==
   /\ candidateIncarnation # NoCandidate
@@ -216,23 +220,36 @@ LostPruneRace ==
                   wrongDeletes, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
                   lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>
 
-RejectStale(op) ==
+\* Exercise an OLD saved worker/manual/outbox/CAS authority against the NEW row.
+\* A real comparison decides whether it could write; mutation of that comparison must
+\* produce a reachable stale-write counterexample, not an arbitrary counter jump.
+TryOldAuthority(op) ==
   /\ op \in StaleOperations
   /\ present
   /\ staleIncarnation # NoIncarnation
-  /\ staleIncarnation # incarnation
-  /\ rejected' = {op}
+  /\ LET accepted == staleIncarnation = incarnation IN
+       /\ rejected' = IF accepted THEN {} ELSE {op}
+       /\ staleWrites' = IF accepted THEN staleWrites + 1 ELSE staleWrites
   /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
                   now, created, deleted, usedIncarnations, candidateIncarnation,
-                  candidateRevision, staleIncarnation, staleRevision, staleWrites,
+                  candidateRevision, staleIncarnation, staleRevision,
                   wrongDeletes, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
                   lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>
 
-StaleOperation == \E op \in StaleOperations : RejectStale(op)
+StaleOperation == \E op \in StaleOperations : TryOldAuthority(op)
 
 Next == Create \/ Claim \/ Wait \/ Terminalize \/ DrainOutbox \/ ManualRestart \/
         Tick \/ Scan \/ Prune \/ LostPruneRace \/ StaleOperation
 Spec == Init /\ [][Next]_vars
+
+\* Safety alone never promises that a caller actually runs maintenance.
+\* Under weak fairness of scheduled scans and deletes, work that is already
+\* eligible cannot remain continuously present/eligible forever. This is a
+\* conditional progress property, not a guarantee of periodic scheduling.
+FairMaintenanceSpec == Spec /\ WF_vars(Scan) /\ WF_vars(Prune)
+EligibleEventuallyClears ==
+  (present /\ Eligible(policy, phase, outbox, terminalAt, now))
+    ~> (~present \/ ~Eligible(policy, phase, outbox, terminalAt, now))
 
 RetentionTypeOK ==
   /\ present \in BOOLEAN

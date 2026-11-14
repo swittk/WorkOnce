@@ -447,7 +447,20 @@ source-hash waiver. It covers permanent, zero and finite terminal retention; act
 outbox protection; storage-time eligibility; physical absence; fresh same-key incarnations;
 single-winner pruning; bounded live-row growth; and rejection of stale heartbeat, settlement,
 manual-command, claim-scan, outbox-ack and native-CAS authority after recreation. Its nine configured
-invariants each have an injected TLC mutation witness.
+invariants each have an injected TLC mutation witness. Additionally, the production-comparison
+guards are **tested directly**: seven guard-removal mutants (live work, outbox, deadline,
+permanent retention, stale prune incarnation, stale prune revision, and stale worker incarnation)
+each produce an actual reachable TLC counterexample rather than merely injecting a bad counter
+into an initial state. The stale-write and wrong-delete ghost counters are calculated from
+those attempted actions, not held at zero by `UNCHANGED`.
+
+`formal/WorkOnceRetentionProgress.cfg` separately checks the temporal property
+`EligibleEventuallyClears` under weak fairness of scheduled scans and pruning. TLC also
+demonstrates an infinite stuttering counterexample when scheduler fairness is removed.
+This is **conditional progress**: WorkOnce cannot promise records will be removed if an
+application never runs its opt-in maintenance loop, nor can it promise an application will
+stop restarting otherwise-eligible work. The bounded progress model spans zero-duration
+and elapsed finite-duration jobs, not arbitrary time horizons or third-party adapters.
 
 `scripts/retention-refinement.mjs` supplies fresh public-API observations from memory and real SQLite
 to the model. The observations exercise exact expiry equality, pre-deadline preservation, permanent
@@ -465,9 +478,11 @@ intentionally bounds receipt/idempotency replay: a request delivered after delet
 
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one source-bound build, ES2018/WebWorker compatibility, the compiler-discovered public map, compiled refinement/unit tests, real-process fault tests, bounded-domain auditing, the lifecycle/runtime/read/policy formal machines, the storage/conformance formal machine, mutation witnesses for configured invariants, and packed ESM/CommonJS/types consumer smoke. Independent checks are parallelized where their artifacts do not race; TLC families stay isolated from one another, and invariant mutations are batched rather than spawning one model-checker process per invariant.
+`npm run assurance` runs the complete local gate with one source-bound build, ES2018/WebWorker compatibility, the compiler-discovered public map, compiled refinement/unit tests, real-process fault tests, bounded-domain auditing, the lifecycle/runtime/read/policy formal machines, the storage/conformance formal machine, mutation witnesses for configured invariants, and packed ESM/CommonJS/types consumer smoke. Independent checks are parallelized where their artifacts do not race; TLC families stay isolated from one another. Artificial invariant-state witnesses are batched;
+seven distinct retention guard mutations deliberately run separate small, bounded models so a
+specific missing guard must produce its own reachable counterexample.
 
-The HPSERVER gate has a hard 60-second wall-clock budget. Timing is machine/version evidence rather than a portable performance promise; the structural rule is that adding assurance must not reintroduce per-trace or per-invariant process explosion or weaken semantic coverage to recover speed.
+The complete assurance gate targets approximately 60 seconds on an unloaded multicore development host, but this is a performance target, not an enforced timeout or a claim every run meets it. The strengthened 2026-11-14 run took 106 seconds on a shared host; the previously recorded full gate also exceeded the target. Track wall time when changing formal coverage, and optimize the harness without weakening properties or introducing per-trace model-checker spawning. Seven deliberately small guard-removal models provide direct counterexamples for individually meaningful retention failure modes rather than redundant arbitrary-state witnesses.
 
 ## Explicit limits
 
