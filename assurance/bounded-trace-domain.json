@@ -59,6 +59,17 @@
     "formal/WorkOnceOutbox.cfg",
     "formal/WorkOnceOutboxBudget.tla",
     "formal/WorkOnceOutboxBudget.cfg",
+    "scripts/retention-refinement.mjs",
+    "test/retention.test.mjs",
+    "test/retention-storage.test.mjs",
+    "test/process/retention-child.mjs",
+    "test/process/retention-process.test.mjs",
+    "formal/WorkOnceRetention.tla",
+    "formal/WorkOnceRetention.cfg",
+    "formal/WorkOnceRetentionProgress.cfg",
+    "formal/WorkOnceRetentionFollowups.tla",
+    "formal/WorkOnceRetentionFollowups.cfg",
+    "scripts/check-retention-source-model-mutation.mjs",
     "scripts/external-transport-refinement.mjs",
     "test/external-transport-refinement.test.mjs",
     "test/external.test.mjs",
@@ -122,7 +133,7 @@
     "scripts/prepare-package.mjs",
     "package.json"
   ],
-  "evidenceDigest": "444f3f8c418b52d1542d33df00991eab88cf673c4a221f95ed1661c637808775",
+  "evidenceDigest": "04c5baeab09b03f8a7b599547a7b79786e29c61fe33f16bed5c10290c27cbc76",
   "domain": {
     "attemptBudgetExhausted": true,
     "cancelQueued": true,
@@ -295,6 +306,23 @@
       "sqliteBusy": 1
     },
     "observationDigest": "eb89e2e3dada9b10a0b101c81f309b95ad30c6ffdbf89d8b71b53861ddd4e9d4"
+  },
+  "retentionBoundary": {
+    "samples": 7,
+    "counts": {
+      "boundary": 2,
+      "growth": 1,
+      "isolation": 2,
+      "race": 1,
+      "replay": 1
+    },
+    "adapters": [
+      "boundary:memory",
+      "boundary:sqlite",
+      "isolation:memory",
+      "isolation:sqlite"
+    ],
+    "observationDigest": "29e0f261a21a3c75dba418e943517aeff260ace0913333f34728e39007673078"
   },
   "observed": {
     "deterministicScenarios": 43,

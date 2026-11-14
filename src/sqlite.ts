@@ -31,10 +31,11 @@ export interface SqliteStoreOptions {
   /** Transfer close ownership of a caller-supplied database to the returned WorkStore. */
   closeDatabase?: boolean;
 }
-import { canonical, copy, dueAt, integer, WorkConflict } from './kernel.js';
+import { canonical, copy, dueAt, expiresAt, integer, WorkConflict } from './kernel.js';
 import {
   parsePersistedWorkRecord,
   validateStoredMetadata,
+  validateStoreDelete,
   validateStoreWrite,
 } from './storage-validation.js';
 
@@ -142,10 +143,43 @@ export function createSqliteStore(
       () =>
         db.exec(`CREATE TABLE IF NOT EXISTS workonce (
         id TEXT PRIMARY KEY, scope TEXT NOT NULL, kind TEXT NOT NULL, definition TEXT NOT NULL,
-        due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL
+        due_at INTEGER, pending_next INTEGER NOT NULL, body TEXT NOT NULL, expires_at INTEGER
       );`),
       busyTimeoutMs,
     );
+
+    // Version 0.3.0 shipped the exact seven-column shape below. A nullable indexed projection is
+    // additive and preserves every body byte; unknown development/schema shapes are never adopted.
+    retryStartupBusy(() => {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const columns = prepareSqlite(db, 'PRAGMA table_info(workonce)')
+          .all()
+          .map((value) => String(sqliteRow(value)!['name']));
+        const publishedColumns = [
+          'id',
+          'scope',
+          'kind',
+          'definition',
+          'due_at',
+          'pending_next',
+          'body',
+        ];
+        if (
+          columns.length === publishedColumns.length &&
+          columns.every((column, index) => column === publishedColumns[index])
+        )
+          db.exec('ALTER TABLE workonce ADD COLUMN expires_at INTEGER');
+        db.exec('COMMIT');
+      } catch (error) {
+        try {
+          db.exec('ROLLBACK');
+        } catch {
+          /* Preserve the original schema/bootstrap failure. */
+        }
+        throw error;
+      }
+    }, busyTimeoutMs);
 
     retryStartupBusy(
       () =>
@@ -153,20 +187,26 @@ export function createSqliteStore(
           CREATE INDEX IF NOT EXISTS workonce_due
             ON workonce(scope,kind,definition,due_at,id) WHERE due_at IS NOT NULL;
           CREATE INDEX IF NOT EXISTS workonce_outbox ON workonce(scope,id) WHERE pending_next > 0;
-          CREATE INDEX IF NOT EXISTS workonce_list ON workonce(scope,kind,definition,id);`),
+          CREATE INDEX IF NOT EXISTS workonce_list ON workonce(scope,kind,definition,id);
+          CREATE INDEX IF NOT EXISTS workonce_expired_scope
+            ON workonce(scope,expires_at,id) WHERE expires_at IS NOT NULL;
+          CREATE INDEX IF NOT EXISTS workonce_expired_definition
+            ON workonce(scope,kind,definition,expires_at,id) WHERE expires_at IS NOT NULL;`),
       busyTimeoutMs,
     );
 
-    const storedColumns = 'id,scope,kind,definition,due_at,pending_next,body';
+    const storedColumns = 'id,scope,kind,definition,due_at,pending_next,expires_at,body';
     const read = prepareSqlite(db, `SELECT ${storedColumns} FROM workonce WHERE id=?`);
     const write = prepareSqlite(
       db,
-      `INSERT INTO workonce(id,scope,kind,definition,due_at,pending_next,body)
-    SELECT ?,?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
+      `INSERT INTO workonce(id,scope,kind,definition,due_at,pending_next,expires_at,body)
+    SELECT ?,?,?,?,?,?,?,? WHERE ? IS NULL OR COALESCE(?, CAST(unixepoch('subsec')*1000 AS INTEGER)) < ?
     ON CONFLICT(id) DO UPDATE SET
       scope=excluded.scope,kind=excluded.kind,definition=excluded.definition,
-      due_at=excluded.due_at,pending_next=excluded.pending_next,body=excluded.body`,
+      due_at=excluded.due_at,pending_next=excluded.pending_next,
+      expires_at=excluded.expires_at,body=excluded.body`,
     );
+    const remove = prepareSqlite(db, 'DELETE FROM workonce WHERE id=?');
     const queries = new Map<string, SqliteStatement>();
     const clock = prepareSqlite(db, "SELECT CAST(unixepoch('subsec')*1000 AS INTEGER) AS now");
     const now = () =>
@@ -181,12 +221,14 @@ export function createSqliteStore(
         kind: value['kind'],
         definition: value['definition'],
         dueAt: value['due_at'],
+        expiresAt: value['expires_at'],
         pendingNext: value['pending_next'],
       });
       return row;
     }
 
     return {
+      retention: true,
       async atomic<T>(
         id: string,
         decide: (row: WorkRecord | undefined, now: number) => StoreChange<T>,
@@ -194,10 +236,17 @@ export function createSqliteStore(
         db.exec('BEGIN IMMEDIATE');
         try {
           const current = parseStored(sqliteRow(read.get(id)));
-          const change = decide(current ? copy(current) : undefined, now());
+          const time = now();
+          const change = decide(current ? copy(current) : undefined, time);
           // Validate/encode the returned value before commit so serialization errors roll back too.
           const value = copy(change.value);
-          if (change.next) {
+          if (change.next !== undefined && change.delete === true)
+            throw new Error('Store decision cannot replace and delete work together');
+          if (change.delete === true) {
+            validateStoreDelete(id, current, time);
+            if (Number(remove.run(id).changes) !== 1)
+              throw new Error('Atomic work deletion did not remove its row');
+          } else if (change.next !== undefined) {
             validateStoreWrite(id, current, change.next, change.validUntil);
             const row = change.next;
             const stored = write.run(
@@ -207,6 +256,7 @@ export function createSqliteStore(
               row.definition,
               dueAt(row) ?? null,
               row.outbox.length,
+              expiresAt(row) ?? null,
               canonical(row),
               change.validUntil ?? null,
               options.now ? now() : null,
@@ -244,8 +294,8 @@ export function createSqliteStore(
       },
       async query(query: WorkQuery) {
         integer(query.limit, 'limit', 1);
-        if (query.select === 'due' && query.afterId !== undefined)
-          throw new RangeError('afterId is not supported for due queries');
+        if ((query.select === 'due' || query.select === 'expired') && query.afterId !== undefined)
+          throw new RangeError(`afterId is not supported for ${query.select} queries`);
         const time = now();
         const clauses = ['scope=?'];
         const params: (string | number)[] = [query.scope];
@@ -261,13 +311,22 @@ export function createSqliteStore(
           clauses.push('due_at IS NOT NULL AND due_at<=?');
           params.push(time);
         }
+        if (query.select === 'expired') {
+          clauses.push('expires_at IS NOT NULL AND expires_at<=?');
+          params.push(time);
+        }
         if (query.select === 'outbox') clauses.push('pending_next>0');
         if (query.afterId !== undefined) {
           clauses.push('id>?');
           params.push(query.afterId);
         }
         params.push(query.limit);
-        const order = query.select === 'due' ? 'due_at,id' : 'id';
+        const order =
+          query.select === 'due'
+            ? 'due_at,id'
+            : query.select === 'expired'
+              ? 'expires_at,id'
+              : 'id';
         const sql = `SELECT ${storedColumns} FROM workonce WHERE ${clauses.join(' AND ')} ORDER BY ${order} LIMIT ?`;
         let statement = queries.get(sql);
         if (!statement) {

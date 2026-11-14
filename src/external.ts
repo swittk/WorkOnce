@@ -116,8 +116,8 @@ function validateClaimBatch<I>(leases: readonly LeasedWork<I>[], limit: number):
     throw new RangeError('External claim returned more leases than requested');
   const attempts = new Set<string>();
   for (const lease of leases) {
-    const { workId, generation, fence } = lease.attempt;
-    const identity = JSON.stringify([workId, generation, fence]);
+    const { workId, generation, fence, incarnation } = lease.attempt;
+    const identity = JSON.stringify([workId, generation, fence, incarnation]);
     if (attempts.has(identity))
       throw new RangeError('External claim returned duplicate attempt identity');
     attempts.add(identity);

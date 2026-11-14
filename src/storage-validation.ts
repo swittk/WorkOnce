@@ -8,7 +8,7 @@ import type {
   WorkRecord,
   WorkRequest,
 } from './model.js';
-import { dueAt, integer, workId } from './kernel.js';
+import { dueAt, expiresAt, integer, workId } from './kernel.js';
 
 const utf8 = new TextEncoder();
 
@@ -32,11 +32,34 @@ export function validateStoreWrite(
   validUntil: number | undefined,
 ): void {
   if (next.id !== id) throw new Error('Store decision changed work identity');
+  const finite = next.retention !== undefined && next.retention !== 'forever';
+  if (next.retention !== undefined && next.retention !== 'forever')
+    integer(next.retention.afterTerminalMs, 'afterTerminalMs');
+  const hasIncarnation = typeof next.incarnation === 'string' && next.incarnation.length > 0;
+  if (finite !== hasIncarnation || (next.incarnation !== undefined && !hasIncarnation))
+    throw new Error('Finite work must have exactly one non-empty creation incarnation');
+  if (current !== undefined && current.incarnation !== next.incarnation)
+    throw new Error('Store decision changed work incarnation');
   const expectedRevision = (current?.revision ?? 0) + 1;
   if (!Number.isSafeInteger(next.revision) || next.revision !== expectedRevision) {
     throw new Error('Store decision must advance exactly one revision');
   }
   if (validUntil !== undefined) integer(validUntil, 'validUntil');
+}
+
+/** Verify that an atomic delete targets one finite row whose indexed deadline has passed. */
+export function validateStoreDelete(
+  id: string,
+  current: WorkRecord | undefined,
+  now: number,
+): number {
+  integer(now, 'clock');
+  if (current === undefined || current.id !== id)
+    throw new Error('Store decision cannot delete absent or different work');
+  const deadline = expiresAt(current);
+  if (deadline === undefined || deadline > now)
+    throw new Error('Store decision cannot delete work before it expires');
+  return deadline;
 }
 
 function invalidPersistedRow(): never {
@@ -66,6 +89,12 @@ function optionalString(value: unknown): string | undefined {
   return value === undefined ? undefined : stringValue(value);
 }
 
+function validateRetention(retention: unknown): void {
+  if (retention === undefined || retention === 'forever') return;
+  const finite = object(retention);
+  int(finite.afterTerminalMs);
+}
+
 function validateLimits(value: unknown): asserts value is WorkLimits {
   const limits = object(value);
   int(limits.leaseMs, 1);
@@ -83,10 +112,13 @@ function validateRequest(value: unknown): asserts value is WorkRequest {
   validateLimits(row.limits);
   int(row.availableAt);
   if (!Object.prototype.hasOwnProperty.call(row, 'input')) invalidPersistedRow();
+  validateRetention(row.retention);
   if (id !== workId(scope, kind, key)) invalidPersistedRow();
 }
 function validateAttemptRef(value: unknown): asserts value is AttemptRef {
   const attempt = object(value);
+  const incarnation = optionalString(attempt.incarnation);
+  if (incarnation !== undefined && incarnation.length === 0) invalidPersistedRow();
   stringValue(attempt.workId);
   int(attempt.generation, 1);
   int(attempt.fence);
@@ -144,11 +176,17 @@ function validateReceipt(
   value: unknown,
   workId: string,
   generation: number,
+  incarnation: string | undefined,
 ): asserts value is SettlementReceipt {
   const receipt = object(value);
   validateAttemptRef(receipt.attempt);
   const attempt = receipt.attempt as AttemptRef;
-  if (attempt.workId !== workId || attempt.generation !== generation) invalidPersistedRow();
+  if (
+    attempt.workId !== workId ||
+    attempt.incarnation !== incarnation ||
+    attempt.generation !== generation
+  )
+    invalidPersistedRow();
   if (!/^[a-f0-9]{64}$/u.test(stringValue(receipt.submissionHash))) invalidPersistedRow();
   if (receipt.phase !== undefined) validatePhase(receipt.phase);
 }
@@ -169,6 +207,9 @@ function validateEvent(value: unknown): asserts value is WorkEvent {
 export function validateWorkRecord(value: unknown): asserts value is WorkRecord {
   validateRequest(value);
   const row = value as unknown as Record<string, unknown>;
+  const finite = row.retention !== undefined && row.retention !== 'forever';
+  const incarnation = optionalString(row.incarnation);
+  if (finite !== (incarnation !== undefined && incarnation.length > 0)) invalidPersistedRow();
   int(row.revision, 1);
   const generation = int(row.generation, 1);
   const fence = int(row.fence);
@@ -185,13 +226,15 @@ export function validateWorkRecord(value: unknown): asserts value is WorkRecord 
   if (phase.state === 'running') {
     if (
       phase.attempt.workId !== row.id ||
+      phase.attempt.incarnation !== row.incarnation ||
       phase.attempt.generation !== generation ||
       phase.attempt.fence !== fence ||
       phase.attempt.number !== attempts
     )
       invalidPersistedRow();
   }
-  if (row.receipt !== undefined) validateReceipt(row.receipt, stringValue(row.id), generation);
+  if (row.receipt !== undefined)
+    validateReceipt(row.receipt, stringValue(row.id), generation, optionalString(row.incarnation));
   if (!Array.isArray(row.outbox)) invalidPersistedRow();
   if (row.outbox.length > 0 && phase.state !== 'succeeded' && phase.state !== 'failed')
     invalidPersistedRow();
@@ -220,6 +263,7 @@ export function validateStoredMetadata(
     kind: unknown;
     definition: unknown;
     dueAt: unknown;
+    expiresAt: unknown;
     pendingNext: unknown;
   },
 ): void {
@@ -232,6 +276,12 @@ export function validateStoredMetadata(
     invalidPersistedRow();
   const expectedDue = dueAt(row) ?? null;
   const actualDue = metadata.dueAt === null ? null : int(metadata.dueAt);
-  if (actualDue !== expectedDue || int(metadata.pendingNext) !== row.outbox.length)
+  const expectedExpiry = expiresAt(row) ?? null;
+  const actualExpiry = metadata.expiresAt === null ? null : int(metadata.expiresAt);
+  if (
+    actualDue !== expectedDue ||
+    actualExpiry !== expectedExpiry ||
+    int(metadata.pendingNext) !== row.outbox.length
+  )
     invalidPersistedRow();
 }

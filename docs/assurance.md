@@ -16,7 +16,7 @@ WorkOnce assurance has four separate layers. None is presented as proof of exact
 
 The extractor inventories exported functions/constructors, public class methods, exported interface methods, returned callable objects such as `createWorkOnce().dispatch`, and callable policy fields. It then recursively walks every package-owned input/output/callback type, including optional/null/undefined flags, recursive references, index values and callback arguments/results.
 
-The reviewed manifest currently maps **142 public callables**, **21 callable policy/storage fields**, **109 reachable package-owned types**, and **337 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
+The reviewed manifest currently maps **152 public callables**, **22 callable policy/storage fields**, **117 reachable package-owned types**, and **382 individual fields**. Every field carries a semantic classification, model/abstraction concepts, a type hash and executable evidence. No traversed public type is truncated.
 
 `assurance/formal-implementation-manifest.json` is fail-closed. A new callable, input/output/callback field, overload/signature, field type, configured TLA invariant, or bound source/model semantic digest makes assurance fail until the map is deliberately regenerated and reviewed. Bound WorkOnce lifecycle source changing without a TLA/CFG semantic change is rejected by `assurance:update` unless the reviewer explicitly acknowledges that the abstract machine intentionally stays unchanged.
 
@@ -440,15 +440,80 @@ This work exposed two supported storage defects. A false native compare-exchange
 
 Storage proof is independently source/model bound across storage, validation, memory, SQLite, CAS and conformance code. Source-only drift with unchanged `WorkOnceStorage` semantics fails closed. The storage proof files, process tests, packaging/source-freshness guards and mutation controls are also included in the global assurance-infrastructure digest.
 
+## Finite-retention deletion and incarnation fencing
+
+`formal/WorkOnceRetention.tla` is a separate bounded deletion/recreation machine rather than a
+source-hash waiver. It covers permanent, zero and finite terminal retention; active and pending-
+outbox protection; storage-time eligibility; physical absence; fresh same-key incarnations;
+single-winner pruning; bounded live-row growth; and rejection of stale heartbeat, settlement,
+manual-command, claim-scan, outbox-ack and native-CAS authority after recreation. Its nine configured
+invariants each have an injected TLC mutation witness. Additionally, the production-comparison
+guards are **tested directly**: seven guard-removal mutants (live work, outbox, deadline,
+permanent retention, stale prune incarnation, stale prune revision, and stale worker incarnation)
+each produce an actual reachable TLC counterexample rather than merely injecting a bad counter
+into an initial state. The stale-write and wrong-delete ghost counters are calculated from
+those attempted actions, not held at zero by `UNCHANGED`.
+
+`formal/WorkOnceRetentionProgress.cfg` separately checks the temporal property
+`EligibleEventuallyClears` under weak fairness of scheduled scans and pruning. TLC also
+demonstrates an infinite stuttering counterexample when scheduler fairness is removed.
+This is **conditional progress**: WorkOnce cannot promise records will be removed if an
+application never runs its opt-in maintenance loop, nor can it promise an application will
+stop restarting otherwise-eligible work. The bounded progress model spans zero-duration
+and elapsed finite-duration jobs, not arbitrary time horizons or third-party adapters.
+
+`scripts/retention-refinement.mjs` supplies fresh public-API observations from memory and real SQLite
+to the model. The observations exercise exact expiry equality, pre-deadline preservation, permanent
+retention, outbox drain ordering, physical deletion, fresh incarnation, stale attempt rejection,
+independent SQLite prune races, deterministic finite follow-up descriptions and SQLite page reuse
+after repeated create/settle/delete cycles. The bounded-domain report content-binds those
+observations, the public retention and process-crash tests, the retention model/config and the
+source/model mutation control.
+
+`formal/WorkOnceRetentionFollowups.tla` isolates one additional safety boundary: a
+permanent-only store cannot commit a terminal parent containing a finite child. It models
+success/failure child admission, rejection without changing the active parent, and correct
+dispatch eligibility. Four targeted transition mutants must produce reachable TLC counterexamples: accepting
+an unsupported finite child, dispatching it without capability, committing despite a rejected
+settlement, and silently dropping the child during an adapter upgrade. The model also starts
+from a pre-existing invalid finite-child outbox, preserves its intent, and checks conditional
+eventual drain **only if** the adapter is upgraded and dispatch is fairly scheduled. The unfair-upgrade model must fail this
+temporal property. Real memory/SQLite public-API tests cover direct and planner-generated
+follow-ups, committed receipt replay after losing capability, and successful in-place
+repair after restoring a retention-capable adapter. No automatic policy downgrading or
+silent loss of child intents is permitted.
+
+The actual ABA refinement tests now claim the recreated work with the same worker label, work
+ID, generation and fence as the old attempt, leaving **incarnation as the only distinguishing
+attempt authority**. The observation checks the replacement is running, both old heartbeat and
+settlement reject, and the fresh snapshot is unchanged. Removing only the incarnation comparison
+from \`assertCurrent\` was independently tested as a real source mutant: the running-replacement
+test fails specifically because the stale heartbeat is no longer rejected. The corresponding
+observation booleans are content-bound into the retention TLA model and fail closed on omission.
+
+The real-process test kills a SQLite process after terminal settlement commits, then reopens the
+database, prunes the recovered row, recreates the same business key and rejects the killed worker's
+old heartbeat and settlement reference. This is bounded crash/restart evidence for local SQLite,
+not a claim that arbitrary external effects become exactly once. A finite retention deadline also
+intentionally bounds receipt/idempotency replay: a request delivered after deletion is fresh work.
+
 ## Fast complete gate
 
-`npm run assurance` runs the complete local gate with one source-bound build, ES2018/WebWorker compatibility, the compiler-discovered public map, compiled refinement/unit tests, real-process fault tests, bounded-domain auditing, the lifecycle/runtime/read/policy formal machines, the storage/conformance formal machine, mutation witnesses for configured invariants, and packed ESM/CommonJS/types consumer smoke. Independent checks are parallelized where their artifacts do not race; TLC families stay isolated from one another, and invariant mutations are batched rather than spawning one model-checker process per invariant.
+`npm run assurance` runs the complete local gate with one source-bound build, ES2018/WebWorker compatibility, the compiler-discovered public map, compiled refinement/unit tests, real-process fault tests, bounded-domain auditing, the lifecycle/runtime/read/policy formal machines, the storage/conformance formal machine, mutation witnesses for configured invariants, and packed ESM/CommonJS/types consumer smoke. Independent checks are parallelized where their artifacts do not race; TLC families stay isolated from one another. Artificial invariant-state witnesses are batched;
+seven distinct retention guard mutations deliberately run separate small, bounded models so a
+specific missing guard must produce its own reachable counterexample.
 
-The HPSERVER gate has a hard 60-second wall-clock budget. Timing is machine/version evidence rather than a portable performance promise; the structural rule is that adding assurance must not reintroduce per-trace or per-invariant process explosion or weaken semantic coverage to recover speed.
+The complete assurance gate targets approximately 60 seconds on an unloaded multicore development host, but this is a performance target, not an enforced timeout or a claim every run meets it. The strengthened 2026-11-14 run took 106 seconds on a shared host; the previously recorded full gate also exceeded the target. Track wall time when changing formal coverage, and optimize the harness without weakening properties or introducing per-trace model-checker spawning. Seven deliberately small guard-removal models provide direct counterexamples for individually meaningful retention failure modes rather than redundant arbitrary-state witnesses.
 
 ## Explicit limits
 
-No distributed-global capacity limiter, arbitrary workflow replay, automatic database migration, ID reuse/garbage collection or exactly-once external-effect claim is made. The old per-domain embedded adapter helper was removed; supply one proven store shared by all work kinds. Production deployment additionally needs authentication, an appropriate storage clock, coordinated backup/restore, correct external idempotency and the application's own domain guards.
+No distributed-global capacity limiter, arbitrary workflow replay, unlimited deduplication after a
+finite retention deadline or exactly-once external-effect claim is made. Opt-in finite retention
+physically deletes eligible terminal rows and permits same-key reuse only with a fresh incarnation;
+permanent retention remains the default. The old per-domain embedded adapter helper was removed;
+supply one proven store shared by all work kinds. Production deployment additionally needs
+authentication, an appropriate storage clock, coordinated backup/restore, correct external
+idempotency and the application's own domain guards.
 
 ## Aliases and storage representation
 

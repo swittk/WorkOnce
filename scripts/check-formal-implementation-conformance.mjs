@@ -58,6 +58,11 @@ const modelFiles = [
   'formal/WorkOnceOutbox.cfg',
   'formal/WorkOnceOutboxBudget.tla',
   'formal/WorkOnceOutboxBudget.cfg',
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 const outboxSourceFiles = [
   'src/work.ts',
@@ -84,6 +89,24 @@ const storageSourceFiles = [
   'src/conformance.ts',
 ];
 const storageModelFiles = ['formal/WorkOnceStorage.tla', 'formal/WorkOnceStorage.cfg'];
+const retentionSourceFiles = [
+  'src/model.ts',
+  'src/kernel.ts',
+  'src/work.ts',
+  'src/storage.ts',
+  'src/storage-validation.ts',
+  'src/memory.ts',
+  'src/sqlite.ts',
+  'src/cas.ts',
+  'src/external.ts',
+];
+const retentionModelFiles = [
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
+];
 const policySourceSymbols = {
   'src/work.ts': [
     'WorkRun.retry',
@@ -355,6 +378,7 @@ const assuranceInfrastructureFiles = [
   'scripts/outbox-refinement.mjs',
   'scripts/check-outbox-source-model-binding-mutation.mjs',
   'scripts/check-outbox-implementation-mutations.mjs',
+  'scripts/check-retention-source-model-mutation.mjs',
   'test/outbox-refinement.test.mjs',
   'test/outbox-cursor-control.test.mjs',
   'test/process/outbox-process.test.mjs',
@@ -363,6 +387,16 @@ const assuranceInfrastructureFiles = [
   'formal/WorkOnceOutbox.cfg',
   'formal/WorkOnceOutboxBudget.tla',
   'formal/WorkOnceOutboxBudget.cfg',
+  'scripts/retention-refinement.mjs',
+  'test/retention.test.mjs',
+  'test/retention-storage.test.mjs',
+  'test/process/retention-child.mjs',
+  'test/process/retention-process.test.mjs',
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
   'test/process/sqlite-busy-child.mjs',
   'test/process/sqlite-busy-startup.test.mjs',
   'test/storage-contract-hardening.test.mjs',
@@ -451,6 +485,11 @@ const evidenceByClassification = {
     'test/conformance.test.mjs',
     'test/edge-regressions.test.mjs',
     'test/process/sqlite-process.test.mjs',
+  ],
+  'retention-boundary': [
+    'test/retention.test.mjs',
+    'test/retention-storage.test.mjs',
+    'test/process/retention-process.test.mjs',
   ],
   'ergonomic-wrapper': ['test/item.test.mjs', 'test/types/api.ts'],
   observational: ['test/inspection.test.mjs', 'test/types/api.ts'],
@@ -1068,6 +1107,9 @@ CHECK_DEADLOCK FALSE
 }
 function callableClassification(key) {
   if (key === 'root.exponentialBackoff') return 'policy-callback';
+  if (key.endsWith('.deleteExchange') || key.includes('.PrunerOptions.'))
+    return 'retention-boundary';
+  if (/\.(?:prune|runPruner)$/u.test(key)) return 'retention-boundary';
   if (key.startsWith('cas.') || key.startsWith('sqlite.') || key.startsWith('memory.'))
     return 'storage-boundary';
   if (key.startsWith('conformance.')) return 'assurance-infrastructure';
@@ -1079,6 +1121,11 @@ function callableClassification(key) {
   return 'abstract-semantic';
 }
 function callableFieldClassification(typeName, fieldName) {
+  if (
+    typeName.startsWith('PrunerOptions') ||
+    ['deleteExchange', 'prune', 'runPruner'].includes(fieldName)
+  )
+    return 'retention-boundary';
   if (
     typeName.startsWith('WorkDefinition') &&
     ['executionLimits', 'limits', 'retry', 'wait', 'defer', 'thenDo', 'next', 'key'].includes(
@@ -1096,6 +1143,21 @@ function callableFieldClassification(typeName, fieldName) {
 }
 function fieldClassification(typeName, fieldName, callable) {
   if (callable) return callableFieldClassification(typeName, fieldName);
+  if (
+    [
+      'retention',
+      'incarnation',
+      'expectedIncarnation',
+      'afterTerminalMs',
+      'expiredAt',
+      'delete',
+    ].includes(fieldName) ||
+    typeName.startsWith('PruneOptions') ||
+    typeName.startsWith('PrunerOptions') ||
+    typeName.startsWith('WorkRetention') ||
+    typeName.startsWith('CompareDelete')
+  )
+    return 'retention-boundary';
   if (['input', 'result'].includes(fieldName)) return 'opaque-payload';
   if (
     ['WorkerOptions', 'ExternalWorkerOptions'].includes(typeName) &&
@@ -1137,6 +1199,15 @@ function fieldClassification(typeName, fieldName, callable) {
   return 'observational';
 }
 function modelConceptsForField(typeName, fieldName, classification) {
+  if (fieldName === 'retention') return ['retentionPolicy', 'expiryEligibility'];
+  if (fieldName === 'incarnation' || fieldName === 'expectedIncarnation')
+    return ['incarnationFence', 'deleteRecreateABA'];
+  if (fieldName === 'afterTerminalMs' || fieldName === 'expiredAt')
+    return ['terminalDeadline', 'storageClock'];
+  if (fieldName === 'delete' || fieldName === 'deleteExchange')
+    return ['physicalDeletion', 'storageAtomicity'];
+  if (classification === 'retention-boundary')
+    return ['expiryEligibility', 'boundedPrune', 'physicalDeletion'];
   if (fieldName === 'afterId') return ['outboxCursor', 'storageOrdering'];
   if (fieldName === 'outbox') return ['pendingNext', 'childCreated', 'outboxQueue'];
   if (fieldName === 'submissionHash' || fieldName === 'receipt')
@@ -1192,6 +1263,7 @@ function modelConceptsForField(typeName, fieldName, classification) {
   return ['observationOnly'];
 }
 function modelActionsForKey(key) {
+  if (/\.(?:prune|runPruner)$/u.test(key)) return ['Prune'];
   if (key === 'root.retry' || key === 'root.WorkRun.retry') return ['Retry'];
   if (
     key === 'root.wait' ||
@@ -1266,6 +1338,7 @@ function runtimeContractsForKey(key) {
   return [];
 }
 function modelActionsForField(typeName, fieldName) {
+  if (fieldName === 'prune' || fieldName === 'runPruner') return ['Prune'];
   if (typeName.startsWith('WorkDefinition')) {
     if (fieldName === 'retry') return ['Retry'];
     if (fieldName === 'wait' || fieldName === 'defer') return ['Defer'];
@@ -1401,6 +1474,7 @@ function buildManifest(live) {
         'AckChild',
         'OutboxDispatch',
         'OutboxBudgetDispatch',
+        'Prune',
         'Tick',
       ],
       configuredChecks: readConfiguredChecks(),
@@ -1509,6 +1583,22 @@ function buildManifest(live) {
         modelFiles: storageModelFiles,
         sourceDigest: semanticSourceDigest(storageSourceFiles),
         modelDigest: formalDigest(storageModelFiles),
+      },
+      retention: {
+        spec: 'formal/WorkOnceRetention.tla',
+        config: 'formal/WorkOnceRetention.cfg',
+        progressConfig: 'formal/WorkOnceRetentionProgress.cfg',
+        progressChecks: readConfiguredChecks('formal/WorkOnceRetentionProgress.cfg'),
+        followupSpec: 'formal/WorkOnceRetentionFollowups.tla',
+        followupConfig: 'formal/WorkOnceRetentionFollowups.cfg',
+        followupChecks: readConfiguredChecks('formal/WorkOnceRetentionFollowups.cfg'),
+        configuredChecks: readConfiguredChecks('formal/WorkOnceRetention.cfg'),
+        observationProducer: 'scripts/retention-refinement.mjs',
+        observationBinding: 'scripts/formal.mjs',
+        sourceFiles: retentionSourceFiles,
+        modelFiles: retentionModelFiles,
+        sourceDigest: semanticSourceDigest(retentionSourceFiles),
+        modelDigest: formalDigest(retentionModelFiles),
       },
     },
     entrypoints: expectedEntrypoints,
@@ -1646,6 +1736,14 @@ function renderReport(manifest) {
     `- Checked invariants: ${manifest.model.storage.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
     `- Bound storage source: ${manifest.model.storage.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
     '',
+    '## Finite-retention boundary',
+    '',
+    `- Spec: \`${manifest.model.retention.spec}\``,
+    `- Fresh public-API observations: \`${manifest.model.retention.observationProducer}\` via \`${manifest.model.retention.observationBinding}\``,
+    `- Checked invariants: ${manifest.model.retention.configuredChecks.map((name) => `\`${name}\``).join(', ')}`,
+    `- Finite-child admission/recovery model: \`${manifest.model.retention.followupSpec}\` (safety + temporal property)`,
+    `- Bound retention source: ${manifest.model.retention.sourceFiles.map((name) => `\`${name}\``).join(', ')}`,
+    '',
     '## Assurance infrastructure binding',
     '',
     `- Source semantic digest schema: \`${manifest.model.sourceDigestSchema}\``,
@@ -1739,6 +1837,7 @@ const bindingOnly = process.argv.find((argument) =>
     '--check-policy-binding-only',
     '--check-local-runner-binding-only',
     '--check-storage-binding-only',
+    '--check-retention-binding-only',
     '--check-external-binding-only',
     '--check-outbox-binding-only',
   ].includes(argument),
@@ -1778,6 +1877,15 @@ if (bindingOnly) {
     );
   } else if (bindingOnly === '--check-outbox-binding-only') {
     assertOutboxSourceModelPairing(previous.model?.outbox);
+  } else if (bindingOnly === '--check-retention-binding-only') {
+    assertSourceModelPairing(
+      previous.model?.retention,
+      {
+        sourceDigest: semanticSourceDigest(retentionSourceFiles),
+        modelDigest: formalDigest(retentionModelFiles),
+      },
+      'Bound finite-retention semantics changed without a WorkOnceRetention model semantic change. Update the retention abstraction or explicitly acknowledge the unchanged abstraction after review.',
+    );
   } else {
     assertSourceModelPairing(
       previous.model?.storage,
@@ -1859,6 +1967,11 @@ if (write) {
     previous?.model?.storage,
     current.model.storage,
     'Bound storage/conformance semantics changed without a WorkOnceStorage formal change. Update the storage abstraction or explicitly acknowledge the unchanged abstraction after review.',
+  );
+  assertSourceModelPairing(
+    previous?.model?.retention,
+    current.model.retention,
+    'Bound finite-retention semantics changed without a WorkOnceRetention model semantic change. Update the retention abstraction or explicitly acknowledge the unchanged abstraction after review.',
   );
   assertSourceModelPairing(previous?.model?.outbox, current.model.outbox, outboxPairingMessage);
   if (

@@ -1,10 +1,10 @@
 # Formal implementation coverage
 
-- Public callables: **146**
-- Callable policy/storage fields: **21**
-- Reachable package-owned types: **110**
-- Reachable package-owned fields: **338**
-- Maximum recursive type depth: **8**
+- Public callables: **152**
+- Callable policy/storage fields: **22**
+- Reachable package-owned types: **117**
+- Reachable package-owned fields: **382**
+- Maximum recursive type depth: **9**
 - Truncated public types: **0**
 
 ## Model actions
@@ -27,6 +27,7 @@
 - `AckChild`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `OutboxDispatch`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
 - `OutboxBudgetDispatch`: `root.createWorkOnce.dispatch`, `root.createWorkOnce.runDispatcher`
+- `Prune`: `root.WorkQueue.prune`, `root.createWorkOnce.prune`, `root.createWorkOnce.runPruner`
 - `Tick`: **internal/time-only action**
 
 ## Runtime boundary model
@@ -106,12 +107,20 @@
 - Checked invariants: `AtMostOneCallerCommit`, `BoundedCompareMisses`, `DeadlineExpiryStopsRetry`, `DecisionFaultCannotCommit`, `FreshReadBeforeCommit`, `MissCannotCommit`, `ReachedDeadlineCannotCommit`, `StorageSamplesConform`, `StorageTypeOK`, `UnknownOutcomeStopsRetry`
 - Bound storage source: `src/storage.ts`, `src/storage-validation.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`, `src/conformance.ts`
 
+## Finite-retention boundary
+
+- Spec: `formal/WorkOnceRetention.tla`
+- Fresh public-API observations: `scripts/retention-refinement.mjs` via `scripts/formal.mjs`
+- Checked invariants: `ActualDeletion`, `BoundedLiveRows`, `DeletionOnlyWhenEligible`, `ForeverNeverDeleted`, `FreshIncarnationAfterRecreate`, `RetentionTypeOK`, `SinglePruneWinner`, `StaleAuthorityIsolated`, `StaleCandidateCannotDeleteNew`
+- Finite-child admission/recovery model: `formal/WorkOnceRetentionFollowups.tla` (safety + temporal property)
+- Bound retention source: `src/model.ts`, `src/kernel.ts`, `src/work.ts`, `src/storage.ts`, `src/storage-validation.ts`, `src/memory.ts`, `src/sqlite.ts`, `src/cas.ts`, `src/external.ts`
+
 ## Assurance infrastructure binding
 
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
-- Bound proof/checker files: **133**
-- Content digest: `5409480398ce11b211f15cb5271cb5bd19a3d79b80f268c7cbe9951a59b4f637`
+- Bound proof/checker files: **144**
+- Content digest: `787aaaabbc70f36f881c568b3c355abbfdea5122c287143ba7154c7a4d269b01`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `25447f1461dc5af27306bac5b0cfba43eaf2813cb309e2c97f963df3038260cf`
 

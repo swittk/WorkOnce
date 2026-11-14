@@ -512,6 +512,69 @@ const outboxBudgetMutants = {
   /\ UNCHANGED <<aQueue, bQueue, cQueue, cursor, delivered>>`,
 };
 
+const retentionMutants = {
+  RetentionTypeOK: String.raw`  /\ phase' = "invalid"
+  /\ UNCHANGED <<present, policy, incarnation, revision, terminalAt, outbox, now,
+                 created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, wrongDeletes, lastDeletePhase, lastDeletePolicy,
+                 lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation, pruneWins>>`,
+  ActualDeletion: String.raw`  /\ created' = 1 /\ deleted' = 0 /\ present' = FALSE
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  DeletionOnlyWhenEligible: String.raw`  /\ created' = 1 /\ deleted' = 1 /\ present' = FALSE
+  /\ lastDeletePhase' = "running" /\ lastDeletePolicy' = "finite"
+  /\ lastDeleteOutbox' = FALSE /\ lastDeleteNow' = 0 /\ lastDeleteDeadline' = 1
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletedIncarnation, pruneWins>>`,
+  ForeverNeverDeleted: String.raw`  /\ created' = 1 /\ deleted' = 1 /\ present' = FALSE
+  /\ lastDeletePolicy' = "forever"
+  /\ UNCHANGED <<phase, policy, incarnation, revision, terminalAt, outbox, now,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation, pruneWins>>`,
+  FreshIncarnationAfterRecreate: String.raw`  /\ present' = TRUE /\ phase' = "queued"
+  /\ policy' = "finite" /\ incarnation' = "incarnation-1"
+  /\ lastDeletedIncarnation' = "incarnation-1"
+  /\ UNCHANGED <<revision, terminalAt, outbox, now, created, deleted,
+                 usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, pruneWins>>`,
+  StaleAuthorityIsolated: String.raw`  /\ staleWrites' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 wrongDeletes, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
+                 lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  StaleCandidateCannotDeleteNew: String.raw`  /\ wrongDeletes' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
+                 lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+  SinglePruneWinner: String.raw`  /\ pruneWins' = 1
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, created, deleted, usedIncarnations, candidateIncarnation,
+                 candidateRevision, staleIncarnation, staleRevision, rejected,
+                 staleWrites, wrongDeletes, lastDeletePhase, lastDeletePolicy,
+                 lastDeleteOutbox, lastDeleteNow, lastDeleteDeadline,
+                 lastDeletedIncarnation>>`,
+  BoundedLiveRows: String.raw`  /\ created' = 2 /\ deleted' = 0
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                 now, usedIncarnations, candidateIncarnation, candidateRevision,
+                 staleIncarnation, staleRevision, rejected, staleWrites, wrongDeletes,
+                 lastDeletePhase, lastDeletePolicy, lastDeleteOutbox, lastDeleteNow,
+                 lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>`,
+};
+
 const externalMutants = {
   ExternalTypeOK: String.raw`  /\ phase' = "invalid"
   /\ UNCHANGED <<fence, exports, effects, receiptFence, lastRejectedFence, reply>>`,
@@ -598,6 +661,10 @@ const outboxBudgetMutationPlan = mutationCoveragePlan(
   'formal/WorkOnceOutboxBudget.cfg',
   outboxBudgetMutants,
 );
+const retentionMutationPlan = mutationCoveragePlan(
+  'formal/WorkOnceRetention.cfg',
+  retentionMutants,
+);
 const directMutationPlans = [
   lifecycleMutationPlan,
   runtimeMutationPlan,
@@ -607,11 +674,16 @@ const directMutationPlans = [
   externalMutationPlan,
   outboxMutationPlan,
   outboxBudgetMutationPlan,
+  retentionMutationPlan,
 ];
 const externallyGuardedFormalConfigs = [
   'formal/WorkOnceLifecycleTemporal.cfg',
   'formal/WorkOnceClaimScan.cfg',
   'formal/WorkOnceStorage.cfg',
+  // A temporal property is guarded by its fairness-removal TLC witness below.
+  'formal/WorkOnceRetentionProgress.cfg',
+  // Two native-guard witnesses and the unfair-upgrade liveness counterexample.
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 assertAllFormalConfigsRegistered(directMutationPlans, externallyGuardedFormalConfigs);
 if (process.argv.includes('--config-coverage-only')) {
@@ -745,6 +817,259 @@ MutantSpec == Init /\ [][MutantNext]_vars
     'NoLostContinuation',
   );
   markExtraMutationWitness(lifecycleMutationPlan, 'NoLostContinuation');
+  runModel('WorkOnceRetentionFollowups', 'WorkOnceRetentionFollowups.cfg');
+  // Old terminal parents with finite children are not rewritten. Fair adapter
+  // upgrade + dispatch is a conditional recovery promise, never an auto-conversion.
+  const followupModelSource = readFileSync('formal/WorkOnceRetentionFollowups.tla', 'utf8');
+  const followupGuards = [
+    {
+      name: 'CommitWithoutCapability',
+      original: String.raw`AcceptFinite ==
+  /\ phase = "running"
+  /\ capable`,
+      mutant: String.raw`AcceptFinite ==
+  /\ phase = "running"
+  /\ TRUE`,
+      invariant: 'UnsupportedFiniteNeverCommitted',
+    },
+    {
+      name: 'DispatchWithoutCapability',
+      original: String.raw`  /\ (outbox # "finite" \/ capable)`,
+      mutant: String.raw`  /\ TRUE`,
+      invariant: 'UnsupportedFiniteNeverDispatched',
+    },
+    {
+      name: 'RejectButCommit',
+      original: String.raw`RejectFinite ==
+  /\ phase = "running"
+  /\ ~capable
+  /\ rejected' = TRUE
+  /\ UNCHANGED <<phase, capable, outbox, receipt, legacy, replayed, delivered,`,
+      mutant: String.raw`RejectFinite ==
+  /\ phase = "running"
+  /\ ~capable
+  /\ rejected' = TRUE
+  /\ phase' = "terminal"
+  /\ receipt' = TRUE
+  /\ outbox' = "finite"
+  /\ UNCHANGED <<capable, legacy, replayed, delivered,`,
+      invariant: 'RejectedAttemptPreservesLease',
+    },
+    {
+      name: 'UpgradeLosesChild',
+      original: String.raw`Upgrade ==
+  /\ ~capable
+  /\ capable' = TRUE
+  /\ UNCHANGED <<phase, outbox, receipt, legacy, rejected, replayed, delivered,`,
+      mutant: String.raw`Upgrade ==
+  /\ ~capable
+  /\ capable' = TRUE
+  /\ outbox' = "none"
+  /\ UNCHANGED <<phase, receipt, legacy, rejected, replayed, delivered,`,
+      invariant: 'LegacyIntentNotSilentlyDiscarded',
+    },
+  ];
+  for (const guard of followupGuards) {
+    if (followupModelSource.split(guard.original).length !== 2)
+      throw new Error(`Retention follow-up ${guard.name} guard is absent or ambiguous`);
+    const name = `WorkOnceRetentionFollowups${guard.name}Mutant`;
+    const mutationFile = resolve(tlcWorkspace, `${name}.tla`);
+    const mutationConfig = resolve(tlcWorkspace, `${name}.cfg`);
+    writeFileSync(
+      mutationFile,
+      followupModelSource
+        .replace('MODULE WorkOnceRetentionFollowups', `MODULE ${name}`)
+        .replace(guard.original, guard.mutant),
+    );
+    writeFileSync(
+      mutationConfig,
+      `SPECIFICATION Spec\nINVARIANT ${guard.invariant}\nCHECK_DEADLOCK FALSE\n`,
+    );
+    requireInvariantRejects(name, mutationConfig, mutationFile, guard.invariant);
+  }
+  const unfairFollowupConfig = resolve(tlcWorkspace, 'WorkOnceRetentionFollowupsUnfair.cfg');
+  writeFileSync(
+    unfairFollowupConfig,
+    'SPECIFICATION Spec\nPROPERTY LegacyEventuallyDrains\nCHECK_DEADLOCK FALSE\n',
+  );
+  const unfairFollowup = spawnSync(
+    'java',
+    tlcArgs(
+      'WorkOnceRetentionFollowupsUnfair',
+      unfairFollowupConfig,
+      'WorkOnceRetentionFollowups.tla',
+      { heapMb: 192, workerCount: '1' },
+    ),
+    {
+      cwd: 'formal',
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
+    },
+  );
+  const unfairFollowupOutcome = classifyTlcOutcome(unfairFollowup);
+  if (
+    unfairFollowupOutcome.kind !== 'semantic_counterexample' ||
+    unfairFollowupOutcome.reason !== 'temporal_property_violation'
+  )
+    throw new Error(
+      `Old finite-child recovery unexpectedly passed without adapter-upgrade fairness: ${unfairFollowupOutcome.kind}/${unfairFollowupOutcome.reason}\n${unfairFollowupOutcome.output.slice(-1200)}`,
+    );
+  console.log(
+    'TLC finite-child admission, delivery, rejection and upgrade-intent guards reject four reachable mutants; legacy outbox recovery requires fair adapter upgrade.',
+  );
+  runModel('WorkOnceRetention', 'WorkOnceRetention.cfg');
+  // Fair maintenance is deliberately opt-in: no timer/scheduler means no progress
+  // guarantee. Check the bounded temporal response separately from safety.
+  runModel('WorkOnceRetentionProgress', 'WorkOnceRetentionProgress.cfg', 'WorkOnceRetention.tla');
+  const progressCfg = readFileSync('formal/WorkOnceRetentionProgress.cfg', 'utf8');
+  if (progressCfg.split('SPECIFICATION FairMaintenanceSpec').length !== 2)
+    throw new Error('Fair-retention progress specification changed unexpectedly');
+  const unfairCfgPath = resolve(tlcWorkspace, 'WorkOnceRetentionUnfair.cfg');
+  writeFileSync(
+    unfairCfgPath,
+    progressCfg.replace('SPECIFICATION FairMaintenanceSpec', 'SPECIFICATION Spec'),
+  );
+  const unfairResult = spawnSync(
+    'java',
+    tlcArgs('WorkOnceRetentionUnfair', unfairCfgPath, 'WorkOnceRetention.tla', {
+      heapMb: 192,
+      workerCount: '1',
+    }),
+    {
+      cwd: 'formal',
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
+    },
+  );
+  const unfairOutcome = classifyTlcOutcome(unfairResult);
+  if (
+    unfairOutcome.kind !== 'semantic_counterexample' ||
+    unfairOutcome.reason !== 'temporal_property_violation'
+  )
+    throw new Error(
+      `TLC did not reject retention maintenance without fairness: ${unfairOutcome.kind}/${unfairOutcome.reason} ${unfairOutcome.output.slice(-1500)}`,
+    );
+  console.log(
+    'TLC conditional retention progress passes with fair maintenance and fails without scheduler fairness.',
+  );
+
+  // Exercise each *actual guard* on reachable model histories. The generic nine
+  // invariant witnesses also prove the assertion formulas reject impossible
+  // states, but these seven mutants remove guards from real transition rules:
+  // a new incarnation, an older revision, old worker authority, time, outbox,
+  // live work, or permanent work. None is an arbitrary counter injection.
+  const retentionSource = readFileSync('formal/WorkOnceRetention.tla', 'utf8');
+  const retentionCfg = readFileSync('formal/WorkOnceRetention.cfg', 'utf8');
+  const retentionGuardMutants = [
+    {
+      name: 'EarlyDeadline',
+      needle: String.raw`  /\ clock >= DeadlineFor(p, at)`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'PendingOutbox',
+      needle: String.raw`  /\ ~hasOutbox`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'LiveWork',
+      needle: String.raw`  /\ state = "terminal"`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'DeletionOnlyWhenEligible',
+    },
+    {
+      name: 'PermanentWork',
+      needle: String.raw`  /\ FinitePolicy(p)`,
+      replacement: String.raw`  /\ TRUE`,
+      invariant: 'ForeverNeverDeleted',
+      maxTime: 1,
+    },
+    {
+      name: 'PruneIncarnation',
+      needle: String.raw`  /\ candidateIncarnation = incarnation
+  /\ candidateRevision = revision
+  /\ Eligible`,
+      replacement: String.raw`  /\ candidateRevision = revision
+  /\ Eligible`,
+      invariant: 'StaleCandidateCannotDeleteNew',
+    },
+    {
+      name: 'PruneRevision',
+      needle: String.raw`  /\ candidateIncarnation = incarnation
+  /\ candidateRevision = revision
+  /\ Eligible`,
+      replacement: String.raw`  /\ candidateIncarnation = incarnation
+  /\ Eligible`,
+      invariant: 'StaleCandidateCannotDeleteNew',
+    },
+    {
+      name: 'OldWorkerIncarnation',
+      needle: 'LET accepted == staleIncarnation = incarnation IN',
+      replacement: 'LET accepted == TRUE IN',
+      invariant: 'StaleAuthorityIsolated',
+    },
+  ];
+  for (const guard of retentionGuardMutants) {
+    if (retentionSource.split(guard.needle).length !== 2)
+      throw new Error(`Retention ${guard.name} guard mutation target is absent or ambiguous`);
+    const model = `WorkOnceRetentionGuard${guard.name}Mutant`;
+    const modulePath = resolve(tlcWorkspace, `${model}.tla`);
+    const configPath = resolve(tlcWorkspace, `${model}.cfg`);
+    writeFileSync(
+      modulePath,
+      retentionSource
+        .replace('MODULE WorkOnceRetention', `MODULE ${model}`)
+        .replace(guard.needle, guard.replacement),
+    );
+    // This guard mutant changes an actual Spec transition, not a synthetic MutantSpec.
+    const cfg = singleInvariantConfig(retentionCfg, guard.invariant).replace(
+      'SPECIFICATION MutantSpec',
+      'SPECIFICATION Spec',
+    );
+    if (!cfg.includes('CONSTANT MaxTime = 3'))
+      throw new Error('Retention bounded guard-mutation time domain drifted');
+    writeFileSync(
+      configPath,
+      cfg.replace('CONSTANT MaxTime = 3', `CONSTANT MaxTime = ${guard.maxTime ?? 0}`),
+    );
+    requireInvariantRejects(model, configPath, modulePath, guard.invariant);
+  }
+  console.log(
+    'TLC found seven reachable guard-removal counterexamples: active, outbox, deadline, permanent, incarnation, revision and old-worker fencing.',
+  );
+  const { runRetentionRefinementSamples, assertRetentionRefinementSamples } = await import(
+    './retention-refinement.mjs'
+  );
+  const retentionSamples = await runRetentionRefinementSamples();
+  const retentionObserved = resolve(tlcWorkspace, 'WorkOnceRetentionObserved.tla');
+  const retentionObservedConfig = resolve(tlcWorkspace, 'WorkOnceRetention-observed.cfg');
+  const missingRetentionAdapterSamples = retentionSamples.filter(
+    (sample) => sample.adapter === undefined || sample.adapter === 'memory',
+  );
+  writeFileSync(
+    retentionObserved,
+    `---- MODULE WorkOnceRetentionObserved ----\nEXTENDS WorkOnceRetention, TLC, Sequences\nObservedSamples == {\n${retentionSamples.map(tlaValue).join(',\n')}\n}\nInvalidSamples == ObservedSamples \\cup {[kind |-> "invalid"]}\nMissingAdapterSamples == {\n${missingRetentionAdapterSamples.map(tlaValue).join(',\n')}\n}\nInvalidSampleCheck == INSTANCE WorkOnceRetention WITH Samples <- InvalidSamples\nMissingAdapterCheck == INSTANCE WorkOnceRetention WITH Samples <- MissingAdapterSamples\nRetentionNegativeSampleMutantsRejected == /\\ ~InvalidSampleCheck!RetentionSamplesConform /\\ ~MissingAdapterCheck!RetentionSamplesConform\n${renderBooleanSampleMutationChecks(retentionSamples, assertRetentionRefinementSamples, tlaValue, 'RetentionSampleOK')}\n====\n`,
+  );
+  writeFileSync(
+    retentionObservedConfig,
+    `${bindObservedSamples(readFileSync('formal/WorkOnceRetention.cfg', 'utf8'))}\nINVARIANT RetentionSamplesConform\nINVARIANT RetentionNegativeSampleMutantsRejected\n`,
+  );
+  console.log(
+    `TLC retention model receives ${retentionSamples.length} fresh public-API retention observations.`,
+  );
+  runModel('WorkOnceRetentionObserved', retentionObservedConfig, retentionObserved);
+  runMutationWitnessBatch({
+    model: 'WorkOnceRetentionInvariantMutationBatch',
+    baseModule: 'WorkOnceRetention',
+    baseConfig: readFileSync('formal/WorkOnceRetention.cfg', 'utf8'),
+    plan: retentionMutationPlan,
+  });
 }
 
 if (runtimeOnly) {
@@ -1163,5 +1488,11 @@ if (runtimeOnly) {
 assertMutationPlansExecuted(
   runtimeOnly
     ? [runtimeMutationPlan, readHistoryMutationPlan, localRunnerMutationPlan, externalMutationPlan]
-    : [lifecycleMutationPlan, policyMutationPlan, outboxMutationPlan, outboxBudgetMutationPlan],
+    : [
+        lifecycleMutationPlan,
+        policyMutationPlan,
+        outboxMutationPlan,
+        outboxBudgetMutationPlan,
+        retentionMutationPlan,
+      ],
 );

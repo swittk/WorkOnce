@@ -18,7 +18,12 @@
     "formal/WorkOnceLifecycleTemporal.cfg",
     "formal/WorkOnceClaimScan.tla",
     "formal/WorkOnceClaimScan.cfg",
-    "formal/WorkOnceLifecycleContract.tla"
+    "formal/WorkOnceLifecycleContract.tla",
+    "formal/WorkOnceRetention.tla",
+    "formal/WorkOnceRetention.cfg",
+    "formal/WorkOnceRetentionProgress.cfg",
+    "formal/WorkOnceRetentionFollowups.tla",
+    "formal/WorkOnceRetentionFollowups.cfg"
   ],
   "evidenceFiles": [
     "scripts/formal-sample-mutations.mjs",
@@ -44,9 +49,15 @@
     "test/process/lifecycle-child.mjs",
     "test/process/lifecycle-process.test.mjs",
     "test/process/child-ipc-inbox.mjs",
-    "test/process/sqlite-process.test.mjs"
+    "test/process/sqlite-process.test.mjs",
+    "scripts/retention-refinement.mjs",
+    "scripts/check-retention-source-model-mutation.mjs",
+    "test/retention.test.mjs",
+    "test/retention-storage.test.mjs",
+    "test/process/retention-child.mjs",
+    "test/process/retention-process.test.mjs"
   ],
-  "sourceDigest": "d349ee5fcfd6dbe7e569d64caf05d84597ac47dcc14b53dfa18eb526ea93985a",
-  "modelDigest": "f5af60723065822d65fd97185268a4671dc1d36f01dca9da1123c107414b218c",
-  "evidenceDigest": "a2160adf9eef8a72fce15ff5c529c4902db21740a6b0a3a4be5b7f84a2c5fb58"
+  "sourceDigest": "1be7cb5502950d3eca134fee34b45e0428d5cbde1845a3c6370f0c3eb507b04c",
+  "modelDigest": "15797eb6dbbca951d69592d621cd9059d729735ee5804accac370c0fd2fd4d8d",
+  "evidenceDigest": "7fd2fbfaf0e18ab2472f078440de8c213343f86767bd9475e9452aa5c63fcc69"
 }

@@ -1,10 +1,11 @@
-import type { WorkStore } from './storage.js';
+import type { WorkStore, WorkQuery } from './storage.js';
 import type { ExternalWorkService } from './external.js';
 import type {
   AttemptRef,
   RetryContext,
   RetryDecision,
   WorkLimits,
+  WorkRetention,
   WorkOutcome,
   WorkPhase,
   WorkRecord,
@@ -22,6 +23,7 @@ import {
   copy,
   createRecord,
   effectiveNow,
+  expiresAt,
   integer,
   replayReceipt,
   retryRecord,
@@ -68,6 +70,8 @@ import {
 } from './worker.js';
 /** Defaults may be overridden per item; dynamic callbacks are evaluated in trusted application code. */
 export interface WorkDefinition<I, R extends string, O = unknown> {
+  /** Opt into bounded terminal retention; omission keeps the current permanent deduplication. */
+  retention?: WorkRetention;
   /** Change deliberately when deployed policy/handler meaning changes. */
   version?: string;
   /** Stable business identity derived from typed input when callers should not repeat key plumbing. */
@@ -105,6 +109,8 @@ export interface WorkDefinition<I, R extends string, O = unknown> {
 }
 /** The durable identity and optional per-item limits supplied by a producer. */
 export interface EnsureOptions {
+  /** Override this item's definition retention; the resolved value is persisted with the request. */
+  retention?: WorkRetention;
   /** A stable key for the business operation, not a random value on each retry. */
   key?: string;
   /** Initial not-before time. Repeated ensure never silently reschedules existing work. */
@@ -113,6 +119,55 @@ export interface EnsureOptions {
   executionLimits?: Partial<WorkLimits>;
   /** Compact execution-bound spelling; resolves to the same limits as `executionLimits`. */
   limits?: Partial<WorkLimits>;
+}
+/** Bound one maintenance pass independently of the number of historical jobs. */
+export interface PruneOptions {
+  /** Maximum expired candidates examined in this pass; defaults to 100. */
+  limit?: number;
+}
+/** Supervise optional retention maintenance alongside the application's workers. */
+export interface PrunerOptions extends PruneOptions {
+  /** Stop the maintenance loop; no hidden process-wide timer is installed. */
+  signal: AbortSignal;
+  /** Delay between bounded passes, in milliseconds; defaults to 1000. */
+  intervalMs?: number;
+  /** Handle a failed pass without stopping the loop; omission propagates the error. */
+  onError?: (error: unknown) => void | Promise<void>;
+}
+/** Generate a creation identity once, outside any retryable storage decision callback. */
+function creationIncarnation(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+}
+/** Delete only the exact expired snapshots discovered by this bounded maintenance pass. */
+async function pruneExpired(store: WorkStore, query: WorkQuery): Promise<number> {
+  if (store.retention !== true) throw new WorkConflict('retention_unsupported');
+  const candidates = await store.query(query);
+  let removed = 0;
+  for (const candidate of candidates.rows) {
+    const deleted = await store.atomic(candidate.id, (row, now) => {
+      if (!row || row.incarnation !== candidate.incarnation || row.revision !== candidate.revision)
+        return { value: false };
+      const deadline = expiresAt(row);
+      if (deadline === undefined || deadline > now) return { value: false };
+      return { delete: true, value: true };
+    });
+    if (deleted) removed++;
+  }
+  return removed;
+}
+/** Match a caller's guarded observation, including the key's creation identity after deletion. */
+function assertExpectedIdentity(
+  row: Pick<WorkRecord, 'generation' | 'incarnation'>,
+  options: { expectedGeneration?: number; expectedIncarnation?: string | undefined },
+): void {
+  if (
+    (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration) ||
+    ((options.expectedGeneration !== undefined || options.expectedIncarnation !== undefined) &&
+      row.incarnation !== options.expectedIncarnation)
+  )
+    throw new WorkConflict('generation_conflict');
 }
 /** Equivalent options type for callers using the `enqueue` operation name. */
 export type EnqueueOptions = EnsureOptions;
@@ -168,19 +223,18 @@ export class WorkItem<I, O, R extends string> {
   async retry(
     options: {
       expectedGeneration?: number;
+      /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+      expectedIncarnation?: string | undefined;
       check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
     } = {},
   ): Promise<WorkSnapshot<I, O, R>> {
     const current = await this.inspect();
     if (!current) throw new WorkConflict('not_found');
-    if (
-      options.expectedGeneration !== undefined &&
-      current.generation !== options.expectedGeneration
-    )
-      throw new WorkConflict('generation_conflict');
+    assertExpectedIdentity(current, options);
     return this.queue.retry({
       key: this.key,
       generation: current.generation,
+      ...(current.incarnation === undefined ? {} : { incarnation: current.incarnation }),
       ...(options.check ? { check: options.check } : {}),
     });
   }
@@ -188,19 +242,18 @@ export class WorkItem<I, O, R extends string> {
   async rerun(
     options: {
       expectedGeneration?: number;
+      /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+      expectedIncarnation?: string | undefined;
       check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
     } = {},
   ): Promise<WorkSnapshot<I, O, R>> {
     const current = await this.inspect();
     if (!current) throw new WorkConflict('not_found');
-    if (
-      options.expectedGeneration !== undefined &&
-      current.generation !== options.expectedGeneration
-    )
-      throw new WorkConflict('generation_conflict');
+    assertExpectedIdentity(current, options);
     return this.queue.rerun({
       key: this.key,
       generation: current.generation,
+      ...(current.incarnation === undefined ? {} : { incarnation: current.incarnation }),
       ...(options.check ? { check: options.check } : {}),
     });
   }
@@ -208,6 +261,8 @@ export class WorkItem<I, O, R extends string> {
   restart(
     options: {
       expectedGeneration?: number;
+      /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+      expectedIncarnation?: string | undefined;
       check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
     } = {},
   ): Promise<WorkSnapshot<I, O, R>> {
@@ -215,12 +270,18 @@ export class WorkItem<I, O, R extends string> {
   }
   /** Cancel this item's current unfinished generation. */
   cancel(
-    options: { expectedGeneration?: number; reason?: string } = {},
+    options: {
+      expectedGeneration?: number;
+      expectedIncarnation?: string | undefined;
+      reason?: string;
+    } = {},
   ): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
     return this.queue.cancelCurrent({ ...options, key: this.key });
   }
   /** Make this waiting item eligible immediately after the caller revalidated its prerequisite. */
-  wake(options: { expectedGeneration?: number } = {}): Promise<WorkSnapshot<I, O, R>> {
+  wake(
+    options: { expectedGeneration?: number; expectedIncarnation?: string | undefined } = {},
+  ): Promise<WorkSnapshot<I, O, R>> {
     return this.queue.wakeCurrent({ ...options, key: this.key });
   }
 }
@@ -238,8 +299,8 @@ export class WorkRun<I, O, R extends string> {
   ) {}
   /** Foreign workers carry this data, never the JavaScript object. */
   get ref(): AttemptRef {
-    const { workId, generation, fence } = this.attempt;
-    return { workId, generation, fence };
+    const { workId, generation, fence, incarnation } = this.attempt;
+    return { workId, generation, fence, ...(incarnation === undefined ? {} : { incarnation }) };
   }
   /** End this attempt successfully and optionally attach durable follow-up work. */
   succeed(
@@ -342,7 +403,15 @@ export class WorkQueue<I, O = null, R extends string = string> {
   /** Create an inert follow-up description; it is not persisted until terminal work accepts it. */
   request(input: I, options: EnsureOptions = {}): WorkRequest<I> {
     const key = this.key(input, options.key);
+    const retention = options.retention ?? this.definition.retention;
+    let retained: Pick<WorkRequest, 'retention'> = {};
+    if (retention !== undefined && retention !== 'forever') {
+      integer(retention.afterTerminalMs, 'afterTerminalMs');
+      if (this.store.retention !== true) throw new WorkConflict('retention_unsupported');
+      retained = { retention: { afterTerminalMs: retention.afterTerminalMs } };
+    }
     return copy({
+      ...retained,
       id: workId(this.scope, this.kind, key),
       scope: this.scope,
       kind: this.kind,
@@ -360,12 +429,16 @@ export class WorkQueue<I, O = null, R extends string = string> {
   /** Ensure this exact business work exists once; an identical existing request is returned. */
   async ensure(input: I, options: EnsureOptions = {}): Promise<WorkSnapshot<I, O, R>> {
     const request = this.request(input, options);
+    const incarnation =
+      request.retention === undefined || request.retention === 'forever'
+        ? undefined
+        : creationIncarnation();
     return this.store.atomic(request.id, (row, now) => {
       if (row) {
         if (!sameRequest(row, request)) throw new WorkConflict('key_conflict');
         return { value: this.snapshot(row, now) };
       }
-      const next = createRecord(request, now);
+      const next = createRecord(request, now, incarnation);
       return { next, value: this.snapshot(next, now) };
     });
   }
@@ -388,7 +461,7 @@ export class WorkQueue<I, O = null, R extends string = string> {
       if (runs.length === limit) break;
       const claimStartedAt = performance.now();
       const claimed = await this.store.atomic(candidate.id, (row, now) => {
-        if (!row) return { value: null };
+        if (!row || row.incarnation !== candidate.incarnation) return { value: null };
         this.assertDefinition(row);
         const next = claimRecord(row, options.workerId, now);
         return next
@@ -542,12 +615,22 @@ export class WorkQueue<I, O = null, R extends string = string> {
       });
       submitted = { ...submitted, next: [...submitted.next, ...copy(planned)] };
     }
+    // Keep retryable store decisions pure. Unsupported terminal follow-ups must
+    // fail before the parent commits, but a previously committed receipt still replays.
+    const unsupportedFollowup =
+      (submitted.type === 'succeed' || submitted.type === 'fail') &&
+      submitted.next.length > 0 &&
+      this.store.retention !== true &&
+      submitted.next.some(
+        (request) => request.retention !== undefined && request.retention !== 'forever',
+      );
     // Snapshot resolved policy so a caller cannot mutate it while a external transport is awaiting IO.
     const resolved = decision === undefined ? undefined : copy(decision);
     return this.store.atomic(ref.workId, (fresh, now) => {
       this.requireRow(fresh);
       const duplicate = replayReceipt(fresh, ref, submissionHash);
       if (duplicate) return { value: duplicate as WorkPhase<O, R> };
+      if (unsupportedFollowup) throw new WorkConflict('retention_unsupported');
       const next = settleRecord(fresh, ref, submitted, submissionHash, resolved, now);
       if (fresh.phase.state !== 'running') throw new WorkConflict('stale_attempt');
       return {
@@ -589,26 +672,32 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async restart(options: {
     key: string;
     expectedGeneration?: number;
+    /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+    expectedIncarnation?: string | undefined;
     check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
   }): Promise<WorkSnapshot<I, O, R>> {
     let expectedRevision: number | undefined;
+    let checkedIncarnation: string | undefined;
     if (options.check) {
       const snapshot = await this.inspect(options.key);
       if (!snapshot) throw new WorkConflict('not_found');
       if (!(await options.check(snapshot))) throw new WorkConflict('retry_denied');
       expectedRevision = snapshot.revision;
+      checkedIncarnation = snapshot.incarnation;
     }
     return this.store.atomic(workId(this.scope, this.kind, options.key), (row, now) => {
       this.requireRow(row);
-      if (expectedRevision !== undefined && row.revision !== expectedRevision)
+      if (
+        expectedRevision !== undefined &&
+        (row.revision !== expectedRevision || row.incarnation !== checkedIncarnation)
+      )
         throw new WorkConflict('generation_conflict');
-      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
-        throw new WorkConflict('generation_conflict');
+      assertExpectedIdentity(row, options);
       const next =
         row.phase.state === 'failed'
-          ? retryRecord(row, row.generation, now)
+          ? retryRecord(row, row.generation, now, row.incarnation)
           : row.phase.state === 'succeeded'
-            ? rerunRecord(row, row.generation, now)
+            ? rerunRecord(row, row.generation, now, row.incarnation)
             : undefined;
       if (!next) return { value: this.snapshot(row, now) };
       return { next, value: this.snapshot(next, now) };
@@ -618,21 +707,29 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async cancelCurrent(options: {
     key: string;
     expectedGeneration?: number;
+    /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+    expectedIncarnation?: string | undefined;
     reason?: string;
   }): Promise<{ snapshot: WorkSnapshot<I, O, R>; activeAttempt?: AttemptRef }> {
     return this.store.atomic(workId(this.scope, this.kind, options.key), (row, now) => {
       this.requireRow(row);
-      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
-        throw new WorkConflict('generation_conflict');
+      assertExpectedIdentity(row, options);
       const activeAttempt =
         row.phase.state === 'running'
           ? {
               workId: row.phase.attempt.workId,
+              ...(row.incarnation === undefined ? {} : { incarnation: row.incarnation }),
               generation: row.phase.attempt.generation,
               fence: row.phase.attempt.fence,
             }
           : undefined;
-      const next = cancelRecord(row, row.generation, options.reason ?? 'cancelled', now);
+      const next = cancelRecord(
+        row,
+        row.generation,
+        options.reason ?? 'cancelled',
+        now,
+        row.incarnation,
+      );
       return {
         ...(next === row ? {} : { next }),
         value: {
@@ -646,11 +743,12 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async wakeCurrent(options: {
     key: string;
     expectedGeneration?: number;
+    /** Creation identity from the guarded snapshot, required for finite-retention generations. */
+    expectedIncarnation?: string | undefined;
   }): Promise<WorkSnapshot<I, O, R>> {
     return this.store.atomic(workId(this.scope, this.kind, options.key), (row, clock) => {
       this.requireRow(row);
-      if (options.expectedGeneration !== undefined && row.generation !== options.expectedGeneration)
-        throw new WorkConflict('generation_conflict');
+      assertExpectedIdentity(row, options);
       const now = effectiveNow(row, clock);
       if (row.phase.state !== 'waiting' && row.phase.state !== 'queued')
         throw new WorkConflict('not_waiting');
@@ -662,21 +760,28 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async retry(options: {
     key: string;
     generation: number;
+    /** Creation identity from inspect/ensure; finite jobs reject commands that omit it. */
+    incarnation?: string | undefined;
     check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
   }): Promise<WorkSnapshot<I, O, R>> {
     const id = workId(this.scope, this.kind, options.key);
     let expectedRevision: number | undefined;
+    let checkedIncarnation: string | undefined;
     if (options.check) {
       const snapshot = await this.inspect(options.key);
       if (!snapshot) throw new WorkConflict('not_found');
       if (!(await options.check(snapshot))) throw new WorkConflict('retry_denied');
       expectedRevision = snapshot.revision;
+      checkedIncarnation = snapshot.incarnation;
     }
     return this.store.atomic(id, (row, now) => {
       this.requireRow(row);
-      if (expectedRevision !== undefined && row.revision !== expectedRevision)
+      if (
+        expectedRevision !== undefined &&
+        (row.revision !== expectedRevision || row.incarnation !== checkedIncarnation)
+      )
         throw new WorkConflict('generation_conflict');
-      const next = retryRecord(row, options.generation, now);
+      const next = retryRecord(row, options.generation, now, options.incarnation);
       return { next, value: this.snapshot(next, now) };
     });
   }
@@ -684,21 +789,28 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async rerun(options: {
     key: string;
     generation: number;
+    /** Creation identity from inspect/ensure; finite jobs reject commands that omit it. */
+    incarnation?: string | undefined;
     check?: (snapshot: WorkSnapshot<I, O, R>) => boolean | Promise<boolean>;
   }): Promise<WorkSnapshot<I, O, R>> {
     const id = workId(this.scope, this.kind, options.key);
     let expectedRevision: number | undefined;
+    let checkedIncarnation: string | undefined;
     if (options.check) {
       const snapshot = await this.inspect(options.key);
       if (!snapshot) throw new WorkConflict('not_found');
       if (!(await options.check(snapshot))) throw new WorkConflict('retry_denied');
       expectedRevision = snapshot.revision;
+      checkedIncarnation = snapshot.incarnation;
     }
     return this.store.atomic(id, (row, now) => {
       this.requireRow(row);
-      if (expectedRevision !== undefined && row.revision !== expectedRevision)
+      if (
+        expectedRevision !== undefined &&
+        (row.revision !== expectedRevision || row.incarnation !== checkedIncarnation)
+      )
         throw new WorkConflict('generation_conflict');
-      const next = rerunRecord(row, options.generation, now);
+      const next = rerunRecord(row, options.generation, now, options.incarnation);
       return { next, value: this.snapshot(next, now) };
     });
   }
@@ -706,11 +818,19 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async cancel(options: {
     key: string;
     generation: number;
+    /** Creation identity from inspect/ensure; finite jobs reject commands that omit it. */
+    incarnation?: string | undefined;
     reason?: string;
   }): Promise<WorkSnapshot<I, O, R>> {
     return this.store.atomic(workId(this.scope, this.kind, options.key), (row, now) => {
       this.requireRow(row);
-      const next = cancelRecord(row, options.generation, options.reason ?? 'cancelled', now);
+      const next = cancelRecord(
+        row,
+        options.generation,
+        options.reason ?? 'cancelled',
+        now,
+        options.incarnation,
+      );
       return { ...(next === row ? {} : { next }), value: this.snapshot(next, now) };
     });
   }
@@ -718,17 +838,33 @@ export class WorkQueue<I, O = null, R extends string = string> {
   async wake(options: {
     key: string;
     generation: number;
+    /** Creation identity from inspect/ensure; finite jobs reject commands that omit it. */
+    incarnation?: string | undefined;
     revision: number;
   }): Promise<WorkSnapshot<I, O, R>> {
     return this.store.atomic(workId(this.scope, this.kind, options.key), (row, clock) => {
       this.requireRow(row);
       const now = effectiveNow(row, clock);
-      if (row.generation !== options.generation || row.revision !== options.revision)
+      if (
+        row.incarnation !== options.incarnation ||
+        row.generation !== options.generation ||
+        row.revision !== options.revision
+      )
         throw new WorkConflict('generation_conflict');
       if (row.phase.state !== 'waiting' && row.phase.state !== 'queued')
         throw new WorkConflict('not_waiting');
       const next = changed(row, { ...row.phase, availableAt: now }, now, 'wake');
       return { next, value: this.snapshot(next, now) };
+    });
+  }
+  /** Physically delete expired terminal items of this kind/version, preserving live work and outbox. */
+  prune(options: PruneOptions = {}): Promise<number> {
+    return pruneExpired(this.store, {
+      scope: this.scope,
+      kind: this.kind,
+      definition: this.definition.version ?? '1',
+      select: 'expired',
+      limit: integer(options.limit ?? 100, 'limit', 1),
     });
   }
   /** Run one bounded pass over currently available work using the bound handler by default. */
@@ -771,6 +907,8 @@ export class WorkQueue<I, O = null, R extends string = string> {
     return copy({
       id: row.id,
       key: row.key,
+      ...(row.incarnation === undefined ? {} : { incarnation: row.incarnation }),
+      ...(row.retention === undefined ? {} : { retention: row.retention }),
       input: row.input as I,
       generation: row.generation,
       revision: row.revision,
@@ -794,6 +932,28 @@ export function createWorkOnce(options: { store: WorkStore; scope: string }) {
       definition: WorkDefinition<I, R, O> = {},
     ): WorkQueue<I, O, R> {
       return new WorkQueue(store, scope, kind, definition);
+    },
+    /** Physically delete one bounded batch of eligible terminal work across this scope. */
+    prune(options: PruneOptions = {}): Promise<number> {
+      return pruneExpired(store, {
+        scope,
+        select: 'expired',
+        limit: integer(options.limit ?? 100, 'limit', 1),
+      });
+    },
+    /** Run opt-in retention maintenance until stopped; failed passes remain observable. */
+    async runPruner(options: PrunerOptions): Promise<void> {
+      if (store.retention !== true) throw new WorkConflict('retention_unsupported');
+      const interval = integer(options.intervalMs ?? 1000, 'intervalMs', 1);
+      while (!options.signal.aborted) {
+        try {
+          await work.prune(options.limit === undefined ? {} : { limit: options.limit });
+        } catch (error) {
+          if (!options.onError) throw error;
+          await options.onError(error);
+        }
+        await waitForPoll(interval, options.signal);
+      }
     },
     /** Recoverable outbox dispatch. Parent success and intent are atomic; child insertion is deduped. */
     async dispatch(options: { limit?: number } = {}): Promise<number> {
@@ -819,15 +979,30 @@ export function createWorkOnce(options: { store: WorkStore; scope: string }) {
           attempted++;
           try {
             if (request.scope !== scope) throw new WorkConflict('key_conflict');
+            if (
+              request.retention !== undefined &&
+              request.retention !== 'forever' &&
+              store.retention !== true
+            )
+              throw new WorkConflict('retention_unsupported');
+            const incarnation =
+              request.retention === undefined || request.retention === 'forever'
+                ? undefined
+                : creationIncarnation();
             await store.atomic(request.id, (row, now) => {
               if (row) {
                 if (!sameRequest(row, request)) throw new WorkConflict('key_conflict');
                 return { value: null };
               }
-              return { next: createRecord(request, now), value: null };
+              return { next: createRecord(request, now, incarnation), value: null };
             });
             await store.atomic(parent.id, (row, clock) => {
-              if (!row || row.generation !== parent.generation || row.fence !== parent.fence)
+              if (
+                !row ||
+                row.incarnation !== parent.incarnation ||
+                row.generation !== parent.generation ||
+                row.fence !== parent.fence
+              )
                 throw new WorkConflict('stale_attempt');
               if (!row.outbox.some((item) => item.id === request.id)) return { value: null };
               const next = changed(
@@ -844,7 +1019,12 @@ export function createWorkOnce(options: { store: WorkStore; scope: string }) {
             // Retain the failed intent but move it behind siblings, even with a one-child pass limit.
             try {
               await store.atomic(parent.id, (row, clock) => {
-                if (!row || row.generation !== parent.generation || row.fence !== parent.fence)
+                if (
+                  !row ||
+                  row.incarnation !== parent.incarnation ||
+                  row.generation !== parent.generation ||
+                  row.fence !== parent.fence
+                )
                   return { value: null };
                 const failed = row.outbox.find((item) => item.id === request.id);
                 if (!failed || row.outbox.length < 2) return { value: null };

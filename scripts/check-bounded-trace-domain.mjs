@@ -28,6 +28,9 @@ const { runReadHistorySamples, assertReadHistorySamples } = await import(
 const { runStorageRefinementSamples, assertStorageRefinementSamples } = await import(
   './storage-refinement.mjs'
 );
+const { runRetentionRefinementSamples, assertRetentionRefinementSamples } = await import(
+  './retention-refinement.mjs'
+);
 const target = path.join(root, 'assurance/bounded-trace-domain.json');
 const write = process.argv.includes('--write');
 const evidenceFiles = [
@@ -89,6 +92,17 @@ const evidenceFiles = [
   'formal/WorkOnceOutbox.cfg',
   'formal/WorkOnceOutboxBudget.tla',
   'formal/WorkOnceOutboxBudget.cfg',
+  'scripts/retention-refinement.mjs',
+  'test/retention.test.mjs',
+  'test/retention-storage.test.mjs',
+  'test/process/retention-child.mjs',
+  'test/process/retention-process.test.mjs',
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
+  'scripts/check-retention-source-model-mutation.mjs',
   'scripts/external-transport-refinement.mjs',
   'test/external-transport-refinement.test.mjs',
   'test/external.test.mjs',
@@ -200,6 +214,8 @@ if (!Number.isInteger(historyCongruenceSample?.futureTraceCount))
   throw new Error('Read-history bounded trace is missing historyCongruence.futureTraceCount.');
 const storageSamples = await runStorageRefinementSamples();
 assertStorageRefinementSamples(storageSamples);
+const retentionSamples = await runRetentionRefinementSamples();
+assertRetentionRefinementSamples(retentionSamples);
 const current = {
   version: 1,
   evidenceFiles,
@@ -296,6 +312,22 @@ const current = {
     observationDigest: crypto
       .createHash('sha256')
       .update(JSON.stringify(storageSamples))
+      .digest('hex'),
+  },
+  retentionBoundary: {
+    samples: retentionSamples.length,
+    counts: Object.fromEntries(
+      [...new Set(retentionSamples.map((sample) => sample.kind))]
+        .sort()
+        .map((kind) => [kind, retentionSamples.filter((sample) => sample.kind === kind).length]),
+    ),
+    adapters: retentionSamples
+      .filter((sample) => sample.adapter !== undefined)
+      .map((sample) => `${sample.kind}:${sample.adapter}`)
+      .sort(),
+    observationDigest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(retentionSamples))
       .digest('hex'),
   },
   observed: {

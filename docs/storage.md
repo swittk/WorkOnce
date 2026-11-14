@@ -47,15 +47,18 @@ synchronous deterministic function of `(row, now)` only. It must not read clocks
 values, perform IO, mutate captured state or await application callbacks. CAS adapters can
 re-evaluate it after contention. `next` and the returned value must remain detached from storage.
 
-When `next` is supplied, the store commits that row durably before resolving. A decision with no
-`next` performs no write. `validUntil`, when supplied, must
+When `next` is supplied, the store commits that row durably before resolving. A decision with
+`delete: true` physically removes the eligible observed item and is mutually exclusive with `next`.
+A decision with neither performs no write. Only stores advertising `retention: true` may accept
+finite retention or deletion; other adapters must reject rather than silently ignore deletion. `validUntil`, when supplied, must
 hold at its write linearization point. If expiry occurs between read and write, the operation
 must reject/re-evaluate instead of accepting stale authority. SQLite enforces the condition in
 its prepared write statement. The reference store rechecks before updating its map.
 
 IDs are unambiguous ASCII-escaped tuples of scope/kind/key. Preserve their bytewise ordering in
-cursor queries. Do not delete or reuse an id while an old attempt/receipt may remain in flight.
-A claim advances the fence across manual-retry generations. Counters and times must round-trip
+cursor queries. Never delete/reuse an id outside the opt-in retention contract: finite records
+carry a creation incarnation so stale attempts cannot match a new record whose counters repeat.
+A claim advances the fence across manual-retry generations within that incarnation. Counters and times must round-trip
 as exact safe integers; requests whose timing arithmetic already overflows are rejected before
 insertion.
 
@@ -116,6 +119,26 @@ reconciliation can recover every lost receipt or retry budget.
 
 The optional `/sqlite` adapter requires Node >= 22.16. Passing a path lazily opens `node:sqlite`; passing a compatible synchronous SQLite handle reuses that connection without loading `node:sqlite`. WorkOnce creates only its own `workonce` table/indexes in that database. Caller-supplied handles remain caller-owned unless `closeDatabase: true` is requested; the default/browser graph does not import the SQLite adapter.
 
-SQLite initializes one current schema. WorkOnce is unreleased and supplies no upgrade or conversion
-path for superseded development schemas. An incompatible table is rejected; opening a database
-never deletes its contents or silently converts an old layout.
+SQLite adds a nullable `expires_at` projection to the exact published 0.3.0 table shape without
+rewriting saved bodies; existing permanent items remain permanent. Superseded development layouts
+are not adopted or converted. Opening a database never deletes its existing contents.
+
+## Retention-capable storage
+
+`select: 'expired'` discovers only finite terminal records with no pending outbox, ordered by
+`(expiresAt, id)` and bounded by `limit`. Like due discovery, it rejects `afterId`. Apply scope,
+optional kind and definition filters before the limit. `expiresAt(row)` from the kernel supplies
+the shared index projection. Native stores must index expiry; do not load the entire job history
+for each maintenance pass.
+
+`prune()` rechecks the discovered incarnation, revision and deadline inside each atomic operation.
+A competing retry, outbox change, delete/recreate or clock rollback therefore prevents the stale
+candidate from deleting different work. The full atomic adapter must actually delete, not retain a
+permanent tombstone. For CAS, `CompareDelete` / `deleteExchange` enforce the exact observed revision,
+creation incarnation and minimum expiry time at the native write; ordinary CAS replacements on a
+retention-capable port also compare incarnation (including exact absence). This prevents the ABA
+problem where a newly created row has the same numeric revision as a deleted row.
+
+An adapter retaining its own control/version records is responsible for retiring those too, fencing
+delayed writers and recovering interrupted cleanup. Advertising support while retaining one control
+record per deleted key does not provide bounded storage. See [retention](retention.md).

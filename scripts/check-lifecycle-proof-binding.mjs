@@ -25,6 +25,11 @@ const modelFiles = [
   'formal/WorkOnceClaimScan.tla',
   'formal/WorkOnceClaimScan.cfg',
   'formal/WorkOnceLifecycleContract.tla',
+  'formal/WorkOnceRetention.tla',
+  'formal/WorkOnceRetention.cfg',
+  'formal/WorkOnceRetentionProgress.cfg',
+  'formal/WorkOnceRetentionFollowups.tla',
+  'formal/WorkOnceRetentionFollowups.cfg',
 ];
 const evidenceFiles = [
   'scripts/formal-sample-mutations.mjs',
@@ -51,6 +56,12 @@ const evidenceFiles = [
   'test/process/lifecycle-process.test.mjs',
   'test/process/child-ipc-inbox.mjs',
   'test/process/sqlite-process.test.mjs',
+  'scripts/retention-refinement.mjs',
+  'scripts/check-retention-source-model-mutation.mjs',
+  'test/retention.test.mjs',
+  'test/retention-storage.test.mjs',
+  'test/process/retention-child.mjs',
+  'test/process/retention-process.test.mjs',
 ];
 function digest(files) {
   const hash = crypto.createHash('sha256');

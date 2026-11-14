@@ -377,6 +377,11 @@ export function assertAssuranceVerdictIntegrity() {
       'outbox',
       'mutationFiles.writeFileSync',
     ],
+    [
+      'scripts/check-retention-source-model-mutation.mjs',
+      'retention',
+      'mutationFiles.writeFileSync',
+    ],
     ['scripts/check-storage-source-model-mutation.mjs', 'storage', 'mutationFiles.writeFileSync'],
   ]) {
     const source = read(relative);
@@ -414,6 +419,7 @@ export function assertAssuranceVerdictIntegrity() {
         'PolicySampleOK',
         'OutboxSampleOK',
         'ExternalSampleOK',
+        'RetentionSampleOK',
       ],
     ],
     ['scripts/lifecycle-formal.mjs', ['LifecycleSampleOK']],
@@ -850,8 +856,8 @@ export function assertAssuranceVerdictIntegrity() {
   );
   assert.equal(
     (formalSource.match(/bindObservedSamples\(/gu) ?? []).length,
-    5,
-    'bindObservedSamples must appear exactly five times: one helper definition plus four observed-model config writer calls',
+    6,
+    'bindObservedSamples must appear exactly six times: one helper definition plus five observed-model config writer calls',
   );
   assert.equal(
     (formalSource.match(/'CONSTANT Samples = \{\}'/gu) ?? []).length,
