@@ -164,8 +164,21 @@ test('same-key recreation is fresh and stale attempt/manual authority cannot cro
   assert.equal(fresh.generation, 1);
   assert.equal(fresh.phase.state, 'queued');
 
+  // Reuse the worker label and the exact numeric attempt counters: the old
+  // reference must be rejected by incarnation, not by queued-state/fence checks.
+  const [freshRun] = await queue.claim({ workerId: 'old' });
+  assert.ok(freshRun);
+  assert.equal(freshRun.ref.workId, oldRun.ref.workId);
+  assert.equal(freshRun.ref.generation, oldRun.ref.generation);
+  assert.equal(freshRun.ref.fence, oldRun.ref.fence);
+  assert.notEqual(freshRun.ref.incarnation, oldRun.ref.incarnation);
+  const beforeStale = await queue.inspect('same');
+  assert.equal(beforeStale.phase.state, 'running');
+
   await assert.rejects(oldRun.heartbeat(), (error) => error?.code === 'stale_attempt');
+  assert.deepEqual(await queue.inspect('same'), beforeStale);
   await assert.rejects(oldRun.settle(oldOutcome), (error) => error?.code === 'stale_attempt');
+  assert.deepEqual(await queue.inspect('same'), beforeStale);
   await assert.rejects(
     queue.cancel({
       key: 'same',
@@ -183,7 +196,7 @@ test('same-key recreation is fresh and stale attempt/manual authority cannot cro
     }),
     (error) => error?.code === 'generation_conflict',
   );
-  assert.equal((await queue.inspect('same')).phase.state, 'queued');
+  assert.deepEqual(await queue.inspect('same'), beforeStale);
 });
 
 test('an async manual gate cannot rerun a deleted and recreated key', async () => {

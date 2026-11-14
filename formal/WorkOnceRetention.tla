@@ -305,8 +305,10 @@ RetentionSampleOK(s) ==
     [] s.kind = "isolation" ->
        /\ s.adapter \in {"memory", "sqlite"}
        /\ s.freshIncarnation
+       /\ s.matchingAttemptFence
        /\ s.staleHeartbeatRejected
        /\ s.staleSettlementRejected
+       /\ s.freshRunningPreserved
        /\ s.activeRetained
        /\ s.outboxRetained
        /\ s.afterDrainDeleted

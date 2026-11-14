@@ -483,6 +483,14 @@ follow-ups, committed receipt replay after losing capability, and successful in-
 repair after restoring a retention-capable adapter. No automatic policy downgrading or
 silent loss of child intents is permitted.
 
+The actual ABA refinement tests now claim the recreated work with the same worker label, work
+ID, generation and fence as the old attempt, leaving **incarnation as the only distinguishing
+attempt authority**. The observation checks the replacement is running, both old heartbeat and
+settlement reject, and the fresh snapshot is unchanged. Removing only the incarnation comparison
+from \`assertCurrent\` was independently tested as a real source mutant: the running-replacement
+test fails specifically because the stale heartbeat is no longer rejected. The corresponding
+observation booleans are content-bound into the retention TLA model and fail closed on omission.
+
 The real-process test kills a SQLite process after terminal settlement commits, then reopens the
 database, prunes the recovered row, recreates the same business key and rejects the killed worker's
 old heartbeat and settlement reference. This is bounded crash/restart evidence for local SQLite,

@@ -12624,7 +12624,7 @@
       ],
       "followupConfig": "formal/WorkOnceRetentionFollowups.cfg",
       "followupSpec": "formal/WorkOnceRetentionFollowups.tla",
-      "modelDigest": "44c24722ba483804edad0fdf1b6c42fe9cb837bc78b31dfc3ecddc46f122a216",
+      "modelDigest": "f9cc4514374a02dd7216e212ce3db9d74e8928f4f8a7b5ffc48deed1373cfca2",
       "modelFiles": [
         "formal/WorkOnceRetention.tla",
         "formal/WorkOnceRetention.cfg",
@@ -12721,7 +12721,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "c3eeb53477717aeb8894070faa714d3d3dd32e275a3782f151a2eef83c249660",
+    "assuranceInfrastructureDigest": "787aaaabbc70f36f881c568b3c355abbfdea5122c287143ba7154c7a4d269b01",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -12869,7 +12869,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "5fe93644377ba28f2886aac94096e36b1c26be248b00f1a09b78a669f11c44a3",
+    "modelDigest": "0dbbe45d9924e5eca50a2b6652d7dfd0488301fa0f7d3021c4ab7e466738eeb1",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",

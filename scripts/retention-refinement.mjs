@@ -50,6 +50,13 @@ async function adapterSamples(adapter) {
     await oldRun.settle(oldOutcome);
     await aba.prune();
     const fresh = await aba.ensure(null, { key: 'same' });
+    const [freshRun] = await aba.claim({ workerId: 'old' });
+    assert.ok(freshRun);
+    const matchingAttemptFence =
+      freshRun.ref.workId === oldRun.ref.workId &&
+      freshRun.ref.generation === oldRun.ref.generation &&
+      freshRun.ref.fence === oldRun.ref.fence;
+    const beforeStale = await aba.inspect('same');
     let staleHeartbeatRejected = false;
     let staleSettlementRejected = false;
     try {
@@ -62,6 +69,10 @@ async function adapterSamples(adapter) {
     } catch (error) {
       staleSettlementRejected = error?.code === 'stale_attempt';
     }
+    const freshRunningPreserved =
+      beforeStale.phase.state === 'running' &&
+      beforeStale.incarnation === fresh.incarnation &&
+      JSON.stringify(await aba.inspect('same')) === JSON.stringify(beforeStale);
 
     const parent = work.define('parent', { retention: { afterTerminalMs: 0 } });
     const child = work.define('child');
@@ -89,8 +100,10 @@ async function adapterSamples(adapter) {
         kind: 'isolation',
         adapter,
         freshIncarnation: old.incarnation !== fresh.incarnation,
+        matchingAttemptFence,
         staleHeartbeatRejected,
         staleSettlementRejected,
+        freshRunningPreserved,
         activeRetained,
         outboxRetained,
         afterDrainDeleted,
@@ -222,8 +235,10 @@ export function assertRetentionRefinementSamples(samples) {
     ],
     isolation: [
       'freshIncarnation',
+      'matchingAttemptFence',
       'staleHeartbeatRejected',
       'staleSettlementRejected',
+      'freshRunningPreserved',
       'activeRetained',
       'outboxRetained',
       'afterDrainDeleted',
