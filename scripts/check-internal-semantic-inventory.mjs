@@ -86,6 +86,37 @@ function classifyRetentionTopology(entry) {
       reason:
         'Request retention and incarnation-checked generation resets are durable lifecycle identity semantics in family A.',
     };
+  if (
+    entry.path === 'src/conformance.ts' &&
+    entry.kind === 'call_Promise.all' &&
+    /first\.heartbeat\(run\.ref\).*second\.heartbeat\(run\.ref\)/su.test(entry.excerpt)
+  )
+    return {
+      families: ['A', 'G'],
+      reason:
+        'Simultaneous heartbeat conformance tests lifecycle ownership and durable atomic renewal across independent handles.',
+    };
+  if (
+    entry.path === 'src/conformance.ts' &&
+    entry.kind === 'mutable_let' &&
+    entry.excerpt === 'let dropped = false;'
+  )
+    return {
+      families: ['A', 'B', 'G'],
+      reason:
+        'The injected lost-ack flag makes terminal receipt replay and follow-up delivery observable without altering the backing store.',
+    };
+  if (
+    entry.path === 'src/conformance.ts' &&
+    entry.context === 'atomic' &&
+    entry.kind === 'identifier_assignment' &&
+    entry.excerpt === 'dropped = true'
+  )
+    return {
+      families: ['A', 'B', 'G'],
+      reason:
+        'The test drops exactly one acknowledgement after an atomic success commit to verify durable receipt and continuation recovery.',
+    };
   return undefined;
 }
 

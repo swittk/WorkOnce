@@ -180,7 +180,11 @@ selects the appropriate operation for the current terminal state. These commands
 generation guards and cannot erase undispatched durable follow-up work from the prior generation.
 
 For bulk/operator views, `queue.inspectMany(keys)` preserves order and missing entries and
-`queue.history(key)` returns recent durable transitions.
+`queue.history(key)` returns **only the latest 128 diagnostic transitions**. It is not a
+complete retry ledger: use the durable `attempts`, `retries`, `deferrals`,
+current phase and receipt for execution decisions. Keep business-specific timestamps (such as
+the start of a special retry window) as durable application data rather than reconstructing them
+from potentially truncated history.
 
 A `running` snapshot contains the saved lease. Compare `phase.attempt.leaseUntil` with
 `observedAt` to show “lease expired; awaiting recovery” rather than an active spinner. A snapshot

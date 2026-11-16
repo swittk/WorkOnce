@@ -32,12 +32,14 @@ export function createMemoryStore(options: { now?: () => number } = {}): WorkSto
       return value;
     },
     async getMany(ids) {
+      // Keep the observation clock conservative even if a future store makes reads async.
+      const clock = integer(now(), 'clock');
       return {
         rows: ids.map((id) => {
           const row = rows.get(id);
           return row ? copy(row) : undefined;
         }),
-        now: integer(now(), 'clock'),
+        now: clock,
       };
     },
     async query(query: WorkQuery) {

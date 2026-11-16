@@ -20,10 +20,25 @@ interface CompareExchangePort {
 }
 ```
 
-`getMany` returns detached rows in the caller's order, with the trusted storage clock even when
-no records exist. `query` applies scope, kind, definition, due time, cursor and limit in storage.
-The `afterId` cursor applies only to `all` and `outbox`; `due` orders by `(dueAt, id)` and rejects
-`afterId`. Candidate discovery is not ownership. The later compare-and-swap must recheck the exact version.
+`getMany` returns detached rows in the caller's order, with a trusted storage-clock observation
+even when no records exist. It preserves exactly one slot per requested id, including duplicates.
+**Never attach a newer clock to an older row read.** If the adapter awaits a database query, sample
+its clock before the potentially stale read begins, not after it completes. Otherwise, a heartbeat
+may commit while the old read is in flight; attaching the later clock to the old lease makes a
+legitimate settlement fail `lease_expired` before its authoritative atomic recheck.
+
+A batch does **not** require cross-id transactional snapshot isolation: different ids may reflect
+different concurrent revisions, and some rows may be newer than the common observation clock.
+That clock is deliberately conservative. All clocks used for `getMany`, claim/heartbeat deadlines
+and atomic writes must share a trusted time authority, including across backend replicas.
+A framework-generated `createdAt` or `updatedAt` is not automatically database time or the
+actual commit instant. Timestamping an operation lock before saving a result is not a substitute
+for a deadline check at the result's commit.
+
+`query` applies scope, kind, definition, due time, cursor and limit in storage. The
+`afterId` cursor applies only to `all` and `outbox`; `due` and `expired` order by
+their time deadline and id and reject `afterId`. Candidate discovery is not ownership. The
+later compare-and-swap must recheck the exact version.
 
 `compareExchange` receives the stable id, expected revision (absent means insert-if-absent),
 complete next record and optional exclusive `validUntil`. It must atomically require both the
@@ -69,6 +84,21 @@ moving backward, but cannot repair arbitrary clock skew between unrelated author
 with lease expiry means expired. A stored lease is not evidence that the physical handler has
 stopped; cancellation/expiry cannot unsend an external HTTP request.
 
+**Two different clock boundaries matter:**
+
+1. The read observation used for a preliminary ownership check must not combine an older row
+   with a later clock. A read overlapping a renewal may be stale; the atomic write rechecks the
+   current row and can accept that renewed attempt.
+2. `validUntil` must hold at the native write's **actual linearization point**, not merely
+   when the application acquired an operation lock or initiated an HTTP request. Comparing an
+   `updatedAt` returned by a save can detect a late commit after it happens but cannot undo
+   it. A clock stamped before a delayed save proves only when the request began.
+
+These are storage contract requirements, not automatic properties of arbitrary ORMs or remote
+stores. If the backing API cannot enforce a native revision-and-time conditional write,
+document the weaker deadline guarantee. Extra speculative reads or an earlier lock timestamp
+cannot manufacture that guarantee.
+
 Cooperative external systems need their own idempotency keys or fencing. Queuing and unrelated
 application writes are not automatically a transaction. There is intentionally no
 `settle(ref, async () => writeDomainRows())` API claiming that an earlier lease check protects
@@ -79,7 +109,7 @@ maintaining another mutable copy of the same terminal status in a domain object.
 
 ## Conformance
 
-Run the shared suite unchanged against a fresh test database:
+Run the shared **23-case** suite unchanged against a fresh test database for each case:
 
 ```ts
 import { runConformance } from '@workonce/core/conformance';
@@ -96,9 +126,42 @@ await runConformance(async () => {
 });
 ```
 
-Also run separate-process competition, worker death/restart, native deadline checks and unknown
-acknowledgement injection for the actual deployment. Promise races inside one process are not
-sufficient evidence for a multi-backend claim.
+The suite covers competing claims and renewals, lease/fence expiry, receipt replay after a
+**simulated** lost acknowledgement, scope/kind/definition filtering before bounded discovery,
+cursor behavior, detached reads and physical retirement (where supported). Stores without
+`retention: true` must explicitly reject finite-retention work.
+
+**The actual read/clock race needs a deliberately paused storage read.** Run the additional
+`runReadClockConformance` probe with a fixture that interrupts one underlying
+`getMany` query _after fetching its old row but before the adapter finishes returning it_:
+
+```ts
+import { runReadClockConformance } from '@workonce/core/conformance';
+
+// An instrumented test store, NOT production latency or random sleeps.
+await runReadClockConformance(async () => {
+  const fixture = await createInstrumentedTestStore();
+  return {
+    store: fixture.store,
+    advance: fixture.advanceTrustedClock,
+    // Gate the actual storage-read boundary, not a wrapper after getMany returned.
+    pauseGetManyAfterSnapshot: fixture.pauseNextStoredRowRead,
+    close: fixture.close,
+  };
+});
+```
+
+The probe starts settlement reading an old lease, holds that row read, renews the same attempt
+via a second handle, advances the test clock past the _old_ lease but not the _renewed_ lease,
+then resumes settlement. The conformant adapter accepts it after its atomic recheck.
+An adapter that uses a post-read clock prematurely rejects it. Package tests exercise both
+a passing reference and a deliberately broken clock-ordering witness.
+
+These are in-process behavioral tests. Also run separate-process competition, worker death/restart,
+native deadline checks, retirement interruption, and unknown **native** acknowledgement injection
+against the actual deployment. The simulated lost acknowledgement in the standard suite cannot
+prove an adapter handles a database connection dropping in the middle of a commit. Neither suite
+assumes all storage backends provide native database-time predicates.
 
 ## Performance and lifecycle
 
@@ -108,7 +171,12 @@ SQLite caches prepared query shapes and uses a short write transaction; SQLite i
 writers per database file. Other adapters may allow per-row parallel writes.
 
 Heartbeats do not append history. SQLite currently rewrites the compact JSON row, so payloads
-should be references/small records, not file bodies. History is bounded to 128 transitions.
+should be references/small records, not file bodies. History is bounded to **the latest 128 diagnostic transitions**.
+This is not a complete business retry ledger: do not reconstruct attempt budgets, first-failure
+timestamps, application approval, or evidence that a particular old report settled from
+`history()` once more than 128 events are possible. Use persisted `attempts`,
+`retries`, `deferrals`, generation/fence and receipts for execution authority, and
+application-owned durable evidence for business-specific time windows.
 The dispatcher retains failed intents, attempts healthy siblings and advances a fairness cursor;
 its cursor is an optimization, not durable authority.
 

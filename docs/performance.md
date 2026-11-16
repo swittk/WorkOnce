@@ -20,3 +20,15 @@ Results depend on disk, durability settings, payload/history size and contention
 all BYO adapters have the same performance. Native bulk claim/renew optimization remains
 possible behind conformance; this first facade uses a bounded query and per-item atomic
 operations.
+
+## Conformance hardening versus runtime cost
+
+Adapter-conformance and paused-read fault-injection tests run only during verification; they add
+**no production queries, writes, polling or instrumentation**. The reference memory/SQLite stores
+now sample the existing read clock before gathering rows instead of afterward, without adding
+any storage operations. The suite's lost-acknowledgement case adds a read only in its test wrapper,
+not the production path.
+
+This change has no new measured throughput claim; the September 2026 SQLite numbers above remain
+historical. Compare real application hot-path benchmarks before accepting adapter changes that
+add an extra verification read, lock write or timestamp query for every operation.

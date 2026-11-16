@@ -767,12 +767,60 @@
         "test/runtime-boundary-refinement.test.mjs",
         "test/lifecycle-transition-matrix.test.mjs"
       ],
+      "key": "conformance.ReadClockConformanceFixture.advance",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "28fbfd8b280f285de8511d16ff43b9786941cbea038dc7e664c543e1959bbd05"
+    },
+    {
+      "classification": "assurance-infrastructure",
+      "evidence": [
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "conformance.ReadClockConformanceFixture.close",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "c906bb038b83ddd6c5513ecc9007fe92b03de5348ad1224551e8f2ce0c8afc36"
+    },
+    {
+      "classification": "assurance-infrastructure",
+      "evidence": [
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "conformance.ReadClockConformanceFixture.pauseGetManyAfterSnapshot",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "5bf5172aeebbd61096f300b7fb22e5e83c13f15d688e963d78fc092f33f69caf"
+    },
+    {
+      "classification": "assurance-infrastructure",
+      "evidence": [
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
       "key": "conformance.runConformance",
       "modelActions": [],
       "runtimeContracts": [
         "BoundarySampleOK"
       ],
       "signatureHash": "473b37805e6da2e242f743c26ad3a42eb4e7aa7dfdaed5a7b0bf5912b4454a4b"
+    },
+    {
+      "classification": "assurance-infrastructure",
+      "evidence": [
+        "test/conformance.test.mjs",
+        "test/runtime-boundary-refinement.test.mjs",
+        "test/lifecycle-transition-matrix.test.mjs"
+      ],
+      "key": "conformance.runReadClockConformance",
+      "modelActions": [],
+      "runtimeContracts": [],
+      "signatureHash": "b54993ee642b2c6044191ca129a48165e6019d640e2d9ef66915338f5d2fcab6"
     },
     {
       "classification": "worker-runtime",
@@ -4344,6 +4392,31 @@
       "source": "src/work.ts",
       "typeHash": "b3da70078896ca0bd27c8c8e276e65de05faa0285b7c6fd8bb0c5693301034da",
       "typeName": "PrunerOptions"
+    },
+    {
+      "allowsNull": false,
+      "allowsUndefined": false,
+      "callable": false,
+      "classification": "storage-boundary",
+      "directions": [
+        "callback-result",
+        "exported-type"
+      ],
+      "evidence": [
+        "test/cas.test.mjs",
+        "test/conformance.test.mjs",
+        "test/edge-regressions.test.mjs",
+        "test/process/sqlite-process.test.mjs"
+      ],
+      "field": "store",
+      "key": "ReadClockConformanceFixture|src/conformance.ts|0|3f6a1976b4fe#store",
+      "modelConcepts": [
+        "storageAtomicity"
+      ],
+      "optional": false,
+      "source": "src/conformance.ts",
+      "typeHash": "5d9f1ebfdae4f512d286a05a78b6f3389cc5722517d659b97c960b67b01a1628",
+      "typeName": "ReadClockConformanceFixture"
     },
     {
       "allowsNull": false,
@@ -12464,7 +12537,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "57c2ec61b6091c688eca6db5e641dbfd3e6d01a9c3f02db2f91bd1023b6be6b9",
+      "sourceDigest": "9d98e432cf054fd410c9f453883c42c3ec52ac924af3ab7c929ea881d2d69977",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -12639,7 +12712,7 @@
         "RetentionTypeOK"
       ],
       "progressConfig": "formal/WorkOnceRetentionProgress.cfg",
-      "sourceDigest": "130ea6168f4b621b37ac934d2d61e36f13c0c0a5e868bf8c8c0c07723095afbe",
+      "sourceDigest": "c8f0b7439311ab636455f66ff973c62f5a4d2189a53aeeaec2bfe0f9e81278a7",
       "sourceFiles": [
         "src/model.ts",
         "src/kernel.ts",
@@ -12707,7 +12780,7 @@
       ],
       "observationBinding": "scripts/storage-formal.mjs",
       "observationProducer": "scripts/storage-refinement.mjs",
-      "sourceDigest": "aa3ee7d12ec712905953342b681c6308f0c232feb629a66367678be881eba6b5",
+      "sourceDigest": "5197f4a51329dec6b5e8dcae2b15af5cf70596c0aab31b1cc44ceb7cf209172e",
       "sourceFiles": [
         "src/storage.ts",
         "src/storage-validation.ts",
@@ -12721,7 +12794,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "0cfa821b8189ca9a810800f2171ab58fc50cd025893532a7f8b9c1b3537a491c",
+    "assuranceInfrastructureDigest": "a2b5b3ac3c03101c683f08bd9f61a8d95657e676b489c8635e0c209ce7377223",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -12909,7 +12982,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "ce9c58cb93a43325c3fc2c9d752b7d9583a50ae03dae2fd0d1601d0c94d697a4",
+    "sourceDigest": "f30a59064e466406026d67beefa281b4944278adda06e41abd4d7ad747ab8fb1",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",
@@ -13144,6 +13217,26 @@
       "name": "PrunerOptions",
       "shapeHash": "a890a8ccee7d1bc9b8d9b845d6a59f1d0a11af06aa69783c0b2c30a98fbbd877",
       "source": "src/work.ts"
+    },
+    {
+      "directions": [
+        "exported-type",
+        "input"
+      ],
+      "identity": "ReadClockConformanceFactory|src/conformance.ts|0|ba2eea8f335f",
+      "name": "ReadClockConformanceFactory",
+      "shapeHash": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "source": "src/conformance.ts"
+    },
+    {
+      "directions": [
+        "callback-result",
+        "exported-type"
+      ],
+      "identity": "ReadClockConformanceFixture|src/conformance.ts|0|3f6a1976b4fe",
+      "name": "ReadClockConformanceFixture",
+      "shapeHash": "d2c3b5370d338c030b30fabd327076d7bda44883711349ba553b34b5735bf090",
+      "source": "src/conformance.ts"
     },
     {
       "directions": [
