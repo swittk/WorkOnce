@@ -12987,7 +12987,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "a2a38b6a991664faa3f5d18062b12c6cd995e4e4eb68ea30166bcf7d8d9f1d68",
+    "assuranceInfrastructureDigest": "68d13325dc440c53f5e07a18732d87b3affa808a1f8a93cc134cde1099d59676",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -13167,7 +13167,7 @@
       "formal/WorkOnceRetentionFollowups.tla",
       "formal/WorkOnceRetentionFollowups.cfg"
     ],
-    "semanticEnvironmentDigest": "e692bdd4427253da63ba13322b91ef6061f85f95019f6beb501b6ff291af2062",
+    "semanticEnvironmentDigest": "3f0d9b7a10ed2e747d6becc2e3b313af66b49168f25920bbdda8495cbee7f78d",
     "semanticEnvironmentFiles": [
       "tsconfig.json",
       "tsconfig.cjs.json",
