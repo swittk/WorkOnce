@@ -32,6 +32,14 @@ export function validateStoreWrite(
   validUntil: number | undefined,
 ): void {
   if (next.id !== id) throw new Error('Store decision changed work identity');
+  if (
+    next.leaseMode !== undefined &&
+    next.leaseMode !== 'commit-deadline' &&
+    next.leaseMode !== 'takeover-fenced'
+  )
+    throw new Error('Store decision contains an invalid lease mode');
+  if (current !== undefined && current.leaseMode !== next.leaseMode)
+    throw new Error('Store decision changed persisted lease mode');
   const finite = next.retention !== undefined && next.retention !== 'forever';
   if (next.retention !== undefined && next.retention !== 'forever')
     integer(next.retention.afterTerminalMs, 'afterTerminalMs');
@@ -113,6 +121,12 @@ function validateRequest(value: unknown): asserts value is WorkRequest {
   int(row.availableAt);
   if (!Object.prototype.hasOwnProperty.call(row, 'input')) invalidPersistedRow();
   validateRetention(row.retention);
+  if (
+    row.leaseMode !== undefined &&
+    row.leaseMode !== 'commit-deadline' &&
+    row.leaseMode !== 'takeover-fenced'
+  )
+    invalidPersistedRow();
   if (id !== workId(scope, kind, key)) invalidPersistedRow();
 }
 function validateAttemptRef(value: unknown): asserts value is AttemptRef {

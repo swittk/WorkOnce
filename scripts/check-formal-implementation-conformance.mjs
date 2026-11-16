@@ -37,6 +37,7 @@ const semanticSourceFiles = [
 const modelFiles = [
   'formal/WorkOnce.tla',
   'formal/WorkOnce.cfg',
+  'formal/WorkOnceTakeover.cfg',
   'formal/WorkOnceContract.tla',
   'formal/WorkOnceRuntime.tla',
   'formal/WorkOnceRuntime.cfg',

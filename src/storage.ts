@@ -3,6 +3,7 @@ export type {
   WorkRecord,
   WorkRequest,
   WorkLimits,
+  WorkLeaseMode,
   WorkAttempt,
   AttemptRef,
   WorkPhase,
@@ -15,7 +16,8 @@ export type StoreChange<T> =
       /** A replacement and physical deletion can never be requested together. */
       delete?: never;
       /**
-       * A storage-side exclusive deadline for this write; never accept an expired owner's commit.
+       * Strict commit-deadline fence, used only for commit-deadline work.
+       * Takeover-fenced work omits this and relies on atomic current-fence comparison.
        * Reject when the storage clock is at or after this value (`now >= validUntil`).
        */
       validUntil?: number;

@@ -1,4 +1,4 @@
-import type { AttemptRef, WorkOutcome, WorkPhase, WorkSnapshot } from './model.js';
+import type { AttemptRef, WorkLeaseMode, WorkOutcome, WorkPhase, WorkSnapshot } from './model.js';
 import type { EnsureOptions, LeasedWork } from './work.js';
 import {
   defer,
@@ -21,7 +21,7 @@ export interface ExternalWorkTransport<I, O, R extends string> {
     /** Lets network transports cancel an in-flight poll during graceful shutdown. */
     signal?: AbortSignal;
   }): Promise<LeasedWork<I>[]>;
-  /** Heartbeat this exact attempt to extend its lease; stale or expired ownership must reject. */
+  /** Renew this exact attempt; takeover-fenced modes reject reclaimed, not merely overdue owners. */
   heartbeat(attempt: AttemptRef): Promise<{ leaseUntil: number; observedAt: number }>;
   /** Submit one pure outcome. Unknown acknowledgements must reject rather than rerun the handler locally. */
   settle(attempt: AttemptRef, outcome: WorkOutcome<O, R>): Promise<WorkPhase<O, R>>;
@@ -59,6 +59,8 @@ export class ExternalWorkRun<O, R extends string> {
     readonly attempt: AttemptRef,
     readonly leaseUntil: number,
     readonly observedAt: number,
+    /** Absent means strict commit-deadline semantics. */
+    readonly leaseMode?: WorkLeaseMode,
   ) {}
   /** Report successful completion; the external-work service still performs the authoritative settlement. */
   succeed(
@@ -132,7 +134,12 @@ async function processLease<I, O, R extends string>(
   claimStartedAt: number,
 ): Promise<ExternalRunAvailableResult<O, R>> {
   const controller = new AbortController();
-  const run = new ExternalWorkRun<O, R>(lease.attempt, lease.leaseUntil, lease.observedAt);
+  const run = new ExternalWorkRun<O, R>(
+    lease.attempt,
+    lease.leaseUntil,
+    lease.observedAt,
+    lease.leaseMode,
+  );
   run.signal = controller.signal;
   const stop = () =>
     controller.abort(options.signal.reason ?? new Error('External ownership lost'));
@@ -155,6 +162,8 @@ async function processLease<I, O, R extends string>(
       ? undefined
       : Math.min(options.heartbeatMs ?? Math.max(1, Math.floor(firstLeaseMs / 3)), 2_147_483_647);
   function armExpiry(deadline: number) {
+    // Expiry permits reclaim but is not proof that a takeover actually won.
+    if (lease.leaseMode === 'takeover-fenced') return;
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
     if (remaining <= 0) controller.abort(new Error('Confirmed external lease deadline passed'));

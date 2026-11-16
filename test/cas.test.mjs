@@ -31,7 +31,7 @@ function fixture() {
 }
 
 test('one CAS port runs all shared conformance scenarios unchanged', async () => {
-  assert.equal((await runConformance(fixture)).length, 23);
+  assert.equal((await runConformance(fixture)).length, 26);
 });
 test('expiry BETWEEN read and native write rejects stale settlement without another worker', async () => {
   const f = fixture();

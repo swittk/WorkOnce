@@ -2,8 +2,8 @@
 
 - Public callables: **156**
 - Callable policy/storage fields: **22**
-- Reachable package-owned types: **119**
-- Reachable package-owned fields: **383**
+- Reachable package-owned types: **120**
+- Reachable package-owned fields: **391**
 - Maximum recursive type depth: **9**
 - Truncated public types: **0**
 
@@ -120,7 +120,7 @@
 - Source semantic digest schema: `typescript-ast-printer-directives-v3`
 - TLA semantic digest schema: `tla-lexical-string-safe-v2`
 - Bound proof/checker files: **144**
-- Content digest: `c66370eb8447a202bfd9cc5a4b4c4b3a360b259d4c3d01bd4d6a30c64bc3931a`
+- Content digest: `a2a38b6a991664faa3f5d18062b12c6cd995e4e4eb68ea30166bcf7d8d9f1d68`
 - Semantic compiler/toolchain inputs: **6**
 - Semantic compiler/toolchain digest: `e692bdd4427253da63ba13322b91ef6061f85f95019f6beb501b6ff291af2062`
 

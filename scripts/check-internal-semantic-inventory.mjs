@@ -98,6 +98,16 @@ function classifyRetentionTopology(entry) {
     };
   if (
     entry.path === 'src/conformance.ts' &&
+    entry.kind === 'call_Promise.allSettled' &&
+    /old\.settle\(old\.succeed\(\)\).*second\.claim/su.test(entry.excerpt)
+  )
+    return {
+      families: ['A', 'G', 'I'],
+      reason:
+        'Competing late settlement and timed takeover are an executable atomic winner witness for lifecycle, storage and assurance infrastructure.',
+    };
+  if (
+    entry.path === 'src/conformance.ts' &&
     entry.kind === 'mutable_let' &&
     entry.excerpt === 'let dropped = false;'
   )

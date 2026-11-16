@@ -9,6 +9,13 @@ export interface WorkLimits {
   /** Waiting for a prerequisite does not consume retry count, but is still bounded. */
   maxDeferrals: number;
 }
+/**
+ * Authority rule for one persisted work item.
+ * Commit-deadline: only commits made before leaseUntil may succeed.
+ * Takeover-fenced: the deadline only makes reclaim eligible; the old owner may
+ * still commit until an atomic reclaim/cancel/other transition revokes its fence.
+ */
+export type WorkLeaseMode = 'commit-deadline' | 'takeover-fenced';
 /** How long a terminal item remains deduplicated before explicit maintenance deletes it. */
 export type WorkRetention =
   | 'forever'
@@ -18,6 +25,8 @@ export type WorkRetention =
     };
 /** Durable work description. Input must survive a JSON round trip. No functions are stored. */
 export interface WorkRequest<I = unknown> {
+  /** Persisted lease authority rule; omitted means strict commit-deadline semantics. */
+  leaseMode?: WorkLeaseMode;
   /** Persisted retention policy; omission is permanent retention. */
   retention?: WorkRetention;
   /** Unambiguous identity derived from scope, kind and caller key. */
@@ -54,7 +63,7 @@ export interface WorkAttempt extends AttemptRef {
   workerId: string;
   /** Claim number within this generation, including crashed attempts. */
   number: number;
-  /** Storage-clock deadline. At equality, this attempt is expired. */
+  /** Storage-clock takeover eligibility; also a hard commit deadline in strict mode. */
   leaseUntil: number;
 }
 /** A typed snapshot contains only fields meaningful for its current phase. */
@@ -163,6 +172,8 @@ export interface RetryContext<I, R extends string> {
 }
 /** Read result with storage time for conservative lease timers in foreign workers. */
 export interface WorkSnapshot<I = unknown, O = unknown, R extends string = string> {
+  /** Work-specific lease authority rule; omission means strict commit-deadline. */
+  leaseMode?: WorkLeaseMode;
   /** Supply this with guarded commands so a deleted/recreated key is never mistaken for this item. */
   incarnation?: string;
   /** Persisted finite retention; omission means the item is retained permanently. */

@@ -3,8 +3,8 @@
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
-    "count": 1230,
-    "digest": "c48d43a7ff6d8c18"
+    "count": 1309,
+    "digest": "36bf67551dc93b7c"
   },
   "entries": [
     {
@@ -1940,26 +1940,30 @@
       "reason": "Durable follow-up/outbox cursor, budget, fairness, failure rotation, and dispatcher loop belongs to B."
     },
     {
-      "id": "src/work.ts:handoff:call_mutator_push:63eb2085237c26ce:1",
+      "id": "src/work.ts:handoff:call_mutator_push:562a127d4da6c641:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "call_mutator_push",
       "ordinal": 7,
-      "excerpt": "leases.push({\n          input: prepared.input,\n          attempt: run.ref,\n          leaseUntil: renewed.attempt.leaseUntil,\n          observedAt: renewed.observedAt,\n        })",
-      "textDigest": "04c725633a141c85",
-      "families": ["D"],
+      "excerpt": "leases.push({\n          ...(this.definition.leaseMode === 'takeover-fenced'\n            ? { leaseMode: 'takeover-fenced' as const }\n            : {}),\n          input: prepared.input,\n          attempt: run.ref,\n          leaseUntil: renewe",
+      "textDigest": "71ead9b573d208bd",
+      "families": [
+        "D"
+      ],
       "classification": "APPLICABLE",
       "reason": "Handoff lease accumulation is the external transport boundary that returns only successfully prepared and final-renewed leases; family D owns it."
     },
     {
-      "id": "src/work.ts:handoff:for_of_loop:4e5e7d5e33813b02:1",
+      "id": "src/work.ts:handoff:for_of_loop:934baea4ee4da223:1",
       "path": "src/work.ts",
       "context": "handoff",
       "kind": "for_of_loop",
       "ordinal": 2,
       "excerpt": "for (const run of await this.claim(options)) {\n      try {\n        const prepared = await prepare(run);\n        if (prepared.type !== 'handoff') {\n          await run.settle(prepared);\n          continue;\n        }\n        const renewed = a",
-      "textDigest": "e513a8da126c58da",
-      "families": ["D"],
+      "textDigest": "9bfc1a77afdc55bd",
+      "families": [
+        "D"
+      ],
       "classification": "APPLICABLE",
       "reason": "Foreign handoff preparation/export and per-lease iteration belongs to D."
     },
@@ -2004,7 +2008,7 @@
       "path": "src/work.ts",
       "context": "request",
       "kind": "identifier_assignment",
-      "ordinal": 6,
+      "ordinal": 7,
       "excerpt": "retained = { retention: { afterTerminalMs: retention.afterTerminalMs } }",
       "textDigest": "fa3590e55036381c",
       "families": ["A"],
@@ -2016,7 +2020,7 @@
       "path": "src/work.ts",
       "context": "request",
       "kind": "mutable_let",
-      "ordinal": 3,
+      "ordinal": 4,
       "excerpt": "let retained: Pick<WorkRequest, 'retention'> = {};",
       "textDigest": "72592d7a86b9ccdc",
       "families": ["A"],
@@ -2921,6 +2925,22 @@
       ],
       "classification": "APPLICABLE",
       "reason": "The test drops exactly one acknowledgement after an atomic success commit to verify durable receipt and continuation recovery."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:call_Promise.allSettled:36878e3e6df9db3c:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "call_Promise.allSettled",
+      "ordinal": 474,
+      "excerpt": "Promise.allSettled([\n      old.settle(old.succeed()),\n      second.claim({ workerId: 'B' }),\n    ])",
+      "textDigest": "7b0e6cd23859b233",
+      "families": [
+        "A",
+        "G",
+        "I"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Competing late settlement and timed takeover are an executable atomic winner witness for lifecycle, storage and assurance infrastructure."
     }
   ]
 }

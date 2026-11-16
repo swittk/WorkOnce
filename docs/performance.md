@@ -32,3 +32,16 @@ not the production path.
 This change has no new measured throughput claim; the September 2026 SQLite numbers above remain
 historical. Compare real application hot-path benchmarks before accepting adapter changes that
 add an extra verification read, lock write or timestamp query for every operation.
+
+## Takeover-fenced mode
+
+The opt-in takeover-fenced contract adds **no extra database reads, writes, locks or
+polling** to the core storage path. It selects the fencing-only branch of the
+existing atomic update and does not send a `validUntil` write deadline. This
+can be useful for an adapter whose underlying atomic operations cannot check
+database time at commit.
+
+The mode does not itself shorten a multi-operation adapter protocol, and none
+of the historical benchmarks above measured it. With a slow or stalled worker,
+other claimants may start after takeover eligibility, so workload-specific
+idempotency/fencing is still important.

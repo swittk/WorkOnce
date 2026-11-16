@@ -77,6 +77,40 @@ A claim advances the fence across manual-retry generations within that incarnati
 as exact safe integers; requests whose timing arithmetic already overflows are rejected before
 insertion.
 
+## Persisted lease authority modes
+
+Each work request may carry `leaseMode`, set from its work definition:
+
+| Policy                      | Deadline after which a worker can be reclaimed | Owner's late commit                                                              |
+| --------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| Omitted / `commit-deadline` | `leaseUntil`                                   | Forbidden, even if nobody has reclaimed the item                                 |
+| `takeover-fenced`           | `leaseUntil`                                   | Allowed only if the same generation/incarnation/fence still owns the running row |
+
+The policy is durable and immutable for a work ID. Changing it is a conflicting request,
+not a live rewrite or migration of existing authority. All backend replicas must use
+the same definition and the same real atomically serialized store. TypeScript alone does
+not prove that a user's database adapter implements cross-process atomicity.
+
+**Takeover-fenced** changes only the accepted owner check and the presence of
+`validUntil` in heartbeat/settlement writes. Reclaim itself remains time-gated, and
+competes in the same storage-atomic work-ID ordering as settlement. Once reclaim or
+cancel commits, an old generation/fence cannot settle. A renewal can cross an expired
+lease when its owner still wins, but cannot extend the generation beyond `maxElapsedMs`.
+A still-current completion may nevertheless win after that budget; the elapsed limit
+bounds scheduler/recovery decisions, not retroactive invalidation of an owned result.
+
+This permits well-defined _state safety_ without exact network-wide wall-clock
+agreement. It is not a strict time-expiry guarantee, a proof that an old physical worker
+has stopped, or a guarantee that multiple workers cannot perform duplicate external
+side effects. Cooperative workers use their persisted mode to decide whether a local
+deadline itself causes abort; actual rejected heartbeats still abort both modes.
+
+**Strict commit-deadline mode** remains the default and requires `validUntil` to be
+checked by storage at the write linearization point. Adapters that cannot implement
+that predicate must not advertise strict conformance merely because they timestamp
+an operation before sending it. The takeover-fenced alternative does not weaken
+the strict mode or add storage round trips to either mode.
+
 ## Clocks and side effects
 
 Use a trusted clock associated with storage. The kernel prevents one record's update time from
@@ -109,7 +143,7 @@ maintaining another mutable copy of the same terminal status in a domain object.
 
 ## Conformance
 
-Run the shared **23-case** suite unchanged against a fresh test database for each case:
+Run the shared **26-case** suite unchanged against a fresh test database for each case:
 
 ```ts
 import { runConformance } from '@workonce/core/conformance';
@@ -126,7 +160,8 @@ await runConformance(async () => {
 });
 ```
 
-The suite covers competing claims and renewals, lease/fence expiry, receipt replay after a
+The suite covers strict deadline fencing, late takeover-fenced renewal/settlement and
+atomic reclaim/settle races, receipt replay after a
 **simulated** lost acknowledgement, scope/kind/definition filtering before bounded discovery,
 cursor behavior, detached reads and physical retirement (where supported). Stores without
 `retention: true` must explicitly reject finite-retention work.

@@ -20,6 +20,7 @@ const sourceFiles = [
 const modelFiles = [
   'formal/WorkOnce.tla',
   'formal/WorkOnce.cfg',
+  'formal/WorkOnceTakeover.cfg',
   'formal/WorkOnceLifecycleTemporal.tla',
   'formal/WorkOnceLifecycleTemporal.cfg',
   'formal/WorkOnceClaimScan.tla',

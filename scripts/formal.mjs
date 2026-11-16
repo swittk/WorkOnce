@@ -680,6 +680,9 @@ const externallyGuardedFormalConfigs = [
   'formal/WorkOnceLifecycleTemporal.cfg',
   'formal/WorkOnceClaimScan.cfg',
   'formal/WorkOnceStorage.cfg',
+  // Same lifecycle invariants are mutation-guarded by the strict model; a separate
+  // actual TLC model run and reachable late-settlement witness guard the mode split.
+  'formal/WorkOnceTakeover.cfg',
   // A temporal property is guarded by its fairness-removal TLC witness below.
   'formal/WorkOnceRetentionProgress.cfg',
   // Two native-guard witnesses and the unfair-upgrade liveness counterexample.
@@ -783,6 +786,33 @@ function requireObservedSample(samples, label, predicate, field) {
 const lifecycleConfig = readFileSync('formal/WorkOnce.cfg', 'utf8');
 if (nonRuntimeOnly) {
   runModel('WorkOnce', 'WorkOnce.cfg');
+  // Both deadline contracts share the same generation/fence safety machine.
+  runModel('WorkOnceTakeover', 'WorkOnceTakeover.cfg', 'WorkOnce.tla');
+  const takeoverWitness = resolve(tlcWorkspace, 'WorkOnceTakeoverLateWitness.tla');
+  const takeoverWitnessConfig = resolve(tlcWorkspace, 'WorkOnceTakeoverLateWitness.cfg');
+  writeFileSync(
+    takeoverWitness,
+    String.raw`---- MODULE WorkOnceTakeoverLateWitness ----
+EXTENDS WorkOnce
+LateSuccessEnabled == \E t \in tokens : /\ now >= lease /\ ENABLED Success(t, FALSE)
+NoLateSuccessEnabled == ~LateSuccessEnabled
+MutantSpec == Spec
+====
+`,
+  );
+  writeFileSync(
+    takeoverWitnessConfig,
+    singleInvariantConfig(
+      readFileSync('formal/WorkOnceTakeover.cfg', 'utf8'),
+      'NoLateSuccessEnabled',
+    ),
+  );
+  requireInvariantRejects(
+    'WorkOnceTakeoverLateWitness',
+    takeoverWitnessConfig,
+    takeoverWitness,
+    'NoLateSuccessEnabled',
+  );
   runMutationWitnessBatch({
     model: 'WorkOnceInvariantMutationBatch',
     baseModule: 'WorkOnce',
