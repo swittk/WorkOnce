@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runConformance } from '../dist/conformance.js';
+import { runConformance, runReadClockConformance } from '../dist/conformance.js';
 import { createMemoryStore } from '../dist/memory.js';
 import { createSqliteStore } from '../dist/sqlite.js';
 import { createCompareExchangeStore } from '../dist/cas.js';
@@ -35,7 +35,7 @@ for (const adapter of ['memory', 'sqlite'])
         },
       };
     });
-    assert.equal(passed.length, 19);
+    assert.equal(passed.length, 23);
     console.log(adapter, passed);
   });
 
@@ -59,7 +59,7 @@ test('shared conformance derives accepted write deadlines from the atomic decisi
       },
     };
   });
-  assert.equal(passed.length, 19);
+  assert.equal(passed.length, 23);
 });
 
 test('shared conformance accepts adapter-specific invalid-write rejection messages', async () => {
@@ -84,7 +84,7 @@ test('shared conformance accepts adapter-specific invalid-write rejection messag
       },
     };
   });
-  assert.equal(passed.length, 19);
+  assert.equal(passed.length, 23);
 });
 
 test('shared conformance remains message-agnostic when an adapter uses the old assertion label verbatim', async () => {
@@ -109,7 +109,7 @@ test('shared conformance remains message-agnostic when an adapter uses the old a
       },
     };
   });
-  assert.equal(passed.length, 19);
+  assert.equal(passed.length, 23);
 });
 
 test('shared conformance rejects adapters that treat validUntil equality as still writable', async () => {
@@ -289,5 +289,107 @@ test('a conforming store may linearize completion before an earlier invoked canc
       },
     };
   });
-  assert.equal(passed.length, 19);
+  assert.equal(passed.length, 23);
+});
+
+function makeReadClockFixture(lateClock) {
+  let clock = 100_000;
+  const native = createMemoryStore({ now: () => clock });
+  let stalled;
+  return {
+    store: {
+      ...native,
+      async getMany(ids) {
+        // Model a real DB read returning its old row before another writer renews it.
+        const observed = await native.getMany(ids);
+        if (stalled && ids.includes(stalled.id)) {
+          const current = stalled;
+          stalled = undefined;
+          current.enter();
+          await current.wait;
+          // A buggy adapter samples now after reading its (now-stale) row.
+          return { ...observed, now: lateClock ? clock : observed.now };
+        }
+        return observed;
+      },
+    },
+    advance(ms) {
+      clock += ms;
+    },
+    pauseGetManyAfterSnapshot(id) {
+      let enter;
+      let release;
+      const entered = new Promise((resolve) => {
+        enter = resolve;
+      });
+      const wait = new Promise((resolve) => {
+        release = resolve;
+      });
+      stalled = { id, enter, wait };
+      return { entered, release };
+    },
+  };
+}
+
+test('read-clock conformance accepts a clock sampled before the storage read', async () => {
+  await runReadClockConformance(() => makeReadClockFixture(false));
+});
+
+test('read-clock conformance rejects a stale read paired with a newer clock', async () => {
+  await assert.rejects(
+    runReadClockConformance(() => makeReadClockFixture(true)),
+    (error) => error.code === 'lease_expired',
+  );
+});
+
+test('shared conformance rejects applying definition filtering after the query limit', async () => {
+  await assert.rejects(
+    runConformance(() => {
+      let clock = 100_000;
+      const base = createMemoryStore({ now: () => clock });
+      return {
+        store: {
+          ...base,
+          async query(query) {
+            if (query.scope !== 'filtered-discovery' || query.select !== 'due')
+              return base.query(query);
+            // Incorrect adapters select the first limit rows, THEN apply the definition.
+            const result = await base.query({ ...query, definition: undefined });
+            return {
+              ...result,
+              rows: result.rows.filter((row) => row.definition === query.definition),
+            };
+          },
+        },
+        advance(ms) {
+          clock += ms;
+        },
+      };
+    }),
+    /due (discovery must sort by deadline|limit)/u,
+  );
+});
+
+test('shared conformance rejects stores advertising retention without physical expiry', async () => {
+  await assert.rejects(
+    runConformance(() => {
+      let clock = 100_000;
+      const base = createMemoryStore({ now: () => clock });
+      return {
+        store: {
+          ...base,
+          query(query) {
+            if (query.scope === 'retention-conformance' && query.select === 'expired') {
+              return base.query(query).then(({ now }) => ({ rows: [], now }));
+            }
+            return base.query(query);
+          },
+        },
+        advance(ms) {
+          clock += ms;
+        },
+      };
+    }),
+    /Expected values to be strictly equal/u,
+  );
 });

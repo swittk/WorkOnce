@@ -39,8 +39,10 @@ export interface CompareExchangePort {
   readonly retention?: true;
   /**
    * Detached reads in caller order, with exactly one result slot per requested id (including
-   * duplicate ids) and the trusted storage clock. Per-id values must be valid; cross-id
-   * transactional snapshot isolation is not required.
+   * duplicate ids) and a trusted storage clock not newer than the read observation of any
+   * stale row. If the read awaits storage, sample the clock before reading the rows, not after.
+   * Per-id values must be valid; cross-id transactional snapshot isolation is not required.
+   * Use the same clock authority as native compareExchange deadline predicates.
    */
   getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
   /** Indexed discovery. Scope/kind/definition and the limit must be applied in storage. */

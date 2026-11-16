@@ -68,8 +68,11 @@ export interface WorkStore {
   /**
    * Read exact ids in caller order together with one storage-time observation. The result has
    * exactly one slot per requested id, including repeated ids. Rows must each be a valid detached
-   * value, but the contract does not require one cross-id transactional snapshot while concurrent
-   * writers run; an adapter may document a stronger guarantee.
+   * value. When reads can overlap writes, the trusted observation clock must be sampled no later
+   * than the row-read observation: never pair an old row with a clock sampled after an awaited
+   * storage read. This avoids spuriously expiring a lease renewed during the read. The clock must
+   * share the authority/time domain of atomic deadline checks. Cross-id transactional snapshots
+   * are NOT required; a batch can contain per-id revisions observed at different times.
    */
   getMany(ids: readonly string[]): Promise<{ rows: (WorkRecord | undefined)[]; now: number }>;
   /** Query a bounded indexed work view; candidate discovery never grants ownership by itself. */

@@ -3,8 +3,8 @@
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
-    "count": 1099,
-    "digest": "39bd7cafff144d39"
+    "count": 1230,
+    "digest": "c48d43a7ff6d8c18"
   },
   "entries": [
     {
@@ -2874,6 +2874,53 @@
       "families": ["C"],
       "classification": "APPLICABLE",
       "reason": "Managed local runner supervision, timers, cancellation, and poll scheduling belongs to family C."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:call_Promise.all:f340c7075e436fb6:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "call_Promise.all",
+      "ordinal": 326,
+      "excerpt": "Promise.all([first.heartbeat(run.ref), second.heartbeat(run.ref)])",
+      "textDigest": "2c3ef69b351a67bf",
+      "families": [
+        "A",
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "Simultaneous heartbeat conformance tests lifecycle ownership and durable atomic renewal across independent handles."
+    },
+    {
+      "id": "src/conformance.ts:<callback>:mutable_let:b896279a6cfa68e8:1",
+      "path": "src/conformance.ts",
+      "context": "<callback>",
+      "kind": "mutable_let",
+      "ordinal": 400,
+      "excerpt": "let dropped = false;",
+      "textDigest": "12f58df5397286c8",
+      "families": [
+        "A",
+        "B",
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "The injected lost-ack flag makes terminal receipt replay and follow-up delivery observable without altering the backing store."
+    },
+    {
+      "id": "src/conformance.ts:atomic:identifier_assignment:d4ebe1a90807d202:1",
+      "path": "src/conformance.ts",
+      "context": "atomic",
+      "kind": "identifier_assignment",
+      "ordinal": 3,
+      "excerpt": "dropped = true",
+      "textDigest": "93b4703753b0651a",
+      "families": [
+        "A",
+        "B",
+        "G"
+      ],
+      "classification": "APPLICABLE",
+      "reason": "The test drops exactly one acknowledgement after an atomic success commit to verify durable receipt and continuation recovery."
     }
   ]
 }

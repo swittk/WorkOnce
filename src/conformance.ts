@@ -406,5 +406,225 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     }));
     assert.equal(accepted, 'accepted-before-deadline');
   });
+  await test('concurrent heartbeats retain one owner and both committed renewals', async ({
+    store,
+    advance,
+  }) => {
+    const first = createWorkOnce({ store, scope: 'heartbeat-race' }).define('task', {
+      limits: { leaseMs: 40 },
+    });
+    const second = createWorkOnce({ store, scope: 'heartbeat-race' }).define('task', {
+      limits: { leaseMs: 40 },
+    });
+    await first.ensure(null, { key: 'one' });
+    const [run] = await first.claim({ workerId: 'owner' });
+    assert.ok(run);
+    const before = (await first.inspect('one'))!;
+    advance(10);
+    const renewals = await Promise.all([first.heartbeat(run.ref), second.heartbeat(run.ref)]);
+    assert.equal(renewals[0]!.attempt.fence, run.ref.fence);
+    assert.equal(renewals[1]!.attempt.fence, run.ref.fence);
+    assert.equal(renewals[0]!.attempt.leaseUntil, renewals[1]!.attempt.leaseUntil);
+    const after = (await first.inspect('one'))!;
+    assert.equal(after.revision, before.revision + 2, 'both independent renewals must commit');
+    assert.equal(after.attempts, 1, 'renewals cannot manufacture new claims');
+    assert.equal(
+      (await first.history('one')).filter((event) => event.action === 'renew').length,
+      0,
+    );
+    await run.settle(run.succeed());
+  });
+
+  await test('scope, kind and definition are filtered before bounded due discovery', async ({
+    store,
+    advance,
+  }) => {
+    const clock = (await store.getMany([])).now;
+    const scope = 'filtered-discovery';
+    const current = createWorkOnce({ store, scope });
+    const old = current.define('task', { version: 'old' });
+    const fresh = current.define('task', { version: 'new' });
+    const unrelatedKind = current.define('other');
+    const unrelatedScope = createWorkOnce({ store, scope: 'another-scope' }).define('task', {
+      version: 'new',
+    });
+    await old.ensure(null, { key: 'older-version', availableAt: clock });
+    await unrelatedKind.ensure(null, { key: 'other-kind', availableAt: clock });
+    await unrelatedScope.ensure(null, { key: 'other-scope', availableAt: clock });
+    const earliest = await fresh.ensure(null, { key: 'first', availableAt: clock });
+    const later = await fresh.ensure(null, { key: 'second', availableAt: clock + 3 });
+    const query = {
+      scope,
+      kind: 'task',
+      definition: 'new',
+      select: 'due' as const,
+      limit: 1,
+    };
+    assert.deepEqual(
+      (await store.query(query)).rows.map((row) => row.id),
+      [earliest.id],
+      'wrong scope/kind/definition candidates must not consume the due limit',
+    );
+    advance(3);
+    assert.deepEqual(
+      (await store.query({ ...query, limit: 2 })).rows.map((row) => row.id),
+      [earliest.id, later.id],
+      'due discovery must sort by deadline before taking its limit',
+    );
+  });
+
+  await test('retention capability, outbox protection and new incarnation agree', async ({
+    store,
+    advance,
+  }) => {
+    const work = createWorkOnce({ store, scope: 'retention-conformance' });
+    const parent = work.define('parent', { retention: { afterTerminalMs: 5 } });
+    const child = work.define('child');
+    if (store.retention !== true) {
+      await rejects(parent.ensure(null, { key: 'job' }), 'retention_unsupported');
+      return;
+    }
+    const original = await parent.ensure(null, { key: 'job' });
+    assert.ok(original.incarnation);
+    const [run] = await parent.claim({ workerId: 'owner' });
+    assert.ok(run);
+    await run.settle(run.succeed(null, { thenDo: [child.request(null, { key: 'continuation' })] }));
+    advance(5);
+    assert.deepEqual(
+      (await store.query({ scope: 'retention-conformance', select: 'expired', limit: 1 })).rows,
+      [],
+      'terminal parents with undispatched follow-ups are not expired candidates',
+    );
+    await assert.rejects(
+      store.query({
+        scope: 'retention-conformance',
+        select: 'expired',
+        limit: 1,
+        afterId: original.id,
+      }),
+      () => true,
+      'expired queries must reject an id-only cursor',
+    );
+    assert.equal(await parent.prune({ limit: 1 }), 0);
+    assert.equal(await work.dispatch({ limit: 1 }), 1);
+    assert.equal(await parent.prune({ limit: 1 }), 1);
+    assert.equal((await store.getMany([original.id])).rows[0], undefined);
+    const recreated = await parent.ensure(null, { key: 'job' });
+    assert.ok(recreated.incarnation && recreated.incarnation !== original.incarnation);
+    assert.equal(recreated.revision, 1);
+    await rejects(run.settle(run.succeed()), 'stale_attempt');
+    assert.equal((await child.inspect('continuation'))!.phase.state, 'queued');
+  });
+
+  await test('lost success acknowledgement replays the receipt without duplicating follow-ups', async ({
+    store,
+  }) => {
+    const scope = 'unknown-ack-conformance';
+    const work = createWorkOnce({ store, scope });
+    const parent = work.define('parent');
+    const child = work.define('child');
+    await parent.ensure(null, { key: 'job' });
+    const [run] = await parent.claim({ workerId: 'owner' });
+    assert.ok(run);
+    const outcome = run.succeed(null, {
+      thenDo: [child.request(null, { key: 'apply-once' })],
+    });
+    let dropped = false;
+    const ambiguous: WorkStore = {
+      ...(store.retention === true ? { retention: true as const } : {}),
+      getMany: (ids) => store.getMany(ids),
+      query: (query) => store.query(query),
+      async atomic(id, decide) {
+        const receipt = await store.atomic(id, decide);
+        if (id === run.ref.workId && !dropped) {
+          const committed = (await store.getMany([id])).rows[0];
+          if (committed?.phase.state === 'succeeded') {
+            dropped = true;
+            throw new Error('injected lost acknowledgement after durable commit');
+          }
+        }
+        return receipt;
+      },
+    };
+    const unreliable = createWorkOnce({ store: ambiguous, scope }).define('parent');
+    await assert.rejects(
+      unreliable.settle(run.ref, outcome),
+      /injected lost acknowledgement after durable commit/u,
+    );
+    assert.equal(dropped, true);
+    assert.equal((await parent.inspect('job'))!.pendingFollowups, 1);
+    assert.equal(await child.inspect('apply-once'), undefined);
+    assert.equal((await parent.settle(run.ref, outcome)).state, 'succeeded');
+    assert.equal(await work.dispatch({ limit: 1 }), 1);
+    assert.equal(await work.dispatch({ limit: 1 }), 0);
+    assert.equal((await parent.inspect('job'))!.pendingFollowups, 0);
+    assert.equal((await child.inspect('apply-once'))!.phase.state, 'queued');
+  });
+
   return completed;
+}
+
+/**
+ * Adapter-specific probe for the subtle read-clock race: hold a storage read AFTER it
+ * captured an old row, but BEFORE getMany has finished constructing { rows, now }.
+ * Hook the real database/ORM read boundary, not a wrapper after getMany has returned.
+ */
+export interface ReadClockConformanceFixture extends ConformanceFixture {
+  /** Install a one-shot stall on a read containing this work ID. */
+  pauseGetManyAfterSnapshot(workId: string): {
+    /** Resolves when the old storage snapshot has been captured and is being held. */
+    entered: Promise<void>;
+    /** Resume the read, permitting getMany to return its rows and observation clock. */
+    release(): void;
+  };
+}
+
+/** Factory that instruments a real getMany read boundary instead of simulating a stale result. */
+export type ReadClockConformanceFactory = () =>
+  | ReadClockConformanceFixture
+  | Promise<ReadClockConformanceFixture>;
+
+/**
+ * Deterministically overlap a stale read with an accepted heartbeat. If an adapter samples
+ * its observation clock AFTER the held read, the valid settlement will be falsely expired.
+ * Run this in addition to runConformance against the actual backing-store implementation.
+ */
+export async function runReadClockConformance(create: ReadClockConformanceFactory): Promise<void> {
+  const fixture = await create();
+  try {
+    const first = createWorkOnce({ store: fixture.store, scope: 'read-clock-conformance' }).define(
+      'task',
+      { limits: { leaseMs: 40 } },
+    );
+    const other = createWorkOnce({ store: fixture.store, scope: 'read-clock-conformance' }).define(
+      'task',
+      { limits: { leaseMs: 40 } },
+    );
+    await first.ensure(null, { key: 'job' });
+    const [run] = await first.claim({ workerId: 'owner' });
+    assert.ok(run);
+    fixture.advance(20);
+    const gate = fixture.pauseGetManyAfterSnapshot(run.ref.workId);
+    const pending = first.settle(run.ref, run.succeed());
+    // Attach a rejection handler immediately, even while the read is deliberately suspended.
+    void pending.catch(() => undefined);
+    try {
+      await gate.entered;
+      const renewed = await other.heartbeat(run.ref);
+      assert.equal(renewed.attempt.leaseUntil - renewed.observedAt, 40);
+      // The OLD row's lease has now expired, but the committed renewal has not.
+      fixture.advance(25);
+      gate.release();
+      assert.equal(
+        (await pending).state,
+        'succeeded',
+        'a stale pre-heartbeat read must not be paired with a post-heartbeat clock',
+      );
+    } finally {
+      gate.release();
+      await pending.catch(() => undefined);
+    }
+  } finally {
+    await fixture.close?.();
+  }
 }

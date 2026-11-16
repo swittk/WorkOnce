@@ -279,8 +279,10 @@ export function createSqliteStore(
         // One bounded read transaction gives a consistent batch snapshot and clock.
         db.exec('BEGIN');
         try {
-          const rows = ids.map((id) => parseStored(sqliteRow(read.get(id))));
+          // A WAL reader may outlive a concurrent writer: never pair its older
+          // snapshot with a clock sampled after the version rows were read.
           const time = now();
+          const rows = ids.map((id) => parseStored(sqliteRow(read.get(id))));
           db.exec('COMMIT');
           return { rows, now: time };
         } catch (error) {
