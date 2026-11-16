@@ -109,6 +109,46 @@ effects. Ownership is checked again after it returns. Static policy objects work
 - `heartbeat` = prove this worker still owns the attempt and extend its lease.
 - `executionLimits` = per-work safety budgets such as lease duration, attempts, elapsed time and waits. It is **not** a throttle.
 
+## Lease authority: strict deadline or takeover-fenced
+
+WorkOnce supports two explicit **per-work** lease contracts. The default remains
+`commit-deadline`: a heartbeat or outcome must commit before the saved
+`leaseUntil`, and the store must enforce `validUntil` atomically at write time.
+
+For applications whose store can serialize/fence each work id but cannot evaluate a
+database-time predicate in the final update, opt into `takeover-fenced`:
+
+```ts
+const delegated = work.define('asset.convert.fenced', {
+  leaseMode: 'takeover-fenced',
+  limits: { leaseMs: 60_000, maxElapsedMs: 3_600_000 },
+});
+```
+
+Here `leaseUntil` is **takeover eligibility**, not a hard commit deadline:
+
+- Before takeover, the current generation/fence may renew or settle even after `leaseUntil`.
+- At expiry another claimant becomes eligible to atomically reclaim and advance the fence.
+  **Reclaim and settlement cannot both win.** After a reclaim/cancel wins, the old
+  attempt cannot renew or settle, regardless of its worker ID or local clock.
+- The per-generation elapsed budget still limits future claims/renewals and retry/wait
+  scheduling; it does **not** revoke a still-current attempt at a precise wall-clock instant.
+- Managed local and external workers keep heartbeating and abort on a rejected heartbeat,
+  shutdown or actual ownership loss, rather than treating a mere local timer as proof of
+  takeover. The external handoff carries `leaseMode` on its wire lease.
+- The chosen mode is **persisted in the work request**, so a different backend using
+  an incompatible definition rejects the item instead of silently changing its meaning.
+  Existing rows default to strict mode without a migration.
+
+Both modes require **real cross-process atomic serialization** for each work ID, not
+a process-local mutex plus a stale database read. In takeover-fenced mode WorkOnce
+does not provide an exact real-time commit deadline; the storage system decides
+which operation wins, and local clock skew primarily affects **when takeover starts**.
+Remote work may still have already performed an external effect when another worker
+reclaims it: use provider-side idempotency/fencing or recoverable receipts.
+
+Read [the storage timing contract](docs/storage.md) for precise guarantees.
+
 The low-level record still uses the distributed-systems term **fencing token** (`fence`). Treat the
 attempt reference as opaque in normal application code. If worker A owns fence 17, its lease
 expires, and worker B reclaims the work with fence 18, a late result from A still carries 17 and

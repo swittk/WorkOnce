@@ -14,6 +14,7 @@
   "modelFiles": [
     "formal/WorkOnce.tla",
     "formal/WorkOnce.cfg",
+    "formal/WorkOnceTakeover.cfg",
     "formal/WorkOnceLifecycleTemporal.tla",
     "formal/WorkOnceLifecycleTemporal.cfg",
     "formal/WorkOnceClaimScan.tla",
@@ -57,7 +58,7 @@
     "test/process/retention-child.mjs",
     "test/process/retention-process.test.mjs"
   ],
-  "sourceDigest": "9723372a11678becaafc781acbdb1b5590a2bcbdb1f3c38882b3267103304a13",
-  "modelDigest": "15797eb6dbbca951d69592d621cd9059d729735ee5804accac370c0fd2fd4d8d",
-  "evidenceDigest": "7fd2fbfaf0e18ab2472f078440de8c213343f86767bd9475e9452aa5c63fcc69"
+  "sourceDigest": "804d80544ae6425e3202cc69c0827ec16b6221043e1e10c12f8c3e9a4937b767",
+  "modelDigest": "46ae7b9b9f3f63324023c6401061a3c1c0136d792365fb0bb480a69caa0f68f0",
+  "evidenceDigest": "73d0e64be3bf55c1186cd21482bb32c2ff476a5c180cc89c8faea02be6f0cd62"
 }

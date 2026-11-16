@@ -94,6 +94,7 @@ export function sameRequest(row: WorkRequest, request: WorkRequest): boolean {
     row.definition === request.definition &&
     canonical(row.input) === canonical(request.input) &&
     canonical(row.limits) === canonical(request.limits) &&
+    (row.leaseMode ?? 'commit-deadline') === (request.leaseMode ?? 'commit-deadline') &&
     (row.retention === 'forever' ? undefined : row.retention?.afterTerminalMs) ===
       (request.retention === 'forever' ? undefined : request.retention?.afterTerminalMs)
   );
@@ -102,6 +103,12 @@ export function sameRequest(row: WorkRequest, request: WorkRequest): boolean {
 function validateRequest(request: WorkRequest, now: number): void {
   integer(now, 'now');
   integer(request.availableAt, 'availableAt');
+  if (
+    request.leaseMode !== undefined &&
+    request.leaseMode !== 'commit-deadline' &&
+    request.leaseMode !== 'takeover-fenced'
+  )
+    throw new RangeError('Unknown leaseMode');
   if (request.retention !== undefined && request.retention !== 'forever') {
     integer(request.retention.afterTerminalMs, 'afterTerminalMs');
   }
@@ -198,7 +205,10 @@ export function changed(
     ];
   return next;
 }
-/** Only the latest unexpired attempt may renew, settle, or report authoritative work state. */
+/**
+ * Authority follows the durable generation/fence. Strict leases also require a deadline
+ * check; takeover-fenced leases permit a late owner until another atomic transition wins.
+ */
 export function assertCurrent(row: WorkRecord, ref: AttemptRef, now: number): void {
   if (
     row.id !== ref.workId ||
@@ -208,7 +218,7 @@ export function assertCurrent(row: WorkRecord, ref: AttemptRef, now: number): vo
     row.phase.state !== 'running'
   )
     throw new WorkConflict('stale_attempt');
-  if (row.phase.attempt.leaseUntil <= effectiveNow(row, now))
+  if (row.leaseMode !== 'takeover-fenced' && row.phase.attempt.leaseUntil <= effectiveNow(row, now))
     throw new WorkConflict('lease_expired');
 }
 /** Claim or expire an exhausted item. A poisoned/exhausted candidate must not stop the rest of a batch. */
@@ -269,11 +279,17 @@ export function claimRecord(
     row.phase.state === 'running' ? 'reclaim' : 'claim',
   );
 }
-/** Renewal cannot resurrect a lease which expired before the atomic operation. */
+/** Renewal extends the current fence; takeover-fenced renewal may cross the takeover time. */
 export function renewRecord(row: WorkRecord, ref: AttemptRef, clock: number): WorkRecord {
   const now = effectiveNow(row, clock);
   assertCurrent(row, ref, now);
   if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
+  // The generation's elapsed-work budget still caps renewals even in takeover mode.
+  if (
+    row.leaseMode === 'takeover-fenced' &&
+    now >= add(row.firstStartedAt ?? now, row.limits.maxElapsedMs)
+  )
+    throw new WorkConflict('lease_expired');
   return changed(
     row,
     {

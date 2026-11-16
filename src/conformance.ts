@@ -561,6 +561,89 @@ export async function runConformance(create: ConformanceFactory): Promise<string
     assert.equal((await child.inspect('apply-once'))!.phase.state, 'queued');
   });
 
+  await test('takeover-fenced expiry permits renewal and settlement until ownership changes', async ({
+    store,
+    advance,
+  }) => {
+    const root = createWorkOnce({ store, scope: 'takeover-late' });
+    const q = root.define('job', {
+      leaseMode: 'takeover-fenced',
+      limits: { leaseMs: 10, maxElapsedMs: 100 },
+    });
+    const strict = root.define('job');
+    const original = await q.ensure(null, { key: 'one' });
+    assert.equal(original.leaseMode, 'takeover-fenced');
+    await rejects(strict.inspect('one'), 'definition_changed');
+    await rejects(strict.ensure(null, { key: 'one' }), 'key_conflict');
+
+    const [run] = await q.claim({ workerId: 'original' });
+    assert.ok(run);
+    const firstExpiry = run.attempt.leaseUntil;
+    advance(10);
+    const renewal = await q.heartbeat(run.ref);
+    assert.ok(renewal.attempt.leaseUntil > firstExpiry, 'expired but unreclaimed owner may renew');
+    advance(10);
+    const outcome = run.succeed();
+    assert.equal((await run.settle(outcome)).state, 'succeeded');
+    assert.equal((await q.inspect('one'))!.attempts, 1);
+    assert.equal((await q.claim({ workerId: 'replacement' })).length, 0);
+    advance(20);
+    assert.equal((await run.settle(outcome)).state, 'succeeded', 'late replay uses the receipt');
+  });
+
+  await test('takeover-fenced reclamation irrevocably fences the old owner', async ({
+    store,
+    advance,
+  }) => {
+    const settings = { leaseMode: 'takeover-fenced' as const, limits: { leaseMs: 10 } };
+    const a = createWorkOnce({ store, scope: 'takeover-fence' }).define('job', settings);
+    const b = createWorkOnce({ store, scope: 'takeover-fence' }).define('job', settings);
+    await a.ensure(null, { key: 'one' });
+    const [old] = await a.claim({ workerId: 'A' });
+    assert.ok(old);
+    advance(10);
+    const [current] = await b.claim({ workerId: 'B' });
+    assert.ok(current);
+    assert.ok(current.ref.fence > old.ref.fence);
+    await rejects(old.heartbeat(), 'stale_attempt');
+    await rejects(old.settle(old.succeed()), 'stale_attempt');
+    assert.equal((await current.settle(current.succeed())).state, 'succeeded');
+    assert.equal((await a.inspect('one'))!.attempts, 2);
+  });
+
+  await test('late takeover-fenced completion and reclaim have one atomic winner', async ({
+    store,
+    advance,
+  }) => {
+    const definition = { leaseMode: 'takeover-fenced' as const, limits: { leaseMs: 10 } };
+    const first = createWorkOnce({ store, scope: 'takeover-race' }).define('job', definition);
+    const second = createWorkOnce({ store, scope: 'takeover-race' }).define('job', definition);
+    await first.ensure(null, { key: 'job' });
+    const [old] = await first.claim({ workerId: 'A' });
+    assert.ok(old);
+    advance(10);
+    const results = await Promise.allSettled([
+      old.settle(old.succeed()),
+      second.claim({ workerId: 'B' }),
+    ]);
+    const completion = results[0]!;
+    const claim = results[1]!;
+    assert.equal(claim.status, 'fulfilled');
+    if (claim.status !== 'fulfilled') return;
+    if (claim.value.length === 0) {
+      assert.equal(completion.status, 'fulfilled');
+      assert.equal((await first.inspect('job'))!.phase.state, 'succeeded');
+    } else {
+      assert.equal(claim.value.length, 1);
+      assert.equal(completion.status, 'rejected');
+      if (completion.status === 'rejected') {
+        assert.ok(completion.reason instanceof WorkConflict);
+        assert.equal(completion.reason.code, 'stale_attempt');
+      }
+      await claim.value[0]!.settle(claim.value[0]!.succeed());
+    }
+    assert.equal((await first.inspect('job'))!.phase.state, 'succeeded');
+  });
   return completed;
 }
 

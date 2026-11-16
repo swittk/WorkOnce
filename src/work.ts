@@ -6,6 +6,7 @@ import type {
   RetryDecision,
   WorkLimits,
   WorkRetention,
+  WorkLeaseMode,
   WorkOutcome,
   WorkPhase,
   WorkRecord,
@@ -70,6 +71,11 @@ import {
 } from './worker.js';
 /** Defaults may be overridden per item; dynamic callbacks are evaluated in trusted application code. */
 export interface WorkDefinition<I, R extends string, O = unknown> {
+  /**
+   * Persist the authority rule per work kind. Defaults to strict commit-deadline.
+   * Takeover-fenced leases can settle after nominal expiry only before a reclaim wins.
+   */
+  leaseMode?: WorkLeaseMode;
   /** Opt into bounded terminal retention; omission keeps the current permanent deduplication. */
   retention?: WorkRetention;
   /** Change deliberately when deployed policy/handler meaning changes. */
@@ -180,6 +186,8 @@ export interface WorkHandoff<T> {
 }
 /** Wire-friendly lease returned only after the final owner-bound renewal commits. */
 export interface LeasedWork<T> {
+  /** Persisted authority rule; omission means strict commit-deadline. */
+  leaseMode?: WorkLeaseMode;
   /** Prepared application payload for the external worker. */
   input: T;
   /** Exact owner reference required by renew/settle. */
@@ -404,6 +412,12 @@ export class WorkQueue<I, O = null, R extends string = string> {
   request(input: I, options: EnsureOptions = {}): WorkRequest<I> {
     const key = this.key(input, options.key);
     const retention = options.retention ?? this.definition.retention;
+    if (
+      this.definition.leaseMode !== undefined &&
+      this.definition.leaseMode !== 'commit-deadline' &&
+      this.definition.leaseMode !== 'takeover-fenced'
+    )
+      throw new RangeError('Unknown leaseMode');
     let retained: Pick<WorkRequest, 'retention'> = {};
     if (retention !== undefined && retention !== 'forever') {
       integer(retention.afterTerminalMs, 'afterTerminalMs');
@@ -412,6 +426,9 @@ export class WorkQueue<I, O = null, R extends string = string> {
     }
     return copy({
       ...retained,
+      ...(this.definition.leaseMode === 'takeover-fenced'
+        ? { leaseMode: 'takeover-fenced' as const }
+        : {}),
       id: workId(this.scope, this.kind, key),
       scope: this.scope,
       kind: this.kind,
@@ -503,6 +520,9 @@ export class WorkQueue<I, O = null, R extends string = string> {
         }
         const renewed = await run.heartbeat();
         leases.push({
+          ...(this.definition.leaseMode === 'takeover-fenced'
+            ? { leaseMode: 'takeover-fenced' as const }
+            : {}),
           input: prepared.input,
           attempt: run.ref,
           leaseUntil: renewed.attempt.leaseUntil,
@@ -555,7 +575,9 @@ export class WorkQueue<I, O = null, R extends string = string> {
       if (row.phase.state !== 'running') throw new WorkConflict('stale_attempt');
       return {
         next,
-        validUntil: row.phase.attempt.leaseUntil,
+        ...(row.leaseMode === 'takeover-fenced'
+          ? {}
+          : { validUntil: row.phase.attempt.leaseUntil }),
         value: { attempt: next.phase.attempt, observedAt: now },
       };
     });
@@ -635,7 +657,9 @@ export class WorkQueue<I, O = null, R extends string = string> {
       if (fresh.phase.state !== 'running') throw new WorkConflict('stale_attempt');
       return {
         next,
-        validUntil: fresh.phase.attempt.leaseUntil,
+        ...(fresh.leaseMode === 'takeover-fenced'
+          ? {}
+          : { validUntil: fresh.phase.attempt.leaseUntil }),
         value: next.phase as WorkPhase<O, R>,
       };
     });
@@ -900,13 +924,17 @@ export class WorkQueue<I, O = null, R extends string = string> {
   }
   private assertDefinition(row: WorkRecord): void {
     if (row.scope !== this.scope || row.kind !== this.kind) throw new WorkConflict('not_found');
-    if (row.definition !== (this.definition.version ?? '1'))
+    if (
+      row.definition !== (this.definition.version ?? '1') ||
+      (row.leaseMode ?? 'commit-deadline') !== (this.definition.leaseMode ?? 'commit-deadline')
+    )
       throw new WorkConflict('definition_changed');
   }
   private snapshot(row: WorkRecord, now: number): WorkSnapshot<I, O, R> {
     return copy({
       id: row.id,
       key: row.key,
+      ...(row.leaseMode === undefined ? {} : { leaseMode: row.leaseMode }),
       ...(row.incarnation === undefined ? {} : { incarnation: row.incarnation }),
       ...(row.retention === undefined ? {} : { retention: row.retention }),
       input: row.input as I,

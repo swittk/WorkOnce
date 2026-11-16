@@ -1,6 +1,6 @@
 ------------------------------ MODULE WorkOnce ------------------------------
 EXTENDS Naturals, FiniteSets, Integers, WorkOnceContract
-CONSTANTS Workers, MaxTime, MaxFence, MaxGeneration, MaxAttempts, MaxRetries, MaxDeferrals, MaxElapsed
+CONSTANTS Workers, MaxTime, MaxFence, MaxGeneration, MaxAttempts, MaxRetries, MaxDeferrals, MaxElapsed, LeaseMode
 VARIABLES state, waitCause, owner, fence, generation, lease, now, available,
           attempts, retries, deferrals, firstStarted, manualRetryAllowed, stopReason,
           tokens, pendingNext, childCreated, terminalNeedsNext, lastAcceptedFence
@@ -16,7 +16,8 @@ Init == /\ state = "queued" /\ waitCause = "none" /\ owner = 0
         /\ manualRetryAllowed = FALSE /\ stopReason = "none" /\ tokens = {}
         /\ pendingNext = FALSE /\ childCreated = FALSE /\ terminalNeedsNext = FALSE
         /\ lastAcceptedFence = 0
-Current(t) == /\ state = "running" /\ owner = t.worker /\ now < lease
+Current(t) == /\ state = "running" /\ owner = t.worker
+              /\ (LeaseMode = "takeover-fenced" \/ now < lease)
               /\ t.generation = generation /\ t.fence = fence
 Due == \/ /\ state \in {"queued", "waiting"} /\ available <= now
        \/ /\ state = "running" /\ lease <= now
@@ -34,7 +35,7 @@ Claim(w) ==
   /\ UNCHANGED <<generation, now, available, retries, deferrals, pendingNext,
                  childCreated, terminalNeedsNext>>
 Renew(t) ==
-  /\ Current(t)
+  /\ Current(t) /\ now < Deadline
   /\ lease' = Min2(now + 1, Deadline)
   /\ UNCHANGED <<state, waitCause, owner, fence, generation, now, available,
                  attempts, retries, deferrals, firstStarted, manualRetryAllowed,
@@ -151,7 +152,8 @@ Next == (\E w \in Workers : Claim(w))
         \/ CreateChild \/ AckChild \/ Tick
 Spec == Init /\ [][Next]_vars
 
-TypeOK == /\ state \in {"queued", "running", "waiting", "failed", "cancelled", "succeeded"}
+TypeOK == /\ LeaseMode \in {"commit-deadline", "takeover-fenced"}
+          /\ state \in {"queued", "running", "waiting", "failed", "cancelled", "succeeded"}
           /\ waitCause \in {"none", "retry", "defer"}
           /\ stopReason \in {"none", "reported_failure", "retry_not_allowed", "retry_budget_exhausted",
                               "attempt_budget_exhausted", "deadline_exceeded", "deferral_budget_exhausted"}

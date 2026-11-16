@@ -18,6 +18,7 @@ export type {
   AttemptRef,
   WorkAttempt,
   WorkLimits,
+  WorkLeaseMode,
   WorkRetention,
   WorkRequest,
   WorkOutcome,

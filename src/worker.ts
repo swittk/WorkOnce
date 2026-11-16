@@ -72,6 +72,9 @@ async function processClaim<I, O, R extends string>(
       ? undefined
       : Math.min(options.heartbeatMs ?? Math.max(1, Math.floor(leaseMs / 3)), 2_147_483_647);
   function armExpiry(deadline: number) {
+    // Takeover-fenced time permits another claimant; only an accepted takeover
+    // or rejected heartbeat proves this attempt lost authoritative ownership.
+    if (run.queue.definition.leaseMode === 'takeover-fenced') return;
     clearTimeout(expiryTimer);
     const remaining = deadline - performance.now();
     if (remaining <= 0) {

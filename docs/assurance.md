@@ -47,9 +47,14 @@ The corpus is deliberately **batched in one Node process**. WorkOnce does not la
 
 ## Shared adapters and real-process faults
 
-`src/conformance.ts` contains 18 shared adapter scenarios. They cover competing claims, exact lease expiry, stale renew/settle/retry/defer/failure rejection, delayed retry eligibility, bounded prerequisite waiting, manual generations/gates, async policy races, retry denial, report replay, cancel/complete races, crashed-attempt budgets, deadlines, outbox delivery, wake revisions, scope/version boundaries and immutable rollback assertions.
+`src/conformance.ts` contains 26 shared adapter scenarios. They cover competing claims, exact lease expiry, stale renew/settle/retry/defer/failure rejection, delayed retry eligibility, bounded prerequisite waiting, manual generations/gates, async policy races, retry denial, report replay, cancel/complete races, crashed-attempt budgets, deadlines, outbox delivery, wake revisions, scope/version boundaries and immutable rollback assertions.
 
 The public tests run that suite against memory, real SQLite and a native-CAS test port. A BYO application adapter runs the same suite independently; a tested reference port does not certify a different database or application transaction boundary.
+
+The opt-in takeover-fenced cases check late renewal and settlement, immediate rejection of an
+old attempt after reclamation, and atomic settlement/reclaim races. Managed local and external
+worker tests also confirm that mere takeover eligibility is not treated as proof of ownership
+loss. Independent SQLite handles race on the same file.
 
 Additional tests cover expiry between read and the actual native write, unknown CAS acknowledgements, async continuation planning, poison follow-up fairness, worker lease-loss cancellation, and reset blocking while previous durable follow-ups are pending.
 
@@ -75,7 +80,14 @@ Additional tests cover expiry between read and the actual native write, unknown 
 - pending durable continuation creation/acknowledgement;
 - the rule that retry/rerun cannot erase pending prior-generation continuation intent.
 
-The model retains **every issued attempt token**, including older attempts from the same worker. Claims append tokens; success/failure/retry/defer/renew select an individual token and must match the current generation/fence and unexpired lease.
+The model is checked twice: `WorkOnce.cfg` retains strict commit-deadline semantics,
+and `WorkOnceTakeover.cfg` enables takeover-fenced acceptance by exact current
+generation/fence even after the clock reaches `leaseUntil`. The same lifecycle
+invariants are checked in both. This verifies state-ordering safety rather than
+claiming globally synchronized physical time or no duplicate external effects.
+The takeover model also prevents renewing after the per-generation elapsed budget.
+
+The model retains **every issued attempt token**, including older attempts from the same worker. Claims append tokens; success/failure/retry/defer/renew select an individual token and must match the current generation/fence, plus an unexpired lease in strict mode.
 
 The checked bounds are two workers, five time ticks, four fences, two generations, two claims per generation, one automatic retry, one deferral and a three-tick elapsed budget. The current graph is **228,573 generated / 133,714 distinct states**, complete depth **17**, with no invariant violation. The 11 configured invariants cover state/counter typing, uniqueness of the issued current fence, proof that a running owner token was actually issued, accepted-fence currentness, current-fence success, wait-cause consistency, terminal-only pending follow-ups, no reset state retaining prior pending intent, no lost continuation obligation, and child evidence requiring current-generation continuation intent. Generation restart explicitly clears generation-local child evidence so an old child cannot satisfy a later continuation.
 

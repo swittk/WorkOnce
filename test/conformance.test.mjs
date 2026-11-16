@@ -35,7 +35,7 @@ for (const adapter of ['memory', 'sqlite'])
         },
       };
     });
-    assert.equal(passed.length, 23);
+    assert.equal(passed.length, 26);
     console.log(adapter, passed);
   });
 
@@ -59,7 +59,7 @@ test('shared conformance derives accepted write deadlines from the atomic decisi
       },
     };
   });
-  assert.equal(passed.length, 23);
+  assert.equal(passed.length, 26);
 });
 
 test('shared conformance accepts adapter-specific invalid-write rejection messages', async () => {
@@ -84,7 +84,7 @@ test('shared conformance accepts adapter-specific invalid-write rejection messag
       },
     };
   });
-  assert.equal(passed.length, 23);
+  assert.equal(passed.length, 26);
 });
 
 test('shared conformance remains message-agnostic when an adapter uses the old assertion label verbatim', async () => {
@@ -109,7 +109,7 @@ test('shared conformance remains message-agnostic when an adapter uses the old a
       },
     };
   });
-  assert.equal(passed.length, 23);
+  assert.equal(passed.length, 26);
 });
 
 test('shared conformance rejects adapters that treat validUntil equality as still writable', async () => {
@@ -289,7 +289,7 @@ test('a conforming store may linearize completion before an earlier invoked canc
       },
     };
   });
-  assert.equal(passed.length, 23);
+  assert.equal(passed.length, 26);
 });
 
 function makeReadClockFixture(lateClock) {
