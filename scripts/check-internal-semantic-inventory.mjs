@@ -77,6 +77,17 @@ function classifyRetentionTopology(entry) {
     };
   if (
     entry.path === 'src/work.ts' &&
+    entry.context === 'constructor' &&
+    entry.kind === 'property_assignment' &&
+    entry.excerpt === "this.name = 'WorkRetentionError'"
+  )
+    return {
+      families: ['A', 'G'],
+      reason:
+        'The ES2018-compatible batch deletion error retains all failed retention attempts for observable recovery without stopping healthy work.',
+    };
+  if (
+    entry.path === 'src/work.ts' &&
     ((entry.context === 'request' && /retention/u.test(entry.excerpt)) ||
       (['retry', 'rerun', 'restart'].includes(entry.context) &&
         /checkedIncarnation/u.test(entry.excerpt)))

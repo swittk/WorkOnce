@@ -3,8 +3,8 @@
   "reviewedBase": "f7042c0fb46f021a46177f57d067e666ba14b4be",
   "scope": "AST inventory of mutable locals, loops, timers, concurrency collections, ordering/truncation calls, and runner cancellation state in src/*.ts. This is a fail-closed family-discovery topology check, not proof by itself.",
   "unclassifiedCallSurface": {
-    "count": 1309,
-    "digest": "36bf67551dc93b7c"
+    "count": 1311,
+    "digest": "54f27f96b00f372c"
   },
   "entries": [
     {
@@ -1796,6 +1796,18 @@
       "reason": "WorkDispatchError.name is consumer-visible exported error identity rather than durable state; family H owns public error/export identity."
     },
     {
+      "id": "src/work.ts:constructor:property_assignment:fa6ff82e19fe5db5:1",
+      "path": "src/work.ts",
+      "context": "constructor",
+      "kind": "property_assignment",
+      "ordinal": 4,
+      "excerpt": "this.name = 'WorkRetentionError'",
+      "textDigest": "ec739b7446344af8",
+      "families": ["A", "G"],
+      "classification": "APPLICABLE",
+      "reason": "The ES2018-compatible batch deletion error retains all failed retention attempts for observable recovery without stopping healthy work."
+    },
+    {
       "id": "src/work.ts:createWorkOnce:mutable_let:f48d5b11e8e029ed:1",
       "path": "src/work.ts",
       "context": "createWorkOnce",
@@ -1968,13 +1980,25 @@
       "reason": "Foreign handoff preparation/export and per-lease iteration belongs to D."
     },
     {
-      "id": "src/work.ts:pruneExpired:for_of_loop:6ba82dabf3caeeff:1",
+      "id": "src/work.ts:pruneExpired:call_mutator_push:051149fc9ea30de3:1",
+      "path": "src/work.ts",
+      "context": "pruneExpired",
+      "kind": "call_mutator_push",
+      "ordinal": 7,
+      "excerpt": "failures.push(error)",
+      "textDigest": "1df9b7bad3b08f75",
+      "families": ["A", "G"],
+      "classification": "APPLICABLE",
+      "reason": "Bounded pruning coordinates terminal lifecycle eligibility with atomic storage deletion across families A and G."
+    },
+    {
+      "id": "src/work.ts:pruneExpired:for_of_loop:e379784553bb10bd:1",
       "path": "src/work.ts",
       "context": "pruneExpired",
       "kind": "for_of_loop",
       "ordinal": 4,
-      "excerpt": "for (const candidate of candidates.rows) {\n    const deleted = await store.atomic(candidate.id, (row, now) => {\n      if (!row || row.incarnation !== candidate.incarnation || row.revision !== candidate.revision)\n        return { value: fals",
-      "textDigest": "84a8ddb52ec9e619",
+      "excerpt": "for (const candidate of candidates.rows) {\n    try {\n      const deleted = await store.atomic(candidate.id, (row, now) => {\n        if (\n          !row ||\n          row.incarnation !== candidate.incarnation ||\n          row.revision !== can",
+      "textDigest": "74a8f1841c020ca5",
       "families": ["A", "G"],
       "classification": "APPLICABLE",
       "reason": "Bounded pruning coordinates terminal lifecycle eligibility with atomic storage deletion across families A and G."
