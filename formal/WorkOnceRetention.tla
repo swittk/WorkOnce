@@ -207,6 +207,20 @@ Prune ==
   /\ UNCHANGED <<now, created, usedIncarnations, candidateIncarnation,
                   candidateRevision, rejected, staleWrites>>
 
+\* A failed atomic expiry delete leaves the candidate and all authority facts intact.
+\* A later maintenance pass can retry the same key; other work is independent.
+PruneStorageFailure ==
+  /\ present
+  /\ Eligible(policy, phase, outbox, terminalAt, now)
+  /\ candidateIncarnation = incarnation
+  /\ candidateRevision = revision
+  /\ rejected' = {"prune-storage"}
+  /\ UNCHANGED <<present, phase, policy, incarnation, revision, terminalAt, outbox,
+                  now, created, deleted, usedIncarnations, candidateIncarnation,
+                  candidateRevision, staleIncarnation, staleRevision, staleWrites,
+                  wrongDeletes, lastDeletePhase, lastDeletePolicy, lastDeleteOutbox,
+                  lastDeleteNow, lastDeleteDeadline, lastDeletedIncarnation, pruneWins>>
+
 LostPruneRace ==
   /\ candidateIncarnation # NoCandidate
   /\ \/ ~present
@@ -239,7 +253,7 @@ TryOldAuthority(op) ==
 StaleOperation == \E op \in StaleOperations : TryOldAuthority(op)
 
 Next == Create \/ Claim \/ Wait \/ Terminalize \/ DrainOutbox \/ ManualRestart \/
-        Tick \/ Scan \/ Prune \/ LostPruneRace \/ StaleOperation
+        Tick \/ Scan \/ Prune \/ PruneStorageFailure \/ LostPruneRace \/ StaleOperation
 Spec == Init /\ [][Next]_vars
 
 \* Safety alone never promises that a caller actually runs maintenance.
@@ -267,7 +281,7 @@ RetentionTypeOK ==
   /\ candidateRevision \in 0..6
   /\ staleIncarnation \in Incarnations \cup {NoIncarnation}
   /\ staleRevision \in 0..6
-  /\ rejected \subseteq StaleOperations \cup {"prune"}
+  /\ rejected \subseteq StaleOperations \cup {"prune", "prune-storage"}
   /\ Cardinality(rejected) <= 1
   /\ staleWrites \in 0..1
   /\ wrongDeletes \in 0..1

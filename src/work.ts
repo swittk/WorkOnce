@@ -59,6 +59,13 @@ class WorkDispatchError extends Error {
     this.name = 'WorkDispatchError';
   }
 }
+/** Preserve every cleanup failure without requiring the ES2021 AggregateError runtime. */
+class WorkRetentionError extends Error {
+  constructor(readonly errors: unknown[]) {
+    super('WorkOnce retention failed for multiple candidates');
+    this.name = 'WorkRetentionError';
+  }
+}
 import {
   processClaims,
   runWorker,
@@ -151,16 +158,28 @@ async function pruneExpired(store: WorkStore, query: WorkQuery): Promise<number>
   if (store.retention !== true) throw new WorkConflict('retention_unsupported');
   const candidates = await store.query(query);
   let removed = 0;
+  const failures: unknown[] = [];
   for (const candidate of candidates.rows) {
-    const deleted = await store.atomic(candidate.id, (row, now) => {
-      if (!row || row.incarnation !== candidate.incarnation || row.revision !== candidate.revision)
-        return { value: false };
-      const deadline = expiresAt(row);
-      if (deadline === undefined || deadline > now) return { value: false };
-      return { delete: true, value: true };
-    });
-    if (deleted) removed++;
+    try {
+      const deleted = await store.atomic(candidate.id, (row, now) => {
+        if (
+          !row ||
+          row.incarnation !== candidate.incarnation ||
+          row.revision !== candidate.revision
+        )
+          return { value: false };
+        const deadline = expiresAt(row);
+        if (deadline === undefined || deadline > now) return { value: false };
+        return { delete: true, value: true };
+      });
+      if (deleted) removed++;
+    } catch (error) {
+      // An unrelated failed deletion must not starve other expired jobs in this pass.
+      failures.push(error);
+    }
   }
+  if (failures.length === 1) throw failures[0];
+  if (failures.length) throw new WorkRetentionError(failures);
   return removed;
 }
 /** Match a caller's guarded observation, including the key's creation identity after deletion. */

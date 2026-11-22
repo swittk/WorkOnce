@@ -512,6 +512,100 @@ test('SQLite finite reuse reaches a bounded no-row steady state instead of accum
   }
 });
 
+// Fail only the selected atomic deletions, as a storage adapter would on an isolated
+// persistence error. The other items must still reach their own atomic decisions.
+for (const adapter of ['memory', 'sqlite']) {
+  test(`${adapter}: pruning isolates one failed deletion and retries it on the next pass`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), `workonce-retention-failure-${adapter}-`));
+    const backing =
+      adapter === 'memory'
+        ? createMemoryStore({ now: () => 100 })
+        : createSqliteStore(join(directory, 'queue.sqlite'), { now: () => 100 });
+    const errors = new Map();
+    const attempted = [];
+    let pruning = false;
+    const store = {
+      retention: true,
+      async atomic(id, decide) {
+        if (pruning) {
+          attempted.push(id);
+          if (errors.has(id)) throw errors.get(id);
+        }
+        return backing.atomic(id, decide);
+      },
+      getMany: (...args) => backing.getMany(...args),
+      query: (...args) => backing.query(...args),
+    };
+    try {
+      const queue = createWorkOnce({ store, scope: 'isolate-single-deletion' }).define('job', {
+        retention: { afterTerminalMs: 0 },
+      });
+      for (const key of ['a', 'b', 'c']) await terminal(queue, key);
+      const ids = Object.fromEntries(
+        await Promise.all(['a', 'b', 'c'].map(async (key) => [key, (await queue.inspect(key)).id])),
+      );
+      const dbError = new Error('failed deleting b');
+      errors.set(ids.b, dbError);
+      pruning = true;
+      await assert.rejects(queue.prune({ limit: 3 }), (error) => error === dbError);
+      assert.deepEqual(attempted, [ids.a, ids.b, ids.c]);
+      assert.equal(await queue.inspect('a'), undefined);
+      assert.equal((await queue.inspect('b')).phase.state, 'succeeded');
+      assert.equal(await queue.inspect('c'), undefined);
+
+      errors.clear();
+      assert.equal(await queue.prune({ limit: 3 }), 1);
+      assert.equal(await queue.inspect('b'), undefined);
+    } finally {
+      backing.close?.();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test(`${adapter}: pruning reports every failure after deleting other eligible jobs`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), `workonce-retention-many-failures-${adapter}-`));
+    const backing =
+      adapter === 'memory'
+        ? createMemoryStore({ now: () => 100 })
+        : createSqliteStore(join(directory, 'queue.sqlite'), { now: () => 100 });
+    const errors = new Map();
+    let pruning = false;
+    const store = {
+      retention: true,
+      async atomic(id, decide) {
+        if (pruning && errors.has(id)) throw errors.get(id);
+        return backing.atomic(id, decide);
+      },
+      getMany: (...args) => backing.getMany(...args),
+      query: (...args) => backing.query(...args),
+    };
+    try {
+      const work = createWorkOnce({ store, scope: 'isolate-multiple-deletions' });
+      const queue = work.define('job', { retention: { afterTerminalMs: 0 } });
+      for (const key of ['a', 'b', 'c']) await terminal(queue, key);
+      const idA = (await queue.inspect('a')).id;
+      const idC = (await queue.inspect('c')).id;
+      const errorsInOrder = [new Error('failed a'), new Error('failed c')];
+      errors.set(idA, errorsInOrder[0]);
+      errors.set(idC, errorsInOrder[1]);
+      pruning = true;
+      await assert.rejects(work.prune({ limit: 3 }), (error) => {
+        assert.equal(error.name, 'WorkRetentionError');
+        assert.deepEqual(error.errors, errorsInOrder);
+        return true;
+      });
+      assert.equal((await queue.inspect('a')).phase.state, 'succeeded');
+      assert.equal(await queue.inspect('b'), undefined);
+      assert.equal((await queue.inspect('c')).phase.state, 'succeeded');
+      errors.clear();
+      assert.equal(await work.prune({ limit: 3 }), 2);
+    } finally {
+      backing.close?.();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
 test('runPruner performs an explicit bounded pass and stops on its signal', async () => {
   const base = createMemoryStore({ now: () => 100 });
   const controller = new AbortController();

@@ -12730,7 +12730,7 @@
       "mutationInvariant": "HealthyReachedByThirdPass",
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/outbox-refinement.mjs",
-      "sourceDigest": "f6e28b8290230ffd63dee29242ba6372db9630d8342059a435a834e5021fce7f",
+      "sourceDigest": "9981d7e1fe0dfddab06a0639ead9a63fca9c874891496bc1ce237642f1b83826",
       "sourceFiles": [
         "src/work.ts",
         "src/kernel.ts",
@@ -12890,7 +12890,7 @@
       ],
       "followupConfig": "formal/WorkOnceRetentionFollowups.cfg",
       "followupSpec": "formal/WorkOnceRetentionFollowups.tla",
-      "modelDigest": "f9cc4514374a02dd7216e212ce3db9d74e8928f4f8a7b5ffc48deed1373cfca2",
+      "modelDigest": "c49ef3c2df480a94fe9c24425e6e662a087c2604ab6b50a6e368e2dd349ad48a",
       "modelFiles": [
         "formal/WorkOnceRetention.tla",
         "formal/WorkOnceRetention.cfg",
@@ -12905,7 +12905,7 @@
         "RetentionTypeOK"
       ],
       "progressConfig": "formal/WorkOnceRetentionProgress.cfg",
-      "sourceDigest": "f4288ee98eff2804836dbbe9e0b8d6d2ddfd635dfdcb8075949c8e7b64c5df4e",
+      "sourceDigest": "39742d2422f51d652a97efe9f3b05fde88aee555191ea7875f46ec1c1e89ae94",
       "sourceFiles": [
         "src/model.ts",
         "src/kernel.ts",
@@ -12943,7 +12943,7 @@
       ],
       "observationBinding": "scripts/formal.mjs",
       "observationProducer": "scripts/runtime-boundary-refinement.mjs",
-      "sourceDigest": "788c8f282ab0692533d2449b2b6ff2bef3d815e5c1e405f8d4af9c343115c323",
+      "sourceDigest": "e3b70eb6f40a1d15513156a190fa63d484081f4861a5b8a7e6af20fca52b7af8",
       "sourceFiles": [
         "src/worker.ts",
         "src/work.ts"
@@ -12987,7 +12987,7 @@
   },
   "schemaVersion": 1,
   "stateMachineBinding": {
-    "assuranceInfrastructureDigest": "68d13325dc440c53f5e07a18732d87b3affa808a1f8a93cc134cde1099d59676",
+    "assuranceInfrastructureDigest": "27d653436a1db39454f8eab02877fbc8a6e1363c74c94fbb04b623d734f55830",
     "assuranceInfrastructureFiles": [
       "assurance/internal-semantic-inventory.json",
       "assurance/red-before/compiler-config-semantic-binding.json",
@@ -13135,7 +13135,7 @@
       "tsconfig.webworker.json"
     ],
     "formalDigestSchema": "tla-lexical-string-safe-v2",
-    "modelDigest": "b9ae1300245144a9b8e6efab80c1b72d40ef9cb4b2164cd37ff5736c521992e0",
+    "modelDigest": "40d7d1b42bb386f290fb38ef6996452daeda9322ed9bee41d1fe85c11b6ffc08",
     "modelFiles": [
       "formal/WorkOnce.tla",
       "formal/WorkOnce.cfg",
@@ -13176,7 +13176,7 @@
       "package.json",
       "package-lock.json"
     ],
-    "sourceDigest": "77d8cf93c48784a53bdae892b6034c3e79365574da5cb807ffaaa6b819a7415e",
+    "sourceDigest": "137a4289624d77e935884a20aa8166fe30af843449d573316520eef1644227c6",
     "sourceDigestSchema": "typescript-ast-printer-directives-v3",
     "sourceFiles": [
       "src/model.ts",

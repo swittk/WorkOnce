@@ -466,6 +466,13 @@ each produce an actual reachable TLC counterexample rather than merely injecting
 into an initial state. The stale-write and wrong-delete ghost counters are calculated from
 those attempted actions, not held at zero by `UNCHANGED`.
 
+A failed atomic expiry deletion is modeled as PruneStorageFailure: the row,
+incarnation, and eligible deadline remain unchanged, so subsequent maintenance can
+retry. This single-key abstract model does not itself prove per-batch error isolation;
+the memory/SQLite regressions exercise the actual bounded loop with another failed
+candidate and verify that later eligible jobs are still deleted before the failure
+is reported.
+
 `formal/WorkOnceRetentionProgress.cfg` separately checks the temporal property
 `EligibleEventuallyClears` under weak fairness of scheduled scans and pruning. TLC also
 demonstrates an infinite stuttering counterexample when scheduler fairness is removed.
